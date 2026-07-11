@@ -1,0 +1,27 @@
+export type Role = "jefe" | "encargado" | "empleado";
+export type Status = "pend" | "proc" | "term";
+
+export interface Profile { id: string; name: string; role: Role; email: string; puesto: string; ficha: string; }
+export interface ChecklistItem { txt: string; done: boolean; done_at: string | null; }
+export interface Comment { who: string; when: string; txt: string; }
+export interface HistoryEntry { who: string; at: string; txt: string; }
+export interface Card {
+  id: string; owner: string; title: string; status: Status; description: string;
+  checklist: ChecklistItem[]; comments: Comment[]; history: HistoryEntry[];
+  done_at: string | null; due_date: string | null; recurring: boolean;
+  priority: "alta" | "media" | "baja"; effort: 1 | 2 | 3 | 5;
+  card_type: "normal" | "operativa"; deps: string[]; created_at: string;
+}
+export interface Objective {
+  id: string; owner: string; title: string; description: string; weight: number;
+  kpi_name: string; kpi_unit: string; kpi_target: number | null; kpi_current: number; notes: string;
+}
+export interface Announcement {
+  id: string; kind: "vencimiento" | "aviso" | "proceso"; title: string; detail: string;
+  due_date: string | null; created_by: string; created_at: string;
+}
+export interface ActivityLog { id: string; card_id: string; owner: string; who_name: string; qty: number; note: string; at: string; }
+export interface Snapshot { day: string; owner: string; open_count: number; open_effort: number; done_count: number; done_effort: number; activity_qty: number; }
+export interface AppSettings { edit_closed: boolean; board_name?: string; due_warn_days?: number; stuck_days?: number; }
+
+export const COLS: [Status, string][] = [["pend", "Pendiente"], ["proc", "En proceso"], ["term", "Terminado"]];
