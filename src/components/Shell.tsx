@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { LayoutDashboard, ClipboardList, LogOut, Moon, ChevronDown, Menu } from "lucide-react";
+import { LayoutDashboard, ClipboardList, LogOut, Moon, ChevronDown, Menu, TrendingUp } from "lucide-react";
 import { Avatar, cn } from "../lib/ui";
 import { THEME_LBL } from "../hooks/useTheme";
 import type { Profile } from "../lib/types";
@@ -7,10 +7,10 @@ import type { Profile } from "../lib/types";
 interface Props {
   me: Profile; team: Profile[]; viewing: string; title: string;
   theme: string; onCycleTheme: () => void; onNavigate: (v: string) => void; onSignOut: () => void;
-  pendByOwner: (id: string) => number; children: ReactNode;
+  pendByOwner: (id: string) => number; subnav?: ReactNode; children: ReactNode;
 }
 
-export function Shell({ me, team, viewing, title, theme, onCycleTheme, onNavigate, onSignOut, pendByOwner, children }: Props) {
+export function Shell({ me, team, viewing, title, theme, onCycleTheme, onNavigate, onSignOut, pendByOwner, subnav, children }: Props) {
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState(false);
   const isJefe = me.role === "jefe";
@@ -45,6 +45,7 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, onNavigat
           {isJefe ? <>
             <div className="text-[10px] tracking-[1.4px] uppercase text-[color:var(--side-ink2)] px-2.5 pt-3.5 pb-1.5">General</div>
             <NavItem v="__resumen" icon={<LayoutDashboard size={17} />} label="Resumen" />
+            <NavItem v="__reporte" icon={<TrendingUp size={17} />} label="Reporte ejecutivo" />
             <div className="text-[10px] tracking-[1.4px] uppercase text-[color:var(--side-ink2)] px-2.5 pt-3.5 pb-1.5">Equipo</div>
             {team.map((u) => <NavItem key={u.id} v={u.id} icon={<Avatar name={u.name} size={22} />} label={u.name} count={pendByOwner(u.id)} />)}
           </> : <>
@@ -84,6 +85,7 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, onNavigat
           <div className="flex-1" />
           <span className="text-[13px] text-ink2">{new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}</span>
         </div>
+        {subnav && <div className="flex gap-1.5 px-6 pt-3.5">{subnav}</div>}
         {children}
       </main>
     </div>

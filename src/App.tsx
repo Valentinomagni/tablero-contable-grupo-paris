@@ -1,12 +1,18 @@
 import { useState } from "react";
+import { ClipboardList, Target } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { useTheme } from "./hooks/useTheme";
-import { useTeam, useCards } from "./hooks/useData";
+import { useTeam, useCards, useActivity } from "./hooks/useData";
 import { Login } from "./components/Login";
 import { Shell } from "./components/Shell";
 import { Board } from "./features/board/Board";
 import { CardModal } from "./features/board/CardModal";
-import type { Card } from "./lib/types";
+import { Objetivos } from "./features/objetivos/Objetivos";
+import { Reporte } from "./features/reporte/Reporte";
+import type { Card, Profile, ActivityLog } from "./lib/types";
+import { cn } from "./lib/ui";
+
+type Mode = "board" | "obj";
 
 export default function App() {
   const { me, loading, signIn, signOut } = useAuth();
@@ -14,7 +20,9 @@ export default function App() {
   const isJefe = me?.role === "jefe";
   const { data: team = [] } = useTeam(!!isJefe);
   const { data: cards = [], isLoading: cardsLoading } = useCards();
+  const { data: activity = [] } = useActivity();
   const [viewing, setViewing] = useState<string>("");
+  const [mode, setMode] = useState<Mode>("board");
   const [openCard, setOpenCard] = useState<Card | null>(null);
 
   if (loading) return <div className="min-h-screen grid place-items-center text-ink2">Cargando…</div>;
@@ -24,18 +32,32 @@ export default function App() {
   const fullTeam = isJefe ? team : [me];
   const person = fullTeam.find((u) => u.id === view);
   const title = view === "__resumen" ? "Resumen del equipo"
+    : view === "__reporte" ? "Reporte ejecutivo"
     : isJefe && person ? `Tablero de ${person.name}` : "Mi tablero";
   const pendByOwner = (id: string) => cards.filter((c) => c.owner === id && c.status !== "term" && c.card_type !== "operativa").length;
+  const isPersonView = view !== "__resumen" && view !== "__reporte";
+
+  const SubTab = ({ m, icon, label }: { m: Mode; icon: React.ReactNode; label: string }) => (
+    <button onClick={() => setMode(m)}
+      className={cn("flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] border transition",
+        mode === m ? "bg-accent-soft border-accent text-accent font-semibold" : "bg-surface2 border-line text-ink2")}>
+      {icon} {label}
+    </button>
+  );
 
   return (
     <>
       <Shell me={me} team={fullTeam} viewing={view} title={title} theme={theme}
-        onCycleTheme={cycle} onNavigate={setViewing} onSignOut={signOut} pendByOwner={pendByOwner}>
-        {view === "__resumen"
-          ? <ResumenLite cards={cards} team={fullTeam} />
-          : cardsLoading
-            ? <BoardSkeleton />
-            : <Board cards={cards} ownerId={view} onOpen={setOpenCard} />}
+        onCycleTheme={cycle} onNavigate={(v) => { setViewing(v); setMode("board"); }} onSignOut={signOut} pendByOwner={pendByOwner}
+        subnav={isPersonView ? <>
+          <SubTab m="board" icon={<ClipboardList size={14} />} label="Tareas" />
+          <SubTab m="obj" icon={<Target size={14} />} label="Objetivos" />
+        </> : undefined}>
+        {view === "__resumen" ? <ResumenLite cards={cards} team={fullTeam} />
+          : view === "__reporte" ? <Reporte cards={cards} team={fullTeam} activity={activity} />
+          : mode === "obj" ? <Objetivos ownerId={view} />
+          : cardsLoading ? <BoardSkeleton />
+          : <Board cards={cards} ownerId={view} onOpen={setOpenCard} />}
       </Shell>
       {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} onClose={() => setOpenCard(null)} />}
     </>
@@ -55,7 +77,7 @@ function BoardSkeleton() {
   );
 }
 
-function ResumenLite({ cards, team }: { cards: Card[]; team: { id: string; name: string; role: string }[] }) {
+function ResumenLite({ cards, team }: { cards: Card[]; team: Profile[] }) {
   const open = cards.filter((c) => c.status !== "term" && c.card_type !== "operativa");
   const week = Date.now() - 7 * 86400000;
   const doneWeek = cards.filter((c) => c.status === "term" && c.done_at && new Date(c.done_at).getTime() >= week).length;
@@ -75,7 +97,7 @@ function ResumenLite({ cards, team }: { cards: Card[]; team: { id: string; name:
           const n = open.filter((c) => c.owner === u.id).length;
           return (
             <div key={u.id} className="flex items-center gap-3 py-1.5 text-sm border-t border-line first:border-0">
-              <span className="w-[150px] truncate">{u.name} <span className="text-ink2 text-xs">{u.role}</span></span>
+              <span className="w-[150px] truncate">{u.name} <span className="text-ink2 text-xs capitalize">{u.role}</span></span>
               <div className="flex-1 h-2 bg-surface2 rounded-full overflow-hidden">
                 <div className="h-full rounded-full" style={{ width: `${Math.min(100, n * 12)}%`, background: "linear-gradient(90deg,var(--s1),var(--accent))" }} />
               </div>
@@ -87,3 +109,4 @@ function ResumenLite({ cards, team }: { cards: Card[]; team: { id: string; name:
     </div>
   );
 }
+export type { ActivityLog };

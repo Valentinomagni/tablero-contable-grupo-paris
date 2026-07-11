@@ -1,7 +1,28 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
-import type { Card, Profile } from "../lib/types";
+import type { Card, Profile, Objective, ActivityLog } from "../lib/types";
+
+export function useObjectives() {
+  return useQuery({
+    queryKey: ["objectives"],
+    queryFn: async (): Promise<Objective[]> => {
+      const { data } = await supabase.from("objectives").select("*").order("created_at");
+      return (data as Objective[]) ?? [];
+    },
+  });
+}
+
+export function useActivity() {
+  return useQuery({
+    queryKey: ["activity"],
+    queryFn: async (): Promise<ActivityLog[]> => {
+      const since = new Date(Date.now() - 60 * 86400000).toISOString();
+      const { data } = await supabase.from("activity_log").select("*").gte("at", since).order("at", { ascending: false });
+      return (data as ActivityLog[]) ?? [];
+    },
+  });
+}
 
 export function useTeam(isJefe: boolean) {
   return useQuery({
