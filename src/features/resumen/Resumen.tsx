@@ -1,0 +1,90 @@
+import type { Card, Profile, ActivityLog } from "../../lib/types";
+import { dueInfo, fmtDateTime } from "../../lib/metrics";
+import { Avatar } from "../../lib/ui";
+
+export function Resumen({ cards, team, activity, onOpenCard, onGoPerson }: {
+  cards: Card[]; team: Profile[]; activity: ActivityLog[];
+  onOpenCard: (c: Card) => void; onGoPerson: (id: string) => void;
+}) {
+  const now = Date.now(), day = 86400000, week = now - 7 * day;
+  const norm = cards.filter((c) => c.card_type !== "operativa");
+  const open = norm.filter((c) => c.status !== "term");
+  const late = open.filter((c) => { const i = dueInfo(c); return i && i.days < 0; });
+  const doneWeek = norm.filter((c) => c.status === "term" && c.done_at && new Date(c.done_at).getTime() >= week)
+    .sort((a, b) => new Date(b.done_at!).getTime() - new Date(a.done_at!).getTime());
+  const act7 = activity.filter((a) => now - new Date(a.at).getTime() < 7 * day).reduce((s, a) => s + a.qty, 0);
+  const nom = (id: string) => team.find((u) => u.id === id)?.name ?? "?";
+
+  // trabadas: no terminadas, vencidas o con última anotación de +2 días
+  const stuck = open.filter((c) => {
+    const i = dueInfo(c);
+    if (i && i.days < 0) return true;
+    const last = c.comments[c.comments.length - 1];
+    return last && now - new Date(last.when).getTime() > 2 * day;
+  });
+
+  const cardSh = { boxShadow: "var(--ring-sh),var(--shadow)" };
+
+  return (
+    <div className="px-6 py-4 w-full max-w-[960px]">
+      <div className="flex gap-2.5 flex-wrap mb-4">
+        {([["Tareas abiertas", open.length], ["Vencidas", late.length], ["Terminadas (7 d)", doneWeek.length], ["Actividad op. (7 d)", act7]] as const).map(([l, v]) => (
+          <div key={l} className="bg-surface rounded-2xl px-[18px] py-3.5" style={cardSh}>
+            <b className="block text-[26px] font-bold tracking-tight tnum">{v}</b>
+            <span className="text-[11.5px] text-ink2 uppercase tracking-wide">{l}</span>
+          </div>
+        ))}
+      </div>
+
+      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Equipo</h2>
+      <div className="bg-surface border border-line rounded-xl overflow-hidden mb-6" style={cardSh}>
+        <table className="w-full text-sm">
+          <thead><tr className="text-[11px] uppercase tracking-wide text-ink2">
+            <th className="text-left px-3 py-2.5">Persona</th><th className="px-3 py-2.5">Pend.</th><th className="px-3 py-2.5">En proc.</th>
+            <th className="px-3 py-2.5">Term. (7d)</th><th className="px-3 py-2.5">Esf. (7d)</th><th className="text-left px-3 py-2.5">Tarea más vieja</th>
+          </tr></thead>
+          <tbody>
+            {team.map((u) => {
+              const his = norm.filter((c) => c.owner === u.id);
+              const hisOpen = his.filter((c) => c.status !== "term");
+              const oldest = hisOpen.reduce<Card | null>((m, c) => (!m || c.created_at < m.created_at ? c : m), null);
+              const oldDays = oldest ? Math.floor((now - new Date(oldest.created_at).getTime()) / day) : null;
+              const ef = his.filter((c) => c.status === "term" && c.done_at && new Date(c.done_at).getTime() >= week).reduce((s, c) => s + (c.effort ?? 1), 0);
+              return (
+                <tr key={u.id} onClick={() => onGoPerson(u.id)} className="border-t border-line cursor-pointer hover:bg-surface2 tnum">
+                  <td className="px-3 py-2.5 flex items-center gap-2"><Avatar name={u.name} size={22} /><b>{u.name}</b> <span className="text-ink2 text-xs capitalize">{u.role}</span></td>
+                  <td className="px-3 py-2.5 text-center">{his.filter((c) => c.status === "pend").length}</td>
+                  <td className="px-3 py-2.5 text-center">{his.filter((c) => c.status === "proc").length}</td>
+                  <td className="px-3 py-2.5 text-center">{his.filter((c) => c.status === "term" && c.done_at && new Date(c.done_at).getTime() >= week).length}</td>
+                  <td className="px-3 py-2.5 text-center">{ef}</td>
+                  <td className="px-3 py-2.5 text-ink2 text-[13px]">{oldest ? `${oldest.title.slice(0, 22)} (${oldDays} d)` : "—"}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">⚠ Tareas trabadas o vencidas</h2>
+      {stuck.length === 0 ? <p className="text-ink2 text-sm mb-6">Nada trabado. 👌</p>
+        : stuck.map((c) => {
+          const i = dueInfo(c), last = c.comments[c.comments.length - 1];
+          return (
+            <div key={c.id} onClick={() => onOpenCard(c)} className="bg-surface border-l-[3px] border-danger rounded-lg px-3.5 py-2.5 mb-2 cursor-pointer" style={cardSh}>
+              <b>{c.title}</b> <span className="text-ink2 text-xs">· {nom(c.owner)}</span>
+              {i && i.days < 0 && <span className="ml-2 bg-danger-soft text-danger rounded-md px-2 py-0.5 text-xs font-semibold">Venció {i.lbl}</span>}
+              {last && <p className="text-sm mt-1.5 mb-0">"{last.txt}" <span className="text-ink2 text-xs">— {last.who}, {fmtDateTime(last.when)}</span></p>}
+            </div>
+          );
+        })}
+
+      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5 mt-6">✔ Terminadas los últimos 7 días</h2>
+      {doneWeek.length === 0 ? <p className="text-ink2 text-sm">Todavía nada esta semana.</p>
+        : doneWeek.slice(0, 20).map((c) => (
+          <div key={c.id} onClick={() => onOpenCard(c)} className="bg-surface border border-line rounded-lg px-3.5 py-2 mb-1.5 cursor-pointer text-sm" style={cardSh}>
+            ✔ <b>{c.title}</b> <span className="text-ink2 text-xs">· {nom(c.owner)} · {fmtDateTime(c.done_at)}</span>
+          </div>
+        ))}
+    </div>
+  );
+}
