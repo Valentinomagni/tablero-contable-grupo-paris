@@ -53,6 +53,15 @@ export function Board({ cards, ownerId, onOpen }: { cards: Card[]; ownerId: stri
     onSuccess: () => qc.invalidateQueries({ queryKey: ["cards"] }),
   });
 
+  const add = useMutation({
+    mutationFn: async ({ status, title }: { status: Status; title: string }) => {
+      const { error } = await supabase.from("cards").insert({ owner: ownerId, title, status, history: [{ who: "—", at: new Date().toISOString(), txt: "Creó la tarea" }] });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["cards"] }),
+  });
+  const promptAdd = (status: Status) => { const t = prompt("Título de la tarea:"); if (t?.trim()) add.mutate({ status, title: t.trim() }); };
+
   return (
     <div className="flex gap-4 items-start px-6 pb-10 overflow-x-auto flex-1">
       {COLS.map(([k, lbl]) => (
@@ -72,6 +81,12 @@ export function Board({ cards, ownerId, onOpen }: { cards: Card[]; ownerId: stri
             </div>
           ))}
           {mine.filter((c) => c.status === k).length === 0 && <p className="text-ink2 text-[13px] px-2 pb-2">Sin tareas acá.</p>}
+          {k !== "term" && (
+            <button onClick={() => promptAdd(k)}
+              className="w-full border border-dashed border-line rounded-lg py-2 text-[13px] text-ink2 hover:text-accent hover:border-accent transition">
+              + Añadir tarea
+            </button>
+          )}
         </div>
       ))}
     </div>

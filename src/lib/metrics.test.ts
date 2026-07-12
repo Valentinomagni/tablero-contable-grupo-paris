@@ -26,8 +26,8 @@ describe("toARTDate (regresión bug timezone)", () => {
 describe("saludScore", () => {
   it("100 sin tareas", () => expect(saludScore([], [])).toBe(100));
   it("penaliza vencidas", () => {
-    const ayer = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-    const vencida = { due_date: ayer, done_at: null } as Card;
+    // fecha claramente en el pasado (robusto ante zona horaria)
+    const vencida = { due_date: "2020-01-01", done_at: null } as Card;
     expect(saludScore([vencida], [])).toBe(92); // 100 - 8
   });
 });

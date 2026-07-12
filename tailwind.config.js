@@ -12,6 +12,13 @@ export default {
         naranja: "var(--naranja)", s1: "var(--s1)", s2: "var(--s2)",
         "side-bg": "var(--side-bg)", "side-bg2": "var(--side-bg2)",
         "side-ink": "var(--side-ink)", "side-ink2": "var(--side-ink2)",
+        // tokens semánticos shadcn (mapeados a Paris en index.css)
+        background: "var(--background)", foreground: "var(--foreground)",
+        primary: { DEFAULT: "var(--primary)", foreground: "var(--primary-foreground)" },
+        secondary: { DEFAULT: "var(--secondary)", foreground: "var(--secondary-foreground)" },
+        muted: { DEFAULT: "var(--muted)", foreground: "var(--muted-foreground)" },
+        destructive: { DEFAULT: "var(--destructive)", foreground: "#fff" },
+        border: "var(--border)", input: "var(--input)", ring: "var(--ring)",
       },
       borderRadius: { md: "8px", lg: "12px", xl: "16px" },
       fontFamily: { sans: ['"Inter"', "Segoe UI", "system-ui", "sans-serif"] },

@@ -13,6 +13,16 @@ export function useObjectives() {
   });
 }
 
+export function useAnnouncements() {
+  return useQuery({
+    queryKey: ["announcements"],
+    queryFn: async () => {
+      const { data } = await supabase.from("announcements").select("*").order("created_at");
+      return (data as import("../lib/types").Announcement[]) ?? [];
+    },
+  });
+}
+
 export function useActivity() {
   return useQuery({
     queryKey: ["activity"],

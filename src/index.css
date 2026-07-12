@@ -15,9 +15,17 @@
   --chip:#eef0f3;
   --shadow:0 1px 2px rgba(20,30,55,.04),0 4px 12px rgba(20,30,55,.06);
   --shadow-lg:0 4px 12px rgba(20,30,55,.08),0 16px 40px rgba(20,30,55,.12);
-  --ring:0 0 0 1px rgba(20,30,55,.04);
+  --ring-sh:0 0 0 1px rgba(20,30,55,.04);
   --s1:#2a63b8; --s2:#0c8f6c; --naranja:#e27e24;
   --side-bg:#0e0f12; --side-bg2:#17181d; --side-ink:#eceef1; --side-ink2:#8f96a1; --side-line:rgba(255,255,255,.08);
+  /* tokens semánticos para componentes shadcn, mapeados a la paleta Paris */
+  --background:var(--surface); --foreground:var(--ink);
+  --primary:var(--accent); --primary-foreground:#ffffff;
+  --secondary:var(--surface2); --secondary-foreground:var(--ink);
+  --muted:var(--surface2); --muted-foreground:var(--ink2);
+  --sh-accent:var(--accent-soft); --sh-accent-foreground:var(--accent);
+  --destructive:var(--danger); --border:var(--line); --input:var(--surface2); --ring:var(--accent);
+  --radius:0.625rem;
 }
 :root[data-theme="dark"]{
   --bg:#14181f; --surface:#1c222c; --surface2:#242b37; --ink:#e8eaee; --ink2:#98a1b0;
@@ -26,7 +34,7 @@
   --chip:#2a3240;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.35);
   --shadow-lg:0 8px 24px rgba(0,0,0,.45),0 20px 50px rgba(0,0,0,.5);
-  --ring:0 0 0 1px rgba(255,255,255,.04);
+  --ring-sh:0 0 0 1px rgba(255,255,255,.04);
   --s1:#5f92d4; --s2:#2f9d80; --naranja:#e79a55;
   --side-bg:#0a0b0d; --side-bg2:#131418; --side-ink:#eceef1; --side-ink2:#878e99; --side-line:rgba(255,255,255,.07);
 }
@@ -37,7 +45,7 @@
   --chip:#2a3240;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.35);
   --shadow-lg:0 8px 24px rgba(0,0,0,.45),0 20px 50px rgba(0,0,0,.5);
-  --ring:0 0 0 1px rgba(255,255,255,.04);
+  --ring-sh:0 0 0 1px rgba(255,255,255,.04);
   --s1:#5f92d4; --s2:#2f9d80; --naranja:#e79a55;
   --side-bg:#0a0b0d; --side-bg2:#131418; --side-ink:#eceef1; --side-ink2:#878e99; --side-line:rgba(255,255,255,.07);
 }}

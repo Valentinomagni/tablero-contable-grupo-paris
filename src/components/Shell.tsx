@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { LayoutDashboard, ClipboardList, LogOut, Moon, ChevronDown, Menu, TrendingUp } from "lucide-react";
+import { LayoutDashboard, ClipboardList, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin } from "lucide-react";
 import { Avatar, cn } from "../lib/ui";
 import { THEME_LBL } from "../hooks/useTheme";
 import type { Profile } from "../lib/types";
@@ -46,11 +46,13 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, onNavigat
             <div className="text-[10px] tracking-[1.4px] uppercase text-[color:var(--side-ink2)] px-2.5 pt-3.5 pb-1.5">General</div>
             <NavItem v="__resumen" icon={<LayoutDashboard size={17} />} label="Resumen" />
             <NavItem v="__reporte" icon={<TrendingUp size={17} />} label="Reporte ejecutivo" />
+            <NavItem v="__tablon" icon={<Pin size={17} />} label="Tablón" />
             <div className="text-[10px] tracking-[1.4px] uppercase text-[color:var(--side-ink2)] px-2.5 pt-3.5 pb-1.5">Equipo</div>
             {team.map((u) => <NavItem key={u.id} v={u.id} icon={<Avatar name={u.name} size={22} />} label={u.name} count={pendByOwner(u.id)} />)}
           </> : <>
             <div className="text-[10px] tracking-[1.4px] uppercase text-[color:var(--side-ink2)] px-2.5 pt-3.5 pb-1.5">Mi espacio</div>
             <NavItem v={me.id} icon={<Avatar name={me.name} size={22} />} label="Mi tablero" />
+            <NavItem v="__tablon" icon={<Pin size={17} />} label="Tablón" />
           </>}
         </nav>
         <div className="relative border-t border-[color:var(--side-line)] p-2.5">

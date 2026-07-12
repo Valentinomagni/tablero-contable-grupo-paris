@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ClipboardList, Target } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { useTheme } from "./hooks/useTheme";
@@ -9,6 +9,9 @@ import { Board } from "./features/board/Board";
 import { CardModal } from "./features/board/CardModal";
 import { Objetivos } from "./features/objetivos/Objetivos";
 import { Reporte } from "./features/reporte/Reporte";
+import { Tablon } from "./features/tablon/Tablon";
+import { Admin } from "./features/admin/Admin";
+import { CommandPalette } from "./components/CommandPalette";
 import type { Card, Profile, ActivityLog } from "./lib/types";
 import { cn } from "./lib/ui";
 
@@ -24,6 +27,15 @@ export default function App() {
   const [viewing, setViewing] = useState<string>("");
   const [mode, setMode] = useState<Mode>("board");
   const [openCard, setOpenCard] = useState<Card | null>(null);
+  const [cmdk, setCmdk] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setCmdk((c) => !c); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
 
   if (loading) return <div className="min-h-screen grid place-items-center text-ink2">Cargando…</div>;
   if (!me) return <Login onSignIn={signIn} />;
@@ -33,9 +45,11 @@ export default function App() {
   const person = fullTeam.find((u) => u.id === view);
   const title = view === "__resumen" ? "Resumen del equipo"
     : view === "__reporte" ? "Reporte ejecutivo"
+    : view === "__tablon" ? "Tablón del equipo"
+    : view === "__admin" ? "Administración"
     : isJefe && person ? `Tablero de ${person.name}` : "Mi tablero";
   const pendByOwner = (id: string) => cards.filter((c) => c.owner === id && c.status !== "term" && c.card_type !== "operativa").length;
-  const isPersonView = view !== "__resumen" && view !== "__reporte";
+  const isPersonView = !["__resumen", "__reporte", "__tablon", "__admin"].includes(view);
 
   const SubTab = ({ m, icon, label }: { m: Mode; icon: React.ReactNode; label: string }) => (
     <button onClick={() => setMode(m)}
@@ -55,11 +69,15 @@ export default function App() {
         </> : undefined}>
         {view === "__resumen" ? <ResumenLite cards={cards} team={fullTeam} />
           : view === "__reporte" ? <Reporte cards={cards} team={fullTeam} activity={activity} />
+          : view === "__tablon" ? <Tablon />
+          : view === "__admin" ? <Admin team={fullTeam} meName={me.name} />
           : mode === "obj" ? <Objetivos ownerId={view} />
           : cardsLoading ? <BoardSkeleton />
           : <Board cards={cards} ownerId={view} onOpen={setOpenCard} />}
       </Shell>
-      {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} onClose={() => setOpenCard(null)} />}
+      {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} onClose={() => setOpenCard(null)} meName={me.name} />}
+      {cmdk && <CommandPalette me={me} team={fullTeam} cards={cards}
+        onNavigate={(v) => { setViewing(v); setMode("board"); }} onOpenCard={setOpenCard} onClose={() => setCmdk(false)} />}
     </>
   );
 }
