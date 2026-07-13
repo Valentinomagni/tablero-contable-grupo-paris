@@ -1,6 +1,37 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
+
+interface PubVenc { title: string; due_date: string; detail: string; }
+
+// vencimientos visibles sin login (RLS anon permite kind='vencimiento')
+function usePublicVenc() {
+  const [items, setItems] = useState<PubVenc[]>([]);
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase.from("announcements")
+        .select("title,due_date,detail").eq("kind", "vencimiento")
+        .gte("due_date", new Date(Date.now() - 86400000).toISOString().slice(0, 10))
+        .order("due_date").limit(6);
+      if (!error && data?.length) setItems(data as PubVenc[]);
+    })();
+  }, []);
+  return items;
+}
+
+function VencBadge({ due }: { due: string }) {
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const d = new Date(due + "T00:00:00");
+  const days = Math.round((d.getTime() - hoy.getTime()) / 86400000);
+  const lbl = d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" });
+  const [txt, cls] = days < 0 ? [`venció ${lbl}`, "bg-danger/15 text-danger"]
+    : days === 0 ? ["HOY", "bg-warn/15 text-warn"]
+    : days <= 5 ? [`${lbl} · ${days} d`, "bg-warn/15 text-warn"]
+    : [`${lbl} · ${days} d`, "bg-white/10 text-[#9aa0ab]"];
+  return <span className={`rounded-md px-2 py-0.5 text-[11px] font-semibold tnum shrink-0 ${cls}`}>{txt}</span>;
+}
 
 export function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promise<{ message: string } | null> }) {
+  const vencs = usePublicVenc();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
@@ -49,6 +80,18 @@ export function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promis
         </button>
         <p className="text-xs text-ink2 m-0">Si no tenés usuario o olvidaste la contraseña, pedile el alta a un jefe.</p>
       </form>
+
+      {vencs.length > 0 && (
+        <div className="w-full max-w-[390px] rounded-2xl border border-white/10 p-5" style={{ background: "rgba(255,255,255,.03)" }}>
+          <h2 className="text-[#9aa0ab] uppercase tracking-[2px] text-xs font-semibold mt-0 mb-3">📌 Próximos vencimientos del equipo</h2>
+          {vencs.map((v, i) => (
+            <div key={i} className="flex items-center justify-between gap-2 py-1.5 border-b border-white/5 last:border-0">
+              <b className="text-white text-[13px] truncate">{v.title}</b>
+              <VencBadge due={v.due_date} />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
