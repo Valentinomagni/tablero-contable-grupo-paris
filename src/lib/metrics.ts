@@ -1,4 +1,4 @@
-import type { Card, Objective } from "./types";
+import type { Card, Objective, ActivityLog } from "./types";
 
 // ---- fechas (Argentina UTC-3) ----
 export function toARTDate(iso: string): string {
@@ -43,4 +43,37 @@ export function saludScore(open: Card[], term30: Card[]): number {
   const aTiempo = conVto.filter((c) => c.done_at && new Date(c.done_at) <= new Date(c.due_date + "T23:59:59")).length;
   const pctTiempo = conVto.length ? Math.round((aTiempo / conVto.length) * 100) : null;
   return Math.max(0, Math.min(100, 100 - vencidas * 8 - (pctTiempo !== null ? (100 - pctTiempo) * 0.3 : 0)));
+}
+
+// ---- ficha por empleado (métricas 30 días) ----
+export interface UserMetrics {
+  done30: number; effort30: number; onTimePct: number | null;
+  openToday: number; objWeight: number; kpiPerf: number | null; activity30: number;
+}
+export function userMetrics30d(
+  cards: Card[], objectives: Objective[], activity: ActivityLog[],
+  userId: string, now: number,
+): UserMetrics {
+  const mes = now - 30 * 86400000;
+  const his = cards.filter((c) => c.owner === userId && c.card_type !== "operativa");
+  const done30 = his.filter((c) => c.status === "term" && c.done_at && new Date(c.done_at).getTime() >= mes);
+  const conVto = done30.filter((c) => c.due_date);
+  const aTiempo = conVto.filter((c) => new Date(c.done_at!) <= new Date(c.due_date + "T23:59:59"));
+  const objs = objectives.filter((o) => o.owner === userId);
+  const conKpi = objs.filter((o) => kpiPct(o) !== null && o.weight > 0);
+  const kpiPerf = conKpi.length
+    ? Math.round(conKpi.reduce((s, o) => s + Math.min(kpiPct(o)!, 120) * o.weight, 0) /
+                 conKpi.reduce((s, o) => s + o.weight, 0))
+    : null;
+  return {
+    done30: done30.length,
+    effort30: done30.reduce((s, c) => s + (c.effort ?? 1), 0),
+    onTimePct: conVto.length ? Math.round((aTiempo.length / conVto.length) * 100) : null,
+    openToday: his.filter((c) => c.status !== "term").length,
+    objWeight: objs.reduce((s, o) => s + o.weight, 0),
+    kpiPerf,
+    activity30: activity
+      .filter((a) => a.owner === userId && now - new Date(a.at).getTime() < 30 * 86400000)
+      .reduce((s, a) => s + a.qty, 0),
+  };
 }
