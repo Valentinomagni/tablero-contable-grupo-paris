@@ -3,6 +3,10 @@ import { useAnnouncements } from "../../hooks/useData";
 import type { Announcement } from "../../lib/types";
 import { fmtDateTime } from "../../lib/metrics";
 
+function useMarkVisto() {
+  useEffect(() => { localStorage.setItem("tablon-visto", new Date().toISOString()); }, []);
+}
+
 interface ArcaItem { num: number; dia: string; titulo: string; sub: string; rows: { term: string; fecha: string }[]; }
 
 function useArca() {
@@ -43,6 +47,7 @@ function dueBadge(due: string | null) {
 }
 
 export function Tablon() {
+  useMarkVisto();
   const { data: annos = [] } = useAnnouncements();
   const arca = useArca();
   const mes = new Date().toLocaleDateString("es-AR", { month: "long", year: "numeric" });

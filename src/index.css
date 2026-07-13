@@ -55,3 +55,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
   font-family:"Inter","Segoe UI",system-ui,sans-serif;font-size:14.5px;line-height:1.5;
   -webkit-font-smoothing:antialiased;font-optical-sizing:auto;letter-spacing:-.006em}
 .tnum{font-variant-numeric:tabular-nums}
+
+/* densidad compacta (pref-density) */
+html.compact body{font-size:13px;line-height:1.4}
+html.compact .py-2\.5{padding-top:.45rem;padding-bottom:.45rem}

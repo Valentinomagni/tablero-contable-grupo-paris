@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { ClipboardList, Target, TrendingUp, UserRound } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { useTheme } from "./hooks/useTheme";
-import { useTeam, useCards, useActivity } from "./hooks/useData";
+import { useTeam, useCards, useActivity, useAnnouncements } from "./hooks/useData";
+import { AccountModal } from "./components/AccountModal";
 import { Login } from "./components/Login";
 import { Shell } from "./components/Shell";
 import { Board } from "./features/board/Board";
@@ -22,7 +23,9 @@ type Mode = "board" | "obj" | "mimes";
 
 export default function App() {
   const { me, loading, signIn, signOut } = useAuth();
-  const { theme, cycle } = useTheme();
+  const { theme, cycle, density, cycleDensity } = useTheme();
+  const { data: annos = [] } = useAnnouncements();
+  const [account, setAccount] = useState(false);
   const isJefe = me?.role === "jefe";
   const { data: team = [] } = useTeam(!!isJefe);
   const { data: cards = [], isLoading: cardsLoading } = useCards();
@@ -56,6 +59,14 @@ export default function App() {
   const pendByOwner = (id: string) => cards.filter((c) => c.owner === id && c.status !== "term" && c.card_type !== "operativa").length;
   const isPersonView = !["__resumen", "__reporte", "__tablon", "__admin"].includes(view);
 
+  // badge del tablón: vencimientos próximos o publicaciones no vistas (por navegador)
+  const vencProximos = annos.filter((a) => a.kind === "vencimiento" && a.due_date &&
+    (new Date(a.due_date + "T00:00:00").getTime() - Date.now()) / 86400000 <= 5 &&
+    new Date(a.due_date + "T23:59:59").getTime() >= Date.now()).length;
+  const visto = localStorage.getItem("tablon-visto") ?? "1970-01-01";
+  const nuevas = annos.filter((a) => a.created_at > visto && a.created_by !== me.name).length;
+  const tablonBadge = nuevas ? `+${nuevas}` : (vencProximos ? String(vencProximos) : undefined);
+
   const SubTab = ({ m, icon, label }: { m: Mode; icon: React.ReactNode; label: string }) => (
     <button onClick={() => setMode(m)}
       className={cn("flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] border transition",
@@ -67,7 +78,9 @@ export default function App() {
   return (
     <>
       <Shell me={me} team={fullTeam} viewing={view} title={title} theme={theme}
-        onCycleTheme={cycle} onNavigate={(v) => { setViewing(v); setMode("board"); setQuery(""); }} onSignOut={signOut} pendByOwner={pendByOwner}
+        onCycleTheme={cycle} density={density} onCycleDensity={cycleDensity}
+        onOpenAccount={() => setAccount(true)} tablonBadge={tablonBadge}
+        onNavigate={(v) => { setViewing(v); setMode("board"); setQuery(""); }} onSignOut={signOut} pendByOwner={pendByOwner}
         subnav={isPersonView ? <>
           <SubTab m="board" icon={<ClipboardList size={14} />} label="Tareas" />
           <SubTab m="obj" icon={<Target size={14} />} label="Objetivos" />
@@ -94,6 +107,7 @@ export default function App() {
       </Shell>
       {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} cards={cards} team={fullTeam} isJefe={!!isJefe} onClose={() => setOpenCard(null)} meName={me.name} />}
       {openUser && <UserModal user={fullTeam.find((t) => t.id === openUser.id) ?? openUser} meId={me.id} cards={cards} activity={activity} onClose={() => setOpenUser(null)} />}
+      {account && <AccountModal name={me.name} email={me.email} onClose={() => setAccount(false)} />}
       {cmdk && <CommandPalette me={me} team={fullTeam} cards={cards}
         onNavigate={(v) => { setViewing(v); setMode("board"); setQuery(""); }} onOpenCard={setOpenCard} onClose={() => setCmdk(false)} />}
     </>

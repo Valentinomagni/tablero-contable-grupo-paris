@@ -1,21 +1,23 @@
 import { useState, type ReactNode } from "react";
-import { LayoutDashboard, ClipboardList, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin, Settings } from "lucide-react";
+import { LayoutDashboard, ClipboardList, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin, Settings, KeyRound, AlignJustify } from "lucide-react";
 import { Avatar, cn } from "../lib/ui";
-import { THEME_LBL } from "../hooks/useTheme";
+import { THEME_LBL, DENSITY_LBL } from "../hooks/useTheme";
 import type { Profile } from "../lib/types";
 
 interface Props {
   me: Profile; team: Profile[]; viewing: string; title: string;
-  theme: string; onCycleTheme: () => void; onNavigate: (v: string) => void; onSignOut: () => void;
+  theme: string; onCycleTheme: () => void; density: string; onCycleDensity: () => void;
+  onOpenAccount: () => void; tablonBadge?: string;
+  onNavigate: (v: string) => void; onSignOut: () => void;
   pendByOwner: (id: string) => number; subnav?: ReactNode; children: ReactNode;
 }
 
-export function Shell({ me, team, viewing, title, theme, onCycleTheme, onNavigate, onSignOut, pendByOwner, subnav, children }: Props) {
+export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, onCycleDensity, onOpenAccount, tablonBadge, onNavigate, onSignOut, pendByOwner, subnav, children }: Props) {
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState(false);
   const isJefe = me.role === "jefe";
 
-  const NavItem = ({ v, icon, label, count }: { v: string; icon?: ReactNode; label: string; count?: number }) => (
+  const NavItem = ({ v, icon, label, count, badge }: { v: string; icon?: ReactNode; label: string; count?: number; badge?: string }) => (
     <button onClick={() => { onNavigate(v); setOpen(false); }}
       className={cn("flex items-center gap-2.5 w-full text-left rounded-[10px] px-2.5 py-2 text-sm relative transition",
         viewing === v ? "bg-white/10 text-white font-semibold" : "text-[color:var(--side-ink2)] hover:bg-white/[.06] hover:text-[color:var(--side-ink)]")}>
@@ -23,6 +25,7 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, onNavigat
       <span className="w-5 grid place-items-center shrink-0">{icon}</span>
       <span className="flex-1 truncate">{label}</span>
       {count ? <span className="bg-white/15 text-white rounded-full text-[11px] px-2 tnum">{count}</span> : null}
+      {badge ? <span className="bg-naranja text-white rounded-full text-[11px] px-2 font-bold tnum">{badge}</span> : null}
     </button>
   );
 
@@ -46,14 +49,14 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, onNavigat
             <div className="text-[10px] tracking-[1.4px] uppercase text-[color:var(--side-ink2)] px-2.5 pt-3.5 pb-1.5">General</div>
             <NavItem v="__resumen" icon={<LayoutDashboard size={17} />} label="Resumen" />
             <NavItem v="__reporte" icon={<TrendingUp size={17} />} label="Reporte ejecutivo" />
-            <NavItem v="__tablon" icon={<Pin size={17} />} label="Tablón" />
+            <NavItem v="__tablon" icon={<Pin size={17} />} label="Tablón" badge={tablonBadge} />
             <NavItem v="__admin" icon={<Settings size={17} />} label="Administración" />
             <div className="text-[10px] tracking-[1.4px] uppercase text-[color:var(--side-ink2)] px-2.5 pt-3.5 pb-1.5">Equipo</div>
             {team.map((u) => <NavItem key={u.id} v={u.id} icon={<Avatar name={u.name} size={22} />} label={u.name} count={pendByOwner(u.id)} />)}
           </> : <>
             <div className="text-[10px] tracking-[1.4px] uppercase text-[color:var(--side-ink2)] px-2.5 pt-3.5 pb-1.5">Mi espacio</div>
             <NavItem v={me.id} icon={<Avatar name={me.name} size={22} />} label="Mi tablero" />
-            <NavItem v="__tablon" icon={<Pin size={17} />} label="Tablón" />
+            <NavItem v="__tablon" icon={<Pin size={17} />} label="Tablón" badge={tablonBadge} />
           </>}
         </nav>
         <div className="relative border-t border-[color:var(--side-line)] p-2.5">
@@ -68,8 +71,14 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, onNavigat
           {menu && (
             <div className="absolute bottom-[calc(100%+6px)] left-2.5 right-2.5 bg-surface border border-line rounded-[10px] p-1.5 z-40"
               style={{ boxShadow: "var(--shadow-lg)" }}>
+              <button onClick={() => { setMenu(false); onOpenAccount(); }} className="flex items-center gap-2.5 w-full text-left rounded-md px-3 py-2.5 text-sm text-ink hover:bg-surface2">
+                <KeyRound size={16} /> Mi cuenta
+              </button>
               <button onClick={() => { onCycleTheme(); }} className="flex items-center gap-2.5 w-full text-left rounded-md px-3 py-2.5 text-sm text-ink hover:bg-surface2">
                 <Moon size={16} /> Tema: {THEME_LBL[theme as keyof typeof THEME_LBL]}
+              </button>
+              <button onClick={() => { onCycleDensity(); }} className="flex items-center gap-2.5 w-full text-left rounded-md px-3 py-2.5 text-sm text-ink hover:bg-surface2">
+                <AlignJustify size={16} /> Densidad: {DENSITY_LBL[density as keyof typeof DENSITY_LBL]}
               </button>
               <button onClick={onSignOut} className="flex items-center gap-2.5 w-full text-left rounded-md px-3 py-2.5 text-sm text-ink hover:bg-surface2">
                 <LogOut size={16} /> Cerrar sesión
