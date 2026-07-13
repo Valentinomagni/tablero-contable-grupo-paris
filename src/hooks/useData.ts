@@ -59,6 +59,19 @@ export function useActivity() {
   });
 }
 
+// fotos diarias por persona (cron snapshot-diario) para la evolución de carga
+export function useSnapshots(enabled: boolean) {
+  return useQuery({
+    queryKey: ["snapshots"],
+    queryFn: async (): Promise<import("../lib/types").Snapshot[]> => {
+      const since = new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10);
+      const { data } = await supabase.from("daily_snapshots").select("*").gte("day", since).order("day");
+      return (data as import("../lib/types").Snapshot[]) ?? [];
+    },
+    enabled,
+  });
+}
+
 export function useTeam(isJefe: boolean) {
   return useQuery({
     queryKey: ["team", isJefe],
