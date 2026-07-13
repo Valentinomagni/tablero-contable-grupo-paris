@@ -3,6 +3,7 @@ import { supabase } from "../../lib/supabase";
 import { COLS, type Card, type Status, type ActivityLog } from "../../lib/types";
 import { dueInfo, fmtDateTime } from "../../lib/metrics";
 import { cn } from "../../lib/ui";
+import { pushUndo } from "../../lib/undo";
 
 const DOT: Record<string, string> = { pend: "bg-naranja", proc: "bg-s1", term: "bg-done" };
 
@@ -57,6 +58,7 @@ export function Board({ cards, activity, ownerId, meName, query = "", onOpen }: 
       if (status === "term") patch.done_at = new Date().toISOString();
       else if (c.status === "term") patch.done_at = null;
       const hist = [...(c.history ?? []), { who: meName, at: new Date().toISOString(), txt: status === "term" ? "Marcó terminada ✔" : "Movió la tarea" }];
+      pushUndo(c, { ...patch, history: hist });
       const { error } = await supabase.from("cards").update({ ...patch, history: hist }).eq("id", id);
       if (error) throw error;
     },

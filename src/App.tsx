@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "./lib/supabase";
+import { popUndo } from "./lib/undo";
 import { ClipboardList, Target, TrendingUp, UserRound } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { useTheme } from "./hooks/useTheme";
@@ -35,15 +38,32 @@ export default function App() {
   const [openCard, setOpenCard] = useState<Card | null>(null);
   const [openUser, setOpenUser] = useState<Profile | null>(null);
   const [query, setQuery] = useState("");
+  const [toast, setToast] = useState("");
+  const qcRef = useQueryClient();
   const [cmdk, setCmdk] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setCmdk((c) => !c); }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !(e.target as HTMLElement).closest("input,textarea,select")) {
+        e.preventDefault();
+        const u = popUndo();
+        if (!u) { setToast("Nada para deshacer."); return; }
+        supabase.from("cards").update(u.prev).eq("id", u.id).then(({ error }) => {
+          setToast(error ? "No se pudo deshacer: " + error.message : "Deshecho ↩");
+          qcRef.invalidateQueries({ queryKey: ["cards"] });
+        });
+      }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, []);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(""), 2500);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   if (loading) return <div className="min-h-screen grid place-items-center text-ink2">Cargando…</div>;
   if (!me) return <Login onSignIn={signIn} />;
@@ -108,6 +128,7 @@ export default function App() {
       {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} cards={cards} team={fullTeam} isJefe={!!isJefe} onClose={() => setOpenCard(null)} meName={me.name} />}
       {openUser && <UserModal user={fullTeam.find((t) => t.id === openUser.id) ?? openUser} meId={me.id} cards={cards} activity={activity} onClose={() => setOpenUser(null)} />}
       {account && <AccountModal name={me.name} email={me.email} onClose={() => setAccount(false)} />}
+      {toast && <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-surface border border-line rounded-xl px-4 py-2.5 text-sm z-50" style={{ boxShadow: "var(--shadow-lg)" }}>{toast}</div>}
       {cmdk && <CommandPalette me={me} team={fullTeam} cards={cards}
         onNavigate={(v) => { setViewing(v); setMode("board"); setQuery(""); }} onOpenCard={setOpenCard} onClose={() => setCmdk(false)} />}
     </>

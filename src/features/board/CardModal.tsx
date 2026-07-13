@@ -4,6 +4,7 @@ import { supabase } from "../../lib/supabase";
 import { COLS, type Card, type Profile } from "../../lib/types";
 import { fmtDateTime } from "../../lib/metrics";
 import { depInfoOf, dependentsOf, isBlocked, type DepMap } from "../../lib/deps";
+import { pushUndo } from "../../lib/undo";
 import { useDepsInfo, useReverseDeps } from "../../hooks/useData";
 
 export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—" }:
@@ -23,6 +24,7 @@ export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—
   const nameOf = (id: string) => team.find((u) => u.id === id)?.name ?? "";
   const patch = useMutation({
     mutationFn: async (p: Partial<Card>) => {
+      pushUndo(c, p);
       const { error } = await supabase.from("cards").update(p).eq("id", c.id);
       if (error) throw error;
     },
