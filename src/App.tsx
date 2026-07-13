@@ -31,6 +31,7 @@ export default function App() {
   const [mode, setMode] = useState<Mode>("board");
   const [openCard, setOpenCard] = useState<Card | null>(null);
   const [openUser, setOpenUser] = useState<Profile | null>(null);
+  const [query, setQuery] = useState("");
   const [cmdk, setCmdk] = useState(false);
 
   useEffect(() => {
@@ -66,11 +67,15 @@ export default function App() {
   return (
     <>
       <Shell me={me} team={fullTeam} viewing={view} title={title} theme={theme}
-        onCycleTheme={cycle} onNavigate={(v) => { setViewing(v); setMode("board"); }} onSignOut={signOut} pendByOwner={pendByOwner}
+        onCycleTheme={cycle} onNavigate={(v) => { setViewing(v); setMode("board"); setQuery(""); }} onSignOut={signOut} pendByOwner={pendByOwner}
         subnav={isPersonView ? <>
           <SubTab m="board" icon={<ClipboardList size={14} />} label="Tareas" />
           <SubTab m="obj" icon={<Target size={14} />} label="Objetivos" />
           <SubTab m="mimes" icon={<TrendingUp size={14} />} label={isJefe ? "Su mes" : "Mi mes"} />
+          {mode === "board" && (
+            <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="🔎 Buscar tarea…"
+              className="bg-surface2 border border-line rounded-lg px-3 py-1.5 text-[13px] w-[200px]" />
+          )}
           {isJefe && person && (
             <button onClick={() => setOpenUser(person)}
               className="flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] border bg-surface2 border-line text-ink2 transition">
@@ -85,12 +90,12 @@ export default function App() {
           : mode === "obj" ? <Objetivos ownerId={view} ownerName={person?.name ?? me.name} />
           : mode === "mimes" ? <MiMes cards={cards} activity={activity} ownerId={view} onOpenCard={setOpenCard} />
           : cardsLoading ? <BoardSkeleton />
-          : <Board cards={cards} activity={activity} ownerId={view} meName={me.name} onOpen={setOpenCard} />}
+          : <Board cards={cards} activity={activity} ownerId={view} meName={me.name} query={query} onOpen={setOpenCard} />}
       </Shell>
       {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} cards={cards} team={fullTeam} isJefe={!!isJefe} onClose={() => setOpenCard(null)} meName={me.name} />}
       {openUser && <UserModal user={fullTeam.find((t) => t.id === openUser.id) ?? openUser} meId={me.id} cards={cards} activity={activity} onClose={() => setOpenUser(null)} />}
       {cmdk && <CommandPalette me={me} team={fullTeam} cards={cards}
-        onNavigate={(v) => { setViewing(v); setMode("board"); }} onOpenCard={setOpenCard} onClose={() => setCmdk(false)} />}
+        onNavigate={(v) => { setViewing(v); setMode("board"); setQuery(""); }} onOpenCard={setOpenCard} onClose={() => setCmdk(false)} />}
     </>
   );
 }

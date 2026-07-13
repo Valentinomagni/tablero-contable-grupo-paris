@@ -38,12 +38,14 @@ function CardItem({ c, blocked, waiting, onOpen }: { c: Card; blocked: boolean; 
   );
 }
 
-export function Board({ cards, activity, ownerId, meName, onOpen }: {
-  cards: Card[]; activity: ActivityLog[]; ownerId: string; meName: string; onOpen: (c: Card) => void;
+export function Board({ cards, activity, ownerId, meName, query = "", onOpen }: {
+  cards: Card[]; activity: ActivityLog[]; ownerId: string; meName: string; query?: string; onOpen: (c: Card) => void;
 }) {
   const qc = useQueryClient();
-  const mine = cards.filter((c) => c.owner === ownerId && c.card_type !== "operativa");
-  const opers = cards.filter((c) => c.owner === ownerId && c.card_type === "operativa");
+  const q = query.trim().toLowerCase();
+  const matches = (c: Card) => !q || c.title.toLowerCase().includes(q) || (c.description ?? "").toLowerCase().includes(q);
+  const mine = cards.filter((c) => c.owner === ownerId && c.card_type !== "operativa" && matches(c));
+  const opers = cards.filter((c) => c.owner === ownerId && c.card_type === "operativa" && matches(c));
   const byId = (id: string) => cards.find((x) => x.id === id);
   const isBlocked = (c: Card) => c.status !== "term" && (c.deps ?? []).some((id) => (byId(id)?.status ?? "term") !== "term");
   const dependents = (id: string) => cards.filter((x) => (x.deps ?? []).includes(id) && x.status !== "term");
