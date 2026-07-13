@@ -26,7 +26,7 @@ Navegador ── React 19 SPA (Vite build) ── @supabase/supabase-js ── S
 | @base-ui/react | ^1.6.0 | Primitivas headless (dependencia de shadcn v4). |
 | class-variance-authority / clsx / tailwind-merge | 0.7 / 2.1 / 3.6 | Utilidades de clases (`cn()` en `src/lib/ui.tsx` y `utils.ts`). |
 | tw-animate-css | ^1.4.0 | Animaciones utilitarias Tailwind. |
-| @fontsource-variable/geist | ^5.2.9 | Fuente self-hosted. **OJO: el design system especifica Inter (self-hosted en `index.css`); revisar si Geist quedó de un experimento.** |
+| @fontsource-variable/geist | ^5.2.9 | **Dependencia muerta**: `index.css` carga Inter self-hosted (`./assets/InterVariable.woff2`); Geist no se usa. Candidata a `npm uninstall`. |
 
 ## Dependencias de desarrollo
 
@@ -66,5 +66,5 @@ Supabase `yyyrlopgwmuvfbzwxiwp`: tablas `profiles, cards, objectives, announceme
 ## Discrepancias documentación vs realidad (a corregir en docs al cutover)
 
 - ESTADO-DEL-PROYECTO.md dice "React 18 + Tailwind 3": lo real es **React 19**, Vite 8, TS 6.
-- Design system dice fuente **Inter**; hay instalada **Geist** (`@fontsource-variable/geist`) — verificar cuál carga realmente `index.css` y limpiar la que sobre.
+- Fuente en uso: **Inter** (correcto según design system). `@fontsource-variable/geist` está instalada pero no se importa — dependencia muerta.
 - Dice "prettier + eslint globales": el linter del repo es **oxlint**.
