@@ -1,13 +1,26 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
-import { COLS, type Card } from "../../lib/types";
+import { COLS, type Card, type Profile } from "../../lib/types";
 import { fmtDateTime } from "../../lib/metrics";
+import { depInfoOf, dependentsOf, isBlocked, type DepMap } from "../../lib/deps";
+import { useDepsInfo, useReverseDeps } from "../../hooks/useData";
 
-export function CardModal({ card: c, onClose, meName = "—" }: { card: Card; onClose: () => void; meName?: string }) {
+export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—" }:
+  { card: Card; cards: Card[]; team: Profile[]; isJefe: boolean; onClose: () => void; meName?: string }) {
   const qc = useQueryClient();
   const [newCk, setNewCk] = useState("");
   const [newCm, setNewCm] = useState("");
+  const [depPerson, setDepPerson] = useState("");
+  const [depTask, setDepTask] = useState("");
+
+  const depIds = c.deps ?? [];
+  const known = new Set(cards.map((x) => x.id));
+  const missing = depIds.filter((id) => !known.has(id));
+  const { data: depsInfo = [] } = useDepsInfo(missing);
+  const { data: revDeps = [] } = useReverseDeps(cards.map((x) => x.id), !isJefe);
+  const depMap: DepMap = Object.fromEntries(depsInfo.map((d) => [d.id, d]));
+  const nameOf = (id: string) => team.find((u) => u.id === id)?.name ?? "";
   const patch = useMutation({
     mutationFn: async (p: Partial<Card>) => {
       const { error } = await supabase.from("cards").update(p).eq("id", c.id);
@@ -64,6 +77,70 @@ export function CardModal({ card: c, onClose, meName = "—" }: { card: Card; on
         <textarea defaultValue={c.description} placeholder="Descripción, instrucciones…"
           onBlur={(e) => { if (e.target.value !== c.description) patch.mutate({ description: e.target.value }); }}
           className="w-full bg-surface2 border border-line rounded-lg text-ink text-sm px-2.5 py-2 min-h-[52px] resize-y" />
+
+        {(depIds.length > 0 || isJefe) && (
+          <>
+            <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">⛓ Depende de</h4>
+            {isBlocked(c, cards, depMap) && (
+              <div className="bg-warn-soft text-warn rounded-lg px-3 py-2 text-[13px] mb-2">
+                Esta tarea está bloqueada: primero deben terminarse las tareas de las que depende.
+              </div>
+            )}
+            {depIds.map((id) => {
+              const d = depInfoOf(id, cards, nameOf, depMap);
+              if (!d) return null;
+              const okDep = d.status === "term";
+              return (
+                <div key={id} className="flex items-center gap-2 py-1 text-sm">
+                  <span>{okDep ? "✔" : "⛓"}</span>
+                  <span className={okDep ? "text-ink2" : ""}>{d.title} <span className="text-ink2 text-xs">· {d.owner_name} · {okDep ? "terminada" : "sin terminar"}</span></span>
+                  {isJefe && (
+                    <button title="Quitar dependencia"
+                      onClick={() => patch.mutate({ deps: depIds.filter((x) => x !== id), history: hist(`Quitó dependencia: "${d.title}"`) })}
+                      className="ml-auto border border-line bg-surface2 rounded-lg px-2 text-[12px]">✕</button>
+                  )}
+                </div>
+              );
+            })}
+            {depIds.length === 0 && <p className="text-ink2 text-[13px] m-0">Sin dependencias.</p>}
+            {isJefe && (
+              <div className="flex gap-1.5 mt-2">
+                <select value={depPerson} onChange={(e) => { setDepPerson(e.target.value); setDepTask(""); }}
+                  className="bg-surface2 border border-line rounded-lg px-2 py-1.5 text-[13px]">
+                  <option value="">Persona…</option>
+                  {team.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                </select>
+                <select value={depTask} onChange={(e) => setDepTask(e.target.value)} disabled={!depPerson}
+                  className="flex-1 bg-surface2 border border-line rounded-lg px-2 py-1.5 text-[13px] disabled:opacity-60">
+                  <option value="">Tarea…</option>
+                  {cards.filter((x) => x.owner === depPerson && x.id !== c.id && !depIds.includes(x.id))
+                    .map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}
+                </select>
+                <button disabled={!depTask}
+                  onClick={() => {
+                    const d = depInfoOf(depTask, cards, nameOf, depMap);
+                    patch.mutate({ deps: [...depIds, depTask], history: hist(`Vinculó dependencia: "${d?.title ?? "?"}"`) });
+                    setDepTask("");
+                  }}
+                  className="border border-line bg-surface2 rounded-lg px-3 text-[13px] disabled:opacity-60">Vincular</button>
+              </div>
+            )}
+          </>
+        )}
+        {(() => {
+          const dependents = dependentsOf(c.id, cards, nameOf, revDeps, isJefe);
+          return dependents.length > 0 && (
+            <>
+              <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">🔗 Habilita a (dependen de esta tarea)</h4>
+              {dependents.map((d) => (
+                <div key={d.id} className="flex items-center gap-2 py-1 text-sm">
+                  <span>{d.status === "term" ? "✔" : "⏳"}</span>
+                  <span className={d.status === "term" ? "text-ink2" : ""}>{d.title} <span className="text-ink2 text-xs">· {d.owner_name} · {d.status === "term" ? "terminada" : "esperándote"}</span></span>
+                </div>
+              ))}
+            </>
+          );
+        })()}
 
         <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Checklist</h4>
         {c.checklist.map((i, n) => (
