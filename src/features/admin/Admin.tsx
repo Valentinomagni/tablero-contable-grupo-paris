@@ -4,7 +4,7 @@ import { supabase } from "../../lib/supabase";
 import type { Profile } from "../../lib/types";
 import { Avatar } from "../../lib/ui";
 
-export function Admin({ team, meName }: { team: Profile[]; meName: string }) {
+export function Admin({ team, meName, onOpenUser }: { team: Profile[]; meName: string; onOpenUser: (u: Profile) => void }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
 
@@ -25,7 +25,7 @@ export function Admin({ team, meName }: { team: Profile[]; meName: string }) {
 
   return (
     <div className="px-6 py-4 w-full max-w-[900px]">
-      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Equipo</h2>
+      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Equipo — clic en una persona para editar su ficha</h2>
       <div className="bg-surface border border-line rounded-xl overflow-hidden mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
         <table className="w-full text-sm">
           <thead><tr className="text-[11px] uppercase tracking-wide text-ink2">
@@ -33,7 +33,7 @@ export function Admin({ team, meName }: { team: Profile[]; meName: string }) {
           </tr></thead>
           <tbody>
             {team.map((u) => (
-              <tr key={u.id} className="border-t border-line">
+              <tr key={u.id} onClick={() => onOpenUser(u)} className="border-t border-line cursor-pointer hover:bg-surface2">
                 <td className="px-4 py-2.5"><div className="flex items-center gap-2"><Avatar name={u.name} size={24} /><div><b>{u.name}</b><br /><span className="text-ink2 text-xs">{u.email}</span></div></div></td>
                 <td className="px-4 py-2.5 capitalize">{u.role}</td>
                 <td className="px-4 py-2.5 text-ink2">{u.puesto || "—"}</td>
