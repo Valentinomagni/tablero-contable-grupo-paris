@@ -2,6 +2,31 @@ import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import type { Card, Profile, Objective, ActivityLog } from "../lib/types";
+import type { DepInfo, RevDep } from "../lib/deps";
+
+// título/estado/responsable de deps que apuntan a tarjetas ajenas (security definer)
+export function useDepsInfo(missing: string[]) {
+  return useQuery({
+    queryKey: ["deps-info", [...missing].sort()],
+    queryFn: async (): Promise<DepInfo[]> => {
+      const { data } = await supabase.rpc("deps_info", { ids: missing });
+      return (data as DepInfo[]) ?? [];
+    },
+    enabled: missing.length > 0,
+  });
+}
+
+// tareas ajenas que dependen de las mías (solo tiene sentido para no-jefes)
+export function useReverseDeps(cardIds: string[], enabled: boolean) {
+  return useQuery({
+    queryKey: ["reverse-deps", [...cardIds].sort()],
+    queryFn: async (): Promise<RevDep[]> => {
+      const { data } = await supabase.rpc("reverse_deps", { ids: cardIds });
+      return (data as RevDep[]) ?? [];
+    },
+    enabled: enabled && cardIds.length > 0,
+  });
+}
 
 export function useObjectives() {
   return useQuery({
