@@ -51,7 +51,7 @@ describe("cicloDelMes", () => {
       mkCard({ id: "a", done_at: "2020-01-05T10:00:00Z", effort: 5 }),
       mkCard({ id: "b", done_at: "2020-02-05T10:00:00Z", effort: 5 }),
       mkCard({ id: "c", done_at: "2020-02-25T10:00:00Z", effort: 2 }),
-      mkCard({ id: "d", done_at: "2020-02-25T10:00:00Z", card_type: "operativa", effort: 9 }), // excluida
+      mkCard({ id: "d", done_at: "2020-02-25T10:00:00Z", card_type: "operativa", effort: 5 }), // excluida
     ];
     const r = cicloDelMes(cards);
     expect(r.porDia[4]).toBe(10);
