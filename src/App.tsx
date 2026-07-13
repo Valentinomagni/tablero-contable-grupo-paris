@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ClipboardList, Target, TrendingUp } from "lucide-react";
+import { ClipboardList, Target, TrendingUp, UserRound } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { useTheme } from "./hooks/useTheme";
 import { useTeam, useCards, useActivity } from "./hooks/useData";
@@ -13,8 +13,9 @@ import { Resumen } from "./features/resumen/Resumen";
 import { MiMes } from "./features/mimes/MiMes";
 import { Tablon } from "./features/tablon/Tablon";
 import { Admin } from "./features/admin/Admin";
+import { UserModal } from "./features/admin/UserModal";
 import { CommandPalette } from "./components/CommandPalette";
-import type { Card } from "./lib/types";
+import type { Card, Profile } from "./lib/types";
 import { cn } from "./lib/ui";
 
 type Mode = "board" | "obj" | "mimes";
@@ -29,6 +30,7 @@ export default function App() {
   const [viewing, setViewing] = useState<string>("");
   const [mode, setMode] = useState<Mode>("board");
   const [openCard, setOpenCard] = useState<Card | null>(null);
+  const [openUser, setOpenUser] = useState<Profile | null>(null);
   const [cmdk, setCmdk] = useState(false);
 
   useEffect(() => {
@@ -69,6 +71,12 @@ export default function App() {
           <SubTab m="board" icon={<ClipboardList size={14} />} label="Tareas" />
           <SubTab m="obj" icon={<Target size={14} />} label="Objetivos" />
           <SubTab m="mimes" icon={<TrendingUp size={14} />} label={isJefe ? "Su mes" : "Mi mes"} />
+          {isJefe && person && (
+            <button onClick={() => setOpenUser(person)}
+              className="flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] border bg-surface2 border-line text-ink2 transition">
+              <UserRound size={14} /> Ficha
+            </button>
+          )}
         </> : undefined}>
         {view === "__resumen" ? <Resumen cards={cards} team={fullTeam} activity={activity} onOpenCard={setOpenCard} onGoPerson={(id) => { setViewing(id); setMode("board"); }} />
           : view === "__reporte" ? <Reporte cards={cards} team={fullTeam} activity={activity} />
@@ -80,6 +88,7 @@ export default function App() {
           : <Board cards={cards} activity={activity} ownerId={view} meName={me.name} onOpen={setOpenCard} />}
       </Shell>
       {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} onClose={() => setOpenCard(null)} meName={me.name} />}
+      {openUser && <UserModal user={fullTeam.find((t) => t.id === openUser.id) ?? openUser} meId={me.id} onClose={() => setOpenUser(null)} />}
       {cmdk && <CommandPalette me={me} team={fullTeam} cards={cards}
         onNavigate={(v) => { setViewing(v); setMode("board"); }} onOpenCard={setOpenCard} onClose={() => setCmdk(false)} />}
     </>
