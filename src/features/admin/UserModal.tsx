@@ -1,15 +1,14 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
-import type { Profile, Role } from "../../lib/types";
-import { useCards, useObjectives, useActivity } from "../../hooks/useData";
+import type { ActivityLog, Card, Profile, Role } from "../../lib/types";
+import { useObjectives } from "../../hooks/useData";
 import { userMetrics30d } from "../../lib/metrics";
 
-export function UserModal({ user: u, meId, onClose }: { user: Profile; meId: string; onClose: () => void }) {
+export function UserModal({ user: u, meId, cards, activity, onClose }:
+  { user: Profile; meId: string; cards: Card[]; activity: ActivityLog[]; onClose: () => void }) {
   const qc = useQueryClient();
-  const { data: cards = [] } = useCards();
   const { data: objectives = [] } = useObjectives();
-  const { data: activity = [] } = useActivity();
   const [name, setName] = useState(u.name);
   const [role, setRole] = useState<Role>(u.role);
   const [puesto, setPuesto] = useState(u.puesto ?? "");

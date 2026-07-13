@@ -88,7 +88,7 @@ export default function App() {
           : <Board cards={cards} activity={activity} ownerId={view} meName={me.name} onOpen={setOpenCard} />}
       </Shell>
       {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} onClose={() => setOpenCard(null)} meName={me.name} />}
-      {openUser && <UserModal user={fullTeam.find((t) => t.id === openUser.id) ?? openUser} meId={me.id} onClose={() => setOpenUser(null)} />}
+      {openUser && <UserModal user={fullTeam.find((t) => t.id === openUser.id) ?? openUser} meId={me.id} cards={cards} activity={activity} onClose={() => setOpenUser(null)} />}
       {cmdk && <CommandPalette me={me} team={fullTeam} cards={cards}
         onNavigate={(v) => { setViewing(v); setMode("board"); }} onOpenCard={setOpenCard} onClose={() => setCmdk(false)} />}
     </>
