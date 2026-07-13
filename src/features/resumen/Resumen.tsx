@@ -1,6 +1,7 @@
 import type { Card, Profile, ActivityLog } from "../../lib/types";
 import { dueInfo, fmtDateTime } from "../../lib/metrics";
 import { Avatar } from "../../lib/ui";
+import { DepGraph } from "./DepGraph";
 
 export function Resumen({ cards, team, activity, onOpenCard, onGoPerson }: {
   cards: Card[]; team: Profile[]; activity: ActivityLog[];
@@ -77,6 +78,11 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson }: {
             </div>
           );
         })}
+
+      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5 mt-6">🔗 Cadenas de dependencias entre tareas</h2>
+      <div className="bg-surface border border-line rounded-xl p-3 mb-6" style={cardSh}>
+        <DepGraph cards={cards} team={team} onOpenCard={onOpenCard} />
+      </div>
 
       <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5 mt-6">✔ Terminadas los últimos 7 días</h2>
       {doneWeek.length === 0 ? <p className="text-ink2 text-sm">Todavía nada esta semana.</p>
