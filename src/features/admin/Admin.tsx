@@ -1,12 +1,51 @@
 import { useState } from "react";
-import { Download } from "lucide-react";
-import { supabase } from "../../lib/supabase";
-import type { Profile } from "../../lib/types";
+import { Download, UserPlus } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase, SUPABASE_URL } from "../../lib/supabase";
+import type { Profile, Role, AppSettings } from "../../lib/types";
 import { Avatar } from "../../lib/ui";
+import { useSettings } from "../../hooks/useData";
 
 export function Admin({ team, meName, onOpenUser }: { team: Profile[]; meName: string; onOpenUser: (u: Profile) => void }) {
+  const qc = useQueryClient();
+  const { data: settings = { edit_closed: false } } = useSettings();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [permMsg, setPermMsg] = useState("");
+  const [parBoardName, setParBoardName] = useState<string | null>(null);
+  const [parWarn, setParWarn] = useState<string | null>(null);
+  const [parStuck, setParStuck] = useState<string | null>(null);
+  const [nu, setNu] = useState({ email: "", name: "", role: "empleado" as Role, puesto: "", pass: "" });
+  const [nuBusy, setNuBusy] = useState(false);
+  const [nuMsg, setNuMsg] = useState<{ ok: boolean; txt: string } | null>(null);
+
+  async function saveSettings(next: AppSettings, okTxt: string) {
+    const { error } = await supabase.from("settings").update({ value: next }).eq("key", "permissions");
+    setPermMsg(error ? "✖ No se pudo guardar: " + error.message : okTxt);
+    if (!error) qc.invalidateQueries({ queryKey: ["settings"] });
+    setTimeout(() => setPermMsg(""), 3000);
+  }
+
+  async function crearUsuario() {
+    setNuMsg(null); setNuBusy(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    let out: { ok?: boolean; error?: string };
+    try {
+      const r = await fetch(SUPABASE_URL + "/functions/v1/crear-usuario", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + session?.access_token },
+        body: JSON.stringify({ email: nu.email.trim(), password: nu.pass, name: nu.name.trim(), role: nu.role, puesto: nu.puesto.trim() }),
+      });
+      out = await r.json();
+    } catch {
+      out = { error: "No se pudo contactar la función crear-usuario. ¿Está desplegada en Supabase?" };
+    }
+    setNuBusy(false);
+    setNuMsg(out.ok ? { ok: true, txt: "✔ Usuario creado. Ya puede ingresar." } : { ok: false, txt: "✖ " + (out.error ?? "Error") });
+    if (out.ok) { qc.invalidateQueries({ queryKey: ["team"] }); setNu({ email: "", name: "", role: "empleado", puesto: "", pass: "" }); }
+  }
+
+  const inputCls = "bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-[13px]";
 
   async function backup() {
     setBusy(true);
@@ -43,13 +82,58 @@ export function Admin({ team, meName, onOpenUser }: { team: Profile[]; meName: s
         </table>
       </div>
 
+      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Crear usuario nuevo</h2>
+      <div className="bg-surface border border-line rounded-xl p-4 mb-6 flex flex-wrap gap-2 items-center" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
+        <input type="email" placeholder="email de acceso" value={nu.email} onChange={(e) => setNu({ ...nu, email: e.target.value })} className={inputCls + " w-[200px]"} />
+        <input placeholder="nombre y apellido" value={nu.name} onChange={(e) => setNu({ ...nu, name: e.target.value })} className={inputCls + " w-[180px]"} />
+        <select value={nu.role} onChange={(e) => setNu({ ...nu, role: e.target.value as Role })} className={inputCls}>
+          <option value="empleado">empleado</option><option value="encargado">encargado</option><option value="jefe">jefe</option>
+        </select>
+        <input placeholder="puesto (ej: Analista contable)" value={nu.puesto} onChange={(e) => setNu({ ...nu, puesto: e.target.value })} className={inputCls + " w-[200px]"} />
+        <input placeholder="contraseña inicial (mín. 8)" value={nu.pass} onChange={(e) => setNu({ ...nu, pass: e.target.value })} className={inputCls + " w-[180px]"} />
+        <button onClick={crearUsuario} disabled={nuBusy || !nu.email.trim() || !nu.name.trim() || nu.pass.length < 8}
+          className="flex items-center gap-1.5 bg-accent text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:opacity-60">
+          <UserPlus size={15} /> {nuBusy ? "Creando…" : "Crear usuario"}</button>
+        {nuMsg && <p className={"w-full text-sm m-0 " + (nuMsg.ok ? "text-done" : "text-danger")}>{nuMsg.txt}</p>}
+      </div>
+
+      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Permisos</h2>
+      <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
+        <label className="flex items-center gap-2.5 text-sm cursor-pointer">
+          <input type="checkbox" checked={settings.edit_closed} className="accent-accent w-4 h-4"
+            onChange={(e) => saveSettings({ ...settings, edit_closed: e.target.checked }, "✔ Permiso actualizado")} />
+          Permitir que encargados y empleados modifiquen o reabran tareas ya terminadas
+        </label>
+        <p className="text-ink2 text-[13px] mt-1.5 mb-0">Apagado: solo los jefes pueden tocar una tarea cerrada. La restricción se aplica en el servidor.</p>
+      </div>
+
+      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Parámetros de la plataforma</h2>
+      <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
+        <div className="flex flex-wrap gap-4">
+          <label className="text-[13px] text-ink2">Nombre del equipo (sidebar)<br />
+            <input value={parBoardName ?? settings.board_name ?? "Grupo Paris"} onChange={(e) => setParBoardName(e.target.value)} className={inputCls + " w-[200px] mt-1"} /></label>
+          <label className="text-[13px] text-ink2">Preaviso de vencimiento (días en amarillo)<br />
+            <input type="number" min={1} max={30} value={parWarn ?? String(settings.due_warn_days ?? 3)} onChange={(e) => setParWarn(e.target.value)} className={inputCls + " w-[90px] mt-1"} /></label>
+          <label className="text-[13px] text-ink2">Días sin novedades para marcar "trabada"<br />
+            <input type="number" min={1} max={30} value={parStuck ?? String(settings.stuck_days ?? 2)} onChange={(e) => setParStuck(e.target.value)} className={inputCls + " w-[90px] mt-1"} /></label>
+        </div>
+        <button onClick={() => saveSettings({
+            ...settings,
+            board_name: (parBoardName ?? settings.board_name ?? "Grupo Paris").trim() || "Grupo Paris",
+            due_warn_days: Math.max(1, Math.min(30, Number(parWarn ?? settings.due_warn_days ?? 3) || 3)),
+            stuck_days: Math.max(1, Math.min(30, Number(parStuck ?? settings.stuck_days ?? 2) || 2)),
+          }, "✔ Parámetros guardados")}
+          className="bg-accent text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold mt-3">Guardar parámetros</button>
+        {permMsg && <p className={"text-sm mt-2 mb-0 " + (permMsg.startsWith("✔") ? "text-done" : "text-danger")}>{permMsg}</p>}
+      </div>
+
       <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Respaldo</h2>
       <button onClick={backup} disabled={busy}
         className="flex items-center gap-2 border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px] disabled:opacity-60" style={{ boxShadow: "var(--ring-sh)" }}>
         <Download size={16} /> {busy ? "Generando…" : "Descargar backup completo (JSON)"}
       </button>
       {msg && <p className="text-done text-sm mt-2">{msg}</p>}
-      <p className="text-ink2 text-[13px] mt-1.5 max-w-[560px]">Todas las tablas en un archivo. Guardalo en el Drive del estudio una vez por mes: es tu seguro ante borrados accidentales. La creación de usuarios y los permisos se gestionan por ahora desde la app original.</p>
+      <p className="text-ink2 text-[13px] mt-1.5 max-w-[560px]">Todas las tablas en un archivo. Guardalo en el Drive del estudio una vez por mes: es tu seguro ante borrados accidentales.</p>
     </div>
   );
 }

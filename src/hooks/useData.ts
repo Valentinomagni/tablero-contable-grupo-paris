@@ -72,6 +72,17 @@ export function useSnapshots(enabled: boolean) {
   });
 }
 
+// settings key='permissions': { edit_closed, board_name, due_warn_days, stuck_days }
+export function useSettings() {
+  return useQuery({
+    queryKey: ["settings"],
+    queryFn: async (): Promise<import("../lib/types").AppSettings> => {
+      const { data } = await supabase.from("settings").select("value").eq("key", "permissions").single();
+      return (data?.value as import("../lib/types").AppSettings) ?? { edit_closed: false };
+    },
+  });
+}
+
 export function useTeam(isJefe: boolean) {
   return useQuery({
     queryKey: ["team", isJefe],

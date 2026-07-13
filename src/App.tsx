@@ -5,7 +5,7 @@ import { popUndo } from "./lib/undo";
 import { ClipboardList, Target, TrendingUp, UserRound } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { useTheme } from "./hooks/useTheme";
-import { useTeam, useCards, useActivity, useAnnouncements } from "./hooks/useData";
+import { useTeam, useCards, useActivity, useAnnouncements, useSettings } from "./hooks/useData";
 import { AccountModal } from "./components/AccountModal";
 import { Login } from "./components/Login";
 import { Shell } from "./components/Shell";
@@ -28,6 +28,7 @@ export default function App() {
   const { me, loading, signIn, signOut } = useAuth();
   const { theme, cycle, density, cycleDensity } = useTheme();
   const { data: annos = [] } = useAnnouncements();
+  const { data: settings } = useSettings();
   const [account, setAccount] = useState(false);
   const isJefe = me?.role === "jefe";
   const { data: team = [] } = useTeam(!!isJefe);
@@ -99,7 +100,7 @@ export default function App() {
     <>
       <Shell me={me} team={fullTeam} viewing={view} title={title} theme={theme}
         onCycleTheme={cycle} density={density} onCycleDensity={cycleDensity}
-        onOpenAccount={() => setAccount(true)} tablonBadge={tablonBadge}
+        onOpenAccount={() => setAccount(true)} tablonBadge={tablonBadge} boardName={settings?.board_name}
         onNavigate={(v) => { setViewing(v); setMode("board"); setQuery(""); }} onSignOut={signOut} pendByOwner={pendByOwner}
         subnav={isPersonView ? <>
           <SubTab m="board" icon={<ClipboardList size={14} />} label="Tareas" />

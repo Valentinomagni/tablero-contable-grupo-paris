@@ -7,12 +7,12 @@ import type { Profile } from "../lib/types";
 interface Props {
   me: Profile; team: Profile[]; viewing: string; title: string;
   theme: string; onCycleTheme: () => void; density: string; onCycleDensity: () => void;
-  onOpenAccount: () => void; tablonBadge?: string;
+  onOpenAccount: () => void; tablonBadge?: string; boardName?: string;
   onNavigate: (v: string) => void; onSignOut: () => void;
   pendByOwner: (id: string) => number; subnav?: ReactNode; children: ReactNode;
 }
 
-export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, onCycleDensity, onOpenAccount, tablonBadge, onNavigate, onSignOut, pendByOwner, subnav, children }: Props) {
+export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, onCycleDensity, onOpenAccount, tablonBadge, boardName, onNavigate, onSignOut, pendByOwner, subnav, children }: Props) {
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState(false);
   const isJefe = me.role === "jefe";
@@ -41,7 +41,7 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
             style={{ boxShadow: "inset 0 0 0 2px #0b0b0d,inset 0 0 0 4px #fff" }}>P</span>
           <div className="flex flex-col leading-tight">
             <b className="text-sm">Tablero Contable</b>
-            <small className="text-[color:var(--side-ink2)] text-[11px] uppercase tracking-wider">Grupo Paris</small>
+            <small className="text-[color:var(--side-ink2)] text-[11px] uppercase tracking-wider">{boardName ?? "Grupo Paris"}</small>
           </div>
         </div>
         <nav className="flex-1 overflow-y-auto p-2.5 flex flex-col gap-0.5">

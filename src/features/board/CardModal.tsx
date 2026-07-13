@@ -5,7 +5,7 @@ import { COLS, type Card, type Profile } from "../../lib/types";
 import { fmtDateTime } from "../../lib/metrics";
 import { depInfoOf, dependentsOf, isBlocked, type DepMap } from "../../lib/deps";
 import { pushUndo } from "../../lib/undo";
-import { useDepsInfo, useReverseDeps } from "../../hooks/useData";
+import { useDepsInfo, useReverseDeps, useSettings } from "../../hooks/useData";
 
 export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—" }:
   { card: Card; cards: Card[]; team: Profile[]; isJefe: boolean; onClose: () => void; meName?: string }) {
@@ -22,8 +22,13 @@ export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—
   const { data: revDeps = [] } = useReverseDeps(cards.map((x) => x.id), !isJefe);
   const depMap: DepMap = Object.fromEntries(depsInfo.map((d) => [d.id, d]));
   const nameOf = (id: string) => team.find((u) => u.id === id)?.name ?? "";
+  const { data: settings = { edit_closed: false } } = useSettings();
+  // tarea cerrada: solo jefes la tocan salvo que el permiso edit_closed esté activo (RLS lo aplica en el server)
+  const locked = c.status === "term" && !isJefe && !settings.edit_closed;
+
   const patch = useMutation({
     mutationFn: async (p: Partial<Card>) => {
+      if (locked) throw new Error("Tarea cerrada — solo un jefe puede modificarla.");
       pushUndo(c, p);
       const { error } = await supabase.from("cards").update(p).eq("id", c.id);
       if (error) throw error;
@@ -185,6 +190,7 @@ export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—
           {c.status !== "term"
             ? <button onClick={() => patch.mutate({ status: "term", done_at: new Date().toISOString(), history: hist("Marcó terminada ✔") })}
                 className="bg-accent text-white font-semibold rounded-lg px-3.5 py-2 text-[13px]">✔ Marcar terminada</button>
+            : locked ? <span className="text-ink2 text-[13px]">🔒 Solo un jefe puede reabrir esta tarea</span>
             : <button onClick={() => patch.mutate({ status: "proc", done_at: null, history: hist("Reabrió la tarea") })}
                 className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Reabrir</button>}
           <button onClick={onClose} className="ml-auto border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Cerrar</button>
