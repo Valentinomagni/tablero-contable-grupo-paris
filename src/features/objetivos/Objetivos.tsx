@@ -1,12 +1,16 @@
+import { useState } from "react";
 import { useObjectives } from "../../hooks/useData";
 import { kpiPct, kpiClass } from "../../lib/metrics";
+import type { Objective } from "../../lib/types";
+import { ObjModal } from "./ObjModal";
 
 const KPI_COLOR: Record<string, string> = {
   "kpi-rojo": "var(--danger)", "kpi-amarillo": "var(--warn)", "kpi-verde": "var(--done)", "kpi-azul": "#3b82c4",
 };
 
-export function Objetivos({ ownerId }: { ownerId: string }) {
+export function Objetivos({ ownerId, ownerName }: { ownerId: string; ownerName: string }) {
   const { data: objectives = [] } = useObjectives();
+  const [editing, setEditing] = useState<Objective | null | "new">(null);
   const mine = objectives.filter((o) => o.owner === ownerId);
   const total = mine.reduce((s, o) => s + o.weight, 0);
   const banner = total === 100 ? { cls: "bg-accent-soft text-accent", txt: "✔ Los pesos suman 100%" }
@@ -16,11 +20,11 @@ export function Objetivos({ ownerId }: { ownerId: string }) {
   return (
     <div className="px-6 py-4 w-full max-w-[960px]">
       <div className={`rounded-lg px-4 py-3 font-semibold text-sm mb-3.5 ${banner.cls}`}>{banner.txt}</div>
-      {mine.length === 0 && <p className="text-ink2 text-sm">Sin objetivos cargados. Los jefes pueden agregarlos desde la app original por ahora.</p>}
+      {mine.length === 0 && <p className="text-ink2 text-sm">Sin objetivos cargados para {ownerName}.</p>}
       {mine.map((o) => {
         const pct = kpiPct(o), cls = kpiClass(pct);
         return (
-          <div key={o.id} className="bg-surface border border-line rounded-xl px-4 py-3 mb-2.5" style={{ boxShadow: "var(--ring),var(--shadow)" }}>
+          <div key={o.id} onClick={() => setEditing(o)} className="bg-surface border border-line rounded-xl px-4 py-3 mb-2.5 cursor-pointer" style={{ boxShadow: "var(--ring),var(--shadow)" }}>
             <div className="flex justify-between items-center gap-2.5">
               <b>{o.title}</b><span className="bg-chip rounded-full px-2.5 py-0.5 font-bold tnum shrink-0">{o.weight}%</span>
             </div>
@@ -38,6 +42,15 @@ export function Objetivos({ ownerId }: { ownerId: string }) {
           </div>
         );
       })}
+      <button onClick={() => setEditing("new")}
+        className="w-full border border-dashed border-line bg-surface2/50 rounded-xl px-4 py-2.5 text-[13px] text-ink2 hover:bg-surface2">
+        + Añadir objetivo
+      </button>
+      {editing && (
+        <ObjModal obj={editing === "new" ? null : editing} ownerId={ownerId} ownerName={ownerName}
+          otherWeight={mine.filter((x) => editing === "new" || x.id !== editing.id).reduce((s, x) => s + x.weight, 0)}
+          onClose={() => setEditing(null)} />
+      )}
     </div>
   );
 }

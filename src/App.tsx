@@ -82,7 +82,7 @@ export default function App() {
           : view === "__reporte" ? <Reporte cards={cards} team={fullTeam} activity={activity} />
           : view === "__tablon" ? <Tablon />
           : view === "__admin" ? <Admin team={fullTeam} meName={me.name} onOpenUser={setOpenUser} />
-          : mode === "obj" ? <Objetivos ownerId={view} />
+          : mode === "obj" ? <Objetivos ownerId={view} ownerName={person?.name ?? me.name} />
           : mode === "mimes" ? <MiMes cards={cards} activity={activity} ownerId={view} onOpenCard={setOpenCard} />
           : cardsLoading ? <BoardSkeleton />
           : <Board cards={cards} activity={activity} ownerId={view} meName={me.name} onOpen={setOpenCard} />}
