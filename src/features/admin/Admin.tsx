@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Download, UserPlus } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase, SUPABASE_URL } from "../../lib/supabase";
-import type { Profile, Role, AppSettings } from "../../lib/types";
+import type { Card, Profile, Role, AppSettings } from "../../lib/types";
+import { PlantillaCierre } from "./PlantillaCierre";
 import { Avatar } from "../../lib/ui";
 import { useSettings } from "../../hooks/useData";
 
-export function Admin({ team, meName, onOpenUser }: { team: Profile[]; meName: string; onOpenUser: (u: Profile) => void }) {
+export function Admin({ team, cards, meName, onOpenUser }: { team: Profile[]; cards: Card[]; meName: string; onOpenUser: (u: Profile) => void }) {
   const qc = useQueryClient();
   const { data: settings = { edit_closed: false } } = useSettings();
   const [busy, setBusy] = useState(false);
@@ -96,6 +97,8 @@ export function Admin({ team, meName, onOpenUser }: { team: Profile[]; meName: s
           <UserPlus size={15} /> {nuBusy ? "Creando…" : "Crear usuario"}</button>
         {nuMsg && <p className={"w-full text-sm m-0 " + (nuMsg.ok ? "text-done" : "text-danger")}>{nuMsg.txt}</p>}
       </div>
+
+      <PlantillaCierre team={team} cards={cards} meName={meName} />
 
       <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Permisos</h2>
       <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>

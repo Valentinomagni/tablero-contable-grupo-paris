@@ -116,7 +116,7 @@ export default function App() {
         {view === "__resumen" ? <Resumen cards={cards} team={fullTeam} activity={activity} onOpenCard={setOpenCard} onGoPerson={(id) => { setViewing(id); setMode("board"); }} />
           : view === "__reporte" ? <Reporte cards={cards} team={fullTeam} activity={activity} />
           : view === "__tablon" ? <Tablon />
-          : view === "__admin" ? <Admin team={fullTeam} meName={me.name} onOpenUser={setOpenUser} />
+          : view === "__admin" ? <Admin team={fullTeam} cards={cards} meName={me.name} onOpenUser={setOpenUser} />
           : mode === "obj" ? <Objetivos ownerId={view} ownerName={person?.name ?? me.name} />
           : mode === "mimes" ? <MiMes cards={cards} activity={activity} ownerId={view} onOpenCard={setOpenCard} />
           : cardsLoading ? <BoardSkeleton />

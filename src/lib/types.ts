@@ -22,6 +22,9 @@ export interface Announcement {
 }
 export interface ActivityLog { id: string; card_id: string; owner: string; who_name: string; qty: number; note: string; at: string; }
 export interface Snapshot { day: string; owner: string; open_count: number; open_effort: number; done_count: number; done_effort: number; activity_qty: number; }
-export interface AppSettings { edit_closed: boolean; board_name?: string; due_warn_days?: number; stuck_days?: number; }
+export interface AppSettings {
+  edit_closed: boolean; board_name?: string; due_warn_days?: number; stuck_days?: number;
+  closing_template?: import("./plantilla").TemplateItem[];
+}
 
 export const COLS: [Status, string][] = [["pend", "Pendiente"], ["proc", "En proceso"], ["term", "Terminado"]];
