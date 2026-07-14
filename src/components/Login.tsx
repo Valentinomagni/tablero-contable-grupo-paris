@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { useArca, ArcaAgenda } from "../features/tablon/arca";
 
 interface PubVenc { title: string; due_date: string; detail: string; }
 
@@ -32,6 +33,8 @@ function VencBadge({ due }: { due: string }) {
 
 export function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promise<{ message: string } | null> }) {
   const vencs = usePublicVenc();
+  const arca = useArca();
+  const mes = new Date().toLocaleDateString("es-AR", { month: "long", year: "numeric" });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
@@ -81,15 +84,26 @@ export function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promis
         <p className="text-xs text-ink2 m-0">Si no tenés usuario o olvidaste la contraseña, pedile el alta a un jefe.</p>
       </form>
 
-      {vencs.length > 0 && (
-        <div className="w-full max-w-[390px] rounded-2xl border border-white/10 p-5" style={{ background: "rgba(255,255,255,.03)" }}>
-          <h2 className="text-[#9aa0ab] uppercase tracking-[2px] text-xs font-semibold mt-0 mb-3">📌 Próximos vencimientos del equipo</h2>
-          {vencs.map((v, i) => (
-            <div key={i} className="flex items-center justify-between gap-2 py-1.5 border-b border-white/5 last:border-0">
-              <b className="text-white text-[13px] truncate">{v.title}</b>
-              <VencBadge due={v.due_date} />
-            </div>
-          ))}
+      {(vencs.length > 0 || arca.length > 0) && (
+        <div className="w-full max-w-[390px] rounded-2xl border border-white/10 p-5 max-h-[80vh] overflow-y-auto" style={{ background: "rgba(255,255,255,.03)" }}>
+          {vencs.length > 0 && (
+            <>
+              <h2 className="text-[#9aa0ab] uppercase tracking-[2px] text-xs font-semibold mt-0 mb-3">📌 Próximos vencimientos del equipo</h2>
+              {vencs.map((v, i) => (
+                <div key={i} className="flex items-center justify-between gap-2 py-1.5 border-b border-white/5 last:border-0">
+                  <b className="text-white text-[13px] truncate">{v.title}</b>
+                  <VencBadge due={v.due_date} />
+                </div>
+              ))}
+            </>
+          )}
+          {arca.length > 0 && (
+            <>
+              <h2 className="text-[#9aa0ab] uppercase tracking-[2px] text-xs font-semibold mt-5 mb-3">🏛 Agenda ARCA — {mes}</h2>
+              <ArcaAgenda items={arca} />
+              <p className="text-[#9aa0ab] text-[11px] m-0">Fuente: arca.gob.ar · se actualiza sola</p>
+            </>
+          )}
         </div>
       )}
     </div>
