@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Toaster, toast } from "sonner";
 import { supabase } from "./lib/supabase";
 import { popUndo } from "./lib/undo";
-import { ClipboardList, Target, TrendingUp, UserRound } from "lucide-react";
+import { ClipboardList, Target, TrendingUp, UserRound, CalendarDays } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { useTheme } from "./hooks/useTheme";
 import { useTeam, useCards, useActivity, useAnnouncements, useSettings } from "./hooks/useData";
@@ -17,13 +17,14 @@ import { Reporte } from "./features/reporte/Reporte";
 import { Resumen } from "./features/resumen/Resumen";
 import { MiMes } from "./features/mimes/MiMes";
 import { Tablon } from "./features/tablon/Tablon";
+import { Semana } from "./features/semana/Semana";
 import { Admin } from "./features/admin/Admin";
 import { UserModal } from "./features/admin/UserModal";
 import { CommandPalette } from "./components/CommandPalette";
 import type { Card, Profile } from "./lib/types";
 import { cn } from "./lib/ui";
 
-type Mode = "board" | "obj" | "mimes";
+type Mode = "board" | "semana" | "obj" | "mimes";
 
 export default function App() {
   const { me, loading, signIn, signOut } = useAuth();
@@ -100,6 +101,7 @@ export default function App() {
         onNavigate={(v) => { setViewing(v); setMode("board"); setQuery(""); }} onSignOut={signOut} pendByOwner={pendByOwner}
         subnav={isPersonView ? <>
           <SubTab m="board" icon={<ClipboardList size={14} />} label="Tareas" />
+          <SubTab m="semana" icon={<CalendarDays size={14} />} label="Semana" />
           <SubTab m="obj" icon={<Target size={14} />} label="Objetivos" />
           <SubTab m="mimes" icon={<TrendingUp size={14} />} label={isJefe ? "Su mes" : "Mi mes"} />
           {mode === "board" && (
@@ -117,6 +119,7 @@ export default function App() {
           : view === "__reporte" ? <Reporte cards={cards} team={fullTeam} activity={activity} />
           : view === "__tablon" ? <Tablon />
           : view === "__admin" ? <Admin team={fullTeam} cards={cards} meName={me.name} onOpenUser={setOpenUser} />
+          : mode === "semana" ? <Semana cards={cards} ownerId={view} meName={me.name} onOpen={setOpenCard} />
           : mode === "obj" ? <Objetivos ownerId={view} ownerName={person?.name ?? me.name} />
           : mode === "mimes" ? <MiMes cards={cards} activity={activity} ownerId={view} onOpenCard={setOpenCard} />
           : cardsLoading ? <BoardSkeleton />
