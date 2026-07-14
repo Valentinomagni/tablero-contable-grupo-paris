@@ -37,7 +37,7 @@ export function Tablon() {
         if (kind === "vencimiento") items = [...items].sort((a, b) => (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"));
         return (
           <div key={kind}>
-            <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mt-5 mb-2.5">{titulo}</h2>
+            <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mt-5 mb-2.5">{titulo}</h2>
             {sub && <p className="text-ink2 text-[13px] -mt-1 mb-2.5">{sub}</p>}
             {items.length === 0 && <p className="text-ink2 text-sm">Nada publicado todavía.</p>}
             {items.map((a) => (
@@ -56,7 +56,7 @@ export function Tablon() {
       })}
 
       {arca.length > 0 && <>
-        <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mt-5 mb-1">Agenda ARCA — {mes}</h2>
+        <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mt-5 mb-1">Agenda ARCA — {mes}</h2>
         <p className="text-ink2 text-[13px] mb-2.5">Vencimientos oficiales por terminación de CUIT. Fuente: arca.gob.ar, se actualiza sola.</p>
         <ArcaAgenda items={arca} />
       </>}

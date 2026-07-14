@@ -79,7 +79,7 @@ export function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promis
             className="bg-surface2 border border-line rounded-lg text-ink text-sm px-2.5 py-2 outline-none focus:ring-2 focus:ring-accent" />
         </label>
         <button type="submit" disabled={busy}
-          className="bg-accent text-white font-semibold rounded-lg py-2.5 text-sm disabled:opacity-60 transition hover:brightness-110">
+          className="bg-[#0b0b0d] text-white font-bold rounded-lg py-2.5 text-sm disabled:opacity-60 transition hover:bg-[#23252b] tracking-wide border border-white/10">
           {busy ? "Ingresando…" : "Ingresar"}
         </button>
         <p className="text-xs text-ink2 m-0">Si no tenés usuario o olvidaste la contraseña, pedile el alta a un jefe.</p>

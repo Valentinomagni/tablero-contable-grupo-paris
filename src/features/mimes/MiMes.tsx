@@ -38,23 +38,23 @@ export function MiMes({ cards, activity, ownerId, onOpenCard }: {
 
   return (
     <div className="px-6 py-4 w-full max-w-[960px]">
-      <div className="flex gap-2.5 flex-wrap mb-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
         {([["Cerradas este mes", `${cerradasMes.length}/${totalMes}`], ["Esfuerzo cerrado", efCerrado], ["Esfuerzo por delante", efAbierto], ...(actMes ? [["Actividad op. del mes", actMes] as const] : [])] as const).map(([l, v]) => (
-          <div key={l} className="bg-surface rounded-2xl px-[18px] py-3.5" style={cardSh}>
-            <b className="block text-[26px] font-bold tracking-tight tnum">{v}</b>
-            <span className="text-[11.5px] text-ink2 uppercase tracking-wide">{l}</span>
+          <div key={l} className="bg-surface border border-line rounded-2xl px-5 py-4" style={cardSh}>
+            <span className="block text-[11px] text-ink2 uppercase tracking-[0.08em] font-semibold mb-1.5">{l}</span>
+            <b className="block text-[32px] leading-none font-bold tracking-[-0.02em] tnum">{v}</b>
           </div>
         ))}
       </div>
 
-      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Avance del mes</h2>
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Avance del mes</h2>
       <div className={`bg-surface rounded-2xl p-[18px] mb-6 border-l-[3px] ${alDia ? "border-done" : "border-warn"}`} style={cardSh}>
         <Bar label="Mes transcurrido" pct={pctMes} color="var(--ink2)" />
         <Bar label="Tareas cerradas" pct={pctAvance} color={alDia ? "var(--done)" : "var(--warn)"} />
         <p className="text-sm mt-1.5 mb-0">{alDia ? "Vas al día: cerraste más de lo que corrió el mes." : "El mes avanza más rápido que los cierres — mirá las sugeridas de abajo."}</p>
       </div>
 
-      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">¿Qué conviene hacer ahora?</h2>
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">¿Qué conviene hacer ahora?</h2>
       {sugeridas.length === 0 ? <p className="text-ink2 text-sm">Sin tareas abiertas.</p>
         : sugeridas.map(({ c, r }) => (
           <div key={c.id} onClick={() => onOpenCard(c)} className="bg-surface border border-line rounded-lg px-3.5 py-2 mb-1.5 cursor-pointer text-sm" style={cardSh}>

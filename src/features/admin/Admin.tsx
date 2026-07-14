@@ -64,7 +64,7 @@ export function Admin({ team, meName, onOpenUser }: { team: Profile[]; meName: s
 
   return (
     <div className="px-6 py-4 w-full max-w-[900px]">
-      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Equipo — clic en una persona para editar su ficha</h2>
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Equipo — clic en una persona para editar su ficha</h2>
       <div className="bg-surface border border-line rounded-xl overflow-hidden mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
         <table className="w-full text-sm">
           <thead><tr className="text-[11px] uppercase tracking-wide text-ink2">
@@ -82,7 +82,7 @@ export function Admin({ team, meName, onOpenUser }: { team: Profile[]; meName: s
         </table>
       </div>
 
-      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Crear usuario nuevo</h2>
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Crear usuario nuevo</h2>
       <div className="bg-surface border border-line rounded-xl p-4 mb-6 flex flex-wrap gap-2 items-center" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
         <input type="email" placeholder="email de acceso" value={nu.email} onChange={(e) => setNu({ ...nu, email: e.target.value })} className={inputCls + " w-[200px]"} />
         <input placeholder="nombre y apellido" value={nu.name} onChange={(e) => setNu({ ...nu, name: e.target.value })} className={inputCls + " w-[180px]"} />
@@ -97,7 +97,7 @@ export function Admin({ team, meName, onOpenUser }: { team: Profile[]; meName: s
         {nuMsg && <p className={"w-full text-sm m-0 " + (nuMsg.ok ? "text-done" : "text-danger")}>{nuMsg.txt}</p>}
       </div>
 
-      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Permisos</h2>
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Permisos</h2>
       <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
         <label className="flex items-center gap-2.5 text-sm cursor-pointer">
           <input type="checkbox" checked={settings.edit_closed} className="accent-accent w-4 h-4"
@@ -107,7 +107,7 @@ export function Admin({ team, meName, onOpenUser }: { team: Profile[]; meName: s
         <p className="text-ink2 text-[13px] mt-1.5 mb-0">Apagado: solo los jefes pueden tocar una tarea cerrada. La restricción se aplica en el servidor.</p>
       </div>
 
-      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Parámetros de la plataforma</h2>
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Parámetros de la plataforma</h2>
       <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
         <div className="flex flex-wrap gap-4">
           <label className="text-[13px] text-ink2">Nombre del equipo (sidebar)<br />
@@ -127,7 +127,7 @@ export function Admin({ team, meName, onOpenUser }: { team: Profile[]; meName: s
         {permMsg && <p className={"text-sm mt-2 mb-0 " + (!permMsg.startsWith("No se pudo") ? "text-done" : "text-danger")}>{permMsg}</p>}
       </div>
 
-      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Respaldo</h2>
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Respaldo</h2>
       <button onClick={backup} disabled={busy}
         className="flex items-center gap-2 border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px] disabled:opacity-60" style={{ boxShadow: "var(--ring-sh)" }}>
         <Download size={16} /> {busy ? "Generando…" : "Descargar backup completo (JSON)"}

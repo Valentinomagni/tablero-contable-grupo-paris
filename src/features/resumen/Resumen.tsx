@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Download, ClipboardCopy } from "lucide-react";
+import { Download, ClipboardCopy, Inbox, AlarmClock, CheckCircle2, Activity } from "lucide-react";
 import type { Card, Profile, ActivityLog } from "../../lib/types";
 import { dueInfo, fmtDateTime } from "../../lib/metrics";
 import { isBlocked } from "../../lib/deps";
@@ -15,7 +15,7 @@ function Bars({ data, height = 110 }: { data: { lbl: string; v: number; title: s
       {data.map((d, i) => (
         <div key={i} title={d.title} className="flex flex-col items-center justify-end flex-1 min-w-[14px] h-full">
           {d.v > 0 && <span className="text-[10px] text-ink2 tnum">{d.v}</span>}
-          <div className="w-full rounded-t bg-accent/70" style={{ height: `${Math.round((d.v / max) * 82)}%` }} />
+          <div className="w-full rounded-t-[3px] bg-accent/85 hover:bg-accent transition-colors" style={{ height: `${Math.round((d.v / max) * 82)}%`, minHeight: d.v > 0 ? 2 : 0 }} />
           <span className="text-[9.5px] text-ink2 mt-0.5 whitespace-nowrap">{d.lbl}</span>
         </div>
       ))}
@@ -78,16 +78,22 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson }: {
         <button onClick={copyStandup} className="flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3 py-1.5 text-[13px]">
           <ClipboardCopy size={14} /> Copiar resumen del día</button>
       </div>
-      <div className="flex gap-2.5 flex-wrap mb-4">
-        {([["Tareas abiertas", open.length], ["Vencidas", late.length], ["Terminadas (7 d)", doneWeek.length], ["Actividad op. (7 d)", act7]] as const).map(([l, v]) => (
-          <div key={l} className="bg-surface rounded-2xl px-[18px] py-3.5" style={cardSh}>
-            <b className="block text-[26px] font-bold tracking-tight tnum">{v}</b>
-            <span className="text-[11.5px] text-ink2 uppercase tracking-wide">{l}</span>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+        {([["Tareas abiertas", open.length, <Inbox key="i" size={15} />, false],
+           ["Vencidas", late.length, <AlarmClock key="a" size={15} />, late.length > 0],
+           ["Terminadas (7 d)", doneWeek.length, <CheckCircle2 key="c" size={15} />, false],
+           ["Actividad op. (7 d)", act7, <Activity key="t" size={15} />, false]] as const).map(([l, v, ic, alert]) => (
+          <div key={l} className="bg-surface border border-line rounded-2xl px-5 py-4" style={cardSh}>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] text-ink2 uppercase tracking-[0.08em] font-semibold">{l}</span>
+              <span className={`grid place-items-center w-7 h-7 rounded-lg ${alert ? "bg-danger-soft text-danger" : "bg-accent-soft text-accent"}`}>{ic}</span>
+            </div>
+            <b className={`block text-[32px] leading-none font-bold tracking-[-0.02em] tnum ${alert ? "text-danger" : ""}`}>{v}</b>
           </div>
         ))}
       </div>
 
-      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Equipo</h2>
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Equipo</h2>
       <div className="bg-surface border border-line rounded-xl overflow-hidden mb-6" style={cardSh}>
         <table className="w-full text-sm">
           <thead><tr className="text-[11px] uppercase tracking-wide text-ink2">
@@ -116,7 +122,7 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson }: {
         </table>
       </div>
 
-      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Tareas trabadas o vencidas</h2>
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Tareas trabadas o vencidas</h2>
       {stuck.length === 0 ? <p className="text-ink2 text-sm mb-6">Nada trabado.</p>
         : stuck.map((c) => {
           const i = dueInfo(c), last = c.comments[c.comments.length - 1];
@@ -129,12 +135,12 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson }: {
           );
         })}
 
-      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5 mt-6">Ritmo de cierre — últimos 14 días (tareas cerradas)</h2>
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5 mt-6">Ritmo de cierre — últimos 14 días (tareas cerradas)</h2>
       <div className="bg-surface border border-line rounded-xl p-3 mb-6" style={cardSh}>
         <Bars data={d14.map((d) => ({ lbl: d.lbl.slice(0, 5), v: d.count, title: `${d.lbl}: ${d.count} tarea(s) · ${d.effort} punto(s)` }))} />
       </div>
 
-      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5 mt-6">Ciclo del mes — en qué días se concentra el trabajo (histórico)</h2>
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5 mt-6">Ciclo del mes — en qué días se concentra el trabajo (histórico)</h2>
       <div className="bg-surface border border-line rounded-xl p-3 mb-2" style={cardSh}>
         {ciclo.total === 0 ? <p className="text-ink2 text-sm m-0">Todavía no hay historial de cierres suficiente.</p>
           : <>
@@ -145,7 +151,7 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson }: {
 
       {evol.length >= 2 && (
         <>
-          <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5 mt-6">Evolución de la carga abierta del equipo (esfuerzo por día)</h2>
+          <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5 mt-6">Evolución de la carga abierta del equipo (esfuerzo por día)</h2>
           <div className="bg-surface border border-line rounded-xl p-3 mb-2" style={cardSh}>
             <Bars data={evol.map((e) => ({ lbl: String(new Date(e.day + "T00:00:00").getDate()), v: e.v, title: `${e.day.split("-").reverse().join("/")}: ${e.v} puntos abiertos` }))} />
             <p className="text-ink2 text-[13px] mt-2 mb-0">Si la barra crece día a día, entra más trabajo del que se cierra; si baja, el equipo está liberando carga.</p>
@@ -153,7 +159,7 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson }: {
         </>
       )}
 
-      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5 mt-6">Carga abierta por persona — en esfuerzo (puntos)</h2>
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5 mt-6">Carga abierta por persona — en esfuerzo (puntos)</h2>
       <div className="bg-surface border border-line rounded-xl p-3 mb-6" style={cardSh}>
         {cargaPersona.length === 0 ? <p className="text-ink2 text-sm m-0">Sin carga abierta.</p>
           : cargaPersona.map((f) => (
@@ -167,12 +173,12 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson }: {
           ))}
       </div>
 
-      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5 mt-6">Cadenas de dependencias entre tareas</h2>
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5 mt-6">Cadenas de dependencias entre tareas</h2>
       <div className="bg-surface border border-line rounded-xl p-3 mb-6" style={cardSh}>
         <DepGraph cards={cards} team={team} onOpenCard={onOpenCard} />
       </div>
 
-      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5 mt-6">Terminadas los últimos 7 días</h2>
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5 mt-6">Terminadas los últimos 7 días</h2>
       {doneWeek.length === 0 ? <p className="text-ink2 text-sm">Todavía nada esta semana.</p>
         : doneWeek.slice(0, 20).map((c) => (
           <div key={c.id} onClick={() => onOpenCard(c)} className="bg-surface border border-line rounded-lg px-3.5 py-2 mb-1.5 cursor-pointer text-sm" style={cardSh}>

@@ -24,10 +24,10 @@ function CardItem({ c, blocked, waiting, onOpen }: { c: Card; blocked: boolean; 
     ? <span className="bg-danger-soft text-danger rounded-md px-2 py-0.5 font-semibold">Alta</span> : null;
   return (
     <div onClick={() => onOpen(c)}
-      className="bg-surface rounded-lg p-3 mb-2 cursor-pointer border border-transparent transition
-        hover:-translate-y-0.5 hover:border-accent/30"
-      style={{ boxShadow: "var(--ring),var(--shadow)" }}>
-      <div className="font-semibold text-sm tracking-tight">{c.title}</div>
+      className="bg-surface rounded-xl px-3.5 py-3 mb-2 cursor-pointer border border-line/70 transition
+        hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-[var(--shadow-lg)]"
+      style={{ boxShadow: "var(--shadow)" }}>
+      <div className="font-semibold text-[13.5px] tracking-tight leading-snug">{c.title}</div>
       <div className="flex gap-2 flex-wrap mt-1.5 text-xs text-ink2 items-center">
         {blocked && <span className="inline-flex items-center gap-1 bg-warn-soft text-warn rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Lock size={11} /> Bloqueada</span>}
         {waiting && <span className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Hourglass size={11} /> Te esperan</span>}
@@ -93,7 +93,7 @@ export function Board({ cards, activity, ownerId, meName, query = "", onOpen }: 
   const promptReg = (cardId: string) => { const q = prompt("¿Cuántas unidades registrás?", "1"); if (q !== null) registrar.mutate({ cardId, qty: Math.max(1, Math.round(Number(q) || 1)) }); };
 
   const hoyStr = new Date().toDateString();
-  const colBg = { background: "color-mix(in srgb,var(--surface) 55%,transparent)", backdropFilter: "blur(8px)", boxShadow: "var(--ring)" };
+  const colBg = { background: "color-mix(in srgb,var(--surface2) 55%,var(--bg))" };
 
   return (
     <div className="flex gap-4 items-start px-6 pb-10 overflow-x-auto flex-1">

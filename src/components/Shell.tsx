@@ -20,13 +20,15 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
 
   const NavItem = ({ v, icon, label, count, badge }: { v: string; icon?: ReactNode; label: string; count?: number; badge?: string }) => (
     <button onClick={() => { onNavigate(v); setOpen(false); }}
-      className={cn("flex items-center gap-2.5 w-full text-left rounded-[10px] px-2.5 py-2 text-sm relative transition",
-        viewing === v ? "bg-white/10 text-white font-semibold" : "text-[color:var(--side-ink2)] hover:bg-white/[.06] hover:text-[color:var(--side-ink)]")}>
-      {viewing === v && <span className="absolute -left-2.5 top-1.5 bottom-1.5 w-[3px] rounded bg-naranja" />}
-      <span className="w-5 grid place-items-center shrink-0">{icon}</span>
+      className={cn("flex items-center gap-2.5 w-full text-left rounded-[10px] px-2.5 py-[7px] text-[13.5px] relative transition-all duration-150",
+        viewing === v ? "bg-white/[.09] text-white font-semibold shadow-[inset_0_0_0_1px_rgba(255,255,255,.06)]"
+          : "text-[color:var(--side-ink2)] hover:bg-white/[.05] hover:text-[color:var(--side-ink)] hover:translate-x-[1px]")}>
+      {viewing === v && <span className="absolute -left-2.5 top-2 bottom-2 w-[3px] rounded-full bg-naranja" />}
+      <span className={cn("w-5 grid place-items-center shrink-0 transition-colors", viewing === v ? "text-naranja" : "")}>{icon}</span>
       <span className="flex-1 truncate">{label}</span>
-      {count ? <span className="bg-white/15 text-white rounded-full text-[11px] px-2 tnum">{count}</span> : null}
-      {badge ? <span className="bg-naranja text-white rounded-full text-[11px] px-2 font-bold tnum">{badge}</span> : null}
+      {count ? <span className={cn("rounded-full text-[10.5px] px-1.5 py-px tnum font-semibold min-w-[20px] text-center",
+        viewing === v ? "bg-white/20 text-white" : "bg-white/[.08] text-[color:var(--side-ink2)]")}>{count}</span> : null}
+      {badge ? <span className="bg-naranja text-white rounded-full text-[10.5px] px-1.5 py-px font-bold tnum">{badge}</span> : null}
     </button>
   );
 
@@ -90,12 +92,16 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
 
       <main className="flex-1 min-w-0 flex flex-col"
         style={{ background: "radial-gradient(circle at 1px 1px, color-mix(in srgb,var(--ink) 4%,transparent) 1px, transparent 0) 0 0/22px 22px, var(--bg)" }}>
-        <div className="flex items-center gap-3.5 px-6 py-3.5 sticky top-0 z-10 border-b border-line/70"
-          style={{ background: "color-mix(in srgb,var(--surface) 78%,transparent)", backdropFilter: "saturate(1.4) blur(12px)" }}>
+        <div className="flex items-center gap-3.5 px-6 py-3 sticky top-0 z-10 border-b border-line/70"
+          style={{ background: "color-mix(in srgb,var(--surface) 82%,transparent)", backdropFilter: "saturate(1.4) blur(14px)" }}>
           <button onClick={() => setOpen(true)} className="md:hidden border border-line rounded-lg px-2.5 py-1.5"><Menu size={16} /></button>
-          <h1 className="text-[17px] font-semibold tracking-tight m-0">{title}</h1>
+          <div className="leading-tight">
+            <h1 className="text-[19px] font-bold tracking-[-0.02em] m-0">{title}</h1>
+          </div>
           <div className="flex-1" />
-          <span className="text-[13px] text-ink2">{new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}</span>
+          <span className="text-[12px] text-ink2 bg-surface2 border border-line rounded-full px-3 py-1 capitalize tnum">
+            {new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
+          </span>
         </div>
         {subnav && <div className="flex gap-1.5 px-6 pt-3.5">{subnav}</div>}
         {children}
