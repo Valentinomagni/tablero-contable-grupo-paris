@@ -26,7 +26,7 @@ export function AccountModal({ name, email, onClose }: { name: string; email: st
     const { error } = await supabase.auth.updateUser({ password: nu });
     setBusy(false);
     if (error) return setMsg({ ok: false, txt: "No se pudo cambiar: " + error.message });
-    setMsg({ ok: true, txt: "✔ Contraseña cambiada correctamente." });
+    setMsg({ ok: true, txt: "Contraseña cambiada correctamente." });
     setOld(""); setNu(""); setNu2("");
   };
 

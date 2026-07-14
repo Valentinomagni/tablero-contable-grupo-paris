@@ -51,7 +51,7 @@ export default function App() {
         const u = popUndo();
         if (!u) { setToast("Nada para deshacer."); return; }
         supabase.from("cards").update(u.prev).eq("id", u.id).then(({ error }) => {
-          setToast(error ? "No se pudo deshacer: " + error.message : "Deshecho ↩");
+          setToast(error ? "No se pudo deshacer: " + error.message : "Deshecho");
           qcRef.invalidateQueries({ queryKey: ["cards"] });
         });
       }
@@ -107,7 +107,7 @@ export default function App() {
           <SubTab m="obj" icon={<Target size={14} />} label="Objetivos" />
           <SubTab m="mimes" icon={<TrendingUp size={14} />} label={isJefe ? "Su mes" : "Mi mes"} />
           {mode === "board" && (
-            <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="🔎 Buscar tarea…"
+            <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar tarea…"
               className="bg-surface2 border border-line rounded-lg px-3 py-1.5 text-[13px] w-[200px]" />
           )}
           {isJefe && person && (

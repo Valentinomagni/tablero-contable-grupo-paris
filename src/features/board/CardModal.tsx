@@ -5,6 +5,7 @@ import { COLS, type Card, type Profile } from "../../lib/types";
 import { fmtDateTime } from "../../lib/metrics";
 import { depInfoOf, dependentsOf, isBlocked, type DepMap } from "../../lib/deps";
 import { pushUndo } from "../../lib/undo";
+import { Check, Link2, Lock, Hourglass, X } from "lucide-react";
 import { useDepsInfo, useReverseDeps, useSettings } from "../../hooks/useData";
 
 export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—" }:
@@ -47,7 +48,7 @@ export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—
     const list = c.checklist.map((i, idx) => idx === n ? { ...i, done: !i.done, done_at: !i.done ? new Date().toISOString() : null } : i);
     const allDone = list.length && list.every((i) => i.done);
     patch.mutate(allDone && c.status !== "term"
-      ? { checklist: list, status: "term", done_at: new Date().toISOString(), history: hist("Completó checklist ✔") }
+      ? { checklist: list, status: "term", done_at: new Date().toISOString(), history: hist("Completó checklist") }
       : { checklist: list });
   };
 
@@ -69,7 +70,7 @@ export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—
           <label className="flex items-center gap-1.5">Prioridad
             <select defaultValue={c.priority} onChange={(e) => patch.mutate({ priority: e.target.value as Card["priority"], history: hist("Cambió prioridad a " + e.target.value) })}
               className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px]">
-              <option value="alta">▲ Alta</option><option value="media">— Media</option><option value="baja">▽ Baja</option>
+              <option value="alta">Alta</option><option value="media">Media</option><option value="baja">Baja</option>
             </select>
           </label>
           <label className="flex items-center gap-1.5">Esfuerzo
@@ -87,7 +88,7 @@ export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—
 
         {(depIds.length > 0 || isJefe) && (
           <>
-            <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">⛓ Depende de</h4>
+            <h4 className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-ink2 mt-4 mb-2"><Link2 size={12} /> Depende de</h4>
             {isBlocked(c, cards, depMap) && (
               <div className="bg-warn-soft text-warn rounded-lg px-3 py-2 text-[13px] mb-2">
                 Esta tarea está bloqueada: primero deben terminarse las tareas de las que depende.
@@ -99,12 +100,12 @@ export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—
               const okDep = d.status === "term";
               return (
                 <div key={id} className="flex items-center gap-2 py-1 text-sm">
-                  <span>{okDep ? "✔" : "⛓"}</span>
+                  <span className={okDep ? "text-done" : "text-warn"}>{okDep ? <Check size={14} /> : <Lock size={13} />}</span>
                   <span className={okDep ? "text-ink2" : ""}>{d.title} <span className="text-ink2 text-xs">· {d.owner_name} · {okDep ? "terminada" : "sin terminar"}</span></span>
                   {isJefe && (
                     <button title="Quitar dependencia"
                       onClick={() => patch.mutate({ deps: depIds.filter((x) => x !== id), history: hist(`Quitó dependencia: "${d.title}"`) })}
-                      className="ml-auto border border-line bg-surface2 rounded-lg px-2 text-[12px]">✕</button>
+                      className="ml-auto border border-line bg-surface2 rounded-lg px-1.5 py-1"><X size={12} /></button>
                   )}
                 </div>
               );
@@ -138,10 +139,10 @@ export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—
           const dependents = dependentsOf(c.id, cards, nameOf, revDeps, isJefe);
           return dependents.length > 0 && (
             <>
-              <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">🔗 Habilita a (dependen de esta tarea)</h4>
+              <h4 className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-ink2 mt-4 mb-2"><Link2 size={12} /> Habilita a (dependen de esta tarea)</h4>
               {dependents.map((d) => (
                 <div key={d.id} className="flex items-center gap-2 py-1 text-sm">
-                  <span>{d.status === "term" ? "✔" : "⏳"}</span>
+                  <span className={d.status === "term" ? "text-done" : "text-accent"}>{d.status === "term" ? <Check size={14} /> : <Hourglass size={13} />}</span>
                   <span className={d.status === "term" ? "text-ink2" : ""}>{d.title} <span className="text-ink2 text-xs">· {d.owner_name} · {d.status === "term" ? "terminada" : "esperándote"}</span></span>
                 </div>
               ))}
@@ -188,9 +189,9 @@ export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—
 
         <div className="flex gap-2 mt-4.5 flex-wrap items-center pt-4">
           {c.status !== "term"
-            ? <button onClick={() => patch.mutate({ status: "term", done_at: new Date().toISOString(), history: hist("Marcó terminada ✔") })}
-                className="bg-accent text-white font-semibold rounded-lg px-3.5 py-2 text-[13px]">✔ Marcar terminada</button>
-            : locked ? <span className="text-ink2 text-[13px]">🔒 Solo un jefe puede reabrir esta tarea</span>
+            ? <button onClick={() => patch.mutate({ status: "term", done_at: new Date().toISOString(), history: hist("Marcó terminada") })}
+                className="inline-flex items-center gap-1.5 bg-accent text-white font-semibold rounded-lg px-3.5 py-2 text-[13px]"><Check size={14} /> Marcar terminada</button>
+            : locked ? <span className="inline-flex items-center gap-1.5 text-ink2 text-[13px]"><Lock size={13} /> Solo un jefe puede reabrir esta tarea</span>
             : <button onClick={() => patch.mutate({ status: "proc", done_at: null, history: hist("Reabrió la tarea") })}
                 className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Reabrir</button>}
           <button onClick={onClose} className="ml-auto border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Cerrar</button>

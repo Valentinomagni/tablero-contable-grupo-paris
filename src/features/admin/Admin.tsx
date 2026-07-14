@@ -21,7 +21,7 @@ export function Admin({ team, meName, onOpenUser }: { team: Profile[]; meName: s
 
   async function saveSettings(next: AppSettings, okTxt: string) {
     const { error } = await supabase.from("settings").update({ value: next }).eq("key", "permissions");
-    setPermMsg(error ? "✖ No se pudo guardar: " + error.message : okTxt);
+    setPermMsg(error ? "No se pudo guardar: " + error.message : okTxt);
     if (!error) qc.invalidateQueries({ queryKey: ["settings"] });
     setTimeout(() => setPermMsg(""), 3000);
   }
@@ -41,7 +41,7 @@ export function Admin({ team, meName, onOpenUser }: { team: Profile[]; meName: s
       out = { error: "No se pudo contactar la función crear-usuario. ¿Está desplegada en Supabase?" };
     }
     setNuBusy(false);
-    setNuMsg(out.ok ? { ok: true, txt: "✔ Usuario creado. Ya puede ingresar." } : { ok: false, txt: "✖ " + (out.error ?? "Error") });
+    setNuMsg(out.ok ? { ok: true, txt: "Usuario creado. Ya puede ingresar." } : { ok: false, txt: "" + (out.error ?? "Error") });
     if (out.ok) { qc.invalidateQueries({ queryKey: ["team"] }); setNu({ email: "", name: "", role: "empleado", puesto: "", pass: "" }); }
   }
 
@@ -59,7 +59,7 @@ export function Admin({ team, meName, onOpenUser }: { team: Profile[]; meName: s
     a.href = URL.createObjectURL(new Blob([JSON.stringify(dump, null, 1)], { type: "application/json" }));
     a.download = `backup-tablero-${new Date().toISOString().slice(0, 10)}.json`;
     a.click(); URL.revokeObjectURL(a.href);
-    setBusy(false); setMsg("✔ Backup descargado. Guardalo en el Drive.");
+    setBusy(false); setMsg("Backup descargado. Guardalo en el Drive.");
   }
 
   return (
@@ -101,7 +101,7 @@ export function Admin({ team, meName, onOpenUser }: { team: Profile[]; meName: s
       <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
         <label className="flex items-center gap-2.5 text-sm cursor-pointer">
           <input type="checkbox" checked={settings.edit_closed} className="accent-accent w-4 h-4"
-            onChange={(e) => saveSettings({ ...settings, edit_closed: e.target.checked }, "✔ Permiso actualizado")} />
+            onChange={(e) => saveSettings({ ...settings, edit_closed: e.target.checked }, "Permiso actualizado")} />
           Permitir que encargados y empleados modifiquen o reabran tareas ya terminadas
         </label>
         <p className="text-ink2 text-[13px] mt-1.5 mb-0">Apagado: solo los jefes pueden tocar una tarea cerrada. La restricción se aplica en el servidor.</p>
@@ -122,9 +122,9 @@ export function Admin({ team, meName, onOpenUser }: { team: Profile[]; meName: s
             board_name: (parBoardName ?? settings.board_name ?? "Grupo Paris").trim() || "Grupo Paris",
             due_warn_days: Math.max(1, Math.min(30, Number(parWarn ?? settings.due_warn_days ?? 3) || 3)),
             stuck_days: Math.max(1, Math.min(30, Number(parStuck ?? settings.stuck_days ?? 2) || 2)),
-          }, "✔ Parámetros guardados")}
+          }, "Parámetros guardados")}
           className="bg-accent text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold mt-3">Guardar parámetros</button>
-        {permMsg && <p className={"text-sm mt-2 mb-0 " + (permMsg.startsWith("✔") ? "text-done" : "text-danger")}>{permMsg}</p>}
+        {permMsg && <p className={"text-sm mt-2 mb-0 " + (!permMsg.startsWith("No se pudo") ? "text-done" : "text-danger")}>{permMsg}</p>}
       </div>
 
       <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Respaldo</h2>

@@ -30,9 +30,9 @@ export function standupText(cards: Card[], activity: ActivityLog[], nameOf: (id:
     .map((a) => `• ${a.qty} u. de ${cards.find((c) => c.id === a.card_id)?.title ?? "operativa"} — ${a.who_name}${a.note ? ` (${a.note})` : ""}`);
   const bloq = cards.filter((c) => blockedIds.has(c.id)).map((c) => `• ${c.title} — ${nameOf(c.owner)}`);
   return `RESUMEN DIARIO — ${new Date(now).toLocaleDateString("es-AR")}\n\n` +
-    `✔ Terminadas (últimas 24 h):\n${hechas.join("\n") || "• (ninguna)"}\n\n` +
-    `🧾 Actividad operativa (últimas 24 h):\n${regs.join("\n") || "• (sin registros)"}\n\n` +
-    `⛓ Bloqueadas hoy:\n${bloq.join("\n") || "• (ninguna)"}`;
+    `TERMINADAS (últimas 24 h):\n${hechas.join("\n") || "• (ninguna)"}\n\n` +
+    `ACTIVIDAD OPERATIVA (últimas 24 h):\n${regs.join("\n") || "• (sin registros)"}\n\n` +
+    `BLOQUEADAS HOY:\n${bloq.join("\n") || "• (ninguna)"}`;
 }
 
 // esfuerzo cerrado por día del mes, acumulado sobre todo el historial

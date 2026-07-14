@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useArca, ArcaAgenda } from "../features/tablon/arca";
+import { LogoMark } from "./Logo";
 
 interface PubVenc { title: string; due_date: string; detail: string; }
 
@@ -52,11 +53,7 @@ export function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promis
     <div className="min-h-screen flex items-center justify-center gap-14 p-8 flex-wrap"
       style={{ background: "radial-gradient(1200px 700px at 30% 20%, #17181c 0%, #0b0b0d 60%)" }}>
       <div className="flex flex-col items-center gap-3 max-w-[380px]">
-        <div className="w-[74px] h-[74px] bg-white text-[#0b0b0d] rounded-[18px] grid place-items-center text-[46px] font-black relative overflow-hidden"
-          style={{ boxShadow: "inset 0 0 0 4px #0b0b0d,inset 0 0 0 8px #fff" }}>
-          P
-          <span className="absolute -right-[18px] -bottom-[30px] w-16 h-16 rounded-full border-[3px] border-[#0b0b0d]" />
-        </div>
+        <LogoMark size={84} className="text-white" />
         <div className="flex flex-col items-center text-white leading-none mt-1">
           <small className="text-[15px] tracking-[7px] font-semibold pl-[7px]">GRUPO</small>
           <b className="text-[34px] tracking-[5px] font-extrabold pl-[5px]">PARIS</b>
@@ -92,7 +89,7 @@ export function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promis
         <div className="w-full max-w-[390px] rounded-2xl border border-white/10 p-5 max-h-[80vh] overflow-y-auto" style={{ background: "rgba(255,255,255,.03)" }}>
           {vencs.length > 0 && (
             <>
-              <h2 className="text-[#9aa0ab] uppercase tracking-[2px] text-xs font-semibold mt-0 mb-3">📌 Próximos vencimientos del equipo</h2>
+              <h2 className="text-[#9aa0ab] uppercase tracking-[2px] text-xs font-semibold mt-0 mb-3">Próximos vencimientos del equipo</h2>
               {vencs.map((v, i) => (
                 <div key={i} className="flex items-center justify-between gap-2 py-1.5 border-b border-white/5 last:border-0">
                   <b className="text-white text-[13px] truncate">{v.title}</b>
@@ -103,7 +100,7 @@ export function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promis
           )}
           {arca.length > 0 && (
             <>
-              <h2 className="text-[#9aa0ab] uppercase tracking-[2px] text-xs font-semibold mt-5 mb-3">🏛 Agenda ARCA — {mes}</h2>
+              <h2 className="text-[#9aa0ab] uppercase tracking-[2px] text-xs font-semibold mt-5 mb-3">Agenda ARCA — {mes}</h2>
               <ArcaAgenda items={arca} />
               <p className="text-[#9aa0ab] text-[11px] m-0">Fuente: arca.gob.ar · se actualiza sola</p>
             </>

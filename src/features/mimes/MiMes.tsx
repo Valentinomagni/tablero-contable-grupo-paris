@@ -21,18 +21,18 @@ export function MiMes({ cards, activity, ownerId, onOpenCard }: {
 
   const byId = (id: string) => cards.find((x) => x.id === id);
   const isBlocked = (c: Card) => c.status !== "term" && (c.deps ?? []).some((id) => (byId(id)?.status ?? "term") !== "term");
-  const razones = (c: Card): string[] => {
-    const r: string[] = []; const i = dueInfo(c);
-    if (isBlocked(c)) r.push("⛓ bloqueada — reclamá la previa");
-    if (i && i.days < 0) r.push("🔴 vencida");
-    else if (i && i.days <= 3) r.push(`🟡 vence en ${i.days} día${i.days === 1 ? "" : "s"}`);
-    if (cards.some((x) => (x.deps ?? []).includes(c.id) && x.status !== "term")) r.push("⏳ otros esperan esta tarea");
-    if (c.priority === "alta") r.push("▲ prioridad alta");
-    if ((c.effort ?? 1) === 1 && c.status === "pend") r.push("⚡ rápida de sacar");
+  const razones = (c: Card): { txt: string; w: number }[] => {
+    const r: { txt: string; w: number }[] = []; const i = dueInfo(c);
+    if (isBlocked(c)) r.push({ txt: "bloqueada — reclamá la previa", w: 90 });
+    if (i && i.days < 0) r.push({ txt: "vencida", w: 0 });
+    else if (i && i.days <= 3) r.push({ txt: `vence en ${i.days} día${i.days === 1 ? "" : "s"}`, w: 1 });
+    if (cards.some((x) => (x.deps ?? []).includes(c.id) && x.status !== "term")) r.push({ txt: "otros esperan esta tarea", w: 2 });
+    if (c.priority === "alta") r.push({ txt: "prioridad alta", w: 3 });
+    if ((c.effort ?? 1) === 1 && c.status === "pend") r.push({ txt: "rápida de sacar", w: 5 });
     return r;
   };
-  const score = (c: Card) => { const r = razones(c); const w = { "⛓": 90, "🔴": 0, "🟡": 1, "⏳": 2, "▲": 3, "⚡": 5 }; return r.length ? Math.min(...r.map((x) => (w as Record<string, number>)[x[0]] ?? 9)) : 9; };
-  const sugeridas = abiertas.map((c) => ({ c, r: razones(c), s: score(c) })).sort((a, b) => a.s - b.s).slice(0, 5);
+  const sugeridas = abiertas.map((c) => { const r = razones(c); return { c, r: r.map((x) => x.txt), s: r.length ? Math.min(...r.map((x) => x.w)) : 9 }; })
+    .sort((a, b) => a.s - b.s).slice(0, 5);
 
   const cardSh = { boxShadow: "var(--ring-sh),var(--shadow)" };
 
@@ -51,11 +51,11 @@ export function MiMes({ cards, activity, ownerId, onOpenCard }: {
       <div className={`bg-surface rounded-2xl p-[18px] mb-6 border-l-[3px] ${alDia ? "border-done" : "border-warn"}`} style={cardSh}>
         <Bar label="Mes transcurrido" pct={pctMes} color="var(--ink2)" />
         <Bar label="Tareas cerradas" pct={pctAvance} color={alDia ? "var(--done)" : "var(--warn)"} />
-        <p className="text-sm mt-1.5 mb-0">{alDia ? "✔ Vas al día: cerraste más de lo que corrió el mes." : "⚠ El mes avanza más rápido que los cierres — mirá las sugeridas de abajo."}</p>
+        <p className="text-sm mt-1.5 mb-0">{alDia ? "Vas al día: cerraste más de lo que corrió el mes." : "El mes avanza más rápido que los cierres — mirá las sugeridas de abajo."}</p>
       </div>
 
       <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">¿Qué conviene hacer ahora?</h2>
-      {sugeridas.length === 0 ? <p className="text-ink2 text-sm">Sin tareas abiertas. 🎉</p>
+      {sugeridas.length === 0 ? <p className="text-ink2 text-sm">Sin tareas abiertas.</p>
         : sugeridas.map(({ c, r }) => (
           <div key={c.id} onClick={() => onOpenCard(c)} className="bg-surface border border-line rounded-lg px-3.5 py-2 mb-1.5 cursor-pointer text-sm" style={cardSh}>
             <b>{c.title}</b> <span className="text-ink2"> · {r.length ? r.join(" · ") : "sin urgencia — ordenala a tu criterio"}</span>

@@ -4,6 +4,7 @@ import { COLS, type Card, type Status, type ActivityLog } from "../../lib/types"
 import { dueInfo, fmtDateTime } from "../../lib/metrics";
 import { cn } from "../../lib/ui";
 import { pushUndo } from "../../lib/undo";
+import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check } from "lucide-react";
 
 const DOT: Record<string, string> = { pend: "bg-naranja", proc: "bg-s1", term: "bg-done" };
 
@@ -13,14 +14,14 @@ function DueBadge({ c }: { c: Card }) {
   const cls = info.days < 0 ? "bg-danger-soft text-danger"
     : info.days <= 3 ? "bg-warn-soft text-warn" : "bg-chip text-ink2";
   const txt = info.days < 0 ? `Venció ${info.lbl}` : `Vence ${info.lbl}`;
-  return <span className={cn("rounded-md px-2 py-0.5 font-semibold whitespace-nowrap tnum", cls)}>⏰ {txt}</span>;
+  return <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-semibold whitespace-nowrap tnum", cls)}><Clock size={11} /> {txt}</span>;
 }
 
 function CardItem({ c, blocked, waiting, onOpen }: { c: Card; blocked: boolean; waiting: boolean; onOpen: (c: Card) => void }) {
   const ck = c.checklist.length
-    ? <span className="bg-chip rounded-md px-1.5 py-0.5 tnum">☑ {c.checklist.filter((i) => i.done).length}/{c.checklist.length}</span> : null;
+    ? <span className="inline-flex items-center gap-1 bg-chip rounded-md px-1.5 py-0.5 tnum"><ListChecks size={11} /> {c.checklist.filter((i) => i.done).length}/{c.checklist.length}</span> : null;
   const pr = c.priority === "alta"
-    ? <span className="bg-danger-soft text-danger rounded-md px-2 py-0.5 font-semibold">▲ Alta</span> : null;
+    ? <span className="bg-danger-soft text-danger rounded-md px-2 py-0.5 font-semibold">Alta</span> : null;
   return (
     <div onClick={() => onOpen(c)}
       className="bg-surface rounded-lg p-3 mb-2 cursor-pointer border border-transparent transition
@@ -28,13 +29,13 @@ function CardItem({ c, blocked, waiting, onOpen }: { c: Card; blocked: boolean; 
       style={{ boxShadow: "var(--ring),var(--shadow)" }}>
       <div className="font-semibold text-sm tracking-tight">{c.title}</div>
       <div className="flex gap-2 flex-wrap mt-1.5 text-xs text-ink2 items-center">
-        {blocked && <span className="bg-warn-soft text-warn rounded-md px-2 py-0.5 font-semibold whitespace-nowrap">⛓ Bloqueada</span>}
-        {waiting && <span className="bg-accent-soft text-accent rounded-md px-2 py-0.5 font-semibold whitespace-nowrap">⏳ Te esperan</span>}
-        {pr}<DueBadge c={c} />{c.recurring && <span title="Mensual">🔁</span>}
+        {blocked && <span className="inline-flex items-center gap-1 bg-warn-soft text-warn rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Lock size={11} /> Bloqueada</span>}
+        {waiting && <span className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Hourglass size={11} /> Te esperan</span>}
+        {pr}<DueBadge c={c} />{c.recurring && <span title="Mensual"><Repeat size={12} /></span>}
         {(c.effort ?? 1) > 1 && <span className="bg-chip rounded-md px-1.5 py-0.5 tnum">{c.effort} pts</span>}
-        {ck}{c.comments.length > 0 && <span>💬 {c.comments.length}</span>}
+        {ck}{c.comments.length > 0 && <span className="inline-flex items-center gap-1"><MessageSquare size={11} /> {c.comments.length}</span>}
       </div>
-      {c.done_at && <div className="text-done font-semibold text-xs mt-1.5">✔ Terminada el {fmtDateTime(c.done_at)}</div>}
+      {c.done_at && <div className="flex items-center gap-1 text-done font-semibold text-xs mt-1.5"><Check size={12} /> Terminada el {fmtDateTime(c.done_at)}</div>}
     </div>
   );
 }
@@ -57,7 +58,7 @@ export function Board({ cards, activity, ownerId, meName, query = "", onOpen }: 
       const patch: Partial<Card> = { status };
       if (status === "term") patch.done_at = new Date().toISOString();
       else if (c.status === "term") patch.done_at = null;
-      const hist = [...(c.history ?? []), { who: meName, at: new Date().toISOString(), txt: status === "term" ? "Marcó terminada ✔" : "Movió la tarea" }];
+      const hist = [...(c.history ?? []), { who: meName, at: new Date().toISOString(), txt: status === "term" ? "Marcó terminada" : "Movió la tarea" }];
       pushUndo(c, { ...patch, history: hist });
       const { error } = await supabase.from("cards").update({ ...patch, history: hist }).eq("id", id);
       if (error) throw error;

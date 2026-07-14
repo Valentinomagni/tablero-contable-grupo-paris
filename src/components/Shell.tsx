@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { LayoutDashboard, ClipboardList, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin, Settings, KeyRound, AlignJustify } from "lucide-react";
 import { Avatar, cn } from "../lib/ui";
+import { LogoMark } from "./Logo";
 import { THEME_LBL, DENSITY_LBL } from "../hooks/useTheme";
 import type { Profile } from "../lib/types";
 
@@ -37,8 +38,7 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
         style={{ background: "linear-gradient(180deg,var(--side-bg2),var(--side-bg) 60%)", color: "var(--side-ink)",
           boxShadow: "inset -1px 0 0 rgba(255,255,255,.04),4px 0 24px rgba(0,0,0,.18)" }}>
         <div className="flex items-center gap-2.5 px-4 py-4 border-b border-[color:var(--side-line)]">
-          <span className="w-[34px] h-[34px] bg-white text-[#0b0b0d] rounded-[9px] grid place-items-center text-[20px] font-black shrink-0"
-            style={{ boxShadow: "inset 0 0 0 2px #0b0b0d,inset 0 0 0 4px #fff" }}>P</span>
+          <LogoMark size={34} className="text-white shrink-0" />
           <div className="flex flex-col leading-tight">
             <b className="text-sm">Tablero Contable</b>
             <small className="text-[color:var(--side-ink2)] text-[11px] uppercase tracking-wider">{boardName ?? "Grupo Paris"}</small>

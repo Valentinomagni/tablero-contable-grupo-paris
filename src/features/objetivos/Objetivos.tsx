@@ -13,9 +13,9 @@ export function Objetivos({ ownerId, ownerName }: { ownerId: string; ownerName: 
   const [editing, setEditing] = useState<Objective | null | "new">(null);
   const mine = objectives.filter((o) => o.owner === ownerId);
   const total = mine.reduce((s, o) => s + o.weight, 0);
-  const banner = total === 100 ? { cls: "bg-accent-soft text-accent", txt: "✔ Los pesos suman 100%" }
-    : total > 100 ? { cls: "bg-danger-soft text-danger", txt: `✖ Suman ${total}% — bajá ${total - 100}%` }
-    : { cls: "bg-warn-soft text-warn", txt: `⚠ Suman ${total}% — falta asignar ${100 - total}%` };
+  const banner = total === 100 ? { cls: "bg-accent-soft text-accent", txt: "Los pesos suman 100%" }
+    : total > 100 ? { cls: "bg-danger-soft text-danger", txt: `Suman ${total}% — bajá ${total - 100}%` }
+    : { cls: "bg-warn-soft text-warn", txt: `Suman ${total}% — falta asignar ${100 - total}%` };
 
   return (
     <div className="px-6 py-4 w-full max-w-[960px]">
@@ -38,7 +38,7 @@ export function Objetivos({ ownerId, ownerName }: { ownerId: string; ownerName: 
                 {pct !== null && <div className="h-2 bg-surface2 rounded-full mt-1.5 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.min(pct, 100)}%`, background: KPI_COLOR[cls] }} /></div>}
               </>
             )}
-            {o.notes && <p className="text-ink2 text-sm mt-1.5 mb-0">📝 {o.notes}</p>}
+            {o.notes && <p className="text-ink2 text-sm mt-1.5 mb-0">{o.notes}</p>}
           </div>
         );
       })}

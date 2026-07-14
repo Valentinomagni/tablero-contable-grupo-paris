@@ -25,9 +25,9 @@ export function Tablon() {
   const mes = new Date().toLocaleDateString("es-AR", { month: "long", year: "numeric" });
 
   const secciones: [Announcement["kind"], string, string][] = [
-    ["vencimiento", "📅 Vencimientos y fechas límite", "Hasta estas fechas se puede trabajar cada período."],
-    ["aviso", "📢 Avisos y recordatorios", ""],
-    ["proceso", "📖 Procesos y criterios unificados", "Cómo hacemos las cosas, por escrito."],
+    ["vencimiento", "Vencimientos y fechas límite", "Hasta estas fechas se puede trabajar cada período."],
+    ["aviso", "Avisos y recordatorios", ""],
+    ["proceso", "Procesos y criterios unificados", "Cómo hacemos las cosas, por escrito."],
   ];
 
   return (
@@ -56,7 +56,7 @@ export function Tablon() {
       })}
 
       {arca.length > 0 && <>
-        <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mt-5 mb-1">🏛 Agenda ARCA — {mes}</h2>
+        <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mt-5 mb-1">Agenda ARCA — {mes}</h2>
         <p className="text-ink2 text-[13px] mb-2.5">Vencimientos oficiales por terminación de CUIT. Fuente: arca.gob.ar, se actualiza sola.</p>
         <ArcaAgenda items={arca} />
       </>}

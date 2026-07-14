@@ -64,7 +64,7 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson }: {
   const copyStandup = async () => {
     const blockedIds = new Set(cards.filter((c) => isBlocked(c, cards, {})).map((c) => c.id));
     const txt = standupText(cards, activity, nom, blockedIds, now);
-    try { await navigator.clipboard.writeText(txt); setCopyMsg("✔ Copiado al portapapeles"); }
+    try { await navigator.clipboard.writeText(txt); setCopyMsg("Copiado al portapapeles"); }
     catch { prompt("Copiá el resumen:", txt); }
     setTimeout(() => setCopyMsg(""), 3000);
   };
@@ -116,8 +116,8 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson }: {
         </table>
       </div>
 
-      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">⚠ Tareas trabadas o vencidas</h2>
-      {stuck.length === 0 ? <p className="text-ink2 text-sm mb-6">Nada trabado. 👌</p>
+      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Tareas trabadas o vencidas</h2>
+      {stuck.length === 0 ? <p className="text-ink2 text-sm mb-6">Nada trabado.</p>
         : stuck.map((c) => {
           const i = dueInfo(c), last = c.comments[c.comments.length - 1];
           return (
@@ -134,18 +134,18 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson }: {
         <Bars data={d14.map((d) => ({ lbl: d.lbl.slice(0, 5), v: d.count, title: `${d.lbl}: ${d.count} tarea(s) · ${d.effort} punto(s)` }))} />
       </div>
 
-      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5 mt-6">📆 Ciclo del mes — en qué días se concentra el trabajo (histórico)</h2>
+      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5 mt-6">Ciclo del mes — en qué días se concentra el trabajo (histórico)</h2>
       <div className="bg-surface border border-line rounded-xl p-3 mb-2" style={cardSh}>
         {ciclo.total === 0 ? <p className="text-ink2 text-sm m-0">Todavía no hay historial de cierres suficiente.</p>
           : <>
             <Bars data={ciclo.porDia.map((v, i) => ({ lbl: (i + 1) % 5 === 0 || i === 0 ? String(i + 1) : "", v, title: `Día ${i + 1}: ${v} puntos acumulados` }))} />
-            <p className="text-sm mt-2 mb-0">💡 {ciclo.insight}</p>
+            <p className="text-sm mt-2 mb-0">{ciclo.insight}</p>
           </>}
       </div>
 
       {evol.length >= 2 && (
         <>
-          <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5 mt-6">📉 Evolución de la carga abierta del equipo (esfuerzo por día)</h2>
+          <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5 mt-6">Evolución de la carga abierta del equipo (esfuerzo por día)</h2>
           <div className="bg-surface border border-line rounded-xl p-3 mb-2" style={cardSh}>
             <Bars data={evol.map((e) => ({ lbl: String(new Date(e.day + "T00:00:00").getDate()), v: e.v, title: `${e.day.split("-").reverse().join("/")}: ${e.v} puntos abiertos` }))} />
             <p className="text-ink2 text-[13px] mt-2 mb-0">Si la barra crece día a día, entra más trabajo del que se cierra; si baja, el equipo está liberando carga.</p>
@@ -167,16 +167,16 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson }: {
           ))}
       </div>
 
-      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5 mt-6">🔗 Cadenas de dependencias entre tareas</h2>
+      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5 mt-6">Cadenas de dependencias entre tareas</h2>
       <div className="bg-surface border border-line rounded-xl p-3 mb-6" style={cardSh}>
         <DepGraph cards={cards} team={team} onOpenCard={onOpenCard} />
       </div>
 
-      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5 mt-6">✔ Terminadas los últimos 7 días</h2>
+      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5 mt-6">Terminadas los últimos 7 días</h2>
       {doneWeek.length === 0 ? <p className="text-ink2 text-sm">Todavía nada esta semana.</p>
         : doneWeek.slice(0, 20).map((c) => (
           <div key={c.id} onClick={() => onOpenCard(c)} className="bg-surface border border-line rounded-lg px-3.5 py-2 mb-1.5 cursor-pointer text-sm" style={cardSh}>
-            ✔ <b>{c.title}</b> <span className="text-ink2 text-xs">· {nom(c.owner)} · {fmtDateTime(c.done_at)}</span>
+            <b>{c.title}</b> <span className="text-ink2 text-xs">· {nom(c.owner)} · {fmtDateTime(c.done_at)}</span>
           </div>
         ))}
     </div>

@@ -30,13 +30,13 @@ export function UserModal({ user: u, meId, cards, activity, onClose }:
         .eq("id", u.id);
       if (error) throw error;
     },
-    onSuccess: () => { setMsg({ ok: true, txt: "✔ Guardado." }); qc.invalidateQueries({ queryKey: ["team"] }); },
-    onError: (e: Error) => setMsg({ ok: false, txt: "✖ " + e.message }),
+    onSuccess: () => { setMsg({ ok: true, txt: "Guardado." }); qc.invalidateQueries({ queryKey: ["team"] }); },
+    onError: (e: Error) => setMsg({ ok: false, txt: "" + e.message }),
   });
 
   const onSave = () => {
     if (u.id === meId && role !== "jefe") {
-      setMsg({ ok: false, txt: "✖ No podés quitarte el rol de jefe a vos mismo (pedíselo al otro jefe)." });
+      setMsg({ ok: false, txt: "No podés quitarte el rol de jefe a vos mismo (pedíselo al otro jefe)." });
       return;
     }
     save.mutate();
