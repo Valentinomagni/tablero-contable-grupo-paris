@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { Modal } from "../../components/Modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import { COLS, type Card, type Profile } from "../../lib/types";
@@ -37,12 +38,6 @@ export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—
     onSuccess: () => qc.invalidateQueries({ queryKey: ["cards"] }),
   });
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   const hist = (txt: string) => [...(c.history ?? []), { who: "—", at: new Date().toISOString(), txt }];
   const toggleCk = (n: number) => {
     const list = c.checklist.map((i, idx) => idx === n ? { ...i, done: !i.done, done_at: !i.done ? new Date().toISOString() : null } : i);
@@ -55,10 +50,7 @@ export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—
   const estLbl = COLS.find((x) => x[0] === c.status)![1];
 
   return (
-    <div onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      className="fixed inset-0 bg-black/55 flex items-start justify-center p-[6vh_16px] z-40" style={{ backdropFilter: "blur(3px)" }}>
-      <div role="dialog" aria-modal className="bg-surface border border-line rounded-[18px] w-full max-w-[560px] max-h-[85vh] overflow-y-auto p-[20px_22px]"
-        style={{ boxShadow: "var(--shadow-lg)" }}>
+    <Modal onClose={onClose}>
         <h3 className="text-lg font-semibold m-0">{c.title}</h3>
         <div className="text-xs text-ink2 mb-3.5">Estado: {estLbl}{c.done_at && ` · terminada el ${fmtDateTime(c.done_at)}`}</div>
 
@@ -196,7 +188,6 @@ export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—
                 className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Reabrir</button>}
           <button onClick={onClose} className="ml-auto border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Cerrar</button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

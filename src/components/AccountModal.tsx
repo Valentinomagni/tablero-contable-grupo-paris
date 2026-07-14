@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { supabase } from "../lib/supabase";
+import { Modal } from "./Modal";
 
 export function AccountModal({ name, email, onClose }: { name: string; email: string; onClose: () => void }) {
   const [old, setOld] = useState("");
@@ -7,12 +8,6 @@ export function AccountModal({ name, email, onClose }: { name: string; email: st
   const [nu2, setNu2] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; txt: string } | null>(null);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
 
   const save = async () => {
     setMsg(null);
@@ -32,10 +27,7 @@ export function AccountModal({ name, email, onClose }: { name: string; email: st
 
   const inputCls = "w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-[13px]";
   return (
-    <div onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      className="fixed inset-0 bg-black/55 flex items-start justify-center p-[6vh_16px] z-40" style={{ backdropFilter: "blur(3px)" }}>
-      <div role="dialog" aria-modal className="bg-surface border border-line rounded-[18px] w-full max-w-[440px] p-[20px_22px]"
-        style={{ boxShadow: "var(--shadow-lg)" }}>
+    <Modal onClose={onClose} maxWidth={440}>
         <h3 className="text-lg font-semibold m-0">Mi cuenta</h3>
         <div className="text-xs text-ink2 mb-3.5">{name} · {email}</div>
         <h4 className="text-xs uppercase tracking-wide text-ink2 mb-2">Cambiar contraseña</h4>
@@ -58,7 +50,6 @@ export function AccountModal({ name, email, onClose }: { name: string; email: st
             {busy ? "Guardando…" : "Guardar contraseña"}</button>
           <button onClick={onClose} className="ml-auto border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Cerrar</button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

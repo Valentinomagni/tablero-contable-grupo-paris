@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { Modal } from "../../components/Modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import type { ActivityLog, Card, Profile, Role } from "../../lib/types";
@@ -14,12 +15,6 @@ export function UserModal({ user: u, meId, cards, activity, onClose }:
   const [puesto, setPuesto] = useState(u.puesto ?? "");
   const [ficha, setFicha] = useState(u.ficha ?? "");
   const [msg, setMsg] = useState<{ ok: boolean; txt: string } | null>(null);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
 
   const m = userMetrics30d(cards, objectives, activity, u.id, Date.now());
 
@@ -50,10 +45,7 @@ export function UserModal({ user: u, meId, cards, activity, onClose }:
   );
 
   return (
-    <div onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      className="fixed inset-0 bg-black/55 flex items-start justify-center p-[6vh_16px] z-40" style={{ backdropFilter: "blur(3px)" }}>
-      <div role="dialog" aria-modal className="bg-surface border border-line rounded-[18px] w-full max-w-[560px] max-h-[85vh] overflow-y-auto p-[20px_22px]"
-        style={{ boxShadow: "var(--shadow-lg)" }}>
+    <Modal onClose={onClose}>
         <h3 className="text-lg font-semibold m-0">{u.name}</h3>
         <div className="text-xs text-ink2 mb-3.5">{u.email || ""} · rol: {u.role}</div>
 
@@ -96,7 +88,6 @@ export function UserModal({ user: u, meId, cards, activity, onClose }:
           </button>
           <button onClick={onClose} className="ml-auto border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Cerrar</button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

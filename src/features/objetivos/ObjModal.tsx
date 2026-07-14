@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { Modal } from "../../components/Modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import type { Objective } from "../../lib/types";
@@ -15,12 +16,6 @@ export function ObjModal({ obj, ownerId, ownerName, otherWeight, onClose }:
   const [kpiCurrent, setKpiCurrent] = useState(obj?.kpi_current?.toString() ?? "0");
   const [notes, setNotes] = useState(obj?.notes ?? "");
   const [msg, setMsg] = useState("");
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -57,10 +52,7 @@ export function ObjModal({ obj, ownerId, ownerName, otherWeight, onClose }:
 
   const inputCls = "w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-[13px]";
   return (
-    <div onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      className="fixed inset-0 bg-black/55 flex items-start justify-center p-[6vh_16px] z-40" style={{ backdropFilter: "blur(3px)" }}>
-      <div role="dialog" aria-modal className="bg-surface border border-line rounded-[18px] w-full max-w-[560px] max-h-[85vh] overflow-y-auto p-[20px_22px]"
-        style={{ boxShadow: "var(--shadow-lg)" }}>
+    <Modal onClose={onClose}>
         <h3 className="text-lg font-semibold m-0">{obj ? "Editar objetivo" : "Nuevo objetivo"}</h3>
         <div className="text-xs text-ink2 mb-3.5">De: {ownerName} · Los demás objetivos suman {otherWeight}%</div>
         <div className="grid gap-2.5">
@@ -99,7 +91,6 @@ export function ObjModal({ obj, ownerId, ownerName, otherWeight, onClose }:
             className="border border-danger text-danger rounded-lg px-3.5 py-2 text-[13px]">Eliminar</button>}
           <button onClick={onClose} className="ml-auto border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Cerrar</button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
