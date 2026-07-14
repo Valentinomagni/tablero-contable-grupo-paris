@@ -62,6 +62,10 @@ export function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promis
           <b className="text-[34px] tracking-[5px] font-extrabold pl-[5px]">PARIS</b>
         </div>
         <p className="text-[#9aa0ab] tracking-[3px] uppercase text-xs mt-0.5">Tablero Contable</p>
+        <p className="text-[#5c6270] text-[11px] tracking-[1.5px] uppercase mt-6 text-center leading-relaxed">
+          整理 Seiri · 整頓 Seiton · 清掃 Seiso<br />清潔 Seiketsu · 躾 Shitsuke
+        </p>
+        <p className="text-[#5c6270] text-[11px] tracking-wide mt-1">Kaizen — mejora continua, todos los días</p>
       </div>
 
       <form onSubmit={submit}

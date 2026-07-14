@@ -9,13 +9,13 @@
 }
 
 :root{
-  --bg:#f4f5f7; --surface:#ffffff; --surface2:#eceef1; --ink:#20242c; --ink2:#5b6270;
-  --line:#d7dbe2; --accent:#1b3c6f; --accent-soft:#e7edf6; --done:#0c7a53;
+  --bg:#f5f5f6; --surface:#ffffff; --surface2:#eeeff1; --ink:#191c22; --ink2:#5c6270;
+  --line:#e2e4e9; --accent:#1b3c6f; --accent-soft:#e8edf6; --done:#0c7a53;
   --danger:#a72920; --warn:#8a5a14; --warn-soft:#f4e8d0; --danger-soft:#f6e1df;
   --chip:#eef0f3;
-  --shadow:0 1px 2px rgba(20,30,55,.04),0 4px 12px rgba(20,30,55,.06);
-  --shadow-lg:0 4px 12px rgba(20,30,55,.08),0 16px 40px rgba(20,30,55,.12);
-  --ring-sh:0 0 0 1px rgba(20,30,55,.04);
+  --shadow:0 1px 1px rgba(16,22,38,.03),0 2px 8px rgba(16,22,38,.05);
+  --shadow-lg:0 2px 8px rgba(16,22,38,.06),0 24px 56px -12px rgba(16,22,38,.18);
+  --ring-sh:0 0 0 1px rgba(16,22,38,.05);
   --s1:#2a63b8; --s2:#0c8f6c; --naranja:#e27e24;
   --side-bg:#0e0f12; --side-bg2:#17181d; --side-ink:#eceef1; --side-ink2:#8f96a1; --side-line:rgba(255,255,255,.08);
   /* tokens semánticos para componentes shadcn, mapeados a la paleta Paris */
@@ -55,6 +55,22 @@ body{margin:0;background:var(--bg);color:var(--ink);
   font-family:"Inter","Segoe UI",system-ui,sans-serif;font-size:14.5px;line-height:1.5;
   -webkit-font-smoothing:antialiased;font-optical-sizing:auto;letter-spacing:-.006em}
 .tnum{font-variant-numeric:tabular-nums}
+
+/* ---- pulido premium (Kaizen: mejora continua, Seiso: limpieza visual) ---- */
+h1,h2,h3{letter-spacing:-.02em}
+::selection{background:var(--accent);color:#fff}
+button,a,input,select,textarea{transition:background-color .16s ease,border-color .16s ease,color .16s ease,box-shadow .16s ease,opacity .16s ease}
+button{cursor:pointer}
+button:active{transform:translateY(.5px)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)!important;box-shadow:0 0 0 3px var(--accent-soft)}
+*{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--ink2) 35%,transparent) transparent}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--ink2) 30%,transparent);border-radius:99px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--ink2) 50%,transparent);border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-track{background:transparent}
+details summary::-webkit-details-marker{display:none}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
 /* densidad compacta (pref-density) */
 html.compact body{font-size:13px;line-height:1.4}
