@@ -33,5 +33,17 @@ await page.evaluate(() => [...document.querySelectorAll("button")].find((b) => b
 await new Promise((r) => setTimeout(r, 900));
 await page.screenshot({ path: `${out}/4-reporte.png` });
 
+// dark mode del resumen
+await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: "dark" }]);
+await page.evaluate(() => [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Resumen")?.click());
+await new Promise((r) => setTimeout(r, 900));
+await page.screenshot({ path: `${out}/5-resumen-dark.png` });
+
+// móvil 375px (sidebar off-canvas + tiles apiladas)
+await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: scheme }]);
+await page.setViewport({ width: 375, height: 812 });
+await new Promise((r) => setTimeout(r, 700));
+await page.screenshot({ path: `${out}/6-movil.png` });
+
 await browser.close();
 console.log("shots ok");
