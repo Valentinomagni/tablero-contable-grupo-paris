@@ -16,6 +16,15 @@ export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—
   const [newCm, setNewCm] = useState("");
   const [depPerson, setDepPerson] = useState("");
   const [depTask, setDepTask] = useState("");
+  const [confirmDel, setConfirmDel] = useState(false);
+
+  const del = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("cards").delete().eq("id", c.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["cards"] }); onClose(); },
+  });
 
   const depIds = c.deps ?? [];
   const known = new Set(cards.map((x) => x.id));
@@ -186,6 +195,16 @@ export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—
             : locked ? <span className="inline-flex items-center gap-1.5 text-ink2 text-[13px]"><Lock size={13} /> Solo un jefe puede reabrir esta tarea</span>
             : <button onClick={() => patch.mutate({ status: "proc", done_at: null, history: hist("Reabrió la tarea") })}
                 className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Reabrir</button>}
+          {!locked && (confirmDel ? (
+            <span className="inline-flex items-center gap-1.5 text-[13px]">
+              <button onClick={() => del.mutate()} disabled={del.isPending}
+                className="bg-danger text-white rounded-lg px-3 py-2 font-semibold disabled:opacity-60">{del.isPending ? "Eliminando…" : "Eliminar definitivamente"}</button>
+              <button onClick={() => setConfirmDel(false)} className="border border-line bg-surface2 rounded-lg px-3 py-2">Cancelar</button>
+            </span>
+          ) : (
+            <button onClick={() => setConfirmDel(true)}
+              className="border border-danger/40 text-danger rounded-lg px-3.5 py-2 text-[13px]">Eliminar</button>
+          ))}
           <button onClick={onClose} className="ml-auto border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Cerrar</button>
         </div>
     </Modal>

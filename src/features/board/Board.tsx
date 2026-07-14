@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import { COLS, type Card, type Status, type ActivityLog } from "../../lib/types";
 import { dueInfo, fmtDateTime } from "../../lib/metrics";
 import { cn } from "../../lib/ui";
 import { pushUndo } from "../../lib/undo";
-import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check } from "lucide-react";
+import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X } from "lucide-react";
 
 const DOT: Record<string, string> = { pend: "bg-naranja", proc: "bg-s1", term: "bg-done" };
 
@@ -88,9 +89,32 @@ export function Board({ cards, activity, ownerId, meName, query = "", onOpen }: 
     onSuccess: () => qc.invalidateQueries({ queryKey: ["activity"] }),
   });
 
-  const promptAdd = (status: Status) => { const t = prompt("Título de la tarea:"); if (t?.trim()) add.mutate({ status, title: t.trim() }); };
-  const promptOper = () => { const t = prompt("Nombre de la tarea operativa (ej: Pagos a proveedores):"); if (t?.trim()) add.mutate({ status: "proc", title: t.trim(), oper: true }); };
-  const promptReg = (cardId: string) => { const q = prompt("¿Cuántas unidades registrás?", "1"); if (q !== null) registrar.mutate({ cardId, qty: Math.max(1, Math.round(Number(q) || 1)) }); };
+  // formularios inline (adiós prompt() nativo)
+  const [adding, setAdding] = useState<string | null>(null); // columna en modo alta ("oper" = operativa)
+  const [newTitle, setNewTitle] = useState("");
+  const [regFor, setRegFor] = useState<string | null>(null); // card operativa en modo registro
+  const [regQty, setRegQty] = useState("1");
+
+  const confirmAdd = () => {
+    const t = newTitle.trim();
+    if (t) add.mutate(adding === "oper" ? { status: "proc", title: t, oper: true } : { status: adding as Status, title: t });
+    setAdding(null); setNewTitle("");
+  };
+  const confirmReg = (cardId: string) => {
+    registrar.mutate({ cardId, qty: Math.max(1, Math.round(Number(regQty) || 1)) });
+    setRegFor(null); setRegQty("1");
+  };
+  const addInline = (col: string, placeholder: string) =>
+    adding === col ? (
+      <input autoFocus value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder={placeholder}
+        onKeyDown={(e) => { if (e.key === "Enter") confirmAdd(); if (e.key === "Escape") { setAdding(null); setNewTitle(""); } }}
+        onBlur={() => { setAdding(null); setNewTitle(""); }}
+        className="w-full bg-surface border border-accent rounded-lg px-2.5 py-2 text-[13px] outline-none" />
+    ) : (
+      <button onClick={() => { setAdding(col); setNewTitle(""); }}
+        className="w-full border border-dashed border-line rounded-lg py-2 text-[13px] text-ink2 hover:text-accent hover:border-accent transition">
+        + Añadir {col === "oper" ? "operativa" : "tarea"}</button>
+    );
 
   const hoyStr = new Date().toDateString();
   const colBg = { background: "color-mix(in srgb,var(--surface2) 55%,var(--bg))" };
@@ -113,9 +137,7 @@ export function Board({ cards, activity, ownerId, meName, query = "", onOpen }: 
             </div>
           ))}
           {mine.filter((c) => c.status === k).length === 0 && <p className="text-ink2 text-[13px] px-2 pb-2">Sin tareas acá.</p>}
-          {k !== "term" && (
-            <button onClick={() => promptAdd(k)} className="w-full border border-dashed border-line rounded-lg py-2 text-[13px] text-ink2 hover:text-accent hover:border-accent transition">+ Añadir tarea</button>
-          )}
+          {k !== "term" && addInline(k, "Título y Enter…")}
         </div>
       ))}
 
@@ -135,12 +157,23 @@ export function Board({ cards, activity, ownerId, meName, query = "", onOpen }: 
                 <span className="bg-chip rounded-md px-1.5 py-0.5 tnum">hoy: {hoy}</span>
                 <span className="bg-chip rounded-md px-1.5 py-0.5 tnum">7 días: {sem}</span>
               </div>
-              <button onClick={(e) => { e.stopPropagation(); promptReg(c.id); }} className="w-full mt-2 border border-line bg-surface2 rounded-lg py-1 text-xs">＋ Registrar</button>
+              {regFor === c.id ? (
+                <div className="flex gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
+                  <input autoFocus type="number" min={1} value={regQty} onChange={(e) => setRegQty(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") confirmReg(c.id); if (e.key === "Escape") setRegFor(null); }}
+                    className="w-16 bg-surface border border-accent rounded-lg px-2 py-1 text-xs outline-none tnum" />
+                  <button onClick={() => confirmReg(c.id)} className="flex-1 bg-accent text-white rounded-lg py-1 text-xs font-semibold">Registrar</button>
+                  <button onClick={() => setRegFor(null)} className="border border-line bg-surface2 rounded-lg px-1.5"><X size={11} /></button>
+                </div>
+              ) : (
+                <button onClick={(e) => { e.stopPropagation(); setRegFor(c.id); setRegQty("1"); }}
+                  className="w-full mt-2 border border-line bg-surface2 rounded-lg py-1 text-xs">+ Registrar</button>
+              )}
             </div>
           );
         })}
         {opers.length === 0 && <p className="text-ink2 text-[13px] px-2 pb-2">Pagos, trámites y gestiones a demanda: no se cierran, se registran.</p>}
-        <button onClick={promptOper} className="w-full border border-dashed border-line rounded-lg py-2 text-[13px] text-ink2 hover:text-accent hover:border-accent transition">+ Añadir operativa</button>
+        {addInline("oper", "Ej: Pagos a proveedores…")}
       </div>
     </div>
   );
