@@ -28,14 +28,21 @@ export function dueDateDe(item: TemplateItem, year: number, month1a12: number): 
   return `${year}-${String(month1a12).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
+// marca en el historial que ancla una tarea a la plantilla y al mes concreto que la generó.
+// Es la clave de idempotencia: sirve incluso para ítems sin vencimiento (due_date null).
+export const marcaPlantilla = (year: number, month1a12: number) =>
+  `Generada desde la plantilla de cierre mensual · ${year}-${String(month1a12).padStart(2, "0")}`;
+
 // qué ítems de la plantilla FALTAN generar (evita duplicados si se aprieta dos veces):
-// existe = misma persona + mismo título + creada o venciendo en ese mes
+// ya existe = misma persona + mismo título + (lleva la marca de ese mes  ó  vence ese mes).
+// La marca de historial cubre los ítems sin vencimiento, que antes se duplicaban en cada click.
 export function faltantesDePlantilla(items: TemplateItem[], cards: Card[], year: number, month1a12: number): TemplateItem[] {
+  const marca = marcaPlantilla(year, month1a12);
   const pref = `${year}-${String(month1a12).padStart(2, "0")}`;
   return items.filter((it) => !cards.some((c) =>
     c.owner === it.owner &&
     c.title.trim().toLowerCase() === it.title.trim().toLowerCase() &&
-    ((c.due_date ?? "").startsWith(pref) || c.created_at.startsWith(pref))
+    ((c.history ?? []).some((h) => h.txt === marca) || (c.due_date ?? "").startsWith(pref))
   ));
 }
 
@@ -47,6 +54,6 @@ export function filasParaInsertar(items: TemplateItem[], year: number, month1a12
     priority: it.priority,
     effort: it.effort,
     due_date: dueDateDe(it, year, month1a12),
-    history: [{ who: whoName, at: new Date().toISOString(), txt: "Generada desde la plantilla de cierre mensual" }],
+    history: [{ who: whoName, at: new Date().toISOString(), txt: marcaPlantilla(year, month1a12) }],
   }));
 }

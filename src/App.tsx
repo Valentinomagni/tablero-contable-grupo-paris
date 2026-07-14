@@ -60,7 +60,7 @@ export default function App() {
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, []);
+  }, [qcRef]);
 
 
   if (loading) return <div className="min-h-screen grid place-items-center text-ink2">Cargando…</div>;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validarPlantilla, dueDateDe, faltantesDePlantilla, type TemplateItem } from "./plantilla";
+import { validarPlantilla, dueDateDe, faltantesDePlantilla, filasParaInsertar, type TemplateItem } from "./plantilla";
 import type { Card } from "./types";
 
 const item = (p: Partial<TemplateItem>): TemplateItem =>
@@ -49,5 +49,13 @@ describe("faltantesDePlantilla", () => {
   it("no descarta por coincidencia de otra persona", () => {
     const cards = [mkCard({ owner: "u2", title: "IVA", due_date: "2020-03-18" })];
     expect(faltantesDePlantilla(items, cards, 2020, 3)).toHaveLength(2);
+  });
+  it("idempotencia: un ítem SIN vencimiento generado por la plantilla no se regenera (marca de historial)", () => {
+    const undated = [item({ title: "Backup mensual", due_day: null })];
+    const generada = filasParaInsertar(undated, 2020, 8, "Ana"); // due_date null + marca de agosto
+    const yaGenerada = mkCard({ owner: "u1", title: "Backup mensual", due_date: null, history: generada[0].history });
+    expect(faltantesDePlantilla(undated, [], 2020, 8)).toHaveLength(1);        // sin la card: falta
+    expect(faltantesDePlantilla(undated, [yaGenerada], 2020, 8)).toHaveLength(0); // ya generada ese mes: NO se duplica
+    expect(faltantesDePlantilla(undated, [yaGenerada], 2020, 9)).toHaveLength(1); // otro mes: sí falta
   });
 });
