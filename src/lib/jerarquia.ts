@@ -38,6 +38,18 @@ export function porMarca(profiles: Profile[]): Record<string, Profile[]> {
   return m;
 }
 
+// Árbol jerárquico para el organigrama. Las raíces son quienes no tienen manager
+// o cuyo manager no está en el set visible (subárbol de un encargado, o Plan 02 sin cargar).
+export interface NodoOrg { profile: Profile; hijos: NodoOrg[]; }
+export function construirArbol(profiles: Profile[]): NodoOrg[] {
+  const idset = new Set(profiles.map((p) => p.id));
+  const esRaiz = (p: Profile) => p.manager_id === null || !idset.has(p.manager_id);
+  const hijosDe = (id: string): NodoOrg[] =>
+    profiles.filter((p) => !esRaiz(p) && p.manager_id === id)
+      .map((p) => ({ profile: p, hijos: hijosDe(p.id) }));
+  return profiles.filter(esRaiz).map((p) => ({ profile: p, hijos: hijosDe(p.id) }));
+}
+
 // Guard anti-ciclo: un candidato NO puede ser manager de un empleado si es el propio empleado
 // o si ya forma parte del subárbol (equipo) del empleado (eso crearía un ciclo).
 export function puedeSerManager(candidatoId: string, empleadoId: string, profiles: Profile[]): boolean {

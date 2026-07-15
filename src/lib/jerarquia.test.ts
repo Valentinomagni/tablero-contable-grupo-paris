@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { reportesDirectos, equipoDe, visiblesPara, porMarca, puedeSerManager, cardsDeEquipo, puedeReasignar } from "./jerarquia";
+import { reportesDirectos, equipoDe, visiblesPara, porMarca, puedeSerManager, cardsDeEquipo, puedeReasignar, construirArbol } from "./jerarquia";
 import type { Card, Profile } from "./types";
 const p = (id: string, role: Profile["role"], manager_id: string | null = null, marca: string | null = null): Profile =>
   ({ id, name: id, role, email: "", puesto: "", ficha: "", manager_id, marca });
@@ -54,6 +54,37 @@ describe("cardsDeEquipo", () => {
     expect(cardsDeEquipo(cards, [])).toEqual([]));
   it("no muta el array original", () => {
     const n = cards.length; cardsDeEquipo(cards, team); expect(cards.length).toBe(n);
+  });
+});
+
+describe("construirArbol", () => {
+  it("arma jefe -> [enc -> [e1,e2], enc2 -> [e3]]", () => {
+    const raices = construirArbol(team);
+    expect(raices.map((r) => r.profile.id)).toEqual(["jefe"]);
+    const jefe = raices[0];
+    expect(jefe.hijos.map((h) => h.profile.id).sort()).toEqual(["enc", "enc2"]);
+    const enc = jefe.hijos.find((h) => h.profile.id === "enc")!;
+    expect(enc.hijos.map((h) => h.profile.id).sort()).toEqual(["e1", "e2"]);
+    const enc2 = jefe.hijos.find((h) => h.profile.id === "enc2")!;
+    expect(enc2.hijos.map((h) => h.profile.id)).toEqual(["e3"]);
+    // hojas sin hijos
+    expect(enc.hijos.every((h) => h.hijos.length === 0)).toBe(true);
+  });
+  it("manager fuera del set => raíz (subárbol de un encargado)", () => {
+    // solo el equipo de 'enc' (sin el jefe). enc.manager_id='jefe' no está en el set => raíz.
+    const sub = team.filter((p) => ["enc", "e1", "e2"].includes(p.id));
+    const raices = construirArbol(sub);
+    expect(raices.map((r) => r.profile.id)).toEqual(["enc"]);
+    expect(raices[0].hijos.map((h) => h.profile.id).sort()).toEqual(["e1", "e2"]);
+  });
+  it("sin jerarquía (manager_id null) => todos raíces planos", () => {
+    const planos = [p("a", "empleado"), p("b", "empleado"), p("c", "empleado")];
+    const raices = construirArbol(planos);
+    expect(raices.map((r) => r.profile.id)).toEqual(["a", "b", "c"]);
+    expect(raices.every((r) => r.hijos.length === 0)).toBe(true);
+  });
+  it("array vacío => []", () => {
+    expect(construirArbol([])).toEqual([]);
   });
 });
 
