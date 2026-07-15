@@ -2,17 +2,18 @@ import { useState } from "react";
 import { Modal } from "../../components/Modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
-import { COLS, type Card, type Profile } from "../../lib/types";
+import { COLS, type Card, type Profile, type ActivityLog } from "../../lib/types";
 import { fmtDateTime } from "../../lib/metrics";
 import { depInfoOf, dependentsOf, isBlocked, type DepMap } from "../../lib/deps";
 import { pushUndo } from "../../lib/undo";
 import { isShared, participantes, siblingSyncPatches } from "../../lib/shared";
-import { Check, Link2, Lock, Hourglass, X, Users, Pencil, Trash2 } from "lucide-react";
+import { Check, Link2, Lock, Hourglass, X, Users, Pencil, Trash2, Minus, Plus } from "lucide-react";
 import { useDepsInfo, useReverseDeps, useSettings } from "../../hooks/useData";
 import { editarItem, borrarItem } from "../../lib/checklist";
+import { nuevaCantidad } from "../../lib/operativas";
 
-export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—" }:
-  { card: Card; cards: Card[]; team: Profile[]; isJefe: boolean; onClose: () => void; meName?: string }) {
+export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose, meName = "—" }:
+  { card: Card; cards: Card[]; team: Profile[]; activity?: ActivityLog[]; isJefe: boolean; onClose: () => void; meName?: string }) {
   const qc = useQueryClient();
   const [newCk, setNewCk] = useState("");
   const [editCk, setEditCk] = useState<number | null>(null);
@@ -21,6 +22,24 @@ export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—
   const [depPerson, setDepPerson] = useState("");
   const [depTask, setDepTask] = useState("");
   const [confirmDel, setConfirmDel] = useState(false);
+  const [editReg, setEditReg] = useState<string | null>(null);
+  const [editRegQty, setEditRegQty] = useState("");
+
+  const setRegQty = useMutation({
+    mutationFn: async ({ id, qty }: { id: string; qty: number }) => {
+      const { error } = await supabase.from("activity_log").update({ qty }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["activity"] }),
+  });
+
+  const delReg = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("activity_log").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["activity"] }),
+  });
 
   const del = useMutation({
     mutationFn: async () => {
@@ -102,6 +121,41 @@ export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—
         <textarea defaultValue={c.description} placeholder="Descripción, instrucciones…"
           onBlur={(e) => { if (e.target.value !== c.description) patch.mutate({ description: e.target.value }); }}
           className="w-full bg-surface2 border border-line rounded-lg text-ink text-sm px-2.5 py-2 min-h-[52px] resize-y" />
+
+        {c.card_type === "operativa" && (() => {
+          const regs = activity.filter((a) => a.card_id === c.id);
+          const saveRegEdit = (id: string) => {
+            const q = Math.max(0, Math.round(Number(editRegQty) || 0));
+            setRegQty.mutate({ id, qty: q });
+            setEditReg(null);
+          };
+          return (
+            <>
+              <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Registros ({regs.length})</h4>
+              {regs.length === 0 && <p className="text-ink2 text-[13px] m-0">Sin registros todavía.</p>}
+              {regs.map((a) => (
+                <div key={a.id} className="flex items-center gap-2 py-1 text-sm">
+                  <button title="Restar" onClick={() => setRegQty.mutate({ id: a.id, qty: nuevaCantidad(a.qty, -1) })}
+                    className="border border-line bg-surface2 rounded-lg px-1.5 py-1"><Minus size={12} /></button>
+                  {editReg === a.id ? (
+                    <input autoFocus type="number" min={0} value={editRegQty} onChange={(e) => setEditRegQty(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") saveRegEdit(a.id); if (e.key === "Escape") setEditReg(null); }}
+                      onBlur={() => saveRegEdit(a.id)}
+                      className="w-16 bg-surface2 border border-accent rounded-lg px-2 py-1 text-ink text-[13px] outline-none tnum" />
+                  ) : (
+                    <button title="Corregir cantidad" onClick={() => { setEditReg(a.id); setEditRegQty(String(a.qty)); }}
+                      className="tnum font-semibold min-w-[2rem] text-center">{a.qty}</button>
+                  )}
+                  <button title="Sumar" onClick={() => setRegQty.mutate({ id: a.id, qty: nuevaCantidad(a.qty, 1) })}
+                    className="border border-line bg-surface2 rounded-lg px-1.5 py-1"><Plus size={12} /></button>
+                  <span className="text-ink2 text-xs ml-1">{a.who_name} · {fmtDateTime(a.at)}</span>
+                  <button title="Borrar registro" onClick={() => delReg.mutate(a.id)}
+                    className="ml-auto border border-line bg-surface2 rounded-lg px-1.5 py-1"><Trash2 size={12} /></button>
+                </div>
+              ))}
+            </>
+          );
+        })()}
 
         {(depIds.length > 0 || isJefe) && (
           <>

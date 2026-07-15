@@ -136,7 +136,7 @@ export default function App() {
           : cardsLoading ? <BoardSkeleton />
           : <Board cards={cards} activity={activity} ownerId={view} meName={me.name} query={query} onOpen={setOpenCard} />}
       </Shell>
-      {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} cards={cards} team={fullTeam} isJefe={!!isJefe} onClose={() => setOpenCard(null)} meName={me.name} />}
+      {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} cards={cards} team={fullTeam} activity={activity} isJefe={!!isJefe} onClose={() => setOpenCard(null)} meName={me.name} />}
       {openUser && <UserModal user={fullTeam.find((t) => t.id === openUser.id) ?? openUser} meId={me.id} cards={cards} activity={activity} onClose={() => setOpenUser(null)} />}
       {account && <AccountModal name={me.name} email={me.email} onClose={() => setAccount(false)} />}
       {delegar && <DelegarModal team={fullTeam} meName={me.name} onClose={() => setDelegar(false)} />}
