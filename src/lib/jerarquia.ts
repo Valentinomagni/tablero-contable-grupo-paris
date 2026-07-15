@@ -1,5 +1,9 @@
 import type { Card, Profile } from "./types";
 
+// Perfil centinela "Sin asignar" (migración 17): dueño de las cards huérfanas tras
+// eliminar un empleado. Se excluye de los listados de equipo/métricas.
+export const SIN_ASIGNAR_ID = "00000000-0000-0000-0000-000000000000";
+
 export function reportesDirectos(managerId: string, profiles: Profile[]): Profile[] {
   return profiles.filter((p) => p.manager_id === managerId);
 }
@@ -12,8 +16,10 @@ export function equipoDe(managerId: string, profiles: Profile[]): Profile[] {
 }
 
 export function visiblesPara(me: Profile, profiles: Profile[]): Profile[] {
-  if (me.role === "jefe") return profiles;
-  if (me.role === "encargado") return [me, ...equipoDe(me.id, profiles)];
+  // El centinela "Sin asignar" nunca aparece en listados de equipo/métricas.
+  const reales = profiles.filter((p) => p.id !== SIN_ASIGNAR_ID);
+  if (me.role === "jefe") return reales;
+  if (me.role === "encargado") return [me, ...equipoDe(me.id, reales)];
   return [me];
 }
 
