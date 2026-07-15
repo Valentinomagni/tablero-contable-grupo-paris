@@ -22,6 +22,16 @@ export function cardsDeEquipo(cards: Card[], team: Profile[]): Card[] {
   return cards.filter((c) => team.some((u) => u.id === c.owner));
 }
 
+// ¿Puede `me` reasignar una card de `cardOwner` hacia `destino`?
+// Jefe: siempre (salvo mismo origen/destino). Encargado: origen y destino deben estar en SU equipo. Empleado: nunca.
+export function puedeReasignar(me: Profile, cardOwner: string, destino: string, profiles: Profile[]): boolean {
+  if (cardOwner === destino) return false;
+  if (me.role === "jefe") return true;
+  if (me.role !== "encargado") return false;
+  const equipo = equipoDe(me.id, profiles).map((p) => p.id);
+  return equipo.includes(cardOwner) && equipo.includes(destino);
+}
+
 export function porMarca(profiles: Profile[]): Record<string, Profile[]> {
   const m: Record<string, Profile[]> = {};
   for (const p of profiles) if (p.marca) (m[p.marca] ??= []).push(p);

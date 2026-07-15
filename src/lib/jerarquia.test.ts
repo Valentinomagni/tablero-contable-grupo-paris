@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { reportesDirectos, equipoDe, visiblesPara, porMarca, puedeSerManager, cardsDeEquipo } from "./jerarquia";
+import { reportesDirectos, equipoDe, visiblesPara, porMarca, puedeSerManager, cardsDeEquipo, puedeReasignar } from "./jerarquia";
 import type { Card, Profile } from "./types";
 const p = (id: string, role: Profile["role"], manager_id: string | null = null, marca: string | null = null): Profile =>
   ({ id, name: id, role, email: "", puesto: "", ficha: "", manager_id, marca });
@@ -55,4 +55,21 @@ describe("cardsDeEquipo", () => {
   it("no muta el array original", () => {
     const n = cards.length; cardsDeEquipo(cards, team); expect(cards.length).toBe(n);
   });
+});
+
+describe("puedeReasignar", () => {
+  const enc = team[1]; // encargado de Peugeot (e1, e2)
+  const jefe = team[0];
+  it("encargado reasigna entre miembros de su equipo", () =>
+    expect(puedeReasignar(enc, "e1", "e2", team)).toBe(true));
+  it("encargado NO reasigna hacia alguien fuera de su equipo", () =>
+    expect(puedeReasignar(enc, "e1", "e3", team)).toBe(false));
+  it("encargado NO reasigna una card de fuera de su equipo", () =>
+    expect(puedeReasignar(enc, "e3", "e1", team)).toBe(false));
+  it("origen y destino iguales => false", () =>
+    expect(puedeReasignar(enc, "e1", "e1", team)).toBe(false));
+  it("empleado nunca puede reasignar", () =>
+    expect(puedeReasignar(team[2], "e1", "e2", team)).toBe(false));
+  it("jefe puede reasignar entre cualesquiera", () =>
+    expect(puedeReasignar(jefe, "e1", "e3", team)).toBe(true));
 });
