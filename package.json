@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "smoke": "node scripts/smoke.mjs",
+    "shots": "node scripts/shots.mjs",
+    "gen:types": "supabase gen types typescript --project-id yyyrlopgwmuvfbzwxiwp > src/lib/database.types.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -33,6 +37,7 @@
     "oxlint": "^1.71.0",
     "postcss": "^8.5.16",
     "puppeteer-core": "^25.3.0",
+    "supabase": "^2.109.1",
     "tailwindcss": "^3.4.19",
     "typescript": "~6.0.2",
     "vite": "^8.1.1",

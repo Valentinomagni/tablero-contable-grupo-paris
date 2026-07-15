@@ -77,7 +77,8 @@ export function useSettings() {
   return useQuery({
     queryKey: ["settings"],
     queryFn: async (): Promise<import("../lib/types").AppSettings> => {
-      const { data } = await supabase.from("settings").select("value").eq("key", "permissions").single();
+      // maybeSingle (no single): sin sesión aún, RLS devuelve 0 filas — evita el 406 en el primer render.
+      const { data } = await supabase.from("settings").select("value").eq("key", "permissions").maybeSingle();
       return (data?.value as import("../lib/types").AppSettings) ?? { edit_closed: false };
     },
   });
