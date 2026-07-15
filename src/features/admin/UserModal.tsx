@@ -6,24 +6,34 @@ import type { ActivityLog, Card, Profile, Role } from "../../lib/types";
 import { useObjectives } from "../../hooks/useData";
 import { userMetrics30d } from "../../lib/metrics";
 import { nombreValido } from "../../lib/validacion";
+import { puedeSerManager } from "../../lib/jerarquia";
 import { toast } from "sonner";
 
-export function UserModal({ user: u, meId, cards, activity, onClose }:
-  { user: Profile; meId: string; cards: Card[]; activity: ActivityLog[]; onClose: () => void }) {
+const MARCAS = ["Peugeot", "Citroën", "Chevrolet", "Honda"];
+
+export function UserModal({ user: u, meId, team, cards, activity, onClose }:
+  { user: Profile; meId: string; team: Profile[]; cards: Card[]; activity: ActivityLog[]; onClose: () => void }) {
   const qc = useQueryClient();
   const { data: objectives = [] } = useObjectives();
   const [name, setName] = useState(u.name);
   const [role, setRole] = useState<Role>(u.role);
   const [puesto, setPuesto] = useState(u.puesto ?? "");
   const [ficha, setFicha] = useState(u.ficha ?? "");
+  const [managerId, setManagerId] = useState<string | null>(u.manager_id ?? null);
+  const [marca, setMarca] = useState<string | null>(u.marca ?? null);
   const [msg, setMsg] = useState<{ ok: boolean; txt: string } | null>(null);
 
   const m = userMetrics30d(cards, objectives, activity, u.id, Date.now());
 
+  // Managers posibles: encargados/jefes que no generen ciclo (ni sí mismo ni un subordinado).
+  const managerOpts = team.filter(
+    (t) => (t.role === "encargado" || t.role === "jefe") && puedeSerManager(t.id, u.id, team),
+  );
+
   const save = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("profiles")
-        .update({ name: name.trim(), role, puesto: puesto.trim(), ficha: ficha.trim() })
+        .update({ name: name.trim(), role, puesto: puesto.trim(), ficha: ficha.trim(), manager_id: managerId, marca })
         .eq("id", u.id);
       if (error) throw error;
     },
@@ -68,6 +78,18 @@ export function UserModal({ user: u, meId, cards, activity, onClose }:
           </label>
           <label className="text-[13px] text-ink2">Puesto
             <input value={puesto} onChange={(e) => setPuesto(e.target.value)} placeholder="Ej: Analista impositivo" className={inputCls} />
+          </label>
+          <label className="text-[13px] text-ink2">Responde a
+            <select value={managerId ?? ""} onChange={(e) => setManagerId(e.target.value || null)} className={inputCls}>
+              <option value="">— Sin responsable</option>
+              {managerOpts.map((mo) => <option key={mo.id} value={mo.id}>{mo.name}</option>)}
+            </select>
+          </label>
+          <label className="text-[13px] text-ink2">Marca
+            <select value={marca ?? ""} onChange={(e) => setMarca(e.target.value || null)} className={inputCls}>
+              <option value="">—</option>
+              {MARCAS.map((mk) => <option key={mk} value={mk}>{mk}</option>)}
+            </select>
           </label>
           <label className="text-[13px] text-ink2">Ficha de puesto — qué se espera de este perfil
             <textarea value={ficha} onChange={(e) => setFicha(e.target.value)} rows={5}
