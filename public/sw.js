@@ -1,7 +1,7 @@
 // Service worker MINIMALISTA y a prueba de "no veo cambios":
 // - network-first SIEMPRE (nunca sirve una versión vieja habiendo red)
 // - cachea de paso lo que baja, y solo usa el cache si no hay conexión
-const CACHE = "tablero-v1";
+const CACHE = "tablero-2026-07-15";
 
 self.addEventListener("install", (e) => { self.skipWaiting(); });
 self.addEventListener("activate", (e) => {
