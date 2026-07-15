@@ -17,6 +17,7 @@ export function CommandPalette({ me, team, cards, onNavigate, onOpenCard, onClos
   if (isJefe) {
     all.push({ g: "Vistas", t: "Resumen del equipo", icon: <LayoutDashboard size={16} />, run: () => onNavigate("__resumen") });
     all.push({ g: "Vistas", t: "Reporte ejecutivo", icon: <LayoutDashboard size={16} />, run: () => onNavigate("__reporte") });
+    all.push({ g: "Vistas", t: "Cierre mensual", icon: <LayoutDashboard size={16} />, run: () => onNavigate("__cierre") });
     all.push({ g: "Vistas", t: "Administración", icon: <Settings size={16} />, run: () => onNavigate("__admin") });
   }
   all.push({ g: "Vistas", t: "Tablón del equipo", icon: <Pin size={16} />, run: () => onNavigate("__tablon") });

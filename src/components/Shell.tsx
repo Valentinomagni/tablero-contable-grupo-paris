@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { LayoutDashboard, ClipboardList, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin, Settings, KeyRound, AlignJustify, History, CalendarRange } from "lucide-react";
+import { LayoutDashboard, ClipboardList, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin, Settings, KeyRound, AlignJustify, History, CalendarRange, ClipboardCheck } from "lucide-react";
 import { Avatar, cn } from "../lib/ui";
 import { LogoMark } from "./Logo";
 import { THEME_LBL, DENSITY_LBL } from "../hooks/useTheme";
@@ -51,6 +51,7 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
             <div className="text-[10px] tracking-[1.4px] uppercase text-[color:var(--side-ink2)] px-2.5 pt-3.5 pb-1.5">General</div>
             <NavItem v="__resumen" icon={<LayoutDashboard size={17} />} label="Resumen" />
             <NavItem v="__reporte" icon={<TrendingUp size={17} />} label="Reporte ejecutivo" />
+            <NavItem v="__cierre" icon={<ClipboardCheck size={17} />} label="Cierre mensual" />
             <NavItem v="__tablon" icon={<Pin size={17} />} label="Tablón" badge={tablonBadge} />
             <NavItem v="__calendario" icon={<CalendarRange size={17} />} label="Calendario" />
             <NavItem v="__bitacora" icon={<History size={17} />} label="Bitácora" />

@@ -20,10 +20,11 @@ import { Tablon } from "./features/tablon/Tablon";
 import { Semana } from "./features/semana/Semana";
 import { Bitacora } from "./features/bitacora/Bitacora";
 import { Calendario } from "./features/calendario/Calendario";
+import { Cierre } from "./features/cierre/Cierre";
 import { Admin } from "./features/admin/Admin";
 import { UserModal } from "./features/admin/UserModal";
 import { CommandPalette } from "./components/CommandPalette";
-import type { Card, Profile } from "./lib/types";
+import type { Card, Profile, AppSettings } from "./lib/types";
 import { cn } from "./lib/ui";
 
 type Mode = "board" | "semana" | "obj" | "mimes";
@@ -77,9 +78,10 @@ export default function App() {
     : view === "__admin" ? "Administración"
     : view === "__bitacora" ? "Bitácora"
     : view === "__calendario" ? "Calendario"
+    : view === "__cierre" ? "Cierre mensual"
     : isJefe && person ? `Tablero de ${person.name}` : "Mi tablero";
   const pendByOwner = (id: string) => cards.filter((c) => c.owner === id && c.status !== "term" && c.card_type !== "operativa").length;
-  const isPersonView = !["__resumen", "__reporte", "__tablon", "__admin", "__bitacora", "__calendario"].includes(view);
+  const isPersonView = !["__resumen", "__reporte", "__tablon", "__admin", "__bitacora", "__calendario", "__cierre"].includes(view);
 
   // badge del tablón: vencimientos próximos o publicaciones no vistas (por navegador)
   const vencProximos = annos.filter((a) => a.kind === "vencimiento" && a.due_date &&
@@ -125,6 +127,7 @@ export default function App() {
           : view === "__admin" ? <Admin team={fullTeam} cards={cards} meName={me.name} onOpenUser={setOpenUser} />
           : view === "__bitacora" ? <Bitacora cards={cards} activity={activity} team={fullTeam} isJefe={!!isJefe} meId={me.id} onOpenCard={setOpenCard} />
           : view === "__calendario" ? <Calendario isJefe={!!isJefe} meName={me.name} />
+          : view === "__cierre" ? <Cierre cards={cards} team={fullTeam} isJefe={!!isJefe} meName={me.name} settings={settings ?? { edit_closed: false } as AppSettings} onOpenCard={setOpenCard} />
           : mode === "semana" ? <Semana cards={cards} ownerId={view} meName={me.name} onOpen={setOpenCard} />
           : mode === "obj" ? <Objetivos ownerId={view} ownerName={person?.name ?? me.name} />
           : mode === "mimes" ? <MiMes cards={cards} activity={activity} ownerId={view} onOpenCard={setOpenCard} />
