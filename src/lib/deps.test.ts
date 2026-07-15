@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { missingDepIds, depInfoOf, isBlocked, dependentsOf, depGraphLayout, type DepMap, type RevDep } from "./deps";
+import { missingDepIds, depInfoOf, isBlocked, dependentsOf, depGraphLayout, bloqueadaPorTitulos, type DepMap, type RevDep } from "./deps";
 import type { Card } from "./types";
 
 function mkCard(p: Partial<Card>): Card {
@@ -61,6 +61,20 @@ describe("dependentsOf", () => {
   it("no-jefe: locales + reverse_deps del id", () => {
     expect(dependentsOf("x", cards, nameOf, rev, false).map((d) => d.id)).toEqual(["a", "r"]);
     expect(dependentsOf("otro", cards, nameOf, rev, false)).toEqual([]);
+  });
+});
+
+describe("bloqueadaPorTitulos", () => {
+  const cards = [
+    mkCard({ id: "a", title: "Cerrar caja", deps: ["b", "c"] }),
+    mkCard({ id: "b", title: "Conciliar banco", status: "proc" }),
+    mkCard({ id: "c", title: "Aprobar gastos", status: "term" }),
+  ];
+  it("devuelve el título de la dep no terminada", () => {
+    expect(bloqueadaPorTitulos(cards[0], cards)).toEqual(["Conciliar banco"]);
+  });
+  it("no incluye las deps terminadas", () => {
+    expect(bloqueadaPorTitulos(cards[0], cards)).not.toContain("Aprobar gastos");
   });
 });
 

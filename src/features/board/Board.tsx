@@ -6,6 +6,7 @@ import { dueInfo, fmtDateTime } from "../../lib/metrics";
 import { cn } from "../../lib/ui";
 import { pushUndo } from "../../lib/undo";
 import { isShared, siblingSyncPatches } from "../../lib/shared";
+import { bloqueadaPorTitulos } from "../../lib/deps";
 import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Users } from "lucide-react";
 
 const DOT: Record<string, string> = { pend: "bg-naranja", proc: "bg-s1", term: "bg-done" };
@@ -19,7 +20,7 @@ function DueBadge({ c }: { c: Card }) {
   return <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-semibold whitespace-nowrap tnum", cls)}><Clock size={11} /> {txt}</span>;
 }
 
-function CardItem({ c, blocked, waiting, onOpen }: { c: Card; blocked: boolean; waiting: boolean; onOpen: (c: Card) => void }) {
+function CardItem({ c, blocked, waiting, esperaTitulos = [], onOpen }: { c: Card; blocked: boolean; waiting: boolean; esperaTitulos?: string[]; onOpen: (c: Card) => void }) {
   const ck = c.checklist.length
     ? <span className="inline-flex items-center gap-1 bg-chip rounded-md px-1.5 py-0.5 tnum"><ListChecks size={11} /> {c.checklist.filter((i) => i.done).length}/{c.checklist.length}</span> : null;
   const pr = c.priority === "alta"
@@ -38,6 +39,11 @@ function CardItem({ c, blocked, waiting, onOpen }: { c: Card; blocked: boolean; 
         {(c.effort ?? 1) > 1 && <span className="bg-chip rounded-md px-1.5 py-0.5 tnum">{c.effort} pts</span>}
         {ck}{c.comments.length > 0 && <span className="inline-flex items-center gap-1"><MessageSquare size={11} /> {c.comments.length}</span>}
       </div>
+      {blocked && esperaTitulos.length > 0 && (
+        <div className="text-[11px] text-warn mt-1">
+          Espera: {esperaTitulos.slice(0, 2).join(", ")}{esperaTitulos.length > 2 ? ` y ${esperaTitulos.length - 2} más` : ""}
+        </div>
+      )}
       {c.done_at && <div className="flex items-center gap-1 text-done font-semibold text-xs mt-1.5"><Check size={12} /> Terminada el {fmtDateTime(c.done_at)}</div>}
     </div>
   );
@@ -139,7 +145,7 @@ export function Board({ cards, activity, ownerId, meName, query = "", onOpen }: 
           </h2>
           {mine.filter((c) => c.status === k).map((c) => (
             <div key={c.id} draggable onDragStart={(e) => e.dataTransfer.setData("text/plain", c.id)}>
-              <CardItem c={c} blocked={isBlocked(c)} waiting={c.status !== "term" && dependents(c.id).length > 0} onOpen={onOpen} />
+              <CardItem c={c} blocked={isBlocked(c)} waiting={c.status !== "term" && dependents(c.id).length > 0} esperaTitulos={bloqueadaPorTitulos(c, cards)} onOpen={onOpen} />
             </div>
           ))}
           {mine.filter((c) => c.status === k).length === 0 && <p className="text-ink2 text-[13px] px-2 pb-2">Sin tareas acá.</p>}

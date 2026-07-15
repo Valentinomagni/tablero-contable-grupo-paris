@@ -16,6 +16,14 @@ export function depInfoOf(id: string, cards: Card[], nameOf: (ownerId: string) =
   return depMap[id];
 }
 
+// devuelve los TÍTULOS de las tareas de las que `c` depende y que aún no están terminadas
+export function bloqueadaPorTitulos(c: Card, cards: Card[]): string[] {
+  return (c.deps ?? [])
+    .map((id) => cards.find((x) => x.id === id))
+    .filter((d): d is Card => !!d && d.status !== "term")
+    .map((d) => d.title);
+}
+
 export function isBlocked(c: Card, cards: Card[], depMap: DepMap): boolean {
   return c.status !== "term" && (c.deps ?? []).some((id) => (depInfoOf(id, cards, () => "", depMap)?.status ?? "term") !== "term");
 }
