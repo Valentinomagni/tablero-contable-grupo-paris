@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { filtrarOrdenar } from "./notas";
+import { filtrarOrdenar, notaATarea } from "./notas";
 import type { Note } from "./types";
 
 const n = (id: string, title: string, body: string, c: string, u: string, archived = false): Note =>
@@ -26,5 +26,19 @@ describe("filtrarOrdenar", () => {
   it("incluye archivadas con el toggle", () => {
     const con = [...notas, n("c", "vieja", "archivada", "2026-06-01", "2026-06-01", true)];
     expect(filtrarOrdenar(con, "", "creado", true).map((x) => x.id)).toEqual(["b", "a", "c"]);
+  });
+});
+
+describe("notaATarea", () => {
+  it("usa el título y el cuerpo como descripción", () => {
+    const t = notaATarea(n("a", "Revisar IVA", "detalle del cuerpo", "c", "u"), "me1");
+    expect(t).toMatchObject({ owner: "me1", title: "Revisar IVA", description: "detalle del cuerpo", status: "pend" });
+  });
+  it("si no hay título, toma las primeras palabras del cuerpo", () => {
+    const t = notaATarea(n("a", "  ", "conciliar la cuenta del banco provincia rápido ahora ya", "c", "u"), "me1");
+    expect(t.title).toBe("conciliar la cuenta del banco provincia rápido ahora");
+  });
+  it("cae a un título por defecto si todo está vacío", () => {
+    expect(notaATarea(n("a", "", "", "c", "u"), "me1").title).toBe("Anotación");
   });
 });

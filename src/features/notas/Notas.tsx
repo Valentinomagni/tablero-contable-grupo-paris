@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Search, Archive, ArchiveRestore, Trash2, StickyNote } from "lucide-react";
+import { Plus, Search, Archive, ArchiveRestore, Trash2, StickyNote, ListPlus } from "lucide-react";
 import { supabase } from "../../lib/supabase";
-import { filtrarOrdenar } from "../../lib/notas";
+import { filtrarOrdenar, notaATarea } from "../../lib/notas";
 import { useNotes } from "../../hooks/useNotes";
 import type { Note, Profile } from "../../lib/types";
 import { cn } from "../../lib/ui";
@@ -74,6 +74,25 @@ export function Notas({ me }: { me: Profile }) {
     onError: (e: unknown) => toast.error("No se pudo eliminar: " + (e as Error).message),
   });
 
+  const convertir = useMutation({
+    mutationFn: async (nota: Note) => {
+      const row = {
+        ...notaATarea(nota, me.id),
+        history: [{ who: me.name, at: new Date().toISOString(), txt: "Creó la tarea desde una anotación" }],
+      };
+      const { error } = await supabase.from("cards").insert(row);
+      if (error) throw error;
+      // archiva la nota convertida (best-effort)
+      if (!nota.archived) await supabase.from("notes").update({ archived: true, updated_at: new Date().toISOString() }).eq("id", nota.id);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cards"] });
+      refetch();
+      toast.success("Creada en tu tablero");
+    },
+    onError: (e: unknown) => toast.error("No se pudo convertir: " + (e as Error).message),
+  });
+
   const fecha = (iso: string) => new Date(iso).toLocaleDateString("es-AR", { day: "numeric", month: "short" });
 
   return (
@@ -132,6 +151,10 @@ export function Notas({ me }: { me: Profile }) {
               <button onClick={() => archivar.mutate(sel)}
                 className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] border bg-surface2 border-line text-ink2 hover:bg-surface transition">
                 {sel.archived ? <><ArchiveRestore size={14} /> Desarchivar</> : <><Archive size={14} /> Archivar</>}
+              </button>
+              <button onClick={() => convertir.mutate(sel)}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] border bg-surface2 border-line text-ink2 hover:text-accent transition">
+                <ListPlus size={14} /> Convertir en tarea
               </button>
               <div className="flex-1" />
               {confirmDel ? (
