@@ -8,19 +8,26 @@
   font-weight:100 900; font-style:normal; font-display:swap;
 }
 
+/* ============================================================
+   PALETA GRUPO PARIS — Monocromo puro (negro/blanco/gris).
+   Sin azul: la marca es B&N. El color aparece SOLO en estados.
+   Seiton (orden): un único origen de verdad para todo el color.
+   ============================================================ */
 :root{
-  --bg:#f5f5f6; --surface:#ffffff; --surface2:#eeeff1; --ink:#191c22; --ink2:#5c6270;
-  --line:#e2e4e9; --accent:#1b3c6f; --accent-soft:#e8edf6; --done:#0c7a53;
-  --danger:#a72920; --warn:#8a5a14; --warn-soft:#f4e8d0; --danger-soft:#f6e1df;
-  --chip:#eef0f3;
-  --shadow:0 1px 1px rgba(16,22,38,.03),0 2px 8px rgba(16,22,38,.05);
-  --shadow-lg:0 2px 8px rgba(16,22,38,.06),0 24px 56px -12px rgba(16,22,38,.18);
-  --ring-sh:0 0 0 1px rgba(16,22,38,.05);
-  --s1:#2a63b8; --s2:#0c8f6c; --naranja:#e27e24;
-  --side-bg:#0e0f12; --side-bg2:#17181d; --side-ink:#eceef1; --side-ink2:#8f96a1; --side-line:rgba(255,255,255,.08);
-  /* tokens semánticos para componentes shadcn, mapeados a la paleta Paris */
+  /* --- MODO CLARO: blanco + grises neutros (hue 0, sin tinte azul) --- */
+  --bg:#f6f6f7; --surface:#ffffff; --surface2:#f1f1f3; --ink:#18181b; --ink2:#71717a;
+  --line:#e4e4e7; --accent:#18181b; --accent-ink:#ffffff; --accent-soft:#ececee; --done:#0f9d6b;
+  --danger:#dc2626; --warn:#c2790a; --warn-soft:#faf0dc; --danger-soft:#fbe6e6;
+  --chip:#f1f1f3;
+  --shadow:0 1px 1px rgba(24,24,27,.03),0 2px 8px rgba(24,24,27,.05);
+  --shadow-lg:0 2px 8px rgba(24,24,27,.06),0 24px 56px -12px rgba(24,24,27,.16);
+  --ring-sh:0 0 0 1px rgba(24,24,27,.05);
+  /* series de gráficos: escala neutra + semánticos (no categórico chillón) */
+  --s1:#3f3f46; --s2:#0f9d6b; --naranja:#c2790a;
+  --side-bg:#0a0a0b; --side-bg2:#141416; --side-ink:#fafafa; --side-ink2:#8b8b93; --side-line:rgba(255,255,255,.07);
+  /* tokens semánticos para componentes shadcn */
   --background:var(--surface); --foreground:var(--ink);
-  --primary:var(--accent); --primary-foreground:#ffffff;
+  --primary:var(--accent); --primary-foreground:var(--accent-ink);
   --secondary:var(--surface2); --secondary-foreground:var(--ink);
   --muted:var(--surface2); --muted-foreground:var(--ink2);
   --sh-accent:var(--accent-soft); --sh-accent-foreground:var(--accent);
@@ -28,26 +35,27 @@
   --radius:0.625rem;
 }
 :root[data-theme="dark"]{
-  --bg:#14181f; --surface:#1c222c; --surface2:#242b37; --ink:#e8eaee; --ink2:#98a1b0;
-  --line:#333c4b; --accent:#7da3d8; --accent-soft:#22314a; --done:#4cc2a4;
-  --danger:#e07b6d; --warn:#d9a05b; --warn-soft:#3b3222; --danger-soft:#3f2a26;
-  --chip:#2a3240;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.35);
-  --shadow-lg:0 8px 24px rgba(0,0,0,.45),0 20px 50px rgba(0,0,0,.5);
-  --ring-sh:0 0 0 1px rgba(255,255,255,.04);
-  --s1:#5f92d4; --s2:#2f9d80; --naranja:#e79a55;
-  --side-bg:#0a0b0d; --side-bg2:#131418; --side-ink:#eceef1; --side-ink2:#878e99; --side-line:rgba(255,255,255,.07);
+  /* --- MODO OSCURO: negro grafito real (hue 0). CERO azul. --- */
+  --bg:#0b0b0c; --surface:#161618; --surface2:#202023; --ink:#f4f4f5; --ink2:#a1a1aa;
+  --line:#2a2a2d; --accent:#e4e4e7; --accent-ink:#0b0b0c; --accent-soft:#26262a; --done:#34d399;
+  --danger:#f87171; --warn:#fbbf24; --warn-soft:#332a17; --danger-soft:#3a2020;
+  --chip:#26262a;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.4);
+  --shadow-lg:0 8px 24px rgba(0,0,0,.5),0 20px 50px rgba(0,0,0,.55);
+  --ring-sh:0 0 0 1px rgba(255,255,255,.05);
+  --s1:#d4d4d8; --s2:#34d399; --naranja:#fbbf24;
+  --side-bg:#050506; --side-bg2:#111113; --side-ink:#fafafa; --side-ink2:#82828b; --side-line:rgba(255,255,255,.06);
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#14181f; --surface:#1c222c; --surface2:#242b37; --ink:#e8eaee; --ink2:#98a1b0;
-  --line:#333c4b; --accent:#7da3d8; --accent-soft:#22314a; --done:#4cc2a4;
-  --danger:#e07b6d; --warn:#d9a05b; --warn-soft:#3b3222; --danger-soft:#3f2a26;
-  --chip:#2a3240;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.35);
-  --shadow-lg:0 8px 24px rgba(0,0,0,.45),0 20px 50px rgba(0,0,0,.5);
-  --ring-sh:0 0 0 1px rgba(255,255,255,.04);
-  --s1:#5f92d4; --s2:#2f9d80; --naranja:#e79a55;
-  --side-bg:#0a0b0d; --side-bg2:#131418; --side-ink:#eceef1; --side-ink2:#878e99; --side-line:rgba(255,255,255,.07);
+  --bg:#0b0b0c; --surface:#161618; --surface2:#202023; --ink:#f4f4f5; --ink2:#a1a1aa;
+  --line:#2a2a2d; --accent:#e4e4e7; --accent-ink:#0b0b0c; --accent-soft:#26262a; --done:#34d399;
+  --danger:#f87171; --warn:#fbbf24; --warn-soft:#332a17; --danger-soft:#3a2020;
+  --chip:#26262a;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.4);
+  --shadow-lg:0 8px 24px rgba(0,0,0,.5),0 20px 50px rgba(0,0,0,.55);
+  --ring-sh:0 0 0 1px rgba(255,255,255,.05);
+  --s1:#d4d4d8; --s2:#34d399; --naranja:#fbbf24;
+  --side-bg:#050506; --side-bg2:#111113; --side-ink:#fafafa; --side-ink2:#82828b; --side-line:rgba(255,255,255,.06);
 }}
 
 html,body,#root{height:100%}
@@ -58,7 +66,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
 
 /* ---- pulido premium (Kaizen: mejora continua, Seiso: limpieza visual) ---- */
 h1,h2,h3{letter-spacing:-.02em}
-::selection{background:var(--accent);color:#fff}
+::selection{background:var(--accent);color:var(--accent-ink)}
 button,a,input,select,textarea{transition:background-color .16s ease,border-color .16s ease,color .16s ease,box-shadow .16s ease,opacity .16s ease}
 button{cursor:pointer}
 button:active{transform:translateY(.5px)}

@@ -4,8 +4,8 @@ export function cn(...xs: (string | false | null | undefined)[]) {
   return xs.filter(Boolean).join(" ");
 }
 
-// paleta monocromática de marca: variaciones del azul Paris — cohesión premium, sin arcoíris
-const AV_COLORS = ["#1b3c6f", "#27508d", "#33619f", "#16325c", "#3f72b0", "#0f2647"];
+// paleta monocromática de marca: escala grafito (negro/gris), sin azul ni arcoíris
+const AV_COLORS = ["#18181b", "#27272a", "#3f3f46", "#52525b", "#2a2a2e", "#3a3a40"];
 export const initials = (n: string) =>
   (n || "?").trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 export const avColor = (n: string) =>
