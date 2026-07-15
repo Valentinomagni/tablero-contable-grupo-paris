@@ -5,6 +5,8 @@ import { supabase } from "../../lib/supabase";
 import type { ActivityLog, Card, Profile, Role } from "../../lib/types";
 import { useObjectives } from "../../hooks/useData";
 import { userMetrics30d } from "../../lib/metrics";
+import { nombreValido } from "../../lib/validacion";
+import { toast } from "sonner";
 
 export function UserModal({ user: u, meId, cards, activity, onClose }:
   { user: Profile; meId: string; cards: Card[]; activity: ActivityLog[]; onClose: () => void }) {
@@ -30,6 +32,10 @@ export function UserModal({ user: u, meId, cards, activity, onClose }:
   });
 
   const onSave = () => {
+    if (!nombreValido(name)) {
+      toast.error("El nombre es obligatorio");
+      return;
+    }
     if (u.id === meId && role !== "jefe") {
       setMsg({ ok: false, txt: "No podés quitarte el rol de jefe a vos mismo (pedíselo al otro jefe)." });
       return;

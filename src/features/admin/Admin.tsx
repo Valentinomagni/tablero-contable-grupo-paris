@@ -28,6 +28,7 @@ export function Admin({ team, cards, meName, onOpenUser }: { team: Profile[]; ca
   }
 
   async function crearUsuario() {
+    if (!nu.name.trim()) { setNuMsg({ ok: false, txt: "El nombre es obligatorio" }); return; }
     setNuMsg(null); setNuBusy(true);
     const { data: { session } } = await supabase.auth.getSession();
     let out: { ok?: boolean; error?: string };
