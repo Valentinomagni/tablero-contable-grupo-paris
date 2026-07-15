@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { reportesDirectos, equipoDe, visiblesPara, porMarca, puedeSerManager } from "./jerarquia";
-import type { Profile } from "./types";
+import { reportesDirectos, equipoDe, visiblesPara, porMarca, puedeSerManager, cardsDeEquipo } from "./jerarquia";
+import type { Card, Profile } from "./types";
 const p = (id: string, role: Profile["role"], manager_id: string | null = null, marca: string | null = null): Profile =>
   ({ id, name: id, role, email: "", puesto: "", ficha: "", manager_id, marca });
 const team = [
@@ -39,4 +39,20 @@ describe("puedeSerManager", () => {
     expect(puedeSerManager("enc2", "enc", team)).toBe(true));
   it("el jefe puede ser manager de cualquiera", () =>
     expect(puedeSerManager("jefe", "enc", team)).toBe(true));
+});
+
+const card = (id: string, owner: string): Card => ({
+  id, owner, title: "t", status: "pend", description: "", checklist: [], comments: [], history: [],
+  done_at: null, due_date: null, recurring: false, priority: "media", effort: 1,
+  card_type: "normal", deps: [], created_at: "2026-07-01T00:00:00Z",
+});
+describe("cardsDeEquipo", () => {
+  const cards = [card("a", "e1"), card("b", "e2"), card("c", "e3")];
+  it("deja solo las cards cuyo dueño está en el equipo visible", () =>
+    expect(cardsDeEquipo(cards, visiblesPara(team[1], team)).map(c => c.id).sort()).toEqual(["a", "b"]));
+  it("team vacío => sin cards", () =>
+    expect(cardsDeEquipo(cards, [])).toEqual([]));
+  it("no muta el array original", () => {
+    const n = cards.length; cardsDeEquipo(cards, team); expect(cards.length).toBe(n);
+  });
 });

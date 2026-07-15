@@ -26,7 +26,7 @@ import { Admin } from "./features/admin/Admin";
 import { UserModal } from "./features/admin/UserModal";
 import { CommandPalette } from "./components/CommandPalette";
 import type { Card, Profile, AppSettings } from "./lib/types";
-import { visiblesPara } from "./lib/jerarquia";
+import { visiblesPara, cardsDeEquipo } from "./lib/jerarquia";
 import { cn } from "./lib/ui";
 
 type Mode = "board" | "semana" | "obj" | "mimes";
@@ -77,6 +77,8 @@ export default function App() {
   // Alcance por rol: jefe ve todos; encargado ve su equipo (visiblesPara); empleado solo a sí mismo.
   // Ojo: si el Plan 02 aún no cargó manager_id, equipoDe devuelve [] y el encargado se ve solo a sí mismo (OK, no crashea).
   const fullTeam = esGestor ? visiblesPara(me, team) : [me];
+  // Resumen/Reporte: jefe recibe todas las cards; no-jefe solo las de su equipo visible (spec #5, #10).
+  const scopedCards = isJefe ? cards : cardsDeEquipo(cards, fullTeam);
   const person = fullTeam.find((u) => u.id === view);
   const title = view === "__resumen" ? "Resumen del equipo"
     : view === "__reporte" ? "Reporte ejecutivo"
@@ -127,8 +129,8 @@ export default function App() {
             </button>
           )}
         </> : undefined}>
-        {view === "__resumen" ? <Resumen cards={cards} team={fullTeam} activity={activity} onOpenCard={setOpenCard} onGoPerson={(id) => { setViewing(id); setMode("board"); }} onDelegar={() => setDelegar(true)} />
-          : view === "__reporte" ? <Reporte cards={cards} team={fullTeam} activity={activity} />
+        {view === "__resumen" ? <Resumen cards={scopedCards} team={fullTeam} activity={activity} onOpenCard={setOpenCard} onGoPerson={(id) => { setViewing(id); setMode("board"); }} onDelegar={() => setDelegar(true)} />
+          : view === "__reporte" ? <Reporte cards={scopedCards} team={fullTeam} activity={activity} />
           : view === "__tablon" ? <Tablon />
           : view === "__admin" ? <Admin team={fullTeam} cards={cards} meName={me.name} onOpenUser={setOpenUser} />
           : view === "__bitacora" ? <Bitacora cards={cards} activity={activity} team={fullTeam} isJefe={!!isJefe} meId={me.id} onOpenCard={setOpenCard} />

@@ -1,4 +1,4 @@
-import type { Profile } from "./types";
+import type { Card, Profile } from "./types";
 
 export function reportesDirectos(managerId: string, profiles: Profile[]): Profile[] {
   return profiles.filter((p) => p.manager_id === managerId);
@@ -15,6 +15,11 @@ export function visiblesPara(me: Profile, profiles: Profile[]): Profile[] {
   if (me.role === "jefe") return profiles;
   if (me.role === "encargado") return [me, ...equipoDe(me.id, profiles)];
   return [me];
+}
+
+// Cards cuyo dueño pertenece al equipo visible (alcance de Resumen/Reporte por rol).
+export function cardsDeEquipo(cards: Card[], team: Profile[]): Card[] {
+  return cards.filter((c) => team.some((u) => u.id === c.owner));
 }
 
 export function porMarca(profiles: Profile[]): Record<string, Profile[]> {
