@@ -2,7 +2,11 @@ import { Download } from "lucide-react";
 import type { Card, Profile, ActivityLog } from "../../lib/types";
 import { dueInfo, saludScore } from "../../lib/metrics";
 import { Donut, Gauge, Legend, type Seg } from "../../components/charts";
-import { Avatar, avColor } from "../../lib/ui";
+import { Avatar } from "../../lib/ui";
+
+// Paleta categórica SOLO para el donut de personas: la marca es monocroma, pero acá
+// necesitamos distinguir de un vistazo quién concentra la carga. Tonos sobrios, no chillones.
+const CAT = ["#4f7cff", "#e6892b", "#12a67a", "#d9455f", "#8b5cf6", "#0891b2", "#c026d3", "#65a30d"];
 
 export function Reporte({ cards, team, activity }: { cards: Card[]; team: Profile[]; activity: ActivityLog[] }) {
   const now = Date.now(), day = 86400000, mes = now - 30 * day;
@@ -27,8 +31,9 @@ export function Reporte({ cards, team, activity }: { cards: Card[]; team: Profil
     { label: "En proceso", val: norm.filter((c) => c.status === "proc").length, color: "var(--s1)" },
     { label: "Terminado", val: norm.filter((c) => c.status === "term").length, color: "var(--done)" },
   ];
-  const personaSegs: Seg[] = team.map((u) => ({ label: u.name, val: abiertas.filter((c) => c.owner === u.id).length, color: avColor(u.name) }))
-    .filter((s) => s.val > 0).sort((a, b) => b.val - a.val);
+  const personaSegs: Seg[] = team.map((u) => ({ label: u.name, val: abiertas.filter((c) => c.owner === u.id).length, color: "" }))
+    .filter((s) => s.val > 0).sort((a, b) => b.val - a.val)
+    .map((s, i) => ({ ...s, color: CAT[i % CAT.length] }));
 
   const rank = team.map((u) => ({
     u, ef: term30.filter((c) => c.owner === u.id).reduce((s, c) => s + (c.effort ?? 1), 0),

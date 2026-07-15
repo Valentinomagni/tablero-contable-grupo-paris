@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { LayoutDashboard, ClipboardList, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin, Settings, KeyRound, AlignJustify, History, CalendarRange, ClipboardCheck } from "lucide-react";
 import { Avatar, cn } from "../lib/ui";
 import { LogoMark } from "./Logo";
@@ -14,7 +14,13 @@ interface Props {
 }
 
 export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, onCycleDensity, onOpenAccount, tablonBadge, boardName, onNavigate, onSignOut, pendByOwner, subnav, children }: Props) {
-  const [open, setOpen] = useState(false);
+  // barra lateral como drawer desplegable (Seiton: se muestra a demanda, deja la vista limpia).
+  const [open, setOpen] = useState(() => {
+    const saved = localStorage.getItem("pref-sidebar");
+    if (saved) return saved === "open";
+    return typeof window !== "undefined" && window.innerWidth >= 768;
+  });
+  useEffect(() => { localStorage.setItem("pref-sidebar", open ? "open" : "closed"); }, [open]);
   const [menu, setMenu] = useState(false);
   const isJefe = me.role === "jefe";
 
@@ -35,8 +41,11 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
   return (
     <div className="flex min-h-screen">
       {open && <div onClick={() => setOpen(false)} className="fixed inset-0 bg-black/50 z-20 md:hidden" />}
-      <aside className={cn("w-[248px] shrink-0 flex flex-col sticky top-0 h-screen z-30 transition-transform",
-        "max-md:fixed max-md:left-0", open ? "max-md:translate-x-0" : "max-md:-translate-x-full")}
+      <aside className={cn("w-[248px] shrink-0 flex flex-col h-screen z-30 transition-all duration-200 ease-out",
+        // escritorio: en flujo (empuja el contenido) cuando abierta; colapsa a 0 cuando cerrada
+        open ? "md:sticky md:top-0 md:translate-x-0" : "md:w-0 md:-translate-x-full md:overflow-hidden md:pointer-events-none",
+        // móvil: cajón superpuesto con backdrop
+        "max-md:fixed max-md:left-0 max-md:top-0", open ? "max-md:translate-x-0" : "max-md:-translate-x-full")}
         style={{ background: "linear-gradient(180deg,var(--side-bg2),var(--side-bg) 60%)", color: "var(--side-ink)",
           boxShadow: "inset -1px 0 0 rgba(255,255,255,.04),4px 0 24px rgba(0,0,0,.18)" }}>
         <div className="flex items-center gap-2.5 px-4 py-4 border-b border-[color:var(--side-line)]">
@@ -99,7 +108,7 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
         style={{ background: "radial-gradient(circle at 1px 1px, color-mix(in srgb,var(--ink) 4%,transparent) 1px, transparent 0) 0 0/22px 22px, var(--bg)" }}>
         <div className="flex items-center gap-3.5 px-6 py-3 sticky top-0 z-10 border-b border-line/70"
           style={{ background: "color-mix(in srgb,var(--surface) 82%,transparent)", backdropFilter: "saturate(1.4) blur(14px)" }}>
-          <button onClick={() => setOpen(true)} className="md:hidden border border-line rounded-lg px-2.5 py-1.5"><Menu size={16} /></button>
+          <button onClick={() => setOpen((o) => !o)} title="Mostrar/ocultar menú" className="border border-line bg-surface2 rounded-lg px-2.5 py-1.5 hover:bg-surface transition-colors"><Menu size={16} /></button>
           <div className="leading-tight">
             <h1 className="text-[19px] font-bold tracking-[-0.02em] m-0">{title}</h1>
           </div>
