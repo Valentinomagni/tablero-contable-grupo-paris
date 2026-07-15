@@ -3,7 +3,7 @@ import { grillaMes, eventosPorDia, conteoPorMes, claveFecha } from "./calendario
 import type { Announcement } from "./types";
 
 const anno = (p: Partial<Announcement>): Announcement =>
-  ({ id: "1", kind: "vencimiento", title: "IIBB", detail: "", due_date: "2026-03-18", created_by: "Jefe 1", created_at: "2026-03-01T00:00:00Z", ...p });
+  ({ id: "1", kind: "vencimiento", title: "IIBB", detail: "", due_date: "2026-03-18", created_by: "Jefe 1", created_at: "2026-03-01T00:00:00Z", owner_id: null, visible_to: [], ...p });
 
 describe("claveFecha", () => {
   it("formatea con ceros a la izquierda", () => {
