@@ -45,6 +45,29 @@ export function saludScore(open: Card[], term30: Card[]): number {
   return Math.max(0, Math.min(100, 100 - vencidas * 8 - (pctTiempo !== null ? (100 - pctTiempo) * 0.3 : 0)));
 }
 
+// ---- Kaizen: variación semana contra semana (mejora continua visible) ----
+export interface Wow { curr: number; prev: number; delta: number; }
+// suma de eventos en la última semana vs. la semana anterior. qty por defecto 1.
+export function wow(entries: { t: number; qty?: number }[], now: number): Wow {
+  const d = 86400000;
+  const sum = (lo: number, hi: number) =>
+    entries.filter((e) => e.t >= lo && e.t < hi).reduce((s, e) => s + (e.qty ?? 1), 0);
+  const curr = sum(now - 7 * d, now + 1);
+  const prev = sum(now - 14 * d, now - 7 * d);
+  return { curr, prev, delta: curr - prev };
+}
+
+// ---- Shitsuke: adherencia (% de tareas con vencimiento cerradas en fecha, ventana móvil) ----
+export function onTimeAdherence(cards: Card[], now: number, days = 30): number | null {
+  const from = now - days * 86400000;
+  const done = cards.filter((c) =>
+    c.card_type !== "operativa" && c.status === "term" && c.done_at &&
+    new Date(c.done_at).getTime() >= from && c.due_date);
+  if (!done.length) return null;
+  const onTime = done.filter((c) => new Date(c.done_at!) <= new Date(c.due_date + "T23:59:59")).length;
+  return Math.round((onTime / done.length) * 100);
+}
+
 // ---- ficha por empleado (métricas 30 días) ----
 export interface UserMetrics {
   done30: number; effort30: number; onTimePct: number | null;

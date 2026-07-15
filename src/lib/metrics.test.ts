@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { kpiPct, kpiClass, toARTDate, saludScore, userMetrics30d } from "./metrics";
+import { kpiPct, kpiClass, toARTDate, saludScore, userMetrics30d, wow, onTimeAdherence } from "./metrics";
 import type { Card, Objective, ActivityLog } from "./types";
 
 describe("kpiPct", () => {
@@ -48,6 +48,37 @@ function mkObj(p: Partial<Objective>): Objective {
     kpi_name: "", kpi_unit: "", kpi_target: null, kpi_current: 0, notes: "", ...p,
   };
 }
+
+describe("wow (Kaizen semana vs semana)", () => {
+  const d = 86400000;
+  it("cuenta última semana y previa, con delta", () => {
+    const e = [
+      { t: NOW - 1 * d }, { t: NOW - 3 * d },          // esta semana: 2
+      { t: NOW - 8 * d }, { t: NOW - 9 * d }, { t: NOW - 13 * d }, // previa: 3
+      { t: NOW - 20 * d },                              // fuera de ventana
+    ];
+    expect(wow(e, NOW)).toEqual({ curr: 2, prev: 3, delta: -1 });
+  });
+  it("respeta qty (actividad operativa)", () => {
+    const e = [{ t: NOW - 2 * d, qty: 4 }, { t: NOW - 10 * d, qty: 1 }];
+    expect(wow(e, NOW)).toEqual({ curr: 4, prev: 1, delta: 3 });
+  });
+  it("vacío da ceros", () => expect(wow([], NOW)).toEqual({ curr: 0, prev: 0, delta: 0 }));
+});
+
+describe("onTimeAdherence (Shitsuke)", () => {
+  it("porcentaje a tiempo sobre cerradas con vencimiento en la ventana", () => {
+    const cards: Card[] = [
+      mkCard({ status: "term", done_at: "2020-02-20T10:00:00Z", due_date: "2020-02-21" }), // a tiempo
+      mkCard({ status: "term", done_at: "2020-02-25T10:00:00Z", due_date: "2020-02-20" }), // tarde
+      mkCard({ status: "term", done_at: "2020-02-22T10:00:00Z", due_date: "2020-02-22", card_type: "operativa" }), // excluida
+      mkCard({ status: "term", done_at: "2019-12-01T10:00:00Z", due_date: "2019-12-01" }), // fuera de 30d
+    ];
+    expect(onTimeAdherence(cards, NOW)).toBe(50);
+  });
+  it("null sin cerradas con vencimiento", () =>
+    expect(onTimeAdherence([mkCard({ status: "term", done_at: "2020-02-20T10:00:00Z" })], NOW)).toBeNull());
+});
 
 describe("userMetrics30d", () => {
   it("cuenta cerradas 30d, esfuerzo y % a tiempo; excluye operativas y otros dueños", () => {

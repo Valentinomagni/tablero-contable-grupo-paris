@@ -1,12 +1,26 @@
 import { useState } from "react";
-import { Download, ClipboardCopy, Inbox, AlarmClock, CheckCircle2, Activity } from "lucide-react";
+import { Download, ClipboardCopy, Inbox, AlarmClock, CheckCircle2, Activity, ArrowUp, ArrowDown, ShieldCheck } from "lucide-react";
 import type { Card, Profile, ActivityLog } from "../../lib/types";
-import { dueInfo, fmtDateTime } from "../../lib/metrics";
+import { dueInfo, fmtDateTime, wow, onTimeAdherence, type Wow } from "../../lib/metrics";
 import { isBlocked } from "../../lib/deps";
 import { buildCsv, standupText, cicloDelMes, cargaPorFecha, ultimos14 } from "../../lib/resumen";
 import { useSnapshots } from "../../hooks/useData";
 import { Avatar } from "../../lib/ui";
 import { DepGraph } from "./DepGraph";
+
+// Kaizen: chip de variación semana vs. semana. Subir es bueno en flujo (verde); bajar, atención (ámbar).
+function DeltaChip({ w }: { w: Wow }) {
+  if (w.delta === 0) return <span className="text-[12px] text-ink2 tnum" title="Igual que la semana anterior">— igual</span>;
+  const up = w.delta > 0;
+  return (
+    <span className="flex items-center gap-0.5 text-[12px] font-semibold tnum"
+      style={{ color: up ? "var(--done)" : "var(--warn)" }}
+      title={`Esta semana ${w.curr} · semana anterior ${w.prev}`}>
+      {up ? <ArrowUp size={12} /> : <ArrowDown size={12} />}{Math.abs(w.delta)}
+      <span className="text-ink2 font-normal">vs. sem. previa</span>
+    </span>
+  );
+}
 
 function Bars({ data, height = 110 }: { data: { lbl: string; v: number; title: string }[]; height?: number }) {
   const max = Math.max(...data.map((d) => d.v), 1);
@@ -35,6 +49,12 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson }: {
     .sort((a, b) => new Date(b.done_at!).getTime() - new Date(a.done_at!).getTime());
   const act7 = activity.filter((a) => now - new Date(a.at).getTime() < 7 * day).reduce((s, a) => s + a.qty, 0);
   const nom = (id: string) => team.find((u) => u.id === id)?.name ?? "?";
+
+  // Kaizen: variación semana vs. semana en los KPIs de flujo (mejora continua visible)
+  const doneWow = wow(norm.filter((c) => c.status === "term" && c.done_at).map((c) => ({ t: new Date(c.done_at!).getTime() })), now);
+  const actWow = wow(activity.map((a) => ({ t: new Date(a.at).getTime(), qty: a.qty })), now);
+  // Shitsuke: adherencia (% cerrado en fecha, últimos 30 días)
+  const adherencia = onTimeAdherence(norm, now);
 
   // trabadas: no terminadas, vencidas o con última anotación de +2 días
   const stuck = open.filter((c) => {
@@ -71,24 +91,35 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson }: {
 
   return (
     <div className="px-6 py-4 w-full max-w-[960px]">
-      <div className="flex gap-2 justify-end mb-2">
+      <div className="flex gap-2 items-center mb-2">
+        {adherencia !== null && (
+          <span title="Adherencia (Shitsuke): porcentaje de tareas con vencimiento cerradas en fecha, últimos 30 días"
+            className="flex items-center gap-1.5 text-[13px] font-semibold rounded-lg px-3 py-1.5 border"
+            style={{ color: adherencia >= 85 ? "var(--done)" : adherencia >= 60 ? "var(--warn)" : "var(--danger)",
+              borderColor: "var(--line)", background: "var(--surface2)" }}>
+            <ShieldCheck size={14} /> Adherencia {adherencia}%
+          </span>
+        )}
         {copyMsg && <span className="text-done text-[13px] self-center">{copyMsg}</span>}
-        <button onClick={exportCsv} className="flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3 py-1.5 text-[13px]">
+        <button onClick={exportCsv} className="flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3 py-1.5 text-[13px] ml-auto">
           <Download size={14} /> Exportar CSV</button>
         <button onClick={copyStandup} className="flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3 py-1.5 text-[13px]">
           <ClipboardCopy size={14} /> Copiar resumen del día</button>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        {([["Tareas abiertas", open.length, <Inbox key="i" size={15} />, false],
-           ["Vencidas", late.length, <AlarmClock key="a" size={15} />, late.length > 0],
-           ["Terminadas (7 d)", doneWeek.length, <CheckCircle2 key="c" size={15} />, false],
-           ["Actividad op. (7 d)", act7, <Activity key="t" size={15} />, false]] as const).map(([l, v, ic, alert]) => (
+        {([["Tareas abiertas", open.length, <Inbox key="i" size={15} />, false, null],
+           ["Vencidas", late.length, <AlarmClock key="a" size={15} />, late.length > 0, null],
+           ["Terminadas (7 d)", doneWeek.length, <CheckCircle2 key="c" size={15} />, false, doneWow],
+           ["Actividad op. (7 d)", act7, <Activity key="t" size={15} />, false, actWow]] as const).map(([l, v, ic, alert, w]) => (
           <div key={l} className="bg-surface border border-line rounded-2xl px-5 py-4" style={cardSh}>
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[11px] text-ink2 uppercase tracking-[0.08em] font-semibold">{l}</span>
               <span className={`grid place-items-center w-7 h-7 rounded-lg ${alert ? "bg-danger-soft text-danger" : "bg-accent-soft text-accent"}`}>{ic}</span>
             </div>
-            <b className={`block text-[32px] leading-none font-bold tracking-[-0.02em] tnum ${alert ? "text-danger" : ""}`}>{v}</b>
+            <div className="flex items-baseline gap-2">
+              <b className={`block text-[32px] leading-none font-bold tracking-[-0.02em] tnum ${alert ? "text-danger" : ""}`}>{v}</b>
+              {w && <DeltaChip w={w} />}
+            </div>
           </div>
         ))}
       </div>
