@@ -85,14 +85,16 @@ export function useSettings() {
   });
 }
 
-export function useTeam(isJefe: boolean) {
+// enabled: jefe y encargado traen los profiles (RLS del Plan 02 limita lo que ve el encargado).
+// El empleado no consulta — App le arma team = [me].
+export function useTeam(enabled: boolean) {
   return useQuery({
-    queryKey: ["team", isJefe],
+    queryKey: ["team", enabled],
     queryFn: async (): Promise<Profile[]> => {
       const { data } = await supabase.from("profiles").select("*").order("role").order("name");
       return (data as Profile[]) ?? [];
     },
-    enabled: isJefe,
+    enabled,
   });
 }
 

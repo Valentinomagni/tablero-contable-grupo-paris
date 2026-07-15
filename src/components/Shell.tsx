@@ -22,7 +22,7 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
   });
   useEffect(() => { localStorage.setItem("pref-sidebar", open ? "open" : "closed"); }, [open]);
   const [menu, setMenu] = useState(false);
-  const isJefe = me.role === "jefe";
+  const esGestor = me.role !== "empleado"; // jefe o encargado: alcance de equipo (General + lista de personas)
 
   const NavItem = ({ v, icon, label, count, badge }: { v: string; icon?: ReactNode; label: string; count?: number; badge?: string }) => (
     <button onClick={() => { onNavigate(v); setOpen(false); }}
@@ -56,7 +56,7 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
           </div>
         </div>
         <nav className="flex-1 overflow-y-auto p-2.5 flex flex-col gap-0.5">
-          {isJefe ? <>
+          {esGestor ? <>
             <div className="text-[10px] tracking-[1.4px] uppercase text-[color:var(--side-ink2)] px-2.5 pt-3.5 pb-1.5">General</div>
             <NavItem v="__resumen" icon={<LayoutDashboard size={17} />} label="Resumen" />
             <NavItem v="__reporte" icon={<TrendingUp size={17} />} label="Reporte ejecutivo" />

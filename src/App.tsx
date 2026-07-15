@@ -26,6 +26,7 @@ import { Admin } from "./features/admin/Admin";
 import { UserModal } from "./features/admin/UserModal";
 import { CommandPalette } from "./components/CommandPalette";
 import type { Card, Profile, AppSettings } from "./lib/types";
+import { visiblesPara } from "./lib/jerarquia";
 import { cn } from "./lib/ui";
 
 type Mode = "board" | "semana" | "obj" | "mimes";
@@ -37,7 +38,8 @@ export default function App() {
   const { data: settings } = useSettings();
   const [account, setAccount] = useState(false);
   const isJefe = me?.role === "jefe";
-  const { data: team = [] } = useTeam(!!isJefe);
+  const esGestor = !!me && me.role !== "empleado"; // jefe o encargado: alcance de equipo
+  const { data: team = [] } = useTeam(esGestor);
   const { data: cards = [], isLoading: cardsLoading } = useCards();
   const { data: activity = [] } = useActivity();
   const [viewing, setViewing] = useState<string>("");
@@ -71,8 +73,10 @@ export default function App() {
   if (loading) return <div className="min-h-screen grid place-items-center text-ink2">Cargando…</div>;
   if (!me) return <Login onSignIn={signIn} />;
 
-  const view = viewing || (isJefe ? "__resumen" : me.id);
-  const fullTeam = isJefe ? team : [me];
+  const view = viewing || (esGestor ? "__resumen" : me.id);
+  // Alcance por rol: jefe ve todos; encargado ve su equipo (visiblesPara); empleado solo a sí mismo.
+  // Ojo: si el Plan 02 aún no cargó manager_id, equipoDe devuelve [] y el encargado se ve solo a sí mismo (OK, no crashea).
+  const fullTeam = esGestor ? visiblesPara(me, team) : [me];
   const person = fullTeam.find((u) => u.id === view);
   const title = view === "__resumen" ? "Resumen del equipo"
     : view === "__reporte" ? "Reporte ejecutivo"
@@ -81,7 +85,7 @@ export default function App() {
     : view === "__bitacora" ? "Bitácora"
     : view === "__calendario" ? "Calendario"
     : view === "__cierre" ? "Cierre mensual"
-    : isJefe && person ? `Tablero de ${person.name}` : "Mi tablero";
+    : esGestor && person && person.id !== me.id ? `Tablero de ${person.name}` : "Mi tablero";
   const pendByOwner = (id: string) => cards.filter((c) => c.owner === id && c.status !== "term" && c.card_type !== "operativa").length;
   const isPersonView = !["__resumen", "__reporte", "__tablon", "__admin", "__bitacora", "__calendario", "__cierre"].includes(view);
 
@@ -111,12 +115,12 @@ export default function App() {
           <SubTab m="board" icon={<ClipboardList size={14} />} label="Tareas" />
           <SubTab m="semana" icon={<CalendarDays size={14} />} label="Semana" />
           <SubTab m="obj" icon={<Target size={14} />} label="Objetivos" />
-          <SubTab m="mimes" icon={<TrendingUp size={14} />} label={isJefe ? "Su mes" : "Mi mes"} />
+          <SubTab m="mimes" icon={<TrendingUp size={14} />} label={person && person.id !== me.id ? "Su mes" : "Mi mes"} />
           {mode === "board" && (
             <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar tarea…"
               className="bg-surface2 border border-line rounded-lg px-3 py-1.5 text-[13px] w-[200px]" />
           )}
-          {isJefe && person && (
+          {esGestor && person && person.id !== me.id && (
             <button onClick={() => setOpenUser(person)}
               className="flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] border bg-surface2 border-line text-ink2 transition">
               <UserRound size={14} /> Ficha
