@@ -170,9 +170,15 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
           );
         })}
 
-      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5 mt-6">Ritmo de cierre — últimos 14 días (tareas cerradas)</h2>
-      <div className="bg-surface border border-line rounded-xl p-3 mb-6" style={cardSh}>
-        <Bars data={d14.map((d) => ({ lbl: d.lbl.slice(0, 5), v: d.count, title: `${d.lbl}: ${d.count} tarea(s) · ${d.effort} punto(s)` }))} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6">
+        <div className="bg-surface border border-line rounded-xl p-3" style={cardSh}>
+          <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Tareas realizadas (14 días)</h2>
+          <Bars data={d14.map((d) => ({ lbl: d.lbl.slice(0, 5), v: d.count, title: `${d.lbl}: ${d.count} tarea(s)` }))} />
+        </div>
+        <div className="bg-surface border border-line rounded-xl p-3" style={cardSh}>
+          <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Productividad (esfuerzo, 14 días)</h2>
+          <Bars data={d14.map((d) => ({ lbl: d.lbl.slice(0, 5), v: d.effort, title: `${d.lbl}: ${d.effort} puntos` }))} />
+        </div>
       </div>
 
       <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5 mt-6">Ciclo del mes — en qué días se concentra el trabajo (histórico)</h2>
