@@ -21,6 +21,7 @@ export interface Announcement {
   due_date: string | null; created_by: string; created_at: string;
   owner_id: string | null; visible_to: string[];
 }
+export interface Note { id: string; owner: string; title: string; body: string; archived: boolean; created_at: string; updated_at: string; }
 export interface ActivityLog { id: string; card_id: string; owner: string; who_name: string; qty: number; note: string; at: string; }
 export interface Snapshot { day: string; owner: string; open_count: number; open_effort: number; done_count: number; done_effort: number; activity_qty: number; }
 export interface AppSettings {
