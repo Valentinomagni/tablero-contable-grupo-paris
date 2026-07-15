@@ -1,7 +1,7 @@
 export type Role = "jefe" | "encargado" | "empleado";
 export type Status = "pend" | "proc" | "term";
 
-export interface Profile { id: string; name: string; role: Role; email: string; puesto: string; ficha: string; }
+export interface Profile { id: string; name: string; role: Role; email: string; puesto: string; ficha: string; manager_id: string | null; marca: string | null; }
 export interface ChecklistItem { txt: string; done: boolean; done_at: string | null; }
 export interface Comment { who: string; when: string; txt: string; }
 export interface HistoryEntry { who: string; at: string; txt: string; }
