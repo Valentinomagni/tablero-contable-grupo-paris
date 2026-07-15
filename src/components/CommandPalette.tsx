@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
-import { LayoutDashboard, Pin, Settings, ClipboardList, Search } from "lucide-react";
+import { LayoutDashboard, Pin, Settings, ClipboardList, Search, Users } from "lucide-react";
 import { Avatar } from "../lib/ui";
 import { COLS, type Card, type Profile } from "../lib/types";
 
 interface Item { g: string; t: string; sub?: string; icon?: React.ReactNode; av?: Profile; run: () => void; }
 
-export function CommandPalette({ me, team, cards, onNavigate, onOpenCard, onClose }: {
+export function CommandPalette({ me, team, cards, onNavigate, onOpenCard, onClose, onDelegar }: {
   me: Profile; team: Profile[]; cards: Card[];
-  onNavigate: (v: string) => void; onOpenCard: (c: Card) => void; onClose: () => void;
+  onNavigate: (v: string) => void; onOpenCard: (c: Card) => void; onClose: () => void; onDelegar?: () => void;
 }) {
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
@@ -19,6 +19,7 @@ export function CommandPalette({ me, team, cards, onNavigate, onOpenCard, onClos
     all.push({ g: "Vistas", t: "Reporte ejecutivo", icon: <LayoutDashboard size={16} />, run: () => onNavigate("__reporte") });
     all.push({ g: "Vistas", t: "Cierre mensual", icon: <LayoutDashboard size={16} />, run: () => onNavigate("__cierre") });
     all.push({ g: "Vistas", t: "Administración", icon: <Settings size={16} />, run: () => onNavigate("__admin") });
+    if (onDelegar) all.push({ g: "Acciones", t: "Delegar / compartir tarea…", icon: <Users size={16} />, run: () => onDelegar() });
   }
   all.push({ g: "Vistas", t: "Tablón del equipo", icon: <Pin size={16} />, run: () => onNavigate("__tablon") });
   all.push({ g: "Vistas", t: "Mi tablero", icon: <ClipboardList size={16} />, run: () => onNavigate(me.id) });

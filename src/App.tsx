@@ -12,6 +12,7 @@ import { Login } from "./components/Login";
 import { Shell } from "./components/Shell";
 import { Board } from "./features/board/Board";
 import { CardModal } from "./features/board/CardModal";
+import { DelegarModal } from "./features/board/DelegarModal";
 import { Objetivos } from "./features/objetivos/Objetivos";
 import { Reporte } from "./features/reporte/Reporte";
 import { Resumen } from "./features/resumen/Resumen";
@@ -46,6 +47,7 @@ export default function App() {
   const [query, setQuery] = useState("");
   const qcRef = useQueryClient();
   const [cmdk, setCmdk] = useState(false);
+  const [delegar, setDelegar] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -121,7 +123,7 @@ export default function App() {
             </button>
           )}
         </> : undefined}>
-        {view === "__resumen" ? <Resumen cards={cards} team={fullTeam} activity={activity} onOpenCard={setOpenCard} onGoPerson={(id) => { setViewing(id); setMode("board"); }} />
+        {view === "__resumen" ? <Resumen cards={cards} team={fullTeam} activity={activity} onOpenCard={setOpenCard} onGoPerson={(id) => { setViewing(id); setMode("board"); }} onDelegar={() => setDelegar(true)} />
           : view === "__reporte" ? <Reporte cards={cards} team={fullTeam} activity={activity} />
           : view === "__tablon" ? <Tablon />
           : view === "__admin" ? <Admin team={fullTeam} cards={cards} meName={me.name} onOpenUser={setOpenUser} />
@@ -137,9 +139,11 @@ export default function App() {
       {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} cards={cards} team={fullTeam} isJefe={!!isJefe} onClose={() => setOpenCard(null)} meName={me.name} />}
       {openUser && <UserModal user={fullTeam.find((t) => t.id === openUser.id) ?? openUser} meId={me.id} cards={cards} activity={activity} onClose={() => setOpenUser(null)} />}
       {account && <AccountModal name={me.name} email={me.email} onClose={() => setAccount(false)} />}
+      {delegar && <DelegarModal team={fullTeam} meName={me.name} onClose={() => setDelegar(false)} />}
       <Toaster position="bottom-center" toastOptions={{ style: { background: "var(--surface)", color: "var(--ink)", border: "1px solid var(--line)", boxShadow: "var(--shadow-lg)" } }} />
       {cmdk && <CommandPalette me={me} team={fullTeam} cards={cards}
-        onNavigate={(v) => { setViewing(v); setMode("board"); setQuery(""); }} onOpenCard={setOpenCard} onClose={() => setCmdk(false)} />}
+        onNavigate={(v) => { setViewing(v); setMode("board"); setQuery(""); }} onOpenCard={setOpenCard} onClose={() => setCmdk(false)}
+        onDelegar={isJefe ? () => setDelegar(true) : undefined} />}
     </>
   );
 }

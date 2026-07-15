@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Download, ClipboardCopy, Inbox, AlarmClock, CheckCircle2, Activity, ArrowUp, ArrowDown, ShieldCheck } from "lucide-react";
+import { Download, ClipboardCopy, Inbox, AlarmClock, CheckCircle2, Activity, ArrowUp, ArrowDown, ShieldCheck, Users } from "lucide-react";
 import type { Card, Profile, ActivityLog } from "../../lib/types";
 import { dueInfo, fmtDateTime, wow, onTimeAdherence, type Wow } from "../../lib/metrics";
 import { isBlocked } from "../../lib/deps";
@@ -29,7 +29,7 @@ function Bars({ data, height = 110 }: { data: { lbl: string; v: number; title: s
       {data.map((d, i) => (
         <div key={i} title={d.title} className="flex flex-col items-center justify-end flex-1 min-w-[14px] h-full">
           {d.v > 0 && <span className="text-[10px] text-ink2 tnum">{d.v}</span>}
-          <div className="w-full rounded-t-[3px] bg-accent/85 hover:bg-accent transition-colors" style={{ height: `${Math.round((d.v / max) * 82)}%`, minHeight: d.v > 0 ? 2 : 0 }} />
+          <div className="w-full rounded-t-[3px] bg-accent hover:opacity-80 transition-opacity" style={{ height: `${Math.round((d.v / max) * 82)}%`, minHeight: d.v > 0 ? 2 : 0 }} />
           <span className="text-[9.5px] text-ink2 mt-0.5 whitespace-nowrap">{d.lbl}</span>
         </div>
       ))}
@@ -37,9 +37,9 @@ function Bars({ data, height = 110 }: { data: { lbl: string; v: number; title: s
   );
 }
 
-export function Resumen({ cards, team, activity, onOpenCard, onGoPerson }: {
+export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDelegar }: {
   cards: Card[]; team: Profile[]; activity: ActivityLog[];
-  onOpenCard: (c: Card) => void; onGoPerson: (id: string) => void;
+  onOpenCard: (c: Card) => void; onGoPerson: (id: string) => void; onDelegar?: () => void;
 }) {
   const now = Date.now(), day = 86400000, week = now - 7 * day;
   const norm = cards.filter((c) => c.card_type !== "operativa");
@@ -101,7 +101,11 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson }: {
           </span>
         )}
         {copyMsg && <span className="text-done text-[13px] self-center">{copyMsg}</span>}
-        <button onClick={exportCsv} className="flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3 py-1.5 text-[13px] ml-auto">
+        {onDelegar && (
+          <button onClick={onDelegar} className="flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] rounded-lg px-3 py-1.5 text-[13px] font-semibold ml-auto">
+            <Users size={14} /> Delegar tarea</button>
+        )}
+        <button onClick={exportCsv} className={`flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3 py-1.5 text-[13px] ${onDelegar ? "" : "ml-auto"}`}>
           <Download size={14} /> Exportar CSV</button>
         <button onClick={copyStandup} className="flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3 py-1.5 text-[13px]">
           <ClipboardCopy size={14} /> Copiar resumen del día</button>
@@ -197,7 +201,7 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson }: {
             <div key={f.n} title={`${f.n}: ${f.v} puntos de esfuerzo abiertos`} className="flex items-center gap-2 py-1">
               <span className="w-[110px] text-[13px] truncate shrink-0">{f.n}</span>
               <div className="flex-1 h-3 bg-surface2 rounded-full overflow-hidden">
-                <div className="h-full bg-accent/70 rounded-full" style={{ width: `${Math.round((f.v / cargaPersona[0].v) * 100)}%` }} />
+                <div className="h-full bg-accent rounded-full" style={{ width: `${Math.round((f.v / cargaPersona[0].v) * 100)}%` }} />
               </div>
               <span className="text-[13px] tnum w-6 text-right">{f.v}</span>
             </div>

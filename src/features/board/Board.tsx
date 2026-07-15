@@ -5,7 +5,8 @@ import { COLS, type Card, type Status, type ActivityLog } from "../../lib/types"
 import { dueInfo, fmtDateTime } from "../../lib/metrics";
 import { cn } from "../../lib/ui";
 import { pushUndo } from "../../lib/undo";
-import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X } from "lucide-react";
+import { isShared, siblingSyncPatches } from "../../lib/shared";
+import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Users } from "lucide-react";
 
 const DOT: Record<string, string> = { pend: "bg-naranja", proc: "bg-s1", term: "bg-done" };
 
@@ -30,6 +31,7 @@ function CardItem({ c, blocked, waiting, onOpen }: { c: Card; blocked: boolean; 
       style={{ boxShadow: "var(--shadow)" }}>
       <div className="font-semibold text-[13.5px] tracking-tight leading-snug">{c.title}</div>
       <div className="flex gap-2 flex-wrap mt-1.5 text-xs text-ink2 items-center">
+        {isShared(c) && <span title="Tarea compartida con otras personas" className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Users size={11} /> Compartida</span>}
         {blocked && <span className="inline-flex items-center gap-1 bg-warn-soft text-warn rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Lock size={11} /> Bloqueada</span>}
         {waiting && <span className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Hourglass size={11} /> Te esperan</span>}
         {pr}<DueBadge c={c} />{c.recurring && <span title="Mensual"><Repeat size={12} /></span>}
@@ -63,6 +65,10 @@ export function Board({ cards, activity, ownerId, meName, query = "", onOpen }: 
       pushUndo(c, { ...patch, history: hist });
       const { error } = await supabase.from("cards").update({ ...patch, history: hist }).eq("id", id);
       if (error) throw error;
+      // tareas compartidas: sincroniza las hermanas (best-effort; el trigger de la DB cubre RLS cruzada)
+      for (const s of siblingSyncPatches(c, cards, status, patch.done_at ?? new Date().toISOString())) {
+        await supabase.from("cards").update(s.patch).eq("id", s.id);
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["cards"] }),
   });

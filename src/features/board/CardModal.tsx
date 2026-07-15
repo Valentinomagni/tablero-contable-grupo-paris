@@ -6,7 +6,8 @@ import { COLS, type Card, type Profile } from "../../lib/types";
 import { fmtDateTime } from "../../lib/metrics";
 import { depInfoOf, dependentsOf, isBlocked, type DepMap } from "../../lib/deps";
 import { pushUndo } from "../../lib/undo";
-import { Check, Link2, Lock, Hourglass, X } from "lucide-react";
+import { isShared, participantes, siblingSyncPatches } from "../../lib/shared";
+import { Check, Link2, Lock, Hourglass, X, Users } from "lucide-react";
 import { useDepsInfo, useReverseDeps, useSettings } from "../../hooks/useData";
 
 export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—" }:
@@ -43,6 +44,12 @@ export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—
       pushUndo(c, p);
       const { error } = await supabase.from("cards").update(p).eq("id", c.id);
       if (error) throw error;
+      // tareas compartidas: si cambió el estado, sincroniza las hermanas (best-effort; trigger DB cubre RLS)
+      if (p.status) {
+        for (const s of siblingSyncPatches(c, cards, p.status, p.done_at ?? new Date().toISOString())) {
+          await supabase.from("cards").update(s.patch).eq("id", s.id);
+        }
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["cards"] }),
   });
@@ -62,6 +69,12 @@ export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—
     <Modal onClose={onClose}>
         <h3 className="text-lg font-semibold m-0">{c.title}</h3>
         <div className="text-xs text-ink2 mb-3.5">Estado: {estLbl}{c.done_at && ` · terminada el ${fmtDateTime(c.done_at)}`}</div>
+        {isShared(c) && (
+          <div className="flex items-center gap-2 bg-accent-soft text-accent rounded-lg px-3 py-2 text-[13px] mb-3.5">
+            <Users size={14} className="shrink-0" />
+            <span>Tarea compartida con <b>{participantes(c, cards, (id) => team.find((u) => u.id === id)?.name ?? "?").join(", ")}</b>. Al terminarla se marca para todos.</span>
+          </div>
+        )}
 
         <div className="flex gap-4 flex-wrap items-center text-sm text-ink2 mb-2">
           <label className="flex items-center gap-1.5">Vence
