@@ -23,6 +23,7 @@ import { Bitacora } from "./features/bitacora/Bitacora";
 import { Calendario } from "./features/calendario/Calendario";
 import { Cierre } from "./features/cierre/Cierre";
 import { Organigrama } from "./features/organigrama/Organigrama";
+import { Notas } from "./features/notas/Notas";
 import { Admin } from "./features/admin/Admin";
 import { UserModal } from "./features/admin/UserModal";
 import { CommandPalette } from "./components/CommandPalette";
@@ -89,9 +90,10 @@ export default function App() {
     : view === "__calendario" ? "Calendario"
     : view === "__cierre" ? "Cierre mensual"
     : view === "__organigrama" ? "Organigrama"
+    : view === "__notas" ? "Anotaciones"
     : esGestor && person && person.id !== me.id ? `Tablero de ${person.name}` : "Mi tablero";
   const pendByOwner = (id: string) => cards.filter((c) => c.owner === id && c.status !== "term" && c.card_type !== "operativa").length;
-  const isPersonView = !["__resumen", "__reporte", "__tablon", "__admin", "__bitacora", "__calendario", "__cierre", "__organigrama"].includes(view);
+  const isPersonView = !["__resumen", "__reporte", "__tablon", "__admin", "__bitacora", "__calendario", "__cierre", "__organigrama", "__notas"].includes(view);
 
   // badge del tablón: vencimientos próximos o publicaciones no vistas (por navegador)
   const vencProximos = annos.filter((a) => a.kind === "vencimiento" && a.due_date &&
@@ -139,6 +141,7 @@ export default function App() {
           : view === "__calendario" ? <Calendario me={me} team={fullTeam} />
           : view === "__cierre" ? <Cierre cards={cards} team={fullTeam} isJefe={!!isJefe} meName={me.name} settings={settings ?? { edit_closed: false } as AppSettings} onOpenCard={setOpenCard} />
           : view === "__organigrama" ? <Organigrama team={fullTeam} cards={cards} />
+          : view === "__notas" ? <Notas me={me} />
           : mode === "semana" ? <Semana cards={cards} ownerId={view} meName={me.name} onOpen={setOpenCard} />
           : mode === "obj" ? <Objetivos ownerId={view} ownerName={person?.name ?? me.name} />
           : mode === "mimes" ? <MiMes cards={cards} activity={activity} ownerId={view} onOpenCard={setOpenCard} />

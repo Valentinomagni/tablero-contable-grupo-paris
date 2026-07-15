@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { LayoutDashboard, Pin, Settings, ClipboardList, Search, Users, Network } from "lucide-react";
+import { LayoutDashboard, Pin, Settings, ClipboardList, Search, Users, Network, StickyNote } from "lucide-react";
 import { Avatar } from "../lib/ui";
 import { COLS, type Card, type Profile } from "../lib/types";
 
@@ -23,7 +23,9 @@ export function CommandPalette({ me, team, cards, onNavigate, onOpenCard, onClos
     if (onDelegar) all.push({ g: "Acciones", t: "Delegar / compartir tarea…", icon: <Users size={16} />, run: () => onDelegar() });
   }
   all.push({ g: "Vistas", t: "Tablón del equipo", icon: <Pin size={16} />, run: () => onNavigate("__tablon") });
+  all.push({ g: "Vistas", t: "Anotaciones", icon: <StickyNote size={16} />, run: () => onNavigate("__notas") });
   all.push({ g: "Vistas", t: "Mi tablero", icon: <ClipboardList size={16} />, run: () => onNavigate(me.id) });
+  all.push({ g: "Acciones", t: "Nueva anotación", icon: <StickyNote size={16} />, run: () => onNavigate("__notas") });
   if (isJefe) team.forEach((u) => all.push({ g: "Personas", t: u.name, sub: u.role, av: u, run: () => onNavigate(u.id) }));
   cards.forEach((c) => all.push({
     g: "Tareas", t: c.title,
