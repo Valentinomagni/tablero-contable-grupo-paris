@@ -1,5 +1,8 @@
 # Conectar GitHub + Cloudflare Pages (una sola vez, ~10 min)
 
+> ESTADO (15/07/2026): YA CONECTADO. Repo real: `Valentinomagni/tablero-contable-grupo-paris` (privado).
+> Cloudflare Pages enlazado: cada `git push` a `main` despliega solo. Los pasos de abajo quedan como referencia histórica.
+
 > Con esto muere el zip manual y el problema de créditos de Netlify: Cloudflare Pages es gratis sin límite de builds ni tráfico.
 
 ## 1. Crear la cuenta GitHub del proyecto (lo hacés vos)
@@ -12,7 +15,7 @@
 ```bash
 export PATH="$HOME/tools/node-v22.17.0-win-x64:$PATH"
 cd "C:/Users/Vmagni/Desktop/GRUPO PARIS/tablero-contable-v2"
-git remote add origin https://<TOKEN>@github.com/grupoparis-tablero/tablero-contable-v2.git
+git remote add origin https://<TOKEN>@github.com/Valentinomagni/tablero-contable-grupo-paris.git
 git push -u origin main
 ```
 

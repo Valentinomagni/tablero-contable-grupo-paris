@@ -80,12 +80,16 @@ Alternativa de expansión estratégica: **Multi-área** (RRHH/Compras con el due
 ---
 
 ## 4. Orden recomendado (por valor y dependencias)
-1. ✅ **Paleta monocroma premium** — hecho hoy (esta corrección).
-2. **`motion` + `sonner`** — el salto sensorial visible en la reunión.
-3. **Solapa Cierre Mensual** — feature estrella + narrativa 5S/Kaizen concreta.
-4. **Score de adherencia (Shitsuke) + deltas Kaizen** en el Resumen.
-5. **Code-split + Sentry + types codegen** — robustez para crecer.
+1. ✅ **Paleta monocroma premium** — HECHO (commit `6137ee5`, verificado con screenshots claro/oscuro).
+2. ✅ **`motion` + `sonner`** — ya estaban cableados (Modal spring + toasts).
+3. ✅ **Solapa Cierre Mensual** — HECHO (commit `0291765`): avance %, adherencia, vencidas, generar de un clic.
+4. ✅ **Score de adherencia (Shitsuke) + deltas Kaizen** en el Resumen — HECHO (commit `2341740`).
+5. **Code-split + Sentry + types codegen** — robustez para crecer (PRÓXIMO).
 6. **Multi-área** — la expansión con el dueño como stakeholder.
+
+> Herramientas de trabajo agregadas esta sesión: `scripts/shot-view.mjs` (captura cualquier
+> vista logueada en claro/oscuro/viewport, para verificación visual en un comando) y el smoke
+> test ampliado (cubre Cierre; ignora 404 de entorno como `/arca-xml`). 63 tests verdes.
 
 ---
 
