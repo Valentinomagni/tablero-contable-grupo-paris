@@ -47,7 +47,7 @@ export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—
     onSuccess: () => qc.invalidateQueries({ queryKey: ["cards"] }),
   });
 
-  const hist = (txt: string) => [...(c.history ?? []), { who: "—", at: new Date().toISOString(), txt }];
+  const hist = (txt: string) => [...(c.history ?? []), { who: meName, at: new Date().toISOString(), txt }];
   const toggleCk = (n: number) => {
     const list = c.checklist.map((i, idx) => idx === n ? { ...i, done: !i.done, done_at: !i.done ? new Date().toISOString() : null } : i);
     const allDone = list.length && list.every((i) => i.done);

@@ -18,6 +18,7 @@ import { Resumen } from "./features/resumen/Resumen";
 import { MiMes } from "./features/mimes/MiMes";
 import { Tablon } from "./features/tablon/Tablon";
 import { Semana } from "./features/semana/Semana";
+import { Bitacora } from "./features/bitacora/Bitacora";
 import { Admin } from "./features/admin/Admin";
 import { UserModal } from "./features/admin/UserModal";
 import { CommandPalette } from "./components/CommandPalette";
@@ -73,9 +74,10 @@ export default function App() {
     : view === "__reporte" ? "Reporte ejecutivo"
     : view === "__tablon" ? "Tablón del equipo"
     : view === "__admin" ? "Administración"
+    : view === "__bitacora" ? "Bitácora"
     : isJefe && person ? `Tablero de ${person.name}` : "Mi tablero";
   const pendByOwner = (id: string) => cards.filter((c) => c.owner === id && c.status !== "term" && c.card_type !== "operativa").length;
-  const isPersonView = !["__resumen", "__reporte", "__tablon", "__admin"].includes(view);
+  const isPersonView = !["__resumen", "__reporte", "__tablon", "__admin", "__bitacora"].includes(view);
 
   // badge del tablón: vencimientos próximos o publicaciones no vistas (por navegador)
   const vencProximos = annos.filter((a) => a.kind === "vencimiento" && a.due_date &&
@@ -119,6 +121,7 @@ export default function App() {
           : view === "__reporte" ? <Reporte cards={cards} team={fullTeam} activity={activity} />
           : view === "__tablon" ? <Tablon />
           : view === "__admin" ? <Admin team={fullTeam} cards={cards} meName={me.name} onOpenUser={setOpenUser} />
+          : view === "__bitacora" ? <Bitacora cards={cards} activity={activity} team={fullTeam} isJefe={!!isJefe} meId={me.id} onOpenCard={setOpenCard} />
           : mode === "semana" ? <Semana cards={cards} ownerId={view} meName={me.name} onOpen={setOpenCard} />
           : mode === "obj" ? <Objetivos ownerId={view} ownerName={person?.name ?? me.name} />
           : mode === "mimes" ? <MiMes cards={cards} activity={activity} ownerId={view} onOpenCard={setOpenCard} />
