@@ -7,13 +7,16 @@ import { fmtDateTime } from "../../lib/metrics";
 import { depInfoOf, dependentsOf, isBlocked, type DepMap } from "../../lib/deps";
 import { pushUndo } from "../../lib/undo";
 import { isShared, participantes, siblingSyncPatches } from "../../lib/shared";
-import { Check, Link2, Lock, Hourglass, X, Users } from "lucide-react";
+import { Check, Link2, Lock, Hourglass, X, Users, Pencil, Trash2 } from "lucide-react";
 import { useDepsInfo, useReverseDeps, useSettings } from "../../hooks/useData";
+import { editarItem, borrarItem } from "../../lib/checklist";
 
 export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—" }:
   { card: Card; cards: Card[]; team: Profile[]; isJefe: boolean; onClose: () => void; meName?: string }) {
   const qc = useQueryClient();
   const [newCk, setNewCk] = useState("");
+  const [editCk, setEditCk] = useState<number | null>(null);
+  const [editTxt, setEditTxt] = useState("");
   const [newCm, setNewCm] = useState("");
   const [depPerson, setDepPerson] = useState("");
   const [depTask, setDepTask] = useState("");
@@ -165,12 +168,29 @@ export function CardModal({ card: c, cards, team, isJefe, onClose, meName = "—
         })()}
 
         <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Checklist</h4>
-        {c.checklist.map((i, n) => (
-          <label key={n} className="flex items-center gap-2 py-1 text-sm cursor-pointer">
-            <input type="checkbox" checked={i.done} onChange={() => toggleCk(n)} className="accent-accent w-4 h-4" />
-            <span className={i.done ? "line-through text-ink2" : ""}>{i.txt}</span>
-          </label>
-        ))}
+        {c.checklist.map((i, n) => {
+          const saveEdit = () => {
+            if (editTxt.trim()) patch.mutate({ checklist: editarItem(c.checklist, n, editTxt.trim()) });
+            setEditCk(null);
+          };
+          return (
+            <div key={n} className="flex items-center gap-2 py-1 text-sm">
+              <input type="checkbox" checked={i.done} onChange={() => toggleCk(n)} className="accent-accent w-4 h-4 shrink-0" />
+              {editCk === n ? (
+                <input autoFocus value={editTxt} onChange={(e) => setEditTxt(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditCk(null); }}
+                  onBlur={saveEdit}
+                  className="flex-1 bg-surface2 border border-line rounded-lg px-2.5 py-1 text-ink text-[13px]" />
+              ) : (
+                <span className={"flex-1 " + (i.done ? "line-through text-ink2" : "")}>{i.txt}</span>
+              )}
+              <button title="Editar" onClick={() => { setEditCk(n); setEditTxt(c.checklist[n].txt); }}
+                className="border border-line bg-surface2 rounded-lg px-1.5 py-1"><Pencil size={12} /></button>
+              <button title="Borrar" onClick={() => patch.mutate({ checklist: borrarItem(c.checklist, n) })}
+                className="border border-line bg-surface2 rounded-lg px-1.5 py-1"><Trash2 size={12} /></button>
+            </div>
+          );
+        })}
         <div className="flex gap-1.5 mt-1">
           <input value={newCk} onChange={(e) => setNewCk(e.target.value)} placeholder="Nuevo ítem…"
             className="flex-1 bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-[13px]" />
