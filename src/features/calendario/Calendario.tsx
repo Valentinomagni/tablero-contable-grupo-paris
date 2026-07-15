@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, Plus, Trash2, CalendarDays, LayoutGrid } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trash2, CalendarDays, LayoutGrid, Check } from "lucide-react";
 import { supabase } from "../../lib/supabase";
-import type { Announcement } from "../../lib/types";
+import type { Announcement, Profile } from "../../lib/types";
 import { useAnnouncements } from "../../hooks/useData";
 import { MESES, DIAS_SEMANA, grillaMes, eventosPorDia, conteoPorMes, claveFecha } from "../../lib/calendario";
 import { Modal } from "../../components/Modal";
-import { cn } from "../../lib/ui";
+import { cn, Avatar } from "../../lib/ui";
 
 type Kind = Announcement["kind"];
 const KIND: Record<Kind, { label: string; chip: string; dot: string }> = {
@@ -18,7 +18,8 @@ const KIND: Record<Kind, { label: string; chip: string; dot: string }> = {
 const fechaLarga = (iso: string) =>
   new Date(iso + "T12:00:00").toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
-export function Calendario({ isJefe, meName }: { isJefe: boolean; meName: string }) {
+export function Calendario({ me, team }: { me: Profile; team: Profile[] }) {
+  const isJefe = me.role === "jefe";
   const { data: anuncios = [] } = useAnnouncements();
   const qc = useQueryClient();
   const hoy = new Date();
@@ -30,6 +31,8 @@ export function Calendario({ isJefe, meName }: { isJefe: boolean; meName: string
   const [nTitulo, setNTitulo] = useState("");
   const [nKind, setNKind] = useState<Kind>("vencimiento");
   const [nDetalle, setNDetalle] = useState("");
+  const [nCompartir, setNCompartir] = useState<string[]>([]);
+  const toggleCompartir = (id: string) => setNCompartir((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
 
   const porDia = useMemo(() => eventosPorDia(anuncios), [anuncios]);
   const grilla = useMemo(() => grillaMes(year, month, hoyISO), [year, month, hoyISO]);
@@ -39,15 +42,15 @@ export function Calendario({ isJefe, meName }: { isJefe: boolean; meName: string
     const d = new Date(year, month - 1 + delta, 1);
     setYear(d.getFullYear()); setMonth(d.getMonth() + 1);
   };
-  const abrirDia = (fecha: string) => { setDiaSel(fecha); setNTitulo(""); setNKind("vencimiento"); setNDetalle(""); };
+  const abrirDia = (fecha: string) => { setDiaSel(fecha); setNTitulo(""); setNKind("vencimiento"); setNDetalle(""); setNCompartir([]); };
 
   const add = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("announcements")
-        .insert({ kind: nKind, title: nTitulo.trim(), detail: nDetalle.trim(), due_date: diaSel, created_by: meName });
+        .insert({ kind: nKind, title: nTitulo.trim(), detail: nDetalle.trim(), due_date: diaSel, created_by: me.name, owner_id: me.id, visible_to: nCompartir });
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["announcements"] }); toast.success("Evento agregado al calendario"); setNTitulo(""); setNDetalle(""); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["announcements"] }); toast.success("Evento agregado al calendario"); setNTitulo(""); setNDetalle(""); setNCompartir([]); },
     onError: (e: Error) => toast.error("No se pudo guardar: " + e.message),
   });
   const del = useMutation({
@@ -78,7 +81,7 @@ export function Calendario({ isJefe, meName }: { isJefe: boolean; meName: string
         </div>
       </div>
 
-      {isJefe && vista === "mes" && (
+      {vista === "mes" && (
         <p className="text-ink2 text-[13px] -mt-2 mb-3">Tocá un día para agregar vencimientos de impuestos, balances o reuniones.</p>
       )}
 
@@ -150,35 +153,49 @@ export function Calendario({ isJefe, meName }: { isJefe: boolean; meName: string
                 {e.detail && <p className="text-ink2 text-[13px] m-0 mt-0.5 whitespace-pre-line">{e.detail}</p>}
                 <span className="text-ink2 text-[11px]">— {e.created_by}</span>
               </div>
-              {isJefe && (
+              {(e.owner_id ? e.owner_id === me.id : false) || isJefe ? (
                 <button onClick={() => del.mutate(e.id)} title="Eliminar" className="border border-line bg-surface2 rounded-lg p-1.5 text-ink2 hover:text-danger shrink-0"><Trash2 size={13} /></button>
-              )}
+              ) : null}
             </div>
           ))}
           {eventosDelDia.length === 0 && <p className="text-ink2 text-sm">Sin eventos este día.</p>}
 
-          {isJefe ? (
-            <div className="mt-4 pt-3 border-t border-line">
-              <h4 className="text-xs uppercase tracking-wide text-ink2 mb-2">Agregar evento</h4>
-              <div className="grid gap-2">
-                <input value={nTitulo} onChange={(e) => setNTitulo(e.target.value)} placeholder="Ej: Vence IIBB CM · Balance ejercicio · Reunión de cierre" className={inputCls} />
-                <div className="flex gap-2">
-                  <select value={nKind} onChange={(e) => setNKind(e.target.value as Kind)} className={inputCls + " flex-1"}>
-                    <option value="vencimiento">Vencimiento (impuesto / balance)</option>
-                    <option value="aviso">Aviso / Reunión</option>
-                    <option value="proceso">Proceso</option>
-                  </select>
-                </div>
-                <textarea value={nDetalle} onChange={(e) => setNDetalle(e.target.value)} rows={2} placeholder="Detalle opcional (terminación de CUIT, horario, lugar…)" className={inputCls + " resize-y"} />
-                <button onClick={() => nTitulo.trim() ? add.mutate() : toast.error("Ponele un título al evento")}
-                  disabled={add.isPending}
-                  className="flex items-center justify-center gap-1.5 bg-accent text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:opacity-60">
-                  <Plus size={14} /> {add.isPending ? "Guardando…" : "Agregar al calendario"}</button>
+          <div className="mt-4 pt-3 border-t border-line">
+            <h4 className="text-xs uppercase tracking-wide text-ink2 mb-2">Agregar evento</h4>
+            <div className="grid gap-2">
+              <input value={nTitulo} onChange={(e) => setNTitulo(e.target.value)} placeholder="Ej: Vence IIBB CM · Balance ejercicio · Reunión de cierre" className={inputCls} />
+              <div className="flex gap-2">
+                <select value={nKind} onChange={(e) => setNKind(e.target.value as Kind)} className={inputCls + " flex-1"}>
+                  <option value="vencimiento">Vencimiento (impuesto / balance)</option>
+                  <option value="aviso">Aviso / Reunión</option>
+                  <option value="proceso">Proceso</option>
+                </select>
               </div>
+              <textarea value={nDetalle} onChange={(e) => setNDetalle(e.target.value)} rows={2} placeholder="Detalle opcional (terminación de CUIT, horario, lugar…)" className={inputCls + " resize-y"} />
+              {team.filter((u) => u.id !== me.id).length > 0 && (
+                <div>
+                  <label className="block text-xs uppercase tracking-wide text-ink2 mb-1.5">Compartir con</label>
+                  <div className="grid grid-cols-2 gap-1.5 max-h-[150px] overflow-y-auto">
+                    {team.filter((u) => u.id !== me.id).map((u) => {
+                      const on = nCompartir.includes(u.id);
+                      return (
+                        <button key={u.id} type="button" onClick={() => toggleCompartir(u.id)}
+                          className={cn("flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] border text-left transition", on ? "border-accent bg-accent-soft" : "border-line bg-surface2")}>
+                          <Avatar name={u.name} size={20} />
+                          <span className="flex-1 truncate">{u.name}</span>
+                          {on && <Check size={14} className="text-accent shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              <button onClick={() => nTitulo.trim() ? add.mutate() : toast.error("Ponele un título al evento")}
+                disabled={add.isPending}
+                className="flex items-center justify-center gap-1.5 bg-accent text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:opacity-60">
+                <Plus size={14} /> {add.isPending ? "Guardando…" : "Agregar al calendario"}</button>
             </div>
-          ) : (
-            <p className="text-ink2 text-[13px] mt-3">Los eventos los cargan los jefes.</p>
-          )}
+          </div>
           <button onClick={() => setDiaSel(null)} className="w-full mt-3 border border-line bg-surface2 rounded-lg py-2 text-[13px]">Cerrar</button>
         </Modal>
       )}
