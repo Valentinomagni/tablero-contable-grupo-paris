@@ -34,7 +34,7 @@ try {
   ]);
   paso("login + Resumen");
 
-  const vistas = ["Reporte ejecutivo", "Cierre mensual", "Tablón", "Calendario", "Bitácora", "Administración"];
+  const vistas = ["Reporte ejecutivo", "Cierre mensual", "Organigrama", "Tablón", "Calendario", "Bitácora", "Administración"];
   for (const v of vistas) {
     await pg.evaluate((t) => [...document.querySelectorAll("button,a")].find((x) => x.textContent.trim() === t)?.click(), v);
     await new Promise((r) => setTimeout(r, 900));

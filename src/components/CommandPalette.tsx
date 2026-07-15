@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { LayoutDashboard, Pin, Settings, ClipboardList, Search, Users } from "lucide-react";
+import { LayoutDashboard, Pin, Settings, ClipboardList, Search, Users, Network } from "lucide-react";
 import { Avatar } from "../lib/ui";
 import { COLS, type Card, type Profile } from "../lib/types";
 
@@ -18,6 +18,7 @@ export function CommandPalette({ me, team, cards, onNavigate, onOpenCard, onClos
     all.push({ g: "Vistas", t: "Resumen del equipo", icon: <LayoutDashboard size={16} />, run: () => onNavigate("__resumen") });
     all.push({ g: "Vistas", t: "Reporte ejecutivo", icon: <LayoutDashboard size={16} />, run: () => onNavigate("__reporte") });
     all.push({ g: "Vistas", t: "Cierre mensual", icon: <LayoutDashboard size={16} />, run: () => onNavigate("__cierre") });
+    all.push({ g: "Vistas", t: "Organigrama", icon: <Network size={16} />, run: () => onNavigate("__organigrama") });
     all.push({ g: "Vistas", t: "Administración", icon: <Settings size={16} />, run: () => onNavigate("__admin") });
     if (onDelegar) all.push({ g: "Acciones", t: "Delegar / compartir tarea…", icon: <Users size={16} />, run: () => onDelegar() });
   }
