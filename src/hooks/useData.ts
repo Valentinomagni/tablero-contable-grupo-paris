@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import type { Card, Profile, Objective, ActivityLog } from "../lib/types";
 import type { DepInfo, RevDep } from "../lib/deps";
+import { CardSchema, validateRows } from "../lib/schemas";
 
 // título/estado/responsable de deps que apuntan a tarjetas ajenas (security definer)
 export function useDepsInfo(missing: string[]) {
@@ -110,7 +111,7 @@ export function useCards() {
     queryKey: ["cards"],
     queryFn: async (): Promise<Card[]> => {
       const { data } = await supabase.from("cards").select("*").order("created_at");
-      return (data as Card[]) ?? [];
+      return validateRows((data as Card[]) ?? [], CardSchema, "cards");
     },
   });
 }

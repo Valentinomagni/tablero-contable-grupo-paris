@@ -23,8 +23,11 @@ await Promise.all([
 await new Promise((r) => setTimeout(r, 1000));
 
 if (navText !== "Resumen") {
-  const clicked = await page.evaluate((t) =>
-    !![...document.querySelectorAll("button")].find((b) => b.textContent.includes(t))?.click(), navText);
+  const clicked = await page.evaluate((t) => {
+    const el = [...document.querySelectorAll("button")].find((b) => b.textContent.includes(t));
+    if (el) { el.click(); return true; }
+    return false;
+  }, navText);
   if (!clicked) { console.error(`No encontré el botón de nav "${navText}"`); await browser.close(); process.exit(1); }
   await new Promise((r) => setTimeout(r, 1000));
 }
