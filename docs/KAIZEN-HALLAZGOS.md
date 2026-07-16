@@ -13,7 +13,7 @@
 | 4 | APLICADO | refactor(kaizen): `lib/vencimientos.ts` compartido + link "Ver en calendario" en el Tablón (este commit) |
 | 5 | APLICADO | `42146a8` refactor(5s): atajos visibles en el menú de usuario del Shell |
 | 6 | APLICADO | `42146a8` refactor(5s): `EmptyState` unificado en Board, Resumen, Huérfanas, Notas y Cierre |
-| 7 | PROPUESTO | esperando decisión del usuario (desacoplar undo del handler de teclado; ver análisis abajo) |
+| 7 | APLICADO | refactor(kaizen): `lib/deshacer.ts` con `deshacerUltimo(qc)`; el listener de App queda como binding (este commit) |
 | 8 | APLICADO | `42146a8` refactor(5s): `lib/prefs.ts` con claves `tablero:` + `migrarPrefs()` |
 
 ---

@@ -1,8 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Toaster, toast } from "sonner";
-import { supabase } from "./lib/supabase";
-import { popUndo } from "./lib/undo";
+import { deshacerUltimo } from "./lib/deshacer";
 import { PREF, getPref, setPref } from "./lib/prefs";
 import { ClipboardList, Target, TrendingUp, UserRound, CalendarDays, Users } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
@@ -71,13 +70,7 @@ export default function App() {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setCmdk((c) => !c); }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !(e.target as HTMLElement).closest("input,textarea,select")) {
         e.preventDefault();
-        const u = popUndo();
-        if (!u) { toast("Nada para deshacer."); return; }
-        supabase.from("cards").update(u.prev).eq("id", u.id).then(({ error }) => {
-          if (error) toast.error("No se pudo deshacer: " + error.message);
-          else toast.success("Deshecho");
-          qcRef.invalidateQueries({ queryKey: ["cards"] });
-        });
+        deshacerUltimo(qcRef).then((m) => (m === "Deshecho" ? toast.success(m) : m === "Nada para deshacer." ? toast(m) : toast.error(m)));
       }
     };
     document.addEventListener("keydown", onKey);
