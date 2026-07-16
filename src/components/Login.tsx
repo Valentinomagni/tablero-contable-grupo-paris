@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useArca, ArcaAgenda } from "../features/tablon/arca";
-import { LogoMark } from "./Logo";
 
 interface PubVenc { title: string; due_date: string; detail: string; }
 
@@ -53,12 +52,9 @@ export function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promis
     <div className="min-h-screen flex items-center justify-center gap-14 p-8 flex-wrap"
       style={{ background: "radial-gradient(1200px 700px at 30% 20%, #17181c 0%, #0b0b0d 60%)" }}>
       <div className="flex flex-col items-center gap-3 max-w-[380px]">
-        <LogoMark size={84} className="text-white" />
-        <div className="flex flex-col items-center text-white leading-none mt-1">
-          <small className="text-[15px] tracking-[7px] font-semibold pl-[7px]">GRUPO</small>
-          <b className="text-[34px] tracking-[5px] font-extrabold pl-[5px]">PARIS</b>
-        </div>
-        <p className="text-[#9aa0ab] tracking-[3px] uppercase text-xs mt-0.5">Tablero Contable</p>
+        {/* lockup oficial procesado desde logo.jpg (fondo removido) — fidelidad 1:1 */}
+        <img src="/brand/lockup-blanco.png" alt="Grupo Paris" className="w-[210px] h-auto" />
+        <p className="text-[#9aa0ab] tracking-[3px] uppercase text-xs mt-2">Tablero Contable</p>
         <p className="text-[#5c6270] text-[11px] tracking-[1.5px] uppercase mt-6 text-center leading-relaxed">
           整理 Seiri · 整頓 Seiton · 清掃 Seiso<br />清潔 Seiketsu · 躾 Shitsuke
         </p>
