@@ -10,6 +10,7 @@ export default {
         accent: "var(--accent)", "accent-soft": "var(--accent-soft)",
         done: "var(--done)", danger: "var(--danger)", warn: "var(--warn)",
         naranja: "var(--naranja)", s1: "var(--s1)", s2: "var(--s2)",
+        chip: "var(--chip)", "warn-soft": "var(--warn-soft)", "danger-soft": "var(--danger-soft)",
         "side-bg": "var(--side-bg)", "side-bg2": "var(--side-bg2)",
         "side-ink": "var(--side-ink)", "side-ink2": "var(--side-ink2)",
         // tokens semánticos shadcn (mapeados a Paris en index.css)
