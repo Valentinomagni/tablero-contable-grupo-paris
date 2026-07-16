@@ -1,6 +1,7 @@
 import { useState, useEffect, type ReactNode } from "react";
-import { LayoutDashboard, ClipboardList, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin, Settings, KeyRound, AlignJustify, History, CalendarRange, ClipboardCheck, Network, StickyNote, Sparkles } from "lucide-react";
+import { LayoutDashboard, ClipboardList, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin, Settings, KeyRound, AlignJustify, History, CalendarRange, ClipboardCheck, Network, StickyNote, Sparkles, Keyboard } from "lucide-react";
 import { Avatar, cn } from "../lib/ui";
+import { PREF, getPref, setPref } from "../lib/prefs";
 import { LogoMark } from "./Logo";
 import { THEME_LBL, DENSITY_LBL } from "../hooks/useTheme";
 import type { Profile } from "../lib/types";
@@ -16,11 +17,11 @@ interface Props {
 export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, onCycleDensity, onOpenAccount, onOpenNovedades, tablonBadge, boardName, onNavigate, onSignOut, pendByOwner, subnav, notifs, children }: Props) {
   // barra lateral como drawer desplegable (Seiton: se muestra a demanda, deja la vista limpia).
   const [open, setOpen] = useState(() => {
-    const saved = localStorage.getItem("pref-sidebar");
+    const saved = getPref(PREF.sidebar);
     if (saved) return saved === "open";
     return typeof window !== "undefined" && window.innerWidth >= 768;
   });
-  useEffect(() => { localStorage.setItem("pref-sidebar", open ? "open" : "closed"); }, [open]);
+  useEffect(() => { setPref(PREF.sidebar, open ? "open" : "closed"); }, [open]);
   const [menu, setMenu] = useState(false);
   const esGestor = me.role !== "empleado"; // jefe o encargado: alcance de equipo (General + lista de personas)
 
@@ -107,6 +108,10 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
               <button onClick={onSignOut} className="flex items-center gap-2.5 w-full text-left rounded-md px-3 py-2.5 text-sm text-ink hover:bg-surface2">
                 <LogOut size={16} /> Cerrar sesión
               </button>
+              {/* Atajos visibles (Kaizen H5): informativo, no accionable */}
+              <div className="flex items-center gap-2.5 w-full rounded-md px-3 py-2.5 text-[12px] text-ink2 border-t border-line mt-1 pt-2.5 cursor-default select-none">
+                <Keyboard size={16} /> Atajos: Ctrl+K buscar · Ctrl+Z deshacer
+              </div>
             </div>
           )}
         </div>

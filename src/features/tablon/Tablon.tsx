@@ -3,9 +3,10 @@ import { useAnnouncements } from "../../hooks/useData";
 import { useArca, ArcaAgenda } from "./arca";
 import type { Announcement } from "../../lib/types";
 import { fmtDateTime } from "../../lib/metrics";
+import { PREF, setPref } from "../../lib/prefs";
 
 function useMarkVisto() {
-  useEffect(() => { localStorage.setItem("tablon-visto", new Date().toISOString()); }, []);
+  useEffect(() => { setPref(PREF.tablon, new Date().toISOString()); }, []);
 }
 
 function dueBadge(due: string | null) {

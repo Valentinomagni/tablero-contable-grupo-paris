@@ -1,3 +1,4 @@
+import { EmptyState } from "../../components/EmptyState";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -34,7 +35,7 @@ export function Huerfanas({ team, cards }: { team: Profile[]; cards: Card[] }) {
       </h2>
       <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
         {huerfanas.length === 0 ? (
-          <p className="text-ink2 text-[13px] m-0">No hay tareas huérfanas. Aparecen acá cuando se elimina un empleado con tareas abiertas.</p>
+          <EmptyState title="No hay tareas huérfanas." hint="Aparecen acá cuando se elimina un empleado con tareas abiertas." />
         ) : (
           <div className="flex flex-col gap-2">
             {huerfanas.map((c) => {

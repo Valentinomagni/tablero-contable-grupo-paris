@@ -1,3 +1,4 @@
+import { EmptyState } from "../../components/EmptyState";
 import { useState } from "react";
 import { Download, ClipboardCopy, Inbox, AlarmClock, CheckCircle2, Activity, ArrowUp, ArrowDown, ShieldCheck, Users } from "lucide-react";
 import type { Card, Profile, ActivityLog } from "../../lib/types";
@@ -158,7 +159,7 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
       </div>
 
       <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Tareas trabadas o vencidas</h2>
-      {stuck.length === 0 ? <p className="text-ink2 text-sm mb-6">Nada trabado.</p>
+      {stuck.length === 0 ? <div className="mb-6"><EmptyState title="Nada trabado." /></div>
         : stuck.map((c) => {
           const i = dueInfo(c), last = c.comments[c.comments.length - 1];
           return (

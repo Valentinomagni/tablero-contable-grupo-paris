@@ -1,3 +1,4 @@
+import { EmptyState } from "../../components/EmptyState";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
@@ -160,7 +161,7 @@ export function Board({ cards, activity, ownerId, meId, meName, team = [], query
               <CardItem c={c} blocked={isBlocked(c)} waiting={c.status !== "term" && dependents(c.id).length > 0} esperaTitulos={bloqueadaPorTitulos(c, cards)} onOpen={onOpen} />
             </div>
           ))}
-          {mine.filter((c) => c.status === k).length === 0 && <p className="text-ink2 text-[13px] px-2 pb-2">Sin tareas acá.</p>}
+          {mine.filter((c) => c.status === k).length === 0 && <div className="mb-2"><EmptyState title="Sin tareas acá." /></div>}
           {k !== "term" && addInline(k, "Título y Enter…")}
         </div>
       ))}

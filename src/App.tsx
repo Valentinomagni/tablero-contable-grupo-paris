@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Toaster, toast } from "sonner";
 import { supabase } from "./lib/supabase";
 import { popUndo } from "./lib/undo";
+import { PREF, getPref, setPref } from "./lib/prefs";
 import { ClipboardList, Target, TrendingUp, UserRound, CalendarDays, Users } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { useTheme } from "./hooks/useTheme";
@@ -61,7 +62,7 @@ export default function App() {
 
   // Aviso de nueva versión: se muestra una sola vez tras el login (spec #10).
   useEffect(() => {
-    if (me && localStorage.getItem("version-vista") !== APP_VERSION) setNovedades(true);
+    if (me && getPref(PREF.version) !== APP_VERSION) setNovedades(true);
   }, [me]);
 
   useEffect(() => {
@@ -110,7 +111,7 @@ export default function App() {
   const vencProximos = annos.filter((a) => a.kind === "vencimiento" && a.due_date &&
     (new Date(a.due_date + "T00:00:00").getTime() - Date.now()) / 86400000 <= 5 &&
     new Date(a.due_date + "T23:59:59").getTime() >= Date.now()).length;
-  const visto = localStorage.getItem("tablon-visto") ?? "1970-01-01";
+  const visto = getPref(PREF.tablon) ?? "1970-01-01";
   const nuevas = annos.filter((a) => a.created_at > visto && a.created_by !== me.name).length;
   const tablonBadge = nuevas ? `+${nuevas}` : (vencProximos ? String(vencProximos) : undefined);
 
@@ -171,7 +172,7 @@ export default function App() {
       {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} cards={cards} team={fullTeam} activity={activity} isJefe={!!isJefe} onClose={() => setOpenCard(null)} meId={me.id} meName={me.name} />}
       {openUser && <UserModal user={fullTeam.find((t) => t.id === openUser.id) ?? openUser} meId={me.id} team={fullTeam} cards={cards} activity={activity} onClose={() => setOpenUser(null)} />}
       {account && <AccountModal name={me.name} email={me.email} onClose={() => setAccount(false)} />}
-      {novedades && <NovedadesModal onClose={() => { localStorage.setItem("version-vista", APP_VERSION); setNovedades(false); }} />}
+      {novedades && <NovedadesModal onClose={() => { setPref(PREF.version, APP_VERSION); setNovedades(false); }} />}
       {delegar && <DelegarModal team={fullTeam} meId={me.id} meName={me.name} onClose={() => setDelegar(false)} />}
       <Toaster position="bottom-center" toastOptions={{ style: { background: "var(--surface)", color: "var(--ink)", border: "1px solid var(--line)", boxShadow: "var(--shadow-lg)" } }} />
       {cmdk && <CommandPalette me={me} team={fullTeam} cards={cards}

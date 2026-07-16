@@ -1,3 +1,4 @@
+import { EmptyState } from "../../components/EmptyState";
 import { useState, useEffect } from "react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -120,7 +121,7 @@ export function Notas({ me }: { me: Profile }) {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto p-1.5">
-          {lista.length === 0 && <div className="text-ink2 text-sm px-3 py-6 text-center">Sin anotaciones</div>}
+          {lista.length === 0 && <div className="m-1.5"><EmptyState title="Sin anotaciones" /></div>}
           {lista.map((n) => (
             <button key={n.id} onClick={() => setSelId(n.id)}
               className={cn("w-full text-left rounded-lg px-3 py-2.5 mb-1 transition border",

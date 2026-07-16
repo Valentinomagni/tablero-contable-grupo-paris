@@ -1,3 +1,4 @@
+import { EmptyState } from "../../components/EmptyState";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -61,15 +62,11 @@ export function Cierre({ cards, team, isJefe, meName, settings, onOpenCard }: {
       </div>
 
       {closing.length === 0 ? (
-        <div className="bg-surface border border-line rounded-2xl p-8 text-center" style={cardSh}>
-          <p className="text-ink font-semibold m-0 mb-1">No hay cierre generado para {MESES[ym.month - 1]}.</p>
-          <p className="text-ink2 text-[13px] m-0 max-w-[460px] mx-auto">
-            {template.length === 0
-              ? "Definí primero la plantilla de cierre en Administración (las tareas que se repiten cada mes: IVA, sueldos, F931, conciliaciones)."
-              : isJefe ? "Apretá “Generar cierre” y se crean todas las tareas del mes con responsable, vencimiento y esfuerzo."
-              : "Todavía no lo generó un jefe. En cuanto esté, vas a ver acá el avance del cierre."}
-          </p>
-        </div>
+        <EmptyState title={`No hay cierre generado para ${MESES[ym.month - 1]}.`}
+          hint={template.length === 0
+            ? "Definí primero la plantilla de cierre en Administración (las tareas que se repiten cada mes: IVA, sueldos, F931, conciliaciones)."
+            : isJefe ? "Apretá “Generar cierre” y se crean todas las tareas del mes con responsable, vencimiento y esfuerzo."
+            : "Todavía no lo generó un jefe. En cuanto esté, vas a ver acá el avance del cierre."} />
       ) : (
         <>
           {/* progreso (Kaizen: el avance se ve y se mide) */}

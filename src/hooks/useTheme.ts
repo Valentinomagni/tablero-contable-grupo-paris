@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PREF, getPref, setPref } from "../lib/prefs";
 
 type Theme = "auto" | "light" | "dark";
 const THEMES: Theme[] = ["auto", "light", "dark"];
@@ -8,17 +9,17 @@ type Density = "comoda" | "compact";
 export const DENSITY_LBL: Record<Density, string> = { comoda: "Cómoda", compact: "Compacta" };
 
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem("pref-theme") as Theme) ?? "auto");
-  const [density, setDensity] = useState<Density>(() => (localStorage.getItem("pref-density") === "compact" ? "compact" : "comoda"));
+  const [theme, setTheme] = useState<Theme>(() => (getPref(PREF.theme) as Theme) ?? "auto");
+  const [density, setDensity] = useState<Density>(() => (getPref(PREF.density) === "compact" ? "compact" : "comoda"));
   useEffect(() => {
     const root = document.documentElement;
     if (theme === "auto") root.removeAttribute("data-theme");
     else root.setAttribute("data-theme", theme);
-    localStorage.setItem("pref-theme", theme);
+    setPref(PREF.theme, theme);
   }, [theme]);
   useEffect(() => {
     document.documentElement.classList.toggle("compact", density === "compact");
-    localStorage.setItem("pref-density", density);
+    setPref(PREF.density, density);
   }, [density]);
   const cycle = () => setTheme((t) => THEMES[(THEMES.indexOf(t) + 1) % THEMES.length]);
   const cycleDensity = () => setDensity((d) => (d === "compact" ? "comoda" : "compact"));
