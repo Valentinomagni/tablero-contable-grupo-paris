@@ -10,7 +10,7 @@
 | 1 | APLICADO | `aa4204f` fix(css): chip/warn-soft/danger-soft compilan como utilidades |
 | 2 | APLICADO | `a91cd0f` perf(bundle): code-split de 7 vistas — entry 838 KB (gzip 236) → 527 KB (gzip 158) |
 | 3 | APLICADO | feat(recurrencia): presets de 1 clic en CardModal (este commit) |
-| 4 | PROPUESTO | esperando decisión del usuario (dedupe Tablón↔Calendario; ver análisis abajo) |
+| 4 | APLICADO | refactor(kaizen): `lib/vencimientos.ts` compartido + link "Ver en calendario" en el Tablón (este commit) |
 | 5 | APLICADO | `42146a8` refactor(5s): atajos visibles en el menú de usuario del Shell |
 | 6 | APLICADO | `42146a8` refactor(5s): `EmptyState` unificado en Board, Resumen, Huérfanas, Notas y Cierre |
 | 7 | PROPUESTO | esperando decisión del usuario (desacoplar undo del handler de teclado; ver análisis abajo) |

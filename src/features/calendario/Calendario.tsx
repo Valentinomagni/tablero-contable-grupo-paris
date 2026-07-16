@@ -7,12 +7,14 @@ import type { Announcement, Profile, Card, TaskOccurrence } from "../../lib/type
 import { useAnnouncements } from "../../hooks/useData";
 import { useOccurrences } from "../../hooks/useOccurrences";
 import { MESES, DIAS_SEMANA, grillaMes, eventosPorDia, conteoPorMes, claveFecha } from "../../lib/calendario";
+import { CLS_TONO } from "../../lib/vencimientos";
 import { Modal } from "../../components/Modal";
 import { cn, Avatar } from "../../lib/ui";
 
 type Kind = Announcement["kind"];
 const KIND: Record<Kind, { label: string; chip: string; dot: string }> = {
-  vencimiento: { label: "Vencimiento", chip: "bg-danger-soft text-danger", dot: "bg-danger" },
+  // chip de vencimiento: mismo semáforo que el Tablón (lib/vencimientos, Kaizen H4)
+  vencimiento: { label: "Vencimiento", chip: CLS_TONO.danger, dot: "bg-danger" },
   aviso: { label: "Aviso / Reunión", chip: "bg-accent-soft text-accent", dot: "bg-accent" },
   proceso: { label: "Proceso", chip: "bg-chip text-ink2", dot: "bg-ink2" },
 };

@@ -1,25 +1,23 @@
 import { useEffect } from "react";
+import { CalendarDays } from "lucide-react";
 import { useAnnouncements } from "../../hooks/useData";
 import { useArca, ArcaAgenda } from "./arca";
 import type { Announcement } from "../../lib/types";
 import { fmtDateTime } from "../../lib/metrics";
 import { PREF, setPref } from "../../lib/prefs";
+import { estadoVencimiento, ordenarVencimientos, CLS_TONO } from "../../lib/vencimientos";
 
 function useMarkVisto() {
   useEffect(() => { setPref(PREF.tablon, new Date().toISOString()); }, []);
 }
 
 function dueBadge(due: string | null) {
-  if (!due) return null;
-  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-  const d = new Date(due + "T00:00:00"), days = Math.round((d.getTime() - hoy.getTime()) / 86400000);
-  const lbl = d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" });
-  const cls = days < 0 ? "bg-danger-soft text-danger" : days <= 5 ? "bg-warn-soft text-warn" : "bg-chip text-ink2";
-  const txt = days < 0 ? `Venció ${lbl}` : days === 0 ? "Vence HOY" : `Vence ${lbl} · ${days} d`;
-  return <span className={`rounded-md px-2 py-0.5 text-xs font-semibold tnum ${cls}`}>{txt}</span>;
+  const e = estadoVencimiento(due, new Date());
+  if (!e) return null;
+  return <span className={`rounded-md px-2 py-0.5 text-xs font-semibold tnum ${CLS_TONO[e.tono]}`}>{e.txt}</span>;
 }
 
-export function Tablon() {
+export function Tablon({ onGoCalendario }: { onGoCalendario?: () => void }) {
   useMarkVisto();
   const { data: annos = [] } = useAnnouncements();
   const arca = useArca();
@@ -34,11 +32,18 @@ export function Tablon() {
   return (
     <div className="px-6 py-4 w-full max-w-[900px]">
       {secciones.map(([kind, titulo, sub]) => {
-        let items = annos.filter((a) => a.kind === kind);
-        if (kind === "vencimiento") items = [...items].sort((a, b) => (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"));
+        const items = kind === "vencimiento" ? ordenarVencimientos(annos) : annos.filter((a) => a.kind === kind);
         return (
           <div key={kind}>
-            <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mt-5 mb-2.5">{titulo}</h2>
+            <div className="flex items-center gap-3 mt-5 mb-2.5">
+              <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink m-0">{titulo}</h2>
+              {kind === "vencimiento" && onGoCalendario && (
+                <button onClick={onGoCalendario}
+                  className="flex items-center gap-1 text-accent text-[12px] font-semibold hover:underline">
+                  <CalendarDays size={13} /> Ver en calendario
+                </button>
+              )}
+            </div>
             {sub && <p className="text-ink2 text-[13px] -mt-1 mb-2.5">{sub}</p>}
             {items.length === 0 && <p className="text-ink2 text-sm">Nada publicado todavía.</p>}
             {items.map((a) => (
