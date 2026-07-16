@@ -8,6 +8,8 @@ import { useAuth } from "./hooks/useAuth";
 import { useTheme } from "./hooks/useTheme";
 import { useTeam, useCards, useActivity, useAnnouncements, useSettings } from "./hooks/useData";
 import { AccountModal } from "./components/AccountModal";
+import { NovedadesModal } from "./components/NovedadesModal";
+import { APP_VERSION } from "./lib/version";
 import { Login } from "./components/Login";
 import { Shell } from "./components/Shell";
 import { Board } from "./features/board/Board";
@@ -52,6 +54,12 @@ export default function App() {
   const qcRef = useQueryClient();
   const [cmdk, setCmdk] = useState(false);
   const [delegar, setDelegar] = useState(false);
+  const [novedades, setNovedades] = useState(false);
+
+  // Aviso de nueva versión: se muestra una sola vez tras el login (spec #10).
+  useEffect(() => {
+    if (me && localStorage.getItem("version-vista") !== APP_VERSION) setNovedades(true);
+  }, [me]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -115,7 +123,7 @@ export default function App() {
     <>
       <Shell me={me} team={fullTeam} viewing={view} title={title} theme={theme}
         onCycleTheme={cycle} density={density} onCycleDensity={cycleDensity}
-        onOpenAccount={() => setAccount(true)} tablonBadge={tablonBadge} boardName={settings?.board_name}
+        onOpenAccount={() => setAccount(true)} onOpenNovedades={() => setNovedades(true)} tablonBadge={tablonBadge} boardName={settings?.board_name}
         onNavigate={(v) => { setViewing(v); setMode("board"); setQuery(""); }} onSignOut={signOut} pendByOwner={pendByOwner}
         subnav={isPersonView ? <>
           <SubTab m="board" icon={<ClipboardList size={14} />} label="Tareas" />
@@ -151,6 +159,7 @@ export default function App() {
       {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} cards={cards} team={fullTeam} activity={activity} isJefe={!!isJefe} onClose={() => setOpenCard(null)} meName={me.name} />}
       {openUser && <UserModal user={fullTeam.find((t) => t.id === openUser.id) ?? openUser} meId={me.id} team={fullTeam} cards={cards} activity={activity} onClose={() => setOpenUser(null)} />}
       {account && <AccountModal name={me.name} email={me.email} onClose={() => setAccount(false)} />}
+      {novedades && <NovedadesModal onClose={() => { localStorage.setItem("version-vista", APP_VERSION); setNovedades(false); }} />}
       {delegar && <DelegarModal team={fullTeam} meName={me.name} onClose={() => setDelegar(false)} />}
       <Toaster position="bottom-center" toastOptions={{ style: { background: "var(--surface)", color: "var(--ink)", border: "1px solid var(--line)", boxShadow: "var(--shadow-lg)" } }} />
       {cmdk && <CommandPalette me={me} team={fullTeam} cards={cards}

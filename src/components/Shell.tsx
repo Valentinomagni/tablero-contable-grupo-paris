@@ -1,5 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
-import { LayoutDashboard, ClipboardList, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin, Settings, KeyRound, AlignJustify, History, CalendarRange, ClipboardCheck, Network, StickyNote } from "lucide-react";
+import { LayoutDashboard, ClipboardList, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin, Settings, KeyRound, AlignJustify, History, CalendarRange, ClipboardCheck, Network, StickyNote, Sparkles } from "lucide-react";
 import { Avatar, cn } from "../lib/ui";
 import { LogoMark } from "./Logo";
 import { THEME_LBL, DENSITY_LBL } from "../hooks/useTheme";
@@ -8,12 +8,12 @@ import type { Profile } from "../lib/types";
 interface Props {
   me: Profile; team: Profile[]; viewing: string; title: string;
   theme: string; onCycleTheme: () => void; density: string; onCycleDensity: () => void;
-  onOpenAccount: () => void; tablonBadge?: string; boardName?: string;
+  onOpenAccount: () => void; onOpenNovedades?: () => void; tablonBadge?: string; boardName?: string;
   onNavigate: (v: string) => void; onSignOut: () => void;
   pendByOwner: (id: string) => number; subnav?: ReactNode; children: ReactNode;
 }
 
-export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, onCycleDensity, onOpenAccount, tablonBadge, boardName, onNavigate, onSignOut, pendByOwner, subnav, children }: Props) {
+export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, onCycleDensity, onOpenAccount, onOpenNovedades, tablonBadge, boardName, onNavigate, onSignOut, pendByOwner, subnav, children }: Props) {
   // barra lateral como drawer desplegable (Seiton: se muestra a demanda, deja la vista limpia).
   const [open, setOpen] = useState(() => {
     const saved = localStorage.getItem("pref-sidebar");
@@ -99,6 +99,11 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
               <button onClick={() => { onCycleDensity(); }} className="flex items-center gap-2.5 w-full text-left rounded-md px-3 py-2.5 text-sm text-ink hover:bg-surface2">
                 <AlignJustify size={16} /> Densidad: {DENSITY_LBL[density as keyof typeof DENSITY_LBL]}
               </button>
+              {onOpenNovedades && (
+                <button onClick={() => { setMenu(false); onOpenNovedades(); }} className="flex items-center gap-2.5 w-full text-left rounded-md px-3 py-2.5 text-sm text-ink hover:bg-surface2">
+                  <Sparkles size={16} /> Novedades
+                </button>
+              )}
               <button onClick={onSignOut} className="flex items-center gap-2.5 w-full text-left rounded-md px-3 py-2.5 text-sm text-ink hover:bg-surface2">
                 <LogOut size={16} /> Cerrar sesión
               </button>
