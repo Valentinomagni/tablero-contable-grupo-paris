@@ -13,6 +13,7 @@ import { Check, Link2, Lock, Hourglass, X, Users, Pencil, Trash2, Minus, Plus } 
 import { useDepsInfo, useReverseDeps, useSettings } from "../../hooks/useData";
 import { editarItem, borrarItem } from "../../lib/checklist";
 import { nuevaCantidad } from "../../lib/operativas";
+import { CumplimientoDiario } from "./CumplimientoDiario";
 
 export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose, meName = "—" }:
   { card: Card; cards: Card[]; team: Profile[]; activity?: ActivityLog[]; isJefe: boolean; onClose: () => void; meName?: string }) {
@@ -190,6 +191,15 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
             {guardarRecur.isPending ? "Guardando…" : "Guardar recurrencia"}</button>
         </div>
         {recurTipo !== "" && <p className="text-ink2 text-[12px] mt-1">Genera las ocurrencias del mes en el calendario y en el cumplimiento diario.</p>}
+
+        {c.recur_rule?.tipo === "diaria" && (() => {
+          const now = new Date();
+          return (
+            <div className="mt-4">
+              <CumplimientoDiario cardId={c.id} owner={c.owner} year={now.getFullYear()} month={now.getMonth() + 1} />
+            </div>
+          );
+        })()}
 
         <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Detalle</h4>
         <textarea defaultValue={c.description} placeholder="Descripción, instrucciones…"
