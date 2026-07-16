@@ -3,6 +3,8 @@ export type Status = "pend" | "proc" | "term";
 
 export interface Profile { id: string; name: string; role: Role; email: string; puesto: string; ficha: string; manager_id: string | null; marca: string | null; }
 export interface ChecklistItem { txt: string; done: boolean; done_at: string | null; }
+export interface RecurRule { tipo: "diaria" | "semanal" | "mensual"; dias?: number[]; diaMes?: number; }
+export interface TaskOccurrence { id: string; card_id: string; owner: string; fecha: string; done: boolean; done_at: string | null; }
 export interface Comment { who: string; when: string; txt: string; }
 export interface HistoryEntry { who: string; at: string; txt: string; }
 export interface Card {
@@ -11,6 +13,7 @@ export interface Card {
   done_at: string | null; due_date: string | null; recurring: boolean;
   priority: "alta" | "media" | "baja"; effort: 1 | 2 | 3 | 5;
   card_type: "normal" | "operativa"; deps: string[]; created_at: string;
+  recur_rule?: RecurRule | null;
 }
 export interface Objective {
   id: string; owner: string; title: string; description: string; weight: number;
