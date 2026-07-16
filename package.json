@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
+    "deadcode": "knip",
     "smoke": "node scripts/smoke.mjs",
     "e2e": "playwright test",
     "shots": "node scripts/shots.mjs",

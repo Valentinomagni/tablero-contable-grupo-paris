@@ -1,0 +1,6 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": ["src/main.tsx", "e2e/**/*.spec.ts", "scripts/*.mjs"],
+  "project": ["src/**/*.{ts,tsx}"],
+  "ignore": ["public/sw.js", "functions/**", "edge-function-eliminar-usuario.ts"]
+}
