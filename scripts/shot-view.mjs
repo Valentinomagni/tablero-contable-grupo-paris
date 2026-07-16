@@ -14,7 +14,7 @@ await page.setViewport({ width: Number(w), height: Number(h) });
 await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: scheme }]);
 
 await page.goto(base, { waitUntil: "networkidle2" });
-await page.type('input[type="email"]', "jefe1@grupoparis.com");
+await page.type('input[autocomplete="username"]', "jefe1@grupoparis.com");
 await page.type('input[type="password"]', "Paris2026!");
 await Promise.all([
   page.click('button[type="submit"]'),

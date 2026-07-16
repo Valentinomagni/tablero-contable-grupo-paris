@@ -23,10 +23,10 @@ pg.on("pageerror", (e) => errores.push("pageerror: " + String(e).slice(0, 160)))
 const paso = (n) => console.log("  ✓ " + n);
 try {
   await pg.goto(URL, { waitUntil: "networkidle2" });
-  await pg.waitForSelector("input[type=email]", { timeout: 10000 });
+  await pg.waitForSelector('input[autocomplete="username"]', { timeout: 10000 });
   paso("login carga");
 
-  await pg.type("input[type=email]", "jefe1@grupoparis.com");
+  await pg.type('input[autocomplete="username"]', "jefe1@grupoparis.com");
   await pg.type("input[type=password]", "Paris2026!");
   await Promise.all([
     pg.click("button[type=submit]"),

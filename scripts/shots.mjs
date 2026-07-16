@@ -14,7 +14,7 @@ await page.goto(base, { waitUntil: "networkidle2" });
 await page.screenshot({ path: `${out}/1-login.png` });
 
 // login
-await page.type('input[type="email"]', "jefe1@grupoparis.com");
+await page.type('input[autocomplete="username"]', "jefe1@grupoparis.com");
 await page.type('input[type="password"]', "Paris2026!");
 await Promise.all([
   page.click('button[type="submit"]'),

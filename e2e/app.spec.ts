@@ -5,7 +5,7 @@ import { test, expect } from "@playwright/test";
 
 test("login, vistas clave y delegar tarea", async ({ page }) => {
   await page.goto("/");
-  await page.fill('input[type="email"]', "jefe1@grupoparis.com");
+  await page.fill('input[autocomplete="username"]', "jefe1@grupoparis.com");
   await page.fill('input[type="password"]', "Paris2026!");
   await page.click('button[type="submit"]');
 
