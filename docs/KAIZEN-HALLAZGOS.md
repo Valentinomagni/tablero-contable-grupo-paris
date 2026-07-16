@@ -3,6 +3,19 @@
 > Documento de PROPUESTAS. Nada de esto se implementa sin OK previo.
 > Fecha: 2026-07-16 · Base: revisión de `src/App.tsx`, `Board.tsx`, `CardModal.tsx`, `Resumen.tsx`, `Calendario.tsx`, `Tablon.tsx`, `tailwind.config.js` y el bundle de producción.
 
+## Estado (16/07/2026)
+
+| # | Estado | Commit |
+|---|--------|--------|
+| 1 | APLICADO | `aa4204f` fix(css): chip/warn-soft/danger-soft compilan como utilidades |
+| 2 | APLICADO | `a91cd0f` perf(bundle): code-split de 7 vistas — entry 838 KB (gzip 236) → 527 KB (gzip 158) |
+| 3 | APLICADO | feat(recurrencia): presets de 1 clic en CardModal (este commit) |
+| 4 | PROPUESTO | esperando decisión del usuario (dedupe Tablón↔Calendario; ver análisis abajo) |
+| 5 | APLICADO | `42146a8` refactor(5s): atajos visibles en el menú de usuario del Shell |
+| 6 | APLICADO | `42146a8` refactor(5s): `EmptyState` unificado en Board, Resumen, Huérfanas, Notas y Cierre |
+| 7 | PROPUESTO | esperando decisión del usuario (desacoplar undo del handler de teclado; ver análisis abajo) |
+| 8 | APLICADO | `42146a8` refactor(5s): `lib/prefs.ts` con claves `tablero:` + `migrarPrefs()` |
+
 ---
 
 ## 1. (Seiso — limpiar) Clases `bg-chip` / `bg-done-soft` / `bg-danger-soft` / `bg-warn-soft` no compilan: bug latente

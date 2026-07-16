@@ -105,8 +105,7 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
   // Guarda la regla en la card y materializa (idempotente) las ocurrencias del mes actual.
   // Falla si la migración 16 aún no fue aplicada — se muestra por toast sin romper la app.
   const guardarRecur = useMutation({
-    mutationFn: async () => {
-      const rule = buildRule();
+    mutationFn: async (rule: RecurRule | null) => {
       const { error: e1 } = await supabase.from("cards").update({ recur_rule: rule }).eq("id", c.id);
       if (e1) throw e1;
       if (rule) {
@@ -200,6 +199,20 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
         </div>
 
         <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Recurrencia</h4>
+        {/* Presets de 1 clic (Kaizen H3): setean el form Y guardan en el mismo clic */}
+        <div className="flex flex-wrap items-center gap-2 mb-2">
+          {([
+            ["Todos los días", { tipo: "diaria" } as RecurRule, () => { setRecurTipo("diaria"); }],
+            ["Cada jueves", { tipo: "semanal", dias: [4] } as RecurRule, () => { setRecurTipo("semanal"); setRecurDias([4]); }],
+            ["Día 20 de cada mes", { tipo: "mensual", diaMes: 20 } as RecurRule, () => { setRecurTipo("mensual"); setRecurDiaMes(20); }],
+          ] as const).map(([lbl, rule, setForm]) => (
+            <button key={lbl} disabled={guardarRecur.isPending}
+              onClick={() => { setForm(); guardarRecur.mutate(rule); }}
+              className="border border-line bg-surface2 rounded-full px-3 py-1 text-[12px] hover:border-accent disabled:opacity-60">
+              {lbl}
+            </button>
+          ))}
+        </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <select value={recurTipo} onChange={(e) => setRecurTipo(e.target.value as RecurRule["tipo"] | "")}
             className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px]">
@@ -227,7 +240,7 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
                 className="w-16 bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] tnum" />
             </label>
           )}
-          <button onClick={() => guardarRecur.mutate()} disabled={guardarRecur.isPending}
+          <button onClick={() => guardarRecur.mutate(buildRule())} disabled={guardarRecur.isPending}
             className="border border-line bg-surface2 rounded-lg px-3 py-1 text-[13px] disabled:opacity-60">
             {guardarRecur.isPending ? "Guardando…" : "Guardar recurrencia"}</button>
         </div>
