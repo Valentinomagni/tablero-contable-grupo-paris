@@ -3,8 +3,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight, Plus, Trash2, CalendarDays, LayoutGrid, Check } from "lucide-react";
 import { supabase } from "../../lib/supabase";
-import type { Announcement, Profile } from "../../lib/types";
+import type { Announcement, Profile, Card, TaskOccurrence } from "../../lib/types";
 import { useAnnouncements } from "../../hooks/useData";
+import { useOccurrences } from "../../hooks/useOccurrences";
 import { MESES, DIAS_SEMANA, grillaMes, eventosPorDia, conteoPorMes, claveFecha } from "../../lib/calendario";
 import { Modal } from "../../components/Modal";
 import { cn, Avatar } from "../../lib/ui";
@@ -18,7 +19,7 @@ const KIND: Record<Kind, { label: string; chip: string; dot: string }> = {
 const fechaLarga = (iso: string) =>
   new Date(iso + "T12:00:00").toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
-export function Calendario({ me, team }: { me: Profile; team: Profile[] }) {
+export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profile[]; cards?: Card[] }) {
   const isJefe = me.role === "jefe";
   const { data: anuncios = [] } = useAnnouncements();
   const qc = useQueryClient();
@@ -37,6 +38,29 @@ export function Calendario({ me, team }: { me: Profile; team: Profile[] }) {
   const porDia = useMemo(() => eventosPorDia(anuncios), [anuncios]);
   const grilla = useMemo(() => grillaMes(year, month, hoyISO), [year, month, hoyISO]);
   const conteoMeses = useMemo(() => conteoPorMes(anuncios, year), [anuncios, year]);
+
+  const { data: ocurrencias = [] } = useOccurrences(year, month);
+  const tituloDeCard = useMemo(() => {
+    const m: Record<string, string> = {};
+    for (const c of cards) m[c.id] = c.title;
+    return m;
+  }, [cards]);
+  const ocurrenciasPorDia = useMemo(() => {
+    const m: Record<string, TaskOccurrence[]> = {};
+    for (const o of ocurrencias) (m[o.fecha] ??= []).push(o);
+    return m;
+  }, [ocurrencias]);
+
+  // Fuente única: marcar/desmarcar cumplimiento del día actualiza la MISMA fila (spec #12).
+  const toggleOcc = useMutation({
+    mutationFn: async (o: TaskOccurrence) => {
+      const { error } = await supabase.from("task_occurrences")
+        .update({ done: !o.done, done_at: !o.done ? new Date().toISOString() : null }).eq("id", o.id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["occurrences"] }),
+    onError: (e: Error) => toast.error("No se pudo actualizar: " + e.message),
+  });
 
   const irMes = (delta: number) => {
     const d = new Date(year, month - 1 + delta, 1);
@@ -93,6 +117,7 @@ export function Calendario({ me, team }: { me: Profile; team: Profile[] }) {
           <div className="grid grid-cols-7">
             {grilla.map((c) => {
               const evs = porDia[c.date] ?? [];
+              const occ = ocurrenciasPorDia[c.date] ?? [];
               return (
                 <button key={c.date} onClick={() => abrirDia(c.date)}
                   className={cn("min-h-[92px] border-b border-r border-line/70 p-1.5 text-left align-top transition hover:bg-surface2/60 flex flex-col gap-1",
@@ -103,6 +128,14 @@ export function Calendario({ me, team }: { me: Profile; team: Profile[] }) {
                     <span key={e.id} className={cn("text-[11px] rounded px-1.5 py-0.5 truncate font-medium", KIND[e.kind].chip)}>{e.title}</span>
                   ))}
                   {evs.length > 3 && <span className="text-[10.5px] text-ink2 px-1">+{evs.length - 3} más</span>}
+                  {occ.slice(0, 2).map((o) => (
+                    <span key={o.id} className={cn("flex items-center gap-1 text-[11px] rounded px-1.5 py-0.5 truncate font-medium border border-line",
+                      o.done ? "bg-accent-soft text-done line-through" : "bg-surface2 text-ink2")}>
+                      {o.done && <Check size={10} className="shrink-0" />}
+                      <span className="truncate">{tituloDeCard[o.card_id] ?? "Tarea"}</span>
+                    </span>
+                  ))}
+                  {occ.length > 2 && <span className="text-[10.5px] text-ink2 px-1">+{occ.length - 2} tarea(s)</span>}
                 </button>
               );
             })}
@@ -159,6 +192,18 @@ export function Calendario({ me, team }: { me: Profile; team: Profile[] }) {
             </div>
           ))}
           {eventosDelDia.length === 0 && <p className="text-ink2 text-sm">Sin eventos este día.</p>}
+
+          {(ocurrenciasPorDia[diaSel] ?? []).length > 0 && (
+            <div className="mt-4 pt-3 border-t border-line">
+              <h4 className="text-xs uppercase tracking-wide text-ink2 mb-2">Tareas del día (cumplimiento)</h4>
+              {(ocurrenciasPorDia[diaSel] ?? []).map((o) => (
+                <label key={o.id} className="flex items-center gap-2 py-1.5 text-sm cursor-pointer">
+                  <input type="checkbox" checked={o.done} onChange={() => toggleOcc.mutate(o)} className="accent-accent w-4 h-4 shrink-0" />
+                  <span className={o.done ? "line-through text-ink2" : ""}>{tituloDeCard[o.card_id] ?? "Tarea"}</span>
+                </label>
+              ))}
+            </div>
+          )}
 
           <div className="mt-4 pt-3 border-t border-line">
             <h4 className="text-xs uppercase tracking-wide text-ink2 mb-2">Agregar evento</h4>

@@ -138,7 +138,7 @@ export default function App() {
           : view === "__tablon" ? <Tablon />
           : view === "__admin" ? <Admin team={fullTeam} cards={cards} me={me} meName={me.name} onOpenUser={setOpenUser} />
           : view === "__bitacora" ? <Bitacora cards={cards} activity={activity} team={fullTeam} isJefe={!!isJefe} meId={me.id} onOpenCard={setOpenCard} />
-          : view === "__calendario" ? <Calendario me={me} team={fullTeam} />
+          : view === "__calendario" ? <Calendario me={me} team={fullTeam} cards={cards} />
           : view === "__cierre" ? <Cierre cards={cards} team={fullTeam} isJefe={!!isJefe} meName={me.name} settings={settings ?? { edit_closed: false } as AppSettings} onOpenCard={setOpenCard} />
           : view === "__organigrama" ? <Organigrama team={fullTeam} cards={cards} />
           : view === "__notas" ? <Notas me={me} />
