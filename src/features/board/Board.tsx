@@ -27,7 +27,7 @@ function CardItem({ c, blocked, waiting, esperaTitulos = [], onOpen }: { c: Card
     ? <span className="bg-danger-soft text-danger rounded-md px-2 py-0.5 font-semibold">Alta</span> : null;
   return (
     <div onClick={() => onOpen(c)}
-      className="bg-surface rounded-xl px-3.5 py-3 mb-2 cursor-pointer border border-line/70 transition
+      className="bg-surface rounded-xl px-3.5 py-3 mb-2.5 cursor-pointer border border-line/70 transition
         hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-[var(--shadow-lg)]"
       style={{ boxShadow: "var(--shadow)" }}>
       <div className="font-semibold text-[13.5px] tracking-tight leading-snug">{c.title}</div>
@@ -132,7 +132,7 @@ export function Board({ cards, activity, ownerId, meName, query = "", onOpen }: 
   const colBg = { background: "color-mix(in srgb,var(--surface2) 55%,var(--bg))" };
 
   return (
-    <div className="flex gap-4 items-start px-6 pb-10 overflow-x-auto flex-1">
+    <div className="flex gap-5 items-start px-6 pb-10 overflow-x-auto flex-1">
       {COLS.map(([k, lbl]) => (
         <div key={k}
           onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("ring-2", "ring-accent"); }}
