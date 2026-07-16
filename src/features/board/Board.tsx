@@ -238,7 +238,7 @@ export function Board({ cards, activity, ownerId, meId, meName, team = [], query
         {opers.length === 0 && <p className="text-ink2 text-[13px] px-2 pb-2">Pagos, trámites y gestiones a demanda: no se cierran, se registran.</p>}
         {addInline("oper", "Ej: Pagos a proveedores…")}
       </div>
-      {creando && <NuevaTareaModal ownerId={ownerId} meName={meName} onClose={() => setCreando(false)} />}
+      {creando && <NuevaTareaModal ownerId={ownerId} meName={meName} cards={cards.filter((c) => c.owner === ownerId)} onClose={() => setCreando(false)} />}
     </div>
     </div>
   );

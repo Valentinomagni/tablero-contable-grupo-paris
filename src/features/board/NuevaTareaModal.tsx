@@ -4,11 +4,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "../../components/Modal";
 import { supabase } from "../../lib/supabase";
 import { useSettings } from "../../hooks/useData";
+import { similares } from "../../lib/similitud";
 import type { Card } from "../../lib/types";
 
 // Flujo formal de alta (spec 21, item 2): las tareas nacen en Pendiente con sus
 // datos completos. Nunca ofrece "Marcar terminada" — eso es del ciclo de vida, no del alta.
-export function NuevaTareaModal({ ownerId, meName, onClose }: { ownerId: string; meName: string; onClose: () => void }) {
+// cards: tareas del owner para detectar duplicadas al tipear (spec 21, item 12).
+export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { ownerId: string; meName: string; cards?: Card[]; onClose: () => void }) {
   const qc = useQueryClient();
   const { data: settings } = useSettings();
   const categorias = settings?.categorias ?? [];
@@ -38,6 +40,10 @@ export function NuevaTareaModal({ ownerId, meName, onClose }: { ownerId: string;
   });
 
   const puedeCrear = title.trim().length > 0 && !crear.isPending;
+
+  // Advertencia de duplicadas (spec 21, item 12): no bloquea, solo avisa.
+  const parecidas = title.trim().length >= 4 ? similares(title.trim(), cards) : [];
+  const masParecida = parecidas[0];
 
   return (
     <Modal onClose={onClose} maxWidth={480}>
@@ -75,10 +81,15 @@ export function NuevaTareaModal({ ownerId, meName, onClose }: { ownerId: string;
             </label>
           )}
         </div>
+        {masParecida && (
+          <div className="bg-warn-soft text-warn rounded-lg px-3 py-2 text-[13px] mb-3">
+            Se detectó una tarea similar: «{masParecida.title}». Revisá antes de crear una duplicada.
+          </div>
+        )}
         <div className="flex gap-2 items-center pt-2">
           <button type="submit" disabled={!puedeCrear}
             className="bg-accent text-[color:var(--accent-ink)] font-semibold rounded-lg px-3.5 py-2 text-[13px] disabled:opacity-60">
-            {crear.isPending ? "Creando…" : "Crear tarea"}</button>
+            {crear.isPending ? "Creando…" : masParecida ? "Crear igualmente" : "Crear tarea"}</button>
           <button type="button" onClick={onClose}
             className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Cancelar</button>
         </div>
