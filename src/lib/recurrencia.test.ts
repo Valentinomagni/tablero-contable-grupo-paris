@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ocurrenciasDelMes, ocurrenciasFaltantes } from "./recurrencia";
+import { ocurrenciasDelMes, ocurrenciasFaltantes, occIdentity, occUpsertRow, OCC_CONFLICT } from "./recurrencia";
 
 describe("ocurrenciasDelMes", () => {
   it("diaria: todos los días del mes", () =>
@@ -25,4 +25,20 @@ describe("ocurrenciasFaltantes", () => {
       .toEqual(["2026-07-16", "2026-07-23", "2026-07-30"]));
   it("todas presentes: vacío", () =>
     expect(ocurrenciasFaltantes({ tipo: "mensual", diaMes: 20 }, 2026, 7, ["2026-07-20"])).toEqual([]));
+});
+
+describe("fuente única: calendario y checklist tocan la misma fila (card_id+fecha)", () => {
+  it("una ocurrencia existente y la fila que insertaría el otro camino comparten identidad", () => {
+    const existente = { card_id: "card-1", fecha: "2026-07-02", done: false };
+    const nueva = occUpsertRow("card-1", "owner-9", "2026-07-02");
+    expect(occIdentity(nueva)).toBe(occIdentity(existente));
+  });
+  it("distinta fecha o card = distinta fila", () => {
+    expect(occIdentity({ card_id: "a", fecha: "2026-07-02" }))
+      .not.toBe(occIdentity({ card_id: "a", fecha: "2026-07-03" }));
+    expect(occIdentity({ card_id: "a", fecha: "2026-07-02" }))
+      .not.toBe(occIdentity({ card_id: "b", fecha: "2026-07-02" }));
+  });
+  it("el conflict target del upsert es la clave única de la tabla", () =>
+    expect(OCC_CONFLICT).toBe("card_id,fecha"));
 });

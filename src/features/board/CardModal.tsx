@@ -3,8 +3,9 @@ import { toast } from "sonner";
 import { Modal } from "../../components/Modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
-import { COLS, type Card, type Profile, type ActivityLog, type RecurRule } from "../../lib/types";
-import { ocurrenciasFaltantes } from "../../lib/recurrencia";
+import { COLS, type Card, type Profile, type ActivityLog, type RecurRule, type TaskOccurrence } from "../../lib/types";
+import { ocurrenciasFaltantes, OCC_CONFLICT } from "../../lib/recurrencia";
+import { useCardOccurrences } from "../../hooks/useOccurrences";
 import { fmtDateTime } from "../../lib/metrics";
 import { depInfoOf, dependentsOf, isBlocked, type DepMap } from "../../lib/deps";
 import { pushUndo } from "../../lib/undo";
@@ -104,7 +105,7 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
         const faltan = ocurrenciasFaltantes(rule, year, month, (existentes ?? []).map((r) => (r as { fecha: string }).fecha));
         if (faltan.length) {
           const { error: e3 } = await supabase.from("task_occurrences")
-            .upsert(faltan.map((f) => ({ card_id: c.id, owner: c.owner, fecha: f })), { onConflict: "card_id,fecha" });
+            .upsert(faltan.map((f) => ({ card_id: c.id, owner: c.owner, fecha: f })), { onConflict: OCC_CONFLICT });
           if (e3) throw e3;
         }
       }
@@ -116,6 +117,22 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
     },
     onError: (e: Error) => toast.error("No se pudo guardar la recurrencia: " + e.message),
   });
+
+  // Fuente única (spec #4): para tareas recurrentes, el "checklist" del mes = las ocurrencias
+  // (misma tabla task_occurrences que el calendario). Marcar acá se refleja allá y viceversa.
+  const esRecurrente = !!c.recur_rule;
+  const nowRef = new Date();
+  const { data: cardOccs = [] } = useCardOccurrences(c.id, nowRef.getFullYear(), nowRef.getMonth() + 1);
+  const toggleOccCk = useMutation({
+    mutationFn: async (o: TaskOccurrence) => {
+      const { error } = await supabase.from("task_occurrences")
+        .update({ done: !o.done, done_at: !o.done ? new Date().toISOString() : null }).eq("id", o.id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["occurrences"] }),
+    onError: (e: Error) => toast.error("No se pudo actualizar: " + e.message),
+  });
+  const fechaCorta = (iso: string) => new Date(iso + "T12:00:00").toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" });
 
   const hist = (txt: string) => [...(c.history ?? []), { who: meName, at: new Date().toISOString(), txt }];
   const toggleCk = (n: number) => {
@@ -305,36 +322,53 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
           );
         })()}
 
-        <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Checklist</h4>
-        {c.checklist.map((i, n) => {
-          const saveEdit = () => {
-            if (editTxt.trim()) patch.mutate({ checklist: editarItem(c.checklist, n, editTxt.trim()) });
-            setEditCk(null);
-          };
-          return (
-            <div key={n} className="flex items-center gap-2 py-1 text-sm">
-              <input type="checkbox" checked={i.done} onChange={() => toggleCk(n)} className="accent-accent w-4 h-4 shrink-0" />
-              {editCk === n ? (
-                <input autoFocus value={editTxt} onChange={(e) => setEditTxt(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditCk(null); }}
-                  onBlur={saveEdit}
-                  className="flex-1 bg-surface2 border border-line rounded-lg px-2.5 py-1 text-ink text-[13px]" />
-              ) : (
-                <span className={"flex-1 " + (i.done ? "line-through text-ink2" : "")}>{i.txt}</span>
-              )}
-              <button title="Editar" onClick={() => { setEditCk(n); setEditTxt(c.checklist[n].txt); }}
-                className="border border-line bg-surface2 rounded-lg px-1.5 py-1"><Pencil size={12} /></button>
-              <button title="Borrar" onClick={() => patch.mutate({ checklist: borrarItem(c.checklist, n) })}
-                className="border border-line bg-surface2 rounded-lg px-1.5 py-1"><Trash2 size={12} /></button>
+        {/* Tareas recurrentes NO diarias: el checklist del mes = las ocurrencias (fuente única, spec #4).
+            Diarias usan la grilla de cumplimiento de arriba. Tareas sin recurrencia: checklist normal. */}
+        {esRecurrente ? (c.recur_rule?.tipo !== "diaria" && (
+          <>
+            <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Checklist del mes (ocurrencias)</h4>
+            {cardOccs.length === 0 && <p className="text-ink2 text-[13px] m-0">Guardá la recurrencia para generar las ocurrencias del mes.</p>}
+            {cardOccs.map((o) => (
+              <label key={o.id} className="flex items-center gap-2 py-1 text-sm cursor-pointer">
+                <input type="checkbox" checked={o.done} onChange={() => toggleOccCk.mutate(o)} className="accent-accent w-4 h-4 shrink-0" />
+                <span className={"flex-1 capitalize " + (o.done ? "line-through text-ink2" : "")}>{fechaCorta(o.fecha)}</span>
+              </label>
+            ))}
+          </>
+        )) : (
+          <>
+            <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Checklist</h4>
+            {c.checklist.map((i, n) => {
+              const saveEdit = () => {
+                if (editTxt.trim()) patch.mutate({ checklist: editarItem(c.checklist, n, editTxt.trim()) });
+                setEditCk(null);
+              };
+              return (
+                <div key={n} className="flex items-center gap-2 py-1 text-sm">
+                  <input type="checkbox" checked={i.done} onChange={() => toggleCk(n)} className="accent-accent w-4 h-4 shrink-0" />
+                  {editCk === n ? (
+                    <input autoFocus value={editTxt} onChange={(e) => setEditTxt(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditCk(null); }}
+                      onBlur={saveEdit}
+                      className="flex-1 bg-surface2 border border-line rounded-lg px-2.5 py-1 text-ink text-[13px]" />
+                  ) : (
+                    <span className={"flex-1 " + (i.done ? "line-through text-ink2" : "")}>{i.txt}</span>
+                  )}
+                  <button title="Editar" onClick={() => { setEditCk(n); setEditTxt(c.checklist[n].txt); }}
+                    className="border border-line bg-surface2 rounded-lg px-1.5 py-1"><Pencil size={12} /></button>
+                  <button title="Borrar" onClick={() => patch.mutate({ checklist: borrarItem(c.checklist, n) })}
+                    className="border border-line bg-surface2 rounded-lg px-1.5 py-1"><Trash2 size={12} /></button>
+                </div>
+              );
+            })}
+            <div className="flex gap-1.5 mt-1">
+              <input value={newCk} onChange={(e) => setNewCk(e.target.value)} placeholder="Nuevo ítem…"
+                className="flex-1 bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-[13px]" />
+              <button onClick={() => { if (newCk.trim()) { patch.mutate({ checklist: [...c.checklist, { txt: newCk.trim(), done: false, done_at: null }] }); setNewCk(""); } }}
+                className="border border-line bg-surface2 rounded-lg px-3 text-[13px]">Agregar</button>
             </div>
-          );
-        })}
-        <div className="flex gap-1.5 mt-1">
-          <input value={newCk} onChange={(e) => setNewCk(e.target.value)} placeholder="Nuevo ítem…"
-            className="flex-1 bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-[13px]" />
-          <button onClick={() => { if (newCk.trim()) { patch.mutate({ checklist: [...c.checklist, { txt: newCk.trim(), done: false, done_at: null }] }); setNewCk(""); } }}
-            className="border border-line bg-surface2 rounded-lg px-3 text-[13px]">Agregar</button>
-        </div>
+          </>
+        )}
 
         <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Anotaciones</h4>
         {c.comments.map((m, n) => (

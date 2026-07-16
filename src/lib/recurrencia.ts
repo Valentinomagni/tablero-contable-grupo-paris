@@ -46,3 +46,12 @@ export function ocurrenciasFaltantes(
   const yaHay = new Set(fechasExistentes);
   return ocurrenciasDelMes(rule, year, month1a12).filter((f) => !yaHay.has(f));
 }
+
+// Fuente única (spec #4): la identidad de una ocurrencia es (card_id, fecha) — la misma clave
+// única de la tabla. El calendario y el checklist operan sobre la MISMA fila. Estos helpers
+// garantizan que ambos caminos apuntan a la misma identidad.
+export const OCC_CONFLICT = "card_id,fecha";
+export const occIdentity = (o: { card_id: string; fecha: string }) => `${o.card_id}|${o.fecha}`;
+export function occUpsertRow(cardId: string, owner: string, fecha: string, done = false) {
+  return { card_id: cardId, owner, fecha, done, done_at: done ? new Date().toISOString() : null };
+}
