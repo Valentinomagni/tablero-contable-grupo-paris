@@ -25,6 +25,11 @@ export interface Announcement {
   owner_id: string | null; visible_to: string[];
 }
 export interface Note { id: string; owner: string; title: string; body: string; archived: boolean; created_at: string; updated_at: string; }
+export type NotifTipo = "asignacion" | "delegacion" | "vencida" | "dep_liberada" | "avance" | "sin_asignar" | "sistema";
+export interface Notification {
+  id: string; owner: string; tipo: NotifTipo; titulo: string; detalle: string;
+  card_id: string | null; leida: boolean; created_at: string;
+}
 export interface ActivityLog { id: string; card_id: string; owner: string; who_name: string; qty: number; note: string; at: string; }
 export interface Snapshot { day: string; owner: string; open_count: number; open_effort: number; done_count: number; done_effort: number; activity_qty: number; }
 export interface AppSettings {
