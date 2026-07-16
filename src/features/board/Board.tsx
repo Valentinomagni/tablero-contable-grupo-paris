@@ -1,5 +1,5 @@
 import { EmptyState } from "../../components/EmptyState";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import { COLS, type Card, type Status, type ActivityLog, type Profile } from "../../lib/types";
@@ -10,7 +10,9 @@ import { pushUndo } from "../../lib/undo";
 import { isShared, siblingSyncPatches } from "../../lib/shared";
 import { bloqueadaPorTitulos } from "../../lib/deps";
 import { categoriasEnUso, pasaFiltroCategoria } from "../../lib/categorias";
-import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Users, Shield } from "lucide-react";
+import { agruparCards } from "../../lib/agrupar";
+import { getPref, setPref, PREF } from "../../lib/prefs";
+import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Users, Shield, Layers, ChevronRight, ChevronDown } from "lucide-react";
 import { NuevaTareaModal } from "./NuevaTareaModal";
 
 const DOT: Record<string, string> = { pend: "bg-naranja", proc: "bg-s1", term: "bg-done" };
@@ -63,6 +65,19 @@ export function Board({ cards, activity, ownerId, meId, meName, team = [], query
   const matches = (c: Card) => !q || c.title.toLowerCase().includes(q) || (c.description ?? "").toLowerCase().includes(q);
   // filtro por categoría (spec 21 item 11): null = todas; "" = sin categoría
   const [catFiltro, setCatFiltro] = useState<string | null>(null);
+  // agrupar por categoría/prioridad con colapso apilado (spec 21 item 13)
+  const [agrupar, setAgruparState] = useState(() => getPref(PREF.agrupar) === "1");
+  const setAgrupar = (v: boolean) => { setAgruparState(v); setPref(PREF.agrupar, v ? "1" : "0"); };
+  const grupoKey = `tablero:grupos:${ownerId}`;
+  const [colapsados, setColapsados] = useState<string[]>([]);
+  useEffect(() => {
+    try { setColapsados(JSON.parse(getPref(grupoKey) ?? "[]")); } catch { setColapsados([]); }
+  }, [grupoKey]);
+  const toggleGrupo = (g: string) => setColapsados((prev) => {
+    const next = prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g];
+    setPref(grupoKey, JSON.stringify(next));
+    return next;
+  });
   const visibles = cards.filter((c) => c.owner === ownerId && matches(c));
   const catsUsadas = categoriasEnUso(visibles);
   const hayMezcla = catsUsadas.length > 0 && visibles.some((c) => !c.categoria);
@@ -167,16 +182,23 @@ export function Board({ cards, activity, ownerId, meId, meName, team = [], query
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
-      {catsUsadas.length > 0 && (
-        <div className="flex gap-1.5 flex-wrap items-center px-6 pb-3">
-          <button onClick={() => setCatFiltro(null)}
-            className={cn("border rounded-full px-3 py-1 text-[12px] transition",
-              catFiltro === null ? "bg-accent-soft border-accent text-accent font-semibold" : "border-line bg-surface2 text-ink2 hover:border-accent/40")}>
-            Todas</button>
-          {catsUsadas.map((cat) => chipCat(cat, cat))}
-          {hayMezcla && chipCat("Sin categoría", "")}
-        </div>
-      )}
+      <div className="flex gap-1.5 flex-wrap items-center px-6 pb-3">
+        <button onClick={() => setAgrupar(!agrupar)} title="Agrupar tarjetas por categoría"
+          className={cn("inline-flex items-center gap-1.5 border rounded-full px-3 py-1 text-[12px] transition",
+            agrupar ? "bg-accent-soft border-accent text-accent font-semibold" : "border-line bg-surface2 text-ink2 hover:border-accent/40")}>
+          <Layers size={12} /> Agrupar</button>
+        {catsUsadas.length > 0 && (
+          <>
+            <span className="w-px h-4 bg-line mx-1" />
+            <button onClick={() => setCatFiltro(null)}
+              className={cn("border rounded-full px-3 py-1 text-[12px] transition",
+                catFiltro === null ? "bg-accent-soft border-accent text-accent font-semibold" : "border-line bg-surface2 text-ink2 hover:border-accent/40")}>
+              Todas</button>
+            {catsUsadas.map((cat) => chipCat(cat, cat))}
+            {hayMezcla && chipCat("Sin categoría", "")}
+          </>
+        )}
+      </div>
     <div className="flex gap-5 items-start px-6 pb-10 overflow-x-auto flex-1">
       {COLS.map(([k, lbl]) => (
         <div key={k}
@@ -188,11 +210,44 @@ export function Board({ cards, activity, ownerId, meId, meName, team = [], query
             <i className={cn("w-2 h-2 rounded-full", DOT[k])} />{lbl}
             <span className="ml-auto bg-chip rounded-full px-2 py-0.5 tnum">{mine.filter((c) => c.status === k).length}</span>
           </h2>
-          {mine.filter((c) => c.status === k).map((c) => (
-            <div key={c.id} draggable onDragStart={(e) => e.dataTransfer.setData("text/plain", c.id)}>
-              <CardItem c={c} blocked={isBlocked(c)} waiting={c.status !== "term" && dependents(c.id).length > 0} esperaTitulos={bloqueadaPorTitulos(c, cards)} onOpen={onOpen} />
-            </div>
-          ))}
+          {(() => {
+            const colCards = mine.filter((c) => c.status === k);
+            const renderCard = (c: Card) => (
+              <div key={c.id} draggable onDragStart={(e) => e.dataTransfer.setData("text/plain", c.id)}>
+                <CardItem c={c} blocked={isBlocked(c)} waiting={c.status !== "term" && dependents(c.id).length > 0} esperaTitulos={bloqueadaPorTitulos(c, cards)} onOpen={onOpen} />
+              </div>
+            );
+            if (!agrupar) return colCards.map(renderCard);
+            return agruparCards(colCards, catsUsadas).map((g) => {
+              const cerrado = colapsados.includes(g.grupo);
+              if (cerrado) {
+                // Pila visual compacta: 3 tarjetas fantasma superpuestas (spec 21 item 13)
+                return (
+                  <button key={g.grupo} onClick={() => toggleGrupo(g.grupo)} title="Expandir grupo"
+                    className="relative block w-full h-16 mb-2.5 text-left">
+                    <div className="absolute inset-x-0 top-[6px] h-12 bg-surface border border-line/70 rounded-xl shadow" style={{ transform: "scale(0.96)" }} />
+                    <div className="absolute inset-x-0 top-[3px] h-12 bg-surface border border-line/70 rounded-xl shadow" style={{ transform: "scale(0.98)" }} />
+                    <div className="absolute inset-x-0 top-0 h-12 bg-surface border border-line/70 rounded-xl shadow flex items-center gap-2 px-3.5">
+                      <ChevronRight size={13} className="text-ink2 shrink-0" />
+                      <span className="font-semibold text-[13px] tracking-tight truncate">{g.grupo}</span>
+                      <span className="ml-auto text-xs text-ink2 whitespace-nowrap tnum">{g.cards.length} {g.cards.length === 1 ? "tarea" : "tareas"}</span>
+                    </div>
+                  </button>
+                );
+              }
+              return (
+                <div key={g.grupo} className="mb-1">
+                  <button onClick={() => toggleGrupo(g.grupo)} title="Colapsar grupo"
+                    className="w-full flex items-center gap-1.5 text-xs text-ink2 font-semibold px-1 py-1 mb-1 hover:text-ink transition">
+                    <ChevronDown size={13} className="shrink-0" />
+                    <span className="truncate">{g.grupo}</span>
+                    <span className="bg-chip rounded-full px-2 py-0.5 tnum">{g.cards.length}</span>
+                  </button>
+                  {g.cards.map(renderCard)}
+                </div>
+              );
+            });
+          })()}
           {mine.filter((c) => c.status === k).length === 0 && <div className="mb-2"><EmptyState title="Sin tareas acá." /></div>}
           {/* Pendiente abre el flujo formal (spec 21 item 2); "En proceso" conserva el atajo inline. */}
           {k === "pend" && (

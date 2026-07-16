@@ -6,6 +6,7 @@ export const PREF = {
   sidebar: NS + "sidebar",
   version: NS + "version-vista",
   tablon: NS + "tablon-visto",
+  agrupar: NS + "agrupar",
 } as const;
 
 export function getPref(k: string): string | null {
