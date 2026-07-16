@@ -14,7 +14,11 @@ export interface Card {
   priority: "alta" | "media" | "baja"; effort: 1 | 2 | 3 | 5;
   card_type: "normal" | "operativa"; deps: string[]; created_at: string;
   recur_rule?: RecurRule | null;
+  protected?: boolean;
+  categoria?: string | null;
+  reset_policy?: "mensual" | "mantener" | "manual";
 }
+export interface CardArchive { id: string; owner: string; mes: string; card: Card; archived_at: string; }
 export interface Objective {
   id: string; owner: string; title: string; description: string; weight: number;
   kpi_name: string; kpi_unit: string; kpi_target: number | null; kpi_current: number; notes: string;
@@ -35,6 +39,7 @@ export interface Snapshot { day: string; owner: string; open_count: number; open
 export interface AppSettings {
   edit_closed: boolean; board_name?: string; due_warn_days?: number; stuck_days?: number;
   closing_template?: import("./plantilla").TemplateItem[];
+  categorias?: string[];
 }
 
 export const COLS: [Status, string][] = [["pend", "Pendiente"], ["proc", "En proceso"], ["term", "Terminado"]];

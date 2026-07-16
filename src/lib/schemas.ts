@@ -15,6 +15,11 @@ export const CardSchema = z.object({
   effort: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(5)]),
   card_type: z.enum(["normal", "operativa"]),
   history: z.array(z.object({ who: z.string(), at: z.string(), txt: z.string() })),
+  // Campos de la migración 22 — opcionales/nullables para no generar warnings
+  // de drift en bases donde la migración todavía no se corrió.
+  protected: z.boolean().optional().nullable(),
+  categoria: z.string().optional().nullable(),
+  reset_policy: z.enum(["mensual", "mantener", "manual"]).optional().nullable(),
 });
 
 // valida cada fila y avisa por consola de las que no cumplen; SIEMPRE devuelve los datos crudos

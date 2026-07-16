@@ -1,12 +1,15 @@
 // Edge Function "eliminar-usuario" — pegar en:
 // Supabase Dashboard → Edge Functions → eliminar-usuario → Edit → reemplazar TODO → Deploy
 //
+// v2.1 (16/07): los OBJETIVOS del empleado ahora se ELIMINAN en vez de reasignarse
+// (decisión de la spec 21: los objetivos son personales, no tiene sentido heredarlos).
+// Las cards y ocurrencias siguen yendo al centinela "Sin asignar".
 // v2 (16/07): el perfil "Sin asignar" ahora lo crea ESTA función la primera vez que hace
 // falta (con la service key crea el auth user real). La migración 17 no alcanzaba porque
 // profiles.id tiene FK a auth.users y un UUID inventado viola cards_owner_fkey.
 //
-// Verifica que quien llama sea jefe; reasigna cards/objectives (y ocurrencias) del usuario
-// al centinela y recién ahí borra el auth user (el profile cae en cascada).
+// Verifica que quien llama sea jefe; reasigna cards (y ocurrencias) del usuario al
+// centinela, elimina sus objectives y recién ahí borra el auth user (el profile cae en cascada).
 // ⚠ Este archivo es solo referencia local: NO subirlo a Netlify/Cloudflare.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -50,13 +53,14 @@ Deno.serve(async (req) => {
     }
     if (userId === centinela.id) return fail(400, "No se puede eliminar el perfil Sin asignar.");
 
-    // 2) Reasignar tareas y objetivos al centinela para no perderlos.
+    // 2) Reasignar tareas al centinela para no perderlas; los objetivos se ELIMINAN
+    //    (v2.1: son personales — no se heredan).
     const { data: reasign, error: eCards } = await admin.from("cards")
       .update({ owner: centinela.id }).eq("owner", userId).select("id");
     if (eCards) return fail(400, "No se pudieron reasignar las tareas: " + eCards.message);
     const { error: eObj } = await admin.from("objectives")
-      .update({ owner: centinela.id }).eq("owner", userId);
-    if (eObj) return fail(400, "No se pudieron reasignar los objetivos: " + eObj.message);
+      .delete().eq("owner", userId);
+    if (eObj) return fail(400, "No se pudieron eliminar los objetivos: " + eObj.message);
     // ocurrencias de tareas recurrentes: mantenerlas vivas junto con sus cards (best-effort)
     await admin.from("task_occurrences").update({ owner: centinela.id }).eq("owner", userId);
 
