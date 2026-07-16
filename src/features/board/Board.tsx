@@ -9,6 +9,7 @@ import { cn } from "../../lib/ui";
 import { pushUndo } from "../../lib/undo";
 import { isShared, siblingSyncPatches } from "../../lib/shared";
 import { bloqueadaPorTitulos } from "../../lib/deps";
+import { categoriasEnUso, pasaFiltroCategoria } from "../../lib/categorias";
 import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Users, Shield } from "lucide-react";
 import { NuevaTareaModal } from "./NuevaTareaModal";
 
@@ -39,6 +40,7 @@ function CardItem({ c, blocked, waiting, esperaTitulos = [], onOpen }: { c: Card
         {isShared(c) && <span title="Tarea compartida con otras personas" className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Users size={11} /> Compartida</span>}
         {blocked && <span className="inline-flex items-center gap-1 bg-warn-soft text-warn rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Lock size={11} /> Bloqueada</span>}
         {waiting && <span className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Hourglass size={11} /> Te esperan</span>}
+        {c.categoria && <span className="bg-chip rounded-md px-1.5 py-0.5 text-[11px] whitespace-nowrap">{c.categoria}</span>}
         {pr}<DueBadge c={c} />{c.recurring && <span title="Mensual"><Repeat size={12} /></span>}
         {(c.effort ?? 1) > 1 && <span className="bg-chip rounded-md px-1.5 py-0.5 tnum">{c.effort} pts</span>}
         {ck}{c.comments.length > 0 && <span className="inline-flex items-center gap-1"><MessageSquare size={11} /> {c.comments.length}</span>}
@@ -59,8 +61,14 @@ export function Board({ cards, activity, ownerId, meId, meName, team = [], query
   const qc = useQueryClient();
   const q = query.trim().toLowerCase();
   const matches = (c: Card) => !q || c.title.toLowerCase().includes(q) || (c.description ?? "").toLowerCase().includes(q);
-  const mine = cards.filter((c) => c.owner === ownerId && c.card_type !== "operativa" && matches(c));
-  const opers = cards.filter((c) => c.owner === ownerId && c.card_type === "operativa" && matches(c));
+  // filtro por categoría (spec 21 item 11): null = todas; "" = sin categoría
+  const [catFiltro, setCatFiltro] = useState<string | null>(null);
+  const visibles = cards.filter((c) => c.owner === ownerId && matches(c));
+  const catsUsadas = categoriasEnUso(visibles);
+  const hayMezcla = catsUsadas.length > 0 && visibles.some((c) => !c.categoria);
+  const pasaCat = (c: Card) => pasaFiltroCategoria(c, catFiltro);
+  const mine = visibles.filter((c) => c.card_type !== "operativa" && pasaCat(c));
+  const opers = visibles.filter((c) => c.card_type === "operativa" && pasaCat(c));
   const byId = (id: string) => cards.find((x) => x.id === id);
   const isBlocked = (c: Card) => c.status !== "term" && (c.deps ?? []).some((id) => (byId(id)?.status ?? "term") !== "term");
   const dependents = (id: string) => cards.filter((x) => (x.deps ?? []).includes(id) && x.status !== "term");
@@ -147,7 +155,28 @@ export function Board({ cards, activity, ownerId, meId, meName, team = [], query
   const hoyStr = new Date().toDateString();
   const colBg = { background: "color-mix(in srgb,var(--surface2) 55%,var(--bg))" };
 
+  const chipCat = (lbl: string, val: string | null) => {
+    const activo = catFiltro === val;
+    return (
+      <button key={lbl} onClick={() => setCatFiltro(activo ? null : val)}
+        className={cn("border rounded-full px-3 py-1 text-[12px] transition",
+          activo ? "bg-accent-soft border-accent text-accent font-semibold" : "border-line bg-surface2 text-ink2 hover:border-accent/40")}>
+        {lbl}</button>
+    );
+  };
+
   return (
+    <div className="flex-1 flex flex-col min-w-0">
+      {catsUsadas.length > 0 && (
+        <div className="flex gap-1.5 flex-wrap items-center px-6 pb-3">
+          <button onClick={() => setCatFiltro(null)}
+            className={cn("border rounded-full px-3 py-1 text-[12px] transition",
+              catFiltro === null ? "bg-accent-soft border-accent text-accent font-semibold" : "border-line bg-surface2 text-ink2 hover:border-accent/40")}>
+            Todas</button>
+          {catsUsadas.map((cat) => chipCat(cat, cat))}
+          {hayMezcla && chipCat("Sin categoría", "")}
+        </div>
+      )}
     <div className="flex gap-5 items-start px-6 pb-10 overflow-x-auto flex-1">
       {COLS.map(([k, lbl]) => (
         <div key={k}
@@ -210,6 +239,7 @@ export function Board({ cards, activity, ownerId, meId, meName, team = [], query
         {addInline("oper", "Ej: Pagos a proveedores…")}
       </div>
       {creando && <NuevaTareaModal ownerId={ownerId} meName={meName} onClose={() => setCreando(false)} />}
+    </div>
     </div>
   );
 }

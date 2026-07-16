@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Download, UserPlus, ArrowRightLeft } from "lucide-react";
+import { Download, UserPlus, ArrowRightLeft, Plus, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase, SUPABASE_URL } from "../../lib/supabase";
 import type { Card, Profile, Role, AppSettings } from "../../lib/types";
@@ -23,6 +23,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
   const [parBoardName, setParBoardName] = useState<string | null>(null);
   const [parWarn, setParWarn] = useState<string | null>(null);
   const [parStuck, setParStuck] = useState<string | null>(null);
+  const [nuevaCat, setNuevaCat] = useState("");
   const [nu, setNu] = useState({ email: "", username: "", name: "", role: "empleado" as Role, puesto: "", pass: "" });
   const [nuBusy, setNuBusy] = useState(false);
   const [nuMsg, setNuMsg] = useState<{ ok: boolean; txt: string } | null>(null);
@@ -132,6 +133,38 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
           Permitir que encargados y empleados modifiquen o reabran tareas ya terminadas
         </label>
         <p className="text-ink2 text-[13px] mt-1.5 mb-0">Apagado: solo los jefes pueden tocar una tarea cerrada. La restricción se aplica en el servidor.</p>
+      </div>
+
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Categorías de tareas</h2>
+      <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {(settings.categorias ?? []).map((cat) => (
+            <span key={cat} className="inline-flex items-center gap-1.5 bg-chip rounded-full px-3 py-1 text-[13px]">
+              {cat}
+              <button title={`Quitar "${cat}"`}
+                onClick={() => saveSettings({ ...settings, categorias: (settings.categorias ?? []).filter((c) => c !== cat) }, "Categorías guardadas")}
+                className="text-ink2 hover:text-danger"><X size={12} /></button>
+            </span>
+          ))}
+          {(settings.categorias ?? []).length === 0 && <p className="text-ink2 text-[13px] m-0">Sin categorías todavía. Agregá las que use el estudio.</p>}
+        </div>
+        <form className="flex gap-2" onSubmit={(e) => {
+          e.preventDefault();
+          const cat = nuevaCat.trim();
+          if (!cat) return;
+          const actuales = settings.categorias ?? [];
+          if (!actuales.some((c) => c.toLowerCase() === cat.toLowerCase()))
+            saveSettings({ ...settings, categorias: [...actuales, cat] }, "Categorías guardadas");
+          setNuevaCat("");
+        }}>
+          <input value={nuevaCat} onChange={(e) => setNuevaCat(e.target.value)}
+            placeholder="Ej: Facturación, Conciliaciones, Impuestos, Bancos…" className={inputCls + " w-[320px] max-w-full"} />
+          <button type="submit" disabled={!nuevaCat.trim()}
+            className="flex items-center gap-1.5 bg-accent text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:opacity-60">
+            <Plus size={14} /> Agregar</button>
+        </form>
+        <p className="text-ink2 text-[13px] mt-2 mb-0">Aparecen como opción al crear o editar tareas y como filtros del tablero. Quitar una categoría no toca las tarjetas que ya la tienen.</p>
+        {permMsg && <p className={"text-sm mt-2 mb-0 " + (!permMsg.startsWith("No se pudo") ? "text-done" : "text-danger")}>{permMsg}</p>}
       </div>
 
       <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Parámetros de la plataforma</h2>

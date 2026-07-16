@@ -226,6 +226,21 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
               <option value="1">1 — Baja</option><option value="2">2 — Media</option><option value="3">3 — Alta</option><option value="5">5 — Muy alta</option>
             </select>
           </label>
+          {(() => {
+            // Opciones = categorías del Admin + la de la card si quedó fuera del listado (legacy).
+            const cats = settings.categorias ?? [];
+            const opciones = c.categoria && !cats.includes(c.categoria) ? [...cats, c.categoria] : cats;
+            return opciones.length > 0 && (
+              <label className="flex items-center gap-1.5">Categoría
+                <select value={c.categoria ?? ""}
+                  onChange={(e) => patch.mutate({ categoria: e.target.value || null, history: hist("Cambió categoría a " + (e.target.value || "ninguna")) })}
+                  className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px]">
+                  <option value="">—</option>
+                  {opciones.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                </select>
+              </label>
+            );
+          })()}
         </div>
 
         <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Recurrencia</h4>
