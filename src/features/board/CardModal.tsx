@@ -290,6 +290,22 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
             {guardarRecur.isPending ? "Guardando…" : "Guardar recurrencia"}</button>
         </div>
         {recurTipo !== "" && <p className="text-ink2 text-[12px] mt-1">Genera las ocurrencias del mes en el calendario y en el cumplimiento diario.</p>}
+        {(c.recurring || c.recur_rule) && (
+          <div className="flex flex-wrap items-center gap-2 text-sm mt-2">
+            <label className="flex items-center gap-1.5 text-ink2 text-[13px]">Ciclo de vida
+              <select value={c.reset_policy ?? "mensual"}
+                onChange={(e) => {
+                  const v = e.target.value as NonNullable<Card["reset_policy"]>;
+                  patch.mutate({ reset_policy: v, history: hist("Cambió ciclo de vida a " + v) });
+                }}
+                className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px]">
+                <option value="mensual">Reinicia cada mes</option>
+                <option value="mantener">Mantiene su estado</option>
+                <option value="manual">Reinicio manual</option>
+              </select>
+            </label>
+          </div>
+        )}
 
         {c.recur_rule?.tipo === "diaria" && (() => {
           const now = new Date();

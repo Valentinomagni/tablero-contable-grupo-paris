@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Download, UserPlus, ArrowRightLeft, Plus, X } from "lucide-react";
+import { Archive, Download, UserPlus, ArrowRightLeft, Plus, X } from "lucide-react";
+import { toast } from "sonner";
+import { mesLabel } from "../../lib/archivo";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase, SUPABASE_URL } from "../../lib/supabase";
 import type { Card, Profile, Role, AppSettings } from "../../lib/types";
@@ -24,6 +26,12 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
   const [parWarn, setParWarn] = useState<string | null>(null);
   const [parStuck, setParStuck] = useState<string | null>(null);
   const [nuevaCat, setNuevaCat] = useState("");
+  // Archivo mensual (spec 21 item 9): opciones = mes actual y anterior (YYYY-MM)
+  const hoy = new Date();
+  const mesFmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const mesesArchivo = [mesFmt(hoy), mesFmt(new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1))];
+  const [archMes, setArchMes] = useState(mesesArchivo[0]);
+  const [archBusy, setArchBusy] = useState(false);
   const [nu, setNu] = useState({ email: "", username: "", name: "", role: "empleado" as Role, puesto: "", pass: "" });
   const [nuBusy, setNuBusy] = useState(false);
   const [nuMsg, setNuMsg] = useState<{ ok: boolean; txt: string } | null>(null);
@@ -185,6 +193,26 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
           }, "Parámetros guardados")}
           className="bg-accent text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold mt-3">Guardar parámetros</button>
         {permMsg && <p className={"text-sm mt-2 mb-0 " + (!permMsg.startsWith("No se pudo") ? "text-done" : "text-danger")}>{permMsg}</p>}
+      </div>
+
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Archivo mensual</h2>
+      <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
+        <div className="flex flex-wrap items-center gap-2">
+          <select value={archMes} onChange={(e) => setArchMes(e.target.value)} className={inputCls + " capitalize"}>
+            {mesesArchivo.map((m) => <option key={m} value={m} className="capitalize">{mesLabel(m)} ({m})</option>)}
+          </select>
+          <button disabled={archBusy}
+            onClick={async () => {
+              setArchBusy(true);
+              const { data, error } = await supabase.rpc("archivar_mes", { p_mes: archMes });
+              setArchBusy(false);
+              if (error) toast.error("No se pudo archivar: " + error.message + ". ¿Está aplicada la migración 22?");
+              else { toast.success(`Mes ${mesLabel(archMes)} archivado: ${data ?? 0} tareas.`); qc.invalidateQueries({ queryKey: ["archive"] }); }
+            }}
+            className="flex items-center gap-1.5 bg-accent text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:opacity-60">
+            <Archive size={14} /> {archBusy ? "Archivando…" : "Archivar mes"}</button>
+        </div>
+        <p className="text-ink2 text-[13px] mt-2 mb-0">Guarda una foto de todas las tareas del equipo en el historial del mes elegido. Es seguro repetirlo: reemplaza la foto anterior de ese mismo mes, nunca toca las tareas vivas.</p>
       </div>
 
       <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Respaldo</h2>

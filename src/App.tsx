@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Toaster, toast } from "sonner";
 import { deshacerUltimo } from "./lib/deshacer";
 import { PREF, getPref, setPref } from "./lib/prefs";
-import { ClipboardList, Target, TrendingUp, UserRound, CalendarDays, Users } from "lucide-react";
+import { ClipboardList, Target, TrendingUp, UserRound, CalendarDays, Users, Archive } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { useTheme } from "./hooks/useTheme";
 import { useTeam, useCards, useActivity, useAnnouncements, useSettings } from "./hooks/useData";
@@ -31,13 +31,14 @@ const Organigrama = lazy(() => import("./features/organigrama/Organigrama").then
 const Notas = lazy(() => import("./features/notas/Notas").then((m) => ({ default: m.Notas })));
 const Bitacora = lazy(() => import("./features/bitacora/Bitacora").then((m) => ({ default: m.Bitacora })));
 const Admin = lazy(() => import("./features/admin/Admin").then((m) => ({ default: m.Admin })));
+const HistorialMes = lazy(() => import("./features/historial/HistorialMes").then((m) => ({ default: m.HistorialMes })));
 import { CommandPalette } from "./components/CommandPalette";
 import type { Card, Profile, AppSettings } from "./lib/types";
 import { visiblesPara, cardsDeEquipo } from "./lib/jerarquia";
 import { proximosVencimientos } from "./lib/vencimientos";
 import { cn } from "./lib/ui";
 
-type Mode = "board" | "semana" | "obj" | "mimes";
+type Mode = "board" | "semana" | "obj" | "mimes" | "hist";
 
 export default function App() {
   const { me, loading, signIn, signOut } = useAuth();
@@ -127,6 +128,7 @@ export default function App() {
           <SubTab m="semana" icon={<CalendarDays size={14} />} label="Semana" />
           <SubTab m="obj" icon={<Target size={14} />} label="Objetivos" />
           <SubTab m="mimes" icon={<TrendingUp size={14} />} label={person && person.id !== me.id ? "Su mes" : "Mi mes"} />
+          <SubTab m="hist" icon={<Archive size={14} />} label="Historial" />
           {mode === "board" && (
             <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar tarea…"
               className="bg-surface2 border border-line rounded-lg px-3 py-1.5 text-[13px] w-[200px]" />
@@ -157,6 +159,7 @@ export default function App() {
           : mode === "semana" ? <Semana cards={cards} ownerId={view} meName={me.name} onOpen={setOpenCard} />
           : mode === "obj" ? <Objetivos ownerId={view} ownerName={person?.name ?? me.name} />
           : mode === "mimes" ? <MiMes cards={cards} activity={activity} ownerId={view} onOpenCard={setOpenCard} />
+          : mode === "hist" ? <HistorialMes ownerId={view} />
           : cardsLoading ? <BoardSkeleton />
           : <Board cards={cards} activity={activity} ownerId={view} meId={me.id} meName={me.name} team={fullTeam} query={query} onOpen={setOpenCard} />}
         </Suspense>

@@ -25,6 +25,14 @@ describe("ocurrenciasFaltantes", () => {
       .toEqual(["2026-07-16", "2026-07-23", "2026-07-30"]));
   it("todas presentes: vacío", () =>
     expect(ocurrenciasFaltantes({ tipo: "mensual", diaMes: 20 }, 2026, 7, ["2026-07-20"])).toEqual([]));
+  it("materializar un mes NUEVO no toca las fechas del mes anterior (done intactas)", () => {
+    // Junio ya materializado y completado; al materializar julio, las faltantes son SOLO de julio:
+    // el upsert nunca incluye filas de junio, así que sus done/done_at quedan intactos.
+    const junioDone = ["2026-06-04", "2026-06-11", "2026-06-18", "2026-06-25"];
+    const faltan = ocurrenciasFaltantes({ tipo: "semanal", dias: [4] }, 2026, 7, junioDone);
+    expect(faltan).toEqual(["2026-07-02", "2026-07-09", "2026-07-16", "2026-07-23", "2026-07-30"]);
+    expect(faltan.some((f) => f.startsWith("2026-06"))).toBe(false);
+  });
 });
 
 describe("fuente única: calendario y checklist tocan la misma fila (card_id+fecha)", () => {
