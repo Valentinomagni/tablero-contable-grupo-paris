@@ -10,10 +10,10 @@ interface Props {
   theme: string; onCycleTheme: () => void; density: string; onCycleDensity: () => void;
   onOpenAccount: () => void; onOpenNovedades?: () => void; tablonBadge?: string; boardName?: string;
   onNavigate: (v: string) => void; onSignOut: () => void;
-  pendByOwner: (id: string) => number; subnav?: ReactNode; children: ReactNode;
+  pendByOwner: (id: string) => number; subnav?: ReactNode; notifs?: ReactNode; children: ReactNode;
 }
 
-export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, onCycleDensity, onOpenAccount, onOpenNovedades, tablonBadge, boardName, onNavigate, onSignOut, pendByOwner, subnav, children }: Props) {
+export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, onCycleDensity, onOpenAccount, onOpenNovedades, tablonBadge, boardName, onNavigate, onSignOut, pendByOwner, subnav, notifs, children }: Props) {
   // barra lateral como drawer desplegable (Seiton: se muestra a demanda, deja la vista limpia).
   const [open, setOpen] = useState(() => {
     const saved = localStorage.getItem("pref-sidebar");
@@ -121,6 +121,7 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
             <h1 className="text-[19px] font-bold tracking-[-0.02em] m-0">{title}</h1>
           </div>
           <div className="flex-1" />
+          {notifs}
           <span className="text-[12px] text-ink2 bg-surface2 border border-line rounded-full px-3 py-1 capitalize tnum">
             {new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
           </span>

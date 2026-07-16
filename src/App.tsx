@@ -9,6 +9,7 @@ import { useTheme } from "./hooks/useTheme";
 import { useTeam, useCards, useActivity, useAnnouncements, useSettings } from "./hooks/useData";
 import { AccountModal } from "./components/AccountModal";
 import { NovedadesModal } from "./components/NovedadesModal";
+import { NotificacionesBell } from "./components/NotificacionesPanel";
 import { APP_VERSION } from "./lib/version";
 import { Login } from "./components/Login";
 import { Shell } from "./components/Shell";
@@ -125,6 +126,7 @@ export default function App() {
         onCycleTheme={cycle} density={density} onCycleDensity={cycleDensity}
         onOpenAccount={() => setAccount(true)} onOpenNovedades={() => setNovedades(true)} tablonBadge={tablonBadge} boardName={settings?.board_name}
         onNavigate={(v) => { setViewing(v); setMode("board"); setQuery(""); }} onSignOut={signOut} pendByOwner={pendByOwner}
+        notifs={<NotificacionesBell onOpenCard={(id) => { const c = cards.find((x) => x.id === id); if (c) setOpenCard(c); else toast("La tarea de esta notificación ya no está disponible."); }} />}
         subnav={isPersonView ? <>
           <SubTab m="board" icon={<ClipboardList size={14} />} label="Tareas" />
           <SubTab m="semana" icon={<CalendarDays size={14} />} label="Semana" />
