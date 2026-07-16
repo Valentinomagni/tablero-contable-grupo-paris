@@ -120,8 +120,8 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
             {new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
           </span>
         </div>
-        {subnav && <div className="flex gap-1.5 px-6 pt-3.5">{subnav}</div>}
-        {children}
+        {subnav && <div className="mx-auto w-full max-w-[1200px] flex gap-1.5 px-6 pt-3.5">{subnav}</div>}
+        <div className="mx-auto w-full max-w-[1200px] flex-1 flex flex-col min-w-0">{children}</div>
       </main>
     </div>
   );
