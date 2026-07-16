@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Toaster, toast } from "sonner";
 import { supabase } from "./lib/supabase";
@@ -17,18 +17,20 @@ import { Board } from "./features/board/Board";
 import { CardModal } from "./features/board/CardModal";
 import { DelegarModal } from "./features/board/DelegarModal";
 import { Objetivos } from "./features/objetivos/Objetivos";
-import { Reporte } from "./features/reporte/Reporte";
 import { Resumen } from "./features/resumen/Resumen";
 import { MiMes } from "./features/mimes/MiMes";
 import { Tablon } from "./features/tablon/Tablon";
 import { Semana } from "./features/semana/Semana";
-import { Bitacora } from "./features/bitacora/Bitacora";
-import { Calendario } from "./features/calendario/Calendario";
-import { Cierre } from "./features/cierre/Cierre";
-import { Organigrama } from "./features/organigrama/Organigrama";
-import { Notas } from "./features/notas/Notas";
-import { Admin } from "./features/admin/Admin";
 import { UserModal } from "./features/admin/UserModal";
+
+// Code-split (Kaizen H2): vistas que no participan del primer render van a chunks propios.
+const Reporte = lazy(() => import("./features/reporte/Reporte").then((m) => ({ default: m.Reporte })));
+const Calendario = lazy(() => import("./features/calendario/Calendario").then((m) => ({ default: m.Calendario })));
+const Cierre = lazy(() => import("./features/cierre/Cierre").then((m) => ({ default: m.Cierre })));
+const Organigrama = lazy(() => import("./features/organigrama/Organigrama").then((m) => ({ default: m.Organigrama })));
+const Notas = lazy(() => import("./features/notas/Notas").then((m) => ({ default: m.Notas })));
+const Bitacora = lazy(() => import("./features/bitacora/Bitacora").then((m) => ({ default: m.Bitacora })));
+const Admin = lazy(() => import("./features/admin/Admin").then((m) => ({ default: m.Admin })));
 import { CommandPalette } from "./components/CommandPalette";
 import type { Card, Profile, AppSettings } from "./lib/types";
 import { visiblesPara, cardsDeEquipo } from "./lib/jerarquia";
@@ -149,6 +151,7 @@ export default function App() {
             </button>
           )}
         </> : undefined}>
+        <Suspense fallback={<div className="px-6 py-8 text-ink2 text-sm">Cargando…</div>}>
         {view === "__resumen" ? <Resumen cards={scopedCards} team={fullTeam} activity={activity} onOpenCard={setOpenCard} onGoPerson={(id) => { setViewing(id); setMode("board"); }} onDelegar={() => setDelegar(true)} />
           : view === "__reporte" ? <Reporte cards={scopedCards} team={fullTeam} activity={activity} />
           : view === "__tablon" ? <Tablon />
@@ -163,6 +166,7 @@ export default function App() {
           : mode === "mimes" ? <MiMes cards={cards} activity={activity} ownerId={view} onOpenCard={setOpenCard} />
           : cardsLoading ? <BoardSkeleton />
           : <Board cards={cards} activity={activity} ownerId={view} meId={me.id} meName={me.name} team={fullTeam} query={query} onOpen={setOpenCard} />}
+        </Suspense>
       </Shell>
       {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} cards={cards} team={fullTeam} activity={activity} isJefe={!!isJefe} onClose={() => setOpenCard(null)} meId={me.id} meName={me.name} />}
       {openUser && <UserModal user={fullTeam.find((t) => t.id === openUser.id) ?? openUser} meId={me.id} team={fullTeam} cards={cards} activity={activity} onClose={() => setOpenUser(null)} />}
