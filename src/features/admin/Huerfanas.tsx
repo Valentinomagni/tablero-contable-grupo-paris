@@ -5,13 +5,14 @@ import { toast } from "sonner";
 import { ArrowRightLeft } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import type { Card, Profile } from "../../lib/types";
-import { SIN_ASIGNAR_ID } from "../../lib/jerarquia";
 
-// Tareas huérfanas: cards cuyo dueño es el centinela "Sin asignar" (empleado eliminado).
-// El jefe las reasigna a cualquier empleado. Vacío hasta que exista una huérfana.
+// Tareas huérfanas: cards cuyo dueño ya no está en el equipo (centinela "Sin asignar"
+// tras eliminar un empleado, o cualquier dueño inexistente). Solo la ve el jefe, cuyo
+// team incluye a todos los perfiles reales — por eso "no está en team" = huérfana.
 export function Huerfanas({ team, cards }: { team: Profile[]; cards: Card[] }) {
   const qc = useQueryClient();
-  const huerfanas = cards.filter((c) => c.owner === SIN_ASIGNAR_ID);
+  const teamIds = new Set(team.map((u) => u.id));
+  const huerfanas = team.length ? cards.filter((c) => !teamIds.has(c.owner)) : [];
   const [destinos, setDestinos] = useState<Record<string, string>>({});
 
   const reasignar = useMutation({

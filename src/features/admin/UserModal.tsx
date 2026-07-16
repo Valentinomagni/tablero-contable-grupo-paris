@@ -7,7 +7,7 @@ import type { ActivityLog, Card, Profile, Role } from "../../lib/types";
 import { useObjectives } from "../../hooks/useData";
 import { userMetrics30d } from "../../lib/metrics";
 import { nombreValido } from "../../lib/validacion";
-import { puedeSerManager, SIN_ASIGNAR_ID } from "../../lib/jerarquia";
+import { puedeSerManager, esSinAsignar } from "../../lib/jerarquia";
 import { confirmacionValida } from "../../lib/borrado";
 import { toast } from "sonner";
 
@@ -29,7 +29,7 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
   const [tipeado, setTipeado] = useState("");
 
   const esJefe = team.find((t) => t.id === meId)?.role === "jefe";
-  const puedeEliminar = esJefe && u.id !== meId && u.id !== SIN_ASIGNAR_ID;
+  const puedeEliminar = esJefe && u.id !== meId && !esSinAsignar(u);
 
   const m = userMetrics30d(cards, objectives, activity, u.id, Date.now());
 

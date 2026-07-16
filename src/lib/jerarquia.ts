@@ -1,8 +1,16 @@
 import type { Card, Profile } from "./types";
 
-// Perfil centinela "Sin asignar" (migración 17): dueño de las cards huérfanas tras
-// eliminar un empleado. Se excluye de los listados de equipo/métricas.
+// Perfil centinela "Sin asignar": dueño de las cards huérfanas tras eliminar un empleado.
+// Lo crea la edge function eliminar-usuario como auth user REAL (un uuid inventado viola
+// cards_owner_fkey), así que se lo identifica por EMAIL, no por un id fijo.
+// SIN_ASIGNAR_ID queda por compatibilidad con bases donde la migración 17 sí insertó.
 export const SIN_ASIGNAR_ID = "00000000-0000-0000-0000-000000000000";
+export const SIN_ASIGNAR_EMAIL = "sin-asignar@grupoparis.com";
+export const esSinAsignar = (p: Pick<Profile, "id" | "email">): boolean =>
+  p.email === SIN_ASIGNAR_EMAIL || p.id === SIN_ASIGNAR_ID;
+// id real del centinela en esta base (null si todavía no existe)
+export const sinAsignarId = (profiles: Profile[]): string | null =>
+  profiles.find(esSinAsignar)?.id ?? null;
 
 export function reportesDirectos(managerId: string, profiles: Profile[]): Profile[] {
   return profiles.filter((p) => p.manager_id === managerId);
@@ -17,7 +25,7 @@ export function equipoDe(managerId: string, profiles: Profile[]): Profile[] {
 
 export function visiblesPara(me: Profile, profiles: Profile[]): Profile[] {
   // El centinela "Sin asignar" nunca aparece en listados de equipo/métricas.
-  const reales = profiles.filter((p) => p.id !== SIN_ASIGNAR_ID);
+  const reales = profiles.filter((p) => !esSinAsignar(p));
   if (me.role === "jefe") return reales;
   if (me.role === "encargado") return [me, ...equipoDe(me.id, reales)];
   return [me];
