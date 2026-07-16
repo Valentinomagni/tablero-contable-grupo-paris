@@ -11,7 +11,8 @@ import { depInfoOf, dependentsOf, isBlocked, type DepMap } from "../../lib/deps"
 import { pushUndo } from "../../lib/undo";
 import { isShared, participantes, siblingSyncPatches } from "../../lib/shared";
 import { notifsAlFinalizar } from "../../lib/notificaciones";
-import { Check, Link2, Lock, Hourglass, X, Users, Pencil, Trash2, Minus, Plus } from "lucide-react";
+import { Check, Copy, Link2, Lock, Hourglass, X, Users, Pencil, Trash2, Minus, Plus } from "lucide-react";
+import { filaDuplicada } from "../../lib/duplicar";
 import { useDepsInfo, useReverseDeps, useSettings } from "../../hooks/useData";
 import { editarItem, borrarItem } from "../../lib/checklist";
 import { nuevaCantidad } from "../../lib/operativas";
@@ -49,6 +50,15 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["activity"] }),
+  });
+
+  const duplicar = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("cards").insert(filaDuplicada(c, meName, new Date().toISOString()));
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["cards"] }); toast.success("Tarea duplicada"); },
+    onError: (e: Error) => toast.error("No se pudo duplicar: " + e.message),
   });
 
   const del = useMutation({
@@ -457,6 +467,11 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
             : locked ? <span className="inline-flex items-center gap-1.5 text-ink2 text-[13px]"><Lock size={13} /> Solo un jefe puede reabrir esta tarea</span>
             : <button onClick={() => patch.mutate({ status: "proc", done_at: null, history: hist("Reabrió la tarea") })}
                 className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Reabrir</button>}
+          {!locked && (
+            <button onClick={() => duplicar.mutate()} disabled={duplicar.isPending}
+              className="inline-flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px] disabled:opacity-60">
+              <Copy size={13} /> {duplicar.isPending ? "Duplicando…" : "Duplicar"}</button>
+          )}
           {!locked && (confirmDel ? (
             <span className="inline-flex items-center gap-1.5 text-[13px]">
               <button onClick={() => del.mutate()} disabled={del.isPending}
