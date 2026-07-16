@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { reportesDirectos, equipoDe, visiblesPara, porMarca, puedeSerManager, cardsDeEquipo, puedeReasignar, construirArbol } from "./jerarquia";
 import type { Card, Profile } from "./types";
 const p = (id: string, role: Profile["role"], manager_id: string | null = null, marca: string | null = null): Profile =>
-  ({ id, name: id, role, email: "", puesto: "", ficha: "", manager_id, marca });
+  ({ id, name: id, role, email: "", username: null, puesto: "", ficha: "", manager_id, marca });
 const team = [
   p("jefe", "jefe"), p("enc", "encargado", "jefe", "Peugeot"),
   p("e1", "empleado", "enc", "Peugeot"), p("e2", "empleado", "enc", "Peugeot"),
