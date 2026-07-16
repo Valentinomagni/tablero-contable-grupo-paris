@@ -10,6 +10,7 @@ import { pushUndo } from "../../lib/undo";
 import { isShared, siblingSyncPatches } from "../../lib/shared";
 import { bloqueadaPorTitulos } from "../../lib/deps";
 import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Users } from "lucide-react";
+import { NuevaTareaModal } from "./NuevaTareaModal";
 
 const DOT: Record<string, string> = { pend: "bg-naranja", proc: "bg-s1", term: "bg-done" };
 
@@ -119,6 +120,7 @@ export function Board({ cards, activity, ownerId, meId, meName, team = [], query
   const [newTitle, setNewTitle] = useState("");
   const [regFor, setRegFor] = useState<string | null>(null); // card operativa en modo registro
   const [regQty, setRegQty] = useState("1");
+  const [creando, setCreando] = useState(false); // modal formal de alta (columna Pendiente)
 
   const confirmAdd = () => {
     const t = newTitle.trim();
@@ -162,7 +164,13 @@ export function Board({ cards, activity, ownerId, meId, meName, team = [], query
             </div>
           ))}
           {mine.filter((c) => c.status === k).length === 0 && <div className="mb-2"><EmptyState title="Sin tareas acá." /></div>}
-          {k !== "term" && addInline(k, "Título y Enter…")}
+          {/* Pendiente abre el flujo formal (spec 21 item 2); "En proceso" conserva el atajo inline. */}
+          {k === "pend" && (
+            <button onClick={() => setCreando(true)}
+              className="w-full border border-dashed border-line rounded-lg py-2 text-[13px] text-ink2 hover:text-accent hover:border-accent transition">
+              + Añadir tarea</button>
+          )}
+          {k === "proc" && addInline(k, "Título y Enter…")}
         </div>
       ))}
 
@@ -200,6 +208,7 @@ export function Board({ cards, activity, ownerId, meId, meName, team = [], query
         {opers.length === 0 && <p className="text-ink2 text-[13px] px-2 pb-2">Pagos, trámites y gestiones a demanda: no se cierran, se registran.</p>}
         {addInline("oper", "Ej: Pagos a proveedores…")}
       </div>
+      {creando && <NuevaTareaModal ownerId={ownerId} meName={meName} onClose={() => setCreando(false)} />}
     </div>
   );
 }
