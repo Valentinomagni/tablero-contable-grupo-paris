@@ -27,6 +27,8 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
   const [depPerson, setDepPerson] = useState("");
   const [depTask, setDepTask] = useState("");
   const [confirmDel, setConfirmDel] = useState(false);
+  const [editTitle, setEditTitle] = useState(false);
+  const [titleTxt, setTitleTxt] = useState(c.title);
   const [editReg, setEditReg] = useState<string | null>(null);
   const [editRegQty, setEditRegQty] = useState("");
   const [recurTipo, setRecurTipo] = useState<RecurRule["tipo"] | "">(c.recur_rule?.tipo ?? "");
@@ -146,6 +148,11 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
   const fechaCorta = (iso: string) => new Date(iso + "T12:00:00").toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" });
 
   const hist = (txt: string) => [...(c.history ?? []), { who: meName, at: new Date().toISOString(), txt }];
+  const saveTitle = () => {
+    const t = titleTxt.trim();
+    if (t && t !== c.title) patch.mutate({ title: t, history: hist("Renombró la tarea") });
+    setEditTitle(false);
+  };
   const toggleCk = (n: number) => {
     const list = c.checklist.map((i, idx) => idx === n ? { ...i, done: !i.done, done_at: !i.done ? new Date().toISOString() : null } : i);
     const allDone = list.length && list.every((i) => i.done);
@@ -156,7 +163,20 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
 
   return (
     <Modal onClose={onClose}>
-        <h3 className="text-lg font-semibold m-0">{c.title}</h3>
+        {editTitle ? (
+          <input autoFocus value={titleTxt} onChange={(e) => setTitleTxt(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") saveTitle(); if (e.key === "Escape") { e.stopPropagation(); setEditTitle(false); } }}
+            onBlur={saveTitle}
+            className="w-full bg-surface2 border border-accent rounded-lg px-2.5 py-1.5 text-lg font-semibold text-ink outline-none mb-1" />
+        ) : (
+          <h3 className="text-lg font-semibold m-0 flex items-center gap-2">
+            {c.title}
+            {!locked && (
+              <button title="Renombrar" onClick={() => { setTitleTxt(c.title); setEditTitle(true); }}
+                className="text-ink2 hover:text-accent transition shrink-0"><Pencil size={14} /></button>
+            )}
+          </h3>
+        )}
         <div className="flex items-center gap-2 text-xs text-ink2 mb-3.5">
           <label className="flex items-center gap-1.5">Estado
             <select value={c.status} disabled={locked}
