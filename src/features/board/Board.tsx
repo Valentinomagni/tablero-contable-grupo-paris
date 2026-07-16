@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
-import { COLS, type Card, type Status, type ActivityLog } from "../../lib/types";
+import { COLS, type Card, type Status, type ActivityLog, type Profile } from "../../lib/types";
+import { notifsAlFinalizar } from "../../lib/notificaciones";
 import { dueInfo, fmtDateTime } from "../../lib/metrics";
 import { cn } from "../../lib/ui";
 import { pushUndo } from "../../lib/undo";
@@ -49,8 +50,8 @@ function CardItem({ c, blocked, waiting, esperaTitulos = [], onOpen }: { c: Card
   );
 }
 
-export function Board({ cards, activity, ownerId, meName, query = "", onOpen }: {
-  cards: Card[]; activity: ActivityLog[]; ownerId: string; meName: string; query?: string; onOpen: (c: Card) => void;
+export function Board({ cards, activity, ownerId, meId, meName, team = [], query = "", onOpen }: {
+  cards: Card[]; activity: ActivityLog[]; ownerId: string; meId?: string; meName: string; team?: Profile[]; query?: string; onOpen: (c: Card) => void;
 }) {
   const qc = useQueryClient();
   const q = query.trim().toLowerCase();
@@ -74,6 +75,17 @@ export function Board({ cards, activity, ownerId, meName, query = "", onOpen }: 
       // tareas compartidas: sincroniza las hermanas (best-effort; el trigger de la DB cubre RLS cruzada)
       for (const s of siblingSyncPatches(c, cards, status, patch.done_at ?? new Date().toISOString())) {
         await supabase.from("cards").update(s.patch).eq("id", s.id);
+      }
+      // Finalización con impacto → notif al encargado/jefe (spec #8). Best-effort:
+      // si la tabla notifications no existe aún, la tarea se termina igual.
+      if (status === "term" && meId) {
+        try {
+          const notifs = notifsAlFinalizar({
+            card: c, actorId: meId, actorName: meName,
+            managerId: team.find((u) => u.id === c.owner)?.manager_id,
+          });
+          if (notifs.length) await supabase.from("notifications").insert(notifs);
+        } catch { /* secundario: se ignora */ }
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["cards"] }),

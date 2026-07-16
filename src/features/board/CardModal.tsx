@@ -10,14 +10,15 @@ import { fmtDateTime } from "../../lib/metrics";
 import { depInfoOf, dependentsOf, isBlocked, type DepMap } from "../../lib/deps";
 import { pushUndo } from "../../lib/undo";
 import { isShared, participantes, siblingSyncPatches } from "../../lib/shared";
+import { notifsAlFinalizar } from "../../lib/notificaciones";
 import { Check, Link2, Lock, Hourglass, X, Users, Pencil, Trash2, Minus, Plus } from "lucide-react";
 import { useDepsInfo, useReverseDeps, useSettings } from "../../hooks/useData";
 import { editarItem, borrarItem } from "../../lib/checklist";
 import { nuevaCantidad } from "../../lib/operativas";
 import { CumplimientoDiario } from "./CumplimientoDiario";
 
-export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose, meName = "—" }:
-  { card: Card; cards: Card[]; team: Profile[]; activity?: ActivityLog[]; isJefe: boolean; onClose: () => void; meName?: string }) {
+export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose, meId, meName = "—" }:
+  { card: Card; cards: Card[]; team: Profile[]; activity?: ActivityLog[]; isJefe: boolean; onClose: () => void; meId?: string; meName?: string }) {
   const qc = useQueryClient();
   const [newCk, setNewCk] = useState("");
   const [editCk, setEditCk] = useState<number | null>(null);
@@ -78,6 +79,17 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
         for (const s of siblingSyncPatches(c, cards, p.status, p.done_at ?? new Date().toISOString())) {
           await supabase.from("cards").update(s.patch).eq("id", s.id);
         }
+      }
+      // Finalización con impacto → notif al encargado/jefe (spec #8). Best-effort:
+      // si la tabla notifications no existe aún, la tarea se termina igual.
+      if (p.status === "term" && meId) {
+        try {
+          const notifs = notifsAlFinalizar({
+            card: c, actorId: meId, actorName: meName,
+            managerId: team.find((u) => u.id === c.owner)?.manager_id,
+          });
+          if (notifs.length) await supabase.from("notifications").insert(notifs);
+        } catch { /* secundario: se ignora */ }
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["cards"] }),

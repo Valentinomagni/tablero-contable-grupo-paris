@@ -6,6 +6,7 @@ import { Modal } from "../../components/Modal";
 import { supabase } from "../../lib/supabase";
 import type { Profile } from "../../lib/types";
 import { filasCompartida } from "../../lib/shared";
+import { notifsAlDelegar } from "../../lib/notificaciones";
 import { Avatar } from "../../lib/ui";
 
 // Delegar/compartir una tarea entre varias personas: se crea una tarjeta espejo por participante
@@ -23,12 +24,24 @@ export function DelegarModal({ team, meId, meName, onClose }: { team: Profile[];
 
   const crear = useMutation({
     mutationFn: async () => {
+      const at = new Date().toISOString();
+      // id generado en el cliente: permite vincular la notificación a la card espejo
+      // sin necesidad de leerla de vuelta (RLS no siempre deja ver la card de otro).
       const filas = filasCompartida({
         linkId: crypto.randomUUID(), title, owners, delegador: meName,
-        due_date: due || null, effort, priority, at: new Date().toISOString(), nameOf,
-      });
+        due_date: due || null, effort, priority, at, nameOf,
+      }).map((f) => ({ ...f, id: crypto.randomUUID() }));
       const { error } = await supabase.from("cards").insert(filas);
       if (error) throw error;
+      // Notificación al receptor (spec #8) — best-effort: si la tabla notifications
+      // aún no existe (migración 21 sin aplicar), la delegación se hace igual.
+      try {
+        const notifs = notifsAlDelegar({
+          delegadorId: meId, delegadorName: meName, title, at,
+          destinos: filas.map((f) => ({ owner: f.owner, cardId: f.id })),
+        });
+        if (notifs.length) await supabase.from("notifications").insert(notifs);
+      } catch { /* secundario: se ignora */ }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["cards"] }); toast.success("Tarea compartida creada"); onClose(); },
     onError: (e) => toast.error("No se pudo crear: " + (e as Error).message),

@@ -160,9 +160,9 @@ export default function App() {
           : mode === "obj" ? <Objetivos ownerId={view} ownerName={person?.name ?? me.name} />
           : mode === "mimes" ? <MiMes cards={cards} activity={activity} ownerId={view} onOpenCard={setOpenCard} />
           : cardsLoading ? <BoardSkeleton />
-          : <Board cards={cards} activity={activity} ownerId={view} meName={me.name} query={query} onOpen={setOpenCard} />}
+          : <Board cards={cards} activity={activity} ownerId={view} meId={me.id} meName={me.name} team={fullTeam} query={query} onOpen={setOpenCard} />}
       </Shell>
-      {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} cards={cards} team={fullTeam} activity={activity} isJefe={!!isJefe} onClose={() => setOpenCard(null)} meName={me.name} />}
+      {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} cards={cards} team={fullTeam} activity={activity} isJefe={!!isJefe} onClose={() => setOpenCard(null)} meId={me.id} meName={me.name} />}
       {openUser && <UserModal user={fullTeam.find((t) => t.id === openUser.id) ?? openUser} meId={me.id} team={fullTeam} cards={cards} activity={activity} onClose={() => setOpenUser(null)} />}
       {account && <AccountModal name={me.name} email={me.email} onClose={() => setAccount(false)} />}
       {novedades && <NovedadesModal onClose={() => { localStorage.setItem("version-vista", APP_VERSION); setNovedades(false); }} />}
