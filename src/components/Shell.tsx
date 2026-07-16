@@ -25,7 +25,7 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
   const esGestor = me.role !== "empleado"; // jefe o encargado: alcance de equipo (General + lista de personas)
 
   const NavItem = ({ v, icon, label, count, badge }: { v: string; icon?: ReactNode; label: string; count?: number; badge?: string }) => (
-    <button onClick={() => { onNavigate(v); setOpen(false); }}
+    <button onClick={() => { onNavigate(v); if (window.innerWidth < 768) setOpen(false); }}
       className={cn("flex items-center gap-2.5 w-full text-left rounded-[10px] px-2.5 py-[7px] text-[13.5px] relative transition-all duration-150",
         viewing === v ? "bg-white/[.09] text-white font-semibold shadow-[inset_0_0_0_1px_rgba(255,255,255,.06)]"
           : "text-[color:var(--side-ink2)] hover:bg-white/[.05] hover:text-[color:var(--side-ink)] hover:translate-x-[1px]")}>
