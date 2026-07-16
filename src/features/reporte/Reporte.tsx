@@ -4,9 +4,9 @@ import { dueInfo, saludScore } from "../../lib/metrics";
 import { Donut, Gauge, Legend, type Seg } from "../../components/charts";
 import { Avatar } from "../../lib/ui";
 
-// Paleta categórica SOLO para el donut de personas: la marca es monocroma, pero acá
-// necesitamos distinguir de un vistazo quién concentra la carga. Tonos sobrios, no chillones.
-const CAT = ["#4f7cff", "#e6892b", "#12a67a", "#d9455f", "#8b5cf6", "#0891b2", "#c026d3", "#65a30d"];
+// Paleta categórica del donut de personas: escala de GRISES (marca monocroma).
+// El segmento mayor lleva el acento; el resto, grises distinguibles entre sí.
+const CAT = ["#3f3f46", "#a1a1aa", "#71717a", "#d4d4d8", "#52525b", "#8b8b93"];
 
 export function Reporte({ cards, team, activity }: { cards: Card[]; team: Profile[]; activity: ActivityLog[] }) {
   const now = Date.now(), day = 86400000, mes = now - 30 * day;
@@ -23,11 +23,12 @@ export function Reporte({ cards, team, activity }: { cards: Card[]; team: Profil
   const total = abiertas.length + term30.length;
   const pctAvance = total ? Math.round((term30.length / total) * 100) : 0;
   const salud = saludScore(abiertas, term30);
-  const saludColor = salud >= 75 ? "var(--done)" : salud >= 50 ? "var(--warn)" : "var(--danger)";
   const saludTxt = salud >= 75 ? "Saludable" : salud >= 50 ? "Atención" : "Crítico";
+  // Métrica única → gris; el color de estado queda SOLO en el texto del veredicto cuando es negativo.
+  const saludTxtColor = salud >= 75 ? undefined : salud >= 50 ? "var(--warn)" : "var(--danger)";
 
   const estSegs: Seg[] = [
-    { label: "Pendiente", val: norm.filter((c) => c.status === "pend").length, color: "var(--naranja)" },
+    { label: "Pendiente", val: norm.filter((c) => c.status === "pend").length, color: "var(--ink2)" },
     { label: "En proceso", val: norm.filter((c) => c.status === "proc").length, color: "var(--s1)" },
     { label: "Terminado", val: norm.filter((c) => c.status === "term").length, color: "var(--done)" },
   ];
@@ -58,9 +59,9 @@ export function Reporte({ cards, team, activity }: { cards: Card[]; team: Profil
       </div>
 
       <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))" }}>
-        {([["Salud del equipo", <Gauge key="g" pct={salud} color={saludColor} />, <b style={{ color: saludColor }}>{saludTxt}</b>],
+        {([["Salud del equipo", <Gauge key="g" pct={salud} color="var(--s1)" />, <b style={{ color: saludTxtColor }}>{saludTxt}</b>],
           ["Avance del período", <Gauge key="g" pct={pctAvance} color="var(--s1)" />, <b>{term30.length}/{total} tareas</b>],
-          ["Entregado a tiempo", <Gauge key="g" pct={pctTiempo ?? 0} color={(pctTiempo ?? 0) >= 80 ? "var(--done)" : "var(--warn)"} />, <b>{pctTiempo !== null ? pctTiempo + "%" : "sin datos"}</b>]] as const)
+          ["Entregado a tiempo", <Gauge key="g" pct={pctTiempo ?? 0} color="var(--s1)" />, <b>{pctTiempo !== null ? pctTiempo + "%" : "sin datos"}</b>]] as const)
           .map(([l, g, b], i) => (
             <div key={i} className="bg-surface rounded-2xl p-4 flex flex-col items-center gap-1.5" style={cardSh}>
               <span className="text-[11.5px] uppercase tracking-wide text-ink2">{l}</span>{g}<span className="text-[15px] font-semibold">{b}</span>
