@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ocurrenciasDelMes } from "./recurrencia";
+import { ocurrenciasDelMes, ocurrenciasFaltantes } from "./recurrencia";
 
 describe("ocurrenciasDelMes", () => {
   it("diaria: todos los días del mes", () =>
@@ -15,4 +15,14 @@ describe("ocurrenciasDelMes", () => {
     expect(ocurrenciasDelMes({ tipo: "mensual", diaMes: 31 }, 2026, 6)).toEqual([]));
   it("diaria: no corre el día por zona horaria (primer día es 01)", () =>
     expect(ocurrenciasDelMes({ tipo: "diaria" }, 2026, 3)[0]).toBe("2026-03-01"));
+});
+
+describe("ocurrenciasFaltantes", () => {
+  it("sin existentes: devuelve todas las de la regla", () =>
+    expect(ocurrenciasFaltantes({ tipo: "mensual", diaMes: 20 }, 2026, 7, [])).toEqual(["2026-07-20"]));
+  it("con la fecha ya materializada: no la repite (idempotente)", () =>
+    expect(ocurrenciasFaltantes({ tipo: "semanal", dias: [4] }, 2026, 7, ["2026-07-02", "2026-07-09"]))
+      .toEqual(["2026-07-16", "2026-07-23", "2026-07-30"]));
+  it("todas presentes: vacío", () =>
+    expect(ocurrenciasFaltantes({ tipo: "mensual", diaMes: 20 }, 2026, 7, ["2026-07-20"])).toEqual([]));
 });

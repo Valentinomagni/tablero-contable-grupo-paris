@@ -34,3 +34,15 @@ export function ocurrenciasDelMes(rule: RecurRule, year: number, month1a12: numb
 
   return out;
 }
+
+// Dado el conjunto de fechas ya materializadas en task_occurrences, devuelve las fechas
+// del mes que faltan insertar según la regla. Idempotente: si ya están todas, devuelve [].
+export function ocurrenciasFaltantes(
+  rule: RecurRule,
+  year: number,
+  month1a12: number,
+  fechasExistentes: string[],
+): string[] {
+  const yaHay = new Set(fechasExistentes);
+  return ocurrenciasDelMes(rule, year, month1a12).filter((f) => !yaHay.has(f));
+}

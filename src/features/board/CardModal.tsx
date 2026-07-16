@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { Modal } from "../../components/Modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
-import { COLS, type Card, type Profile, type ActivityLog } from "../../lib/types";
+import { COLS, type Card, type Profile, type ActivityLog, type RecurRule } from "../../lib/types";
+import { ocurrenciasFaltantes } from "../../lib/recurrencia";
 import { fmtDateTime } from "../../lib/metrics";
 import { depInfoOf, dependentsOf, isBlocked, type DepMap } from "../../lib/deps";
 import { pushUndo } from "../../lib/undo";
@@ -24,6 +26,9 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
   const [confirmDel, setConfirmDel] = useState(false);
   const [editReg, setEditReg] = useState<string | null>(null);
   const [editRegQty, setEditRegQty] = useState("");
+  const [recurTipo, setRecurTipo] = useState<RecurRule["tipo"] | "">(c.recur_rule?.tipo ?? "");
+  const [recurDias, setRecurDias] = useState<number[]>(c.recur_rule?.dias ?? []);
+  const [recurDiaMes, setRecurDiaMes] = useState<number>(c.recur_rule?.diaMes ?? 1);
 
   const setRegQty = useMutation({
     mutationFn: async ({ id, qty }: { id: string; qty: number }) => {
@@ -76,6 +81,41 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
     onSuccess: () => qc.invalidateQueries({ queryKey: ["cards"] }),
   });
 
+  const buildRule = (): RecurRule | null => {
+    if (recurTipo === "") return null;
+    if (recurTipo === "diaria") return { tipo: "diaria" };
+    if (recurTipo === "semanal") return { tipo: "semanal", dias: [...recurDias].sort((a, b) => a - b) };
+    return { tipo: "mensual", diaMes: recurDiaMes };
+  };
+
+  // Guarda la regla en la card y materializa (idempotente) las ocurrencias del mes actual.
+  // Falla si la migración 16 aún no fue aplicada — se muestra por toast sin romper la app.
+  const guardarRecur = useMutation({
+    mutationFn: async () => {
+      const rule = buildRule();
+      const { error: e1 } = await supabase.from("cards").update({ recur_rule: rule }).eq("id", c.id);
+      if (e1) throw e1;
+      if (rule) {
+        const now = new Date();
+        const year = now.getFullYear(), month = now.getMonth() + 1;
+        const { data: existentes, error: e2 } = await supabase.from("task_occurrences").select("fecha").eq("card_id", c.id);
+        if (e2) throw e2;
+        const faltan = ocurrenciasFaltantes(rule, year, month, (existentes ?? []).map((r) => (r as { fecha: string }).fecha));
+        if (faltan.length) {
+          const { error: e3 } = await supabase.from("task_occurrences")
+            .upsert(faltan.map((f) => ({ card_id: c.id, owner: c.owner, fecha: f })), { onConflict: "card_id,fecha" });
+          if (e3) throw e3;
+        }
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cards"] });
+      qc.invalidateQueries({ queryKey: ["occurrences"] });
+      toast.success("Recurrencia guardada");
+    },
+    onError: (e: Error) => toast.error("No se pudo guardar la recurrencia: " + e.message),
+  });
+
   const hist = (txt: string) => [...(c.history ?? []), { who: meName, at: new Date().toISOString(), txt }];
   const toggleCk = (n: number) => {
     const list = c.checklist.map((i, idx) => idx === n ? { ...i, done: !i.done, done_at: !i.done ? new Date().toISOString() : null } : i);
@@ -116,6 +156,40 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
             </select>
           </label>
         </div>
+
+        <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Recurrencia</h4>
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <select value={recurTipo} onChange={(e) => setRecurTipo(e.target.value as RecurRule["tipo"] | "")}
+            className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px]">
+            <option value="">Sin recurrencia</option>
+            <option value="diaria">Diaria</option>
+            <option value="semanal">Semanal (días)</option>
+            <option value="mensual">Mensual (día del mes)</option>
+          </select>
+          {recurTipo === "semanal" && (
+            <div className="flex flex-wrap gap-1">
+              {[["Lun", 1], ["Mar", 2], ["Mié", 3], ["Jue", 4], ["Vie", 5], ["Sáb", 6], ["Dom", 0]].map(([lbl, v]) => {
+                const on = recurDias.includes(v as number);
+                return (
+                  <button key={lbl as string} type="button"
+                    onClick={() => setRecurDias((ds) => on ? ds.filter((x) => x !== v) : [...ds, v as number])}
+                    className={"rounded-lg px-2 py-1 text-[12px] border " + (on ? "border-accent bg-accent-soft text-accent" : "border-line bg-surface2")}>{lbl}</button>
+                );
+              })}
+            </div>
+          )}
+          {recurTipo === "mensual" && (
+            <label className="flex items-center gap-1.5">Día
+              <input type="number" min={1} max={31} value={recurDiaMes}
+                onChange={(e) => setRecurDiaMes(Math.min(31, Math.max(1, Number(e.target.value) || 1)))}
+                className="w-16 bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] tnum" />
+            </label>
+          )}
+          <button onClick={() => guardarRecur.mutate()} disabled={guardarRecur.isPending}
+            className="border border-line bg-surface2 rounded-lg px-3 py-1 text-[13px] disabled:opacity-60">
+            {guardarRecur.isPending ? "Guardando…" : "Guardar recurrencia"}</button>
+        </div>
+        {recurTipo !== "" && <p className="text-ink2 text-[12px] mt-1">Genera las ocurrencias del mes en el calendario y en el cumplimiento diario.</p>}
 
         <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Detalle</h4>
         <textarea defaultValue={c.description} placeholder="Descripción, instrucciones…"
