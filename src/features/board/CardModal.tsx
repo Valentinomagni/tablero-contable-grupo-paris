@@ -155,12 +155,24 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
       : { checklist: list });
   };
 
-  const estLbl = COLS.find((x) => x[0] === c.status)![1];
-
   return (
     <Modal onClose={onClose}>
         <h3 className="text-lg font-semibold m-0">{c.title}</h3>
-        <div className="text-xs text-ink2 mb-3.5">Estado: {estLbl}{c.done_at && ` · terminada el ${fmtDateTime(c.done_at)}`}</div>
+        <div className="flex items-center gap-2 text-xs text-ink2 mb-3.5">
+          <label className="flex items-center gap-1.5">Estado
+            <select value={c.status} disabled={locked}
+              onChange={(e) => {
+                const s = e.target.value as Card["status"];
+                patch.mutate(s === "term"
+                  ? { status: "term", done_at: new Date().toISOString(), history: hist("Marcó terminada") }
+                  : { status: s, done_at: null, history: hist(s === "proc" ? "Pasó a En proceso" : "Volvió a Pendiente") });
+              }}
+              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] disabled:opacity-60">
+              {COLS.map(([k, lbl]) => <option key={k} value={k}>{lbl}</option>)}
+            </select>
+          </label>
+          {c.done_at && <span>terminada el {fmtDateTime(c.done_at)}</span>}
+        </div>
         {isShared(c) && (
           <div className="flex items-center gap-2 bg-accent-soft text-accent rounded-lg px-3 py-2 text-[13px] mb-3.5">
             <Users size={14} className="shrink-0" />
@@ -408,7 +420,7 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
         <div className="flex gap-2 mt-4.5 flex-wrap items-center pt-4">
           {c.status !== "term"
             ? <button onClick={() => patch.mutate({ status: "term", done_at: new Date().toISOString(), history: hist("Marcó terminada") })}
-                className="inline-flex items-center gap-1.5 bg-accent text-white font-semibold rounded-lg px-3.5 py-2 text-[13px]"><Check size={14} /> Marcar terminada</button>
+                className="inline-flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] font-semibold rounded-lg px-3.5 py-2 text-[13px]"><Check size={14} /> Marcar terminada</button>
             : locked ? <span className="inline-flex items-center gap-1.5 text-ink2 text-[13px]"><Lock size={13} /> Solo un jefe puede reabrir esta tarea</span>
             : <button onClick={() => patch.mutate({ status: "proc", done_at: null, history: hist("Reabrió la tarea") })}
                 className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Reabrir</button>}
@@ -422,7 +434,8 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
             <button onClick={() => setConfirmDel(true)}
               className="border border-danger/40 text-danger rounded-lg px-3.5 py-2 text-[13px]">Eliminar</button>
           ))}
-          <button onClick={onClose} className="ml-auto border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Cerrar</button>
+          <span className="ml-auto text-[11.5px] text-ink2">Los cambios se guardan automáticamente.</span>
+          <button onClick={onClose} className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Guardar y cerrar</button>
         </div>
     </Modal>
   );
