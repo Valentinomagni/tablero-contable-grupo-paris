@@ -1,11 +1,13 @@
-import { useEffect } from "react";
-import { CalendarDays } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CalendarDays, Pencil } from "lucide-react";
 import { useAnnouncements } from "../../hooks/useData";
 import { useArca, ArcaAgenda } from "./arca";
-import type { Announcement } from "../../lib/types";
+import type { Announcement, Profile } from "../../lib/types";
 import { fmtDateTime } from "../../lib/metrics";
 import { PREF, setPref } from "../../lib/prefs";
 import { estadoVencimiento, ordenarVencimientos, CLS_TONO } from "../../lib/vencimientos";
+import { AnuncioEditForm } from "../../components/AnuncioEditForm";
+import { puedeEditarAnuncio } from "../../lib/anuncios";
 
 function useMarkVisto() {
   useEffect(() => { setPref(PREF.tablon, new Date().toISOString()); }, []);
@@ -17,9 +19,11 @@ function dueBadge(due: string | null) {
   return <span className={`rounded-md px-2 py-0.5 text-xs font-semibold tnum ${CLS_TONO[e.tono]}`}>{e.txt}</span>;
 }
 
-export function Tablon({ onGoCalendario }: { onGoCalendario?: () => void }) {
+export function Tablon({ me, onGoCalendario }: { me?: Profile; onGoCalendario?: () => void }) {
   useMarkVisto();
   const { data: annos = [] } = useAnnouncements();
+  const isJefe = me?.role === "jefe";
+  const [editId, setEditId] = useState<string | null>(null);
   const arca = useArca();
   const mes = new Date().toLocaleDateString("es-AR", { month: "long", year: "numeric" });
 
@@ -48,13 +52,26 @@ export function Tablon({ onGoCalendario }: { onGoCalendario?: () => void }) {
             {items.length === 0 && <p className="text-ink2 text-sm">Nada publicado todavía.</p>}
             {items.map((a) => (
               <div key={a.id} className="bg-surface border border-line rounded-xl px-4 py-3 mb-2" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
-                <div className="flex justify-between items-center gap-2.5 flex-wrap">
-                  <b>{a.title}</b>{kind === "vencimiento" && dueBadge(a.due_date)}
-                </div>
-                {a.detail && (kind === "proceso"
-                  ? <details className="my-1.5"><summary className="cursor-pointer text-accent text-[13px] font-semibold">Ver procedimiento</summary><p className="text-sm mt-1 whitespace-pre-line">{a.detail}</p></details>
-                  : <p className="text-sm my-1.5 whitespace-pre-line">{a.detail}</p>)}
-                <span className="text-ink2 text-xs">Publicado por {a.created_by} · {fmtDateTime(a.created_at)}</span>
+                {editId === a.id ? (
+                  <AnuncioEditForm a={a} onDone={() => setEditId(null)} />
+                ) : (
+                  <>
+                    <div className="flex justify-between items-center gap-2.5 flex-wrap">
+                      <b>{a.title}</b>
+                      <span className="flex items-center gap-2">
+                        {kind === "vencimiento" && dueBadge(a.due_date)}
+                        {me && puedeEditarAnuncio(a, me.id, isJefe) && (
+                          <button onClick={() => setEditId(a.id)} title="Editar"
+                            className="border border-line bg-surface2 rounded-lg p-1.5 text-ink2 hover:text-accent shrink-0"><Pencil size={13} /></button>
+                        )}
+                      </span>
+                    </div>
+                    {a.detail && (kind === "proceso"
+                      ? <details className="my-1.5"><summary className="cursor-pointer text-accent text-[13px] font-semibold">Ver procedimiento</summary><p className="text-sm mt-1 whitespace-pre-line">{a.detail}</p></details>
+                      : <p className="text-sm my-1.5 whitespace-pre-line">{a.detail}</p>)}
+                    <span className="text-ink2 text-xs">Publicado por {a.created_by} · {fmtDateTime(a.created_at)}</span>
+                  </>
+                )}
               </div>
             ))}
           </div>

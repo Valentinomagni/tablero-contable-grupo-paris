@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, Plus, Trash2, CalendarDays, LayoutGrid, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trash2, Pencil, CalendarDays, LayoutGrid, Check } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import type { Announcement, Profile, Card, TaskOccurrence } from "../../lib/types";
 import { useAnnouncements } from "../../hooks/useData";
@@ -9,6 +9,8 @@ import { useOccurrences } from "../../hooks/useOccurrences";
 import { MESES, DIAS_SEMANA, grillaMes, eventosPorDia, conteoPorMes, claveFecha } from "../../lib/calendario";
 import { CLS_TONO } from "../../lib/vencimientos";
 import { Modal } from "../../components/Modal";
+import { AnuncioEditForm } from "../../components/AnuncioEditForm";
+import { puedeEditarAnuncio } from "../../lib/anuncios";
 import { cn, Avatar } from "../../lib/ui";
 
 type Kind = Announcement["kind"];
@@ -31,6 +33,7 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
   const [month, setMonth] = useState(hoy.getMonth() + 1);
   const [vista, setVista] = useState<"mes" | "anio">("mes");
   const [diaSel, setDiaSel] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
   const [nTitulo, setNTitulo] = useState("");
   const [nKind, setNKind] = useState<Kind>("vencimiento");
   const [nDetalle, setNDetalle] = useState("");
@@ -68,7 +71,7 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
     const d = new Date(year, month - 1 + delta, 1);
     setYear(d.getFullYear()); setMonth(d.getMonth() + 1);
   };
-  const abrirDia = (fecha: string) => { setDiaSel(fecha); setNTitulo(""); setNKind("vencimiento"); setNDetalle(""); setNCompartir([]); };
+  const abrirDia = (fecha: string) => { setDiaSel(fecha); setEditId(null); setNTitulo(""); setNKind("vencimiento"); setNDetalle(""); setNCompartir([]); };
 
   const add = useMutation({
     mutationFn: async () => {
@@ -180,19 +183,29 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
           <h3 className="text-lg font-semibold m-0 capitalize">{fechaLarga(diaSel)}</h3>
           <div className="text-xs text-ink2 mb-3">{eventosDelDia.length} evento(s)</div>
 
-          {eventosDelDia.map((e) => (
-            <div key={e.id} className="flex items-start gap-2 py-2 border-b border-line/60">
-              <span className={cn("text-[10.5px] rounded px-1.5 py-0.5 font-semibold shrink-0 mt-0.5", KIND[e.kind].chip)}>{KIND[e.kind].label}</span>
-              <div className="flex-1 min-w-0">
-                <b className="text-sm">{e.title}</b>
-                {e.detail && <p className="text-ink2 text-[13px] m-0 mt-0.5 whitespace-pre-line">{e.detail}</p>}
-                <span className="text-ink2 text-[11px]">— {e.created_by}</span>
+          {eventosDelDia.map((e) =>
+            editId === e.id ? (
+              <div key={e.id} className="py-2 border-b border-line/60">
+                {/* Al cambiar la fecha, el evento se mueve de día (queda fuera de este modal). */}
+                <AnuncioEditForm a={e} onDone={() => setEditId(null)} />
               </div>
-              {(e.owner_id ? e.owner_id === me.id : false) || isJefe ? (
-                <button onClick={() => del.mutate(e.id)} title="Eliminar" className="border border-line bg-surface2 rounded-lg p-1.5 text-ink2 hover:text-danger shrink-0"><Trash2 size={13} /></button>
-              ) : null}
-            </div>
-          ))}
+            ) : (
+              <div key={e.id} className="flex items-start gap-2 py-2 border-b border-line/60">
+                <span className={cn("text-[10.5px] rounded px-1.5 py-0.5 font-semibold shrink-0 mt-0.5", KIND[e.kind].chip)}>{KIND[e.kind].label}</span>
+                <div className="flex-1 min-w-0">
+                  <b className="text-sm">{e.title}</b>
+                  {e.detail && <p className="text-ink2 text-[13px] m-0 mt-0.5 whitespace-pre-line">{e.detail}</p>}
+                  <span className="text-ink2 text-[11px]">— {e.created_by}</span>
+                </div>
+                {puedeEditarAnuncio(e, me.id, isJefe) && (
+                  <>
+                    <button onClick={() => setEditId(e.id)} title="Editar" className="border border-line bg-surface2 rounded-lg p-1.5 text-ink2 hover:text-accent shrink-0"><Pencil size={13} /></button>
+                    <button onClick={() => del.mutate(e.id)} title="Eliminar" className="border border-line bg-surface2 rounded-lg p-1.5 text-ink2 hover:text-danger shrink-0"><Trash2 size={13} /></button>
+                  </>
+                )}
+              </div>
+            )
+          )}
           {eventosDelDia.length === 0 && <p className="text-ink2 text-sm">Sin eventos este día.</p>}
 
           {(ocurrenciasPorDia[diaSel] ?? []).length > 0 && (

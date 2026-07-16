@@ -147,7 +147,7 @@ export default function App() {
         <Suspense fallback={<div className="px-6 py-8 text-ink2 text-sm">Cargando…</div>}>
         {view === "__resumen" ? <Resumen cards={scopedCards} team={fullTeam} activity={activity} onOpenCard={setOpenCard} onGoPerson={(id) => { setViewing(id); setMode("board"); }} onDelegar={() => setDelegar(true)} />
           : view === "__reporte" ? <Reporte cards={scopedCards} team={fullTeam} activity={activity} />
-          : view === "__tablon" ? <Tablon onGoCalendario={() => setViewing("__calendario")} />
+          : view === "__tablon" ? <Tablon me={me} onGoCalendario={() => setViewing("__calendario")} />
           : view === "__admin" ? <Admin team={fullTeam} cards={cards} me={me} meName={me.name} onOpenUser={setOpenUser} />
           : view === "__bitacora" ? <Bitacora cards={cards} activity={activity} team={fullTeam} isJefe={!!isJefe} meId={me.id} onOpenCard={setOpenCard} />
           : view === "__calendario" ? <Calendario me={me} team={fullTeam} cards={cards} />
