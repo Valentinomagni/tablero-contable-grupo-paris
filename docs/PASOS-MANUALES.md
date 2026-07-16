@@ -17,6 +17,8 @@ corras el SQL. El smoke confirma que todas las vistas cargan bien sin las migrac
    | 17 | `migracion-17-sin-asignar.sql` | Perfil centinela "Sin asignar" (#14) |
    | 18 | `migracion-18-notas.sql` | Tabla `notes` para Anotaciones (#19) |
    | 19 | `migracion-19-username.sql` | `username` + RPC `email_por_usuario` (#16) |
+   | 20 | `migracion-20-delegacion-universal.sql` | Delegación de tareas para todos los roles (spec 20 #4) |
+   | 21 | `migracion-21-notificaciones.sql` | Centro de notificaciones (campana, spec 20 #8) |
 3. **Desplegá la Edge Function** `eliminar-usuario` (Supabase → Edge Functions → crear `eliminar-usuario` → pegar el contenido de `edge-function-eliminar-usuario.ts` → Deploy). Mismo flujo que `crear-usuario`.
 4. **Push del código** (deploy a Cloudflare). Desde la carpeta del proyecto:
    `git push origin main`  (o pedime que lo pushee yo).
