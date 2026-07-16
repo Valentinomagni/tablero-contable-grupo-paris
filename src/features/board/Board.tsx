@@ -9,7 +9,7 @@ import { cn } from "../../lib/ui";
 import { pushUndo } from "../../lib/undo";
 import { isShared, siblingSyncPatches } from "../../lib/shared";
 import { bloqueadaPorTitulos } from "../../lib/deps";
-import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Users } from "lucide-react";
+import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Users, Shield } from "lucide-react";
 import { NuevaTareaModal } from "./NuevaTareaModal";
 
 const DOT: Record<string, string> = { pend: "bg-naranja", proc: "bg-s1", term: "bg-done" };
@@ -35,6 +35,7 @@ function CardItem({ c, blocked, waiting, esperaTitulos = [], onOpen }: { c: Card
       style={{ boxShadow: "var(--shadow)" }}>
       <div className="font-semibold text-[13.5px] tracking-tight leading-snug">{c.title}</div>
       <div className="flex gap-2 flex-wrap mt-1.5 text-xs text-ink2 items-center">
+        {c.protected && <span title="Tarea protegida por un jefe" className="inline-flex items-center gap-1 bg-chip rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Shield size={11} /> Protegida</span>}
         {isShared(c) && <span title="Tarea compartida con otras personas" className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Users size={11} /> Compartida</span>}
         {blocked && <span className="inline-flex items-center gap-1 bg-warn-soft text-warn rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Lock size={11} /> Bloqueada</span>}
         {waiting && <span className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Hourglass size={11} /> Te esperan</span>}

@@ -11,7 +11,7 @@ import { depInfoOf, dependentsOf, isBlocked, type DepMap } from "../../lib/deps"
 import { pushUndo } from "../../lib/undo";
 import { isShared, participantes, siblingSyncPatches } from "../../lib/shared";
 import { notifsAlFinalizar } from "../../lib/notificaciones";
-import { Check, Copy, Link2, Lock, Hourglass, X, Users, Pencil, Trash2, Minus, Plus } from "lucide-react";
+import { Check, Copy, Link2, Lock, Hourglass, X, Users, Pencil, Trash2, Minus, Plus, Shield, ShieldCheck } from "lucide-react";
 import { filaDuplicada } from "../../lib/duplicar";
 import { useDepsInfo, useReverseDeps, useSettings } from "../../hooks/useData";
 import { editarItem, borrarItem } from "../../lib/checklist";
@@ -472,7 +472,17 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
               className="inline-flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px] disabled:opacity-60">
               <Copy size={13} /> {duplicar.isPending ? "Duplicando…" : "Duplicar"}</button>
           )}
-          {!locked && (confirmDel ? (
+          {isJefe && (
+            <button title={c.protected ? "Quitar protección" : "Proteger: solo un jefe podrá modificarla o eliminarla"}
+              onClick={() => patch.mutate({ protected: !c.protected, history: hist(c.protected ? "Quitó protección" : "Protegió la tarea") })}
+              disabled={patch.isPending}
+              className={"inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] border disabled:opacity-60 " +
+                (c.protected ? "border-accent bg-accent-soft text-accent font-semibold" : "border-line bg-surface2")}>
+              {c.protected ? <ShieldCheck size={13} /> : <Shield size={13} />} Protegida</button>
+          )}
+          {c.protected && !isJefe ? (
+            <span className="inline-flex items-center gap-1.5 text-ink2 text-[13px]"><Lock size={13} /> Tarea protegida por un jefe</span>
+          ) : !locked && (confirmDel ? (
             <span className="inline-flex items-center gap-1.5 text-[13px]">
               <button onClick={() => del.mutate()} disabled={del.isPending}
                 className="bg-danger text-white rounded-lg px-3 py-2 font-semibold disabled:opacity-60">{del.isPending ? "Eliminando…" : "Eliminar definitivamente"}</button>
