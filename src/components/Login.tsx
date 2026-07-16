@@ -36,7 +36,7 @@ export function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promis
   const vencs = usePublicVenc();
   const arca = useArca();
   const mes = new Date().toLocaleDateString("es-AR", { month: "long", year: "numeric" });
-  const [email, setEmail] = useState("");
+  const [identificador, setIdentificador] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -44,9 +44,9 @@ export function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promis
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true); setErr("");
-    const error = await onSignIn(email, password);
+    const error = await onSignIn(identificador, password);
     setBusy(false);
-    if (error) setErr(error.message.includes("Invalid") ? "Email o contraseña incorrectos." : error.message);
+    if (error) setErr(error.message.includes("Invalid") ? "Usuario o contraseña incorrectos." : error.message);
   }
 
   return (
@@ -70,8 +70,9 @@ export function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promis
         style={{ boxShadow: "0 18px 50px rgba(9,20,40,.35)" }}>
         <h1 className="text-ink2 text-sm font-semibold m-0">Ingresá con tu usuario</h1>
         {err && <div className="bg-danger/10 text-danger rounded-lg px-3 py-2.5 text-[13px]">{err}</div>}
-        <label className="text-[13px] text-ink2 flex flex-col gap-1.5">Email
-          <input type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)}
+        <label className="text-[13px] text-ink2 flex flex-col gap-1.5">Usuario o email
+          <input type="text" autoComplete="username" required value={identificador} onChange={(e) => setIdentificador(e.target.value)}
+            placeholder="Ej: Vmagni o tu email"
             className="bg-surface2 border border-line rounded-lg text-ink text-sm px-2.5 py-2 outline-none focus:ring-2 focus:ring-accent" />
         </label>
         <label className="text-[13px] text-ink2 flex flex-col gap-1.5">Contraseña
