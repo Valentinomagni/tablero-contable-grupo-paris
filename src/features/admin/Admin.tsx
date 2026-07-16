@@ -5,6 +5,7 @@ import { supabase, SUPABASE_URL } from "../../lib/supabase";
 import type { Card, Profile, Role, AppSettings } from "../../lib/types";
 import { PlantillaCierre } from "./PlantillaCierre";
 import { ReasignarModal } from "./ReasignarModal";
+import { Huerfanas } from "./Huerfanas";
 import { equipoDe } from "../../lib/jerarquia";
 import { Avatar } from "../../lib/ui";
 import { useSettings } from "../../hooks/useData";
@@ -117,6 +118,8 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
           <UserPlus size={15} /> {nuBusy ? "Creando…" : "Crear usuario"}</button>
         {nuMsg && <p className={"w-full text-sm m-0 " + (nuMsg.ok ? "text-done" : "text-danger")}>{nuMsg.txt}</p>}
       </div>
+
+      <Huerfanas team={team} cards={cards} />
 
       <PlantillaCierre team={team} cards={cards} meName={meName} />
 

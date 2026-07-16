@@ -1,12 +1,14 @@
 import { useState } from "react";
+import { Trash2 } from "lucide-react";
 import { Modal } from "../../components/Modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "../../lib/supabase";
+import { supabase, SUPABASE_URL } from "../../lib/supabase";
 import type { ActivityLog, Card, Profile, Role } from "../../lib/types";
 import { useObjectives } from "../../hooks/useData";
 import { userMetrics30d } from "../../lib/metrics";
 import { nombreValido } from "../../lib/validacion";
-import { puedeSerManager } from "../../lib/jerarquia";
+import { puedeSerManager, SIN_ASIGNAR_ID } from "../../lib/jerarquia";
+import { confirmacionValida } from "../../lib/borrado";
 import { toast } from "sonner";
 
 const MARCAS = ["Peugeot", "Citroën", "Chevrolet", "Honda"];
@@ -22,6 +24,11 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
   const [managerId, setManagerId] = useState<string | null>(u.manager_id ?? null);
   const [marca, setMarca] = useState<string | null>(u.marca ?? null);
   const [msg, setMsg] = useState<{ ok: boolean; txt: string } | null>(null);
+  const [borrando, setBorrando] = useState(false);
+  const [tipeado, setTipeado] = useState("");
+
+  const esJefe = team.find((t) => t.id === meId)?.role === "jefe";
+  const puedeEliminar = esJefe && u.id !== meId && u.id !== SIN_ASIGNAR_ID;
 
   const m = userMetrics30d(cards, objectives, activity, u.id, Date.now());
 
@@ -39,6 +46,32 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
     },
     onSuccess: () => { setMsg({ ok: true, txt: "Guardado." }); qc.invalidateQueries({ queryKey: ["team"] }); },
     onError: (e: Error) => setMsg({ ok: false, txt: "" + e.message }),
+  });
+
+  const eliminar = useMutation({
+    mutationFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      let out: { ok?: boolean; error?: string; reasignadas?: number };
+      try {
+        const r = await fetch(SUPABASE_URL + "/functions/v1/eliminar-usuario", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + session?.access_token },
+          body: JSON.stringify({ userId: u.id }),
+        });
+        out = await r.json();
+      } catch {
+        out = { error: "No se pudo contactar la función eliminar-usuario. ¿Está desplegada en Supabase?" };
+      }
+      if (!out.ok) throw new Error(out.error ?? "Error al eliminar");
+      return out.reasignadas ?? 0;
+    },
+    onSuccess: (reasignadas) => {
+      qc.invalidateQueries({ queryKey: ["team"] });
+      qc.invalidateQueries({ queryKey: ["cards"] });
+      toast.success(`Empleado eliminado. ${reasignadas} tarea(s) quedaron "Sin asignar".`);
+      onClose();
+    },
+    onError: (e: Error) => toast.error("" + e.message),
   });
 
   const onSave = () => {
@@ -107,6 +140,35 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
           <Stat v={m.kpiPerf !== null ? m.kpiPerf + "%" : "—"} label="Cumplimiento KPIs" />
           <Stat v={m.activity30} label="Actividad operativa (30 d)" />
         </div>
+
+        {puedeEliminar && (
+          <div className="mt-5 pt-4 border-t border-line">
+            {!borrando ? (
+              <button onClick={() => { setBorrando(true); setTipeado(""); }}
+                className="flex items-center gap-1.5 text-danger border border-line rounded-lg px-3 py-1.5 text-[13px] font-medium hover:bg-surface2">
+                <Trash2 size={14} /> Eliminar empleado
+              </button>
+            ) : (
+              <div className="grid gap-2">
+                <p className="text-[13px] text-ink2 m-0">
+                  Esto elimina a <b className="text-ink">{u.name}</b> definitivamente. Sus tareas no se pierden: quedan
+                  como "Sin asignar" para reasignar. Para confirmar, escribí el nombre exacto:
+                </p>
+                <input value={tipeado} onChange={(e) => setTipeado(e.target.value)} placeholder={u.name}
+                  className={inputCls} autoFocus />
+                <div className="flex gap-2">
+                  <button onClick={() => eliminar.mutate()}
+                    disabled={!confirmacionValida(tipeado, u.name) || eliminar.isPending}
+                    className="flex items-center gap-1.5 bg-danger text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:opacity-50">
+                    <Trash2 size={14} /> {eliminar.isPending ? "Eliminando…" : "Eliminar definitivamente"}
+                  </button>
+                  <button onClick={() => { setBorrando(false); setTipeado(""); }}
+                    className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Cancelar</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {msg && <p className={"text-sm mt-3 " + (msg.ok ? "text-done" : "text-danger")}>{msg.txt}</p>}
         <div className="flex gap-2 mt-4">
