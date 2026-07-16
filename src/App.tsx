@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Toaster, toast } from "sonner";
 import { supabase } from "./lib/supabase";
 import { popUndo } from "./lib/undo";
-import { ClipboardList, Target, TrendingUp, UserRound, CalendarDays } from "lucide-react";
+import { ClipboardList, Target, TrendingUp, UserRound, CalendarDays, Users } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { useTheme } from "./hooks/useTheme";
 import { useTeam, useCards, useActivity, useAnnouncements, useSettings } from "./hooks/useData";
@@ -134,6 +134,12 @@ export default function App() {
             <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar tarea…"
               className="bg-surface2 border border-line rounded-lg px-3 py-1.5 text-[13px] w-[200px]" />
           )}
+          {view === me.id && (
+            <button onClick={() => setDelegar(true)}
+              className="flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] border bg-surface2 border-line text-ink2 transition">
+              <Users size={14} /> Delegar tarea
+            </button>
+          )}
           {esGestor && person && person.id !== me.id && (
             <button onClick={() => setOpenUser(person)}
               className="flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] border bg-surface2 border-line text-ink2 transition">
@@ -160,11 +166,11 @@ export default function App() {
       {openUser && <UserModal user={fullTeam.find((t) => t.id === openUser.id) ?? openUser} meId={me.id} team={fullTeam} cards={cards} activity={activity} onClose={() => setOpenUser(null)} />}
       {account && <AccountModal name={me.name} email={me.email} onClose={() => setAccount(false)} />}
       {novedades && <NovedadesModal onClose={() => { localStorage.setItem("version-vista", APP_VERSION); setNovedades(false); }} />}
-      {delegar && <DelegarModal team={fullTeam} meName={me.name} onClose={() => setDelegar(false)} />}
+      {delegar && <DelegarModal team={fullTeam} meId={me.id} meName={me.name} onClose={() => setDelegar(false)} />}
       <Toaster position="bottom-center" toastOptions={{ style: { background: "var(--surface)", color: "var(--ink)", border: "1px solid var(--line)", boxShadow: "var(--shadow-lg)" } }} />
       {cmdk && <CommandPalette me={me} team={fullTeam} cards={cards}
         onNavigate={(v) => { setViewing(v); setMode("board"); setQuery(""); }} onOpenCard={setOpenCard} onClose={() => setCmdk(false)}
-        onDelegar={isJefe ? () => setDelegar(true) : undefined} />}
+        onDelegar={() => setDelegar(true)} />}
     </>
   );
 }

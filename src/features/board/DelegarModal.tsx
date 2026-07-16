@@ -10,7 +10,7 @@ import { Avatar } from "../../lib/ui";
 
 // Delegar/compartir una tarea entre varias personas: se crea una tarjeta espejo por participante
 // (aparece en el board de cada uno y suma en las métricas de todos). Completarla sincroniza a todas.
-export function DelegarModal({ team, meName, onClose }: { team: Profile[]; meName: string; onClose: () => void }) {
+export function DelegarModal({ team, meId, meName, onClose }: { team: Profile[]; meId: string; meName: string; onClose: () => void }) {
   const qc = useQueryClient();
   const [title, setTitle] = useState("");
   const [owners, setOwners] = useState<string[]>([]);
@@ -34,6 +34,11 @@ export function DelegarModal({ team, meName, onClose }: { team: Profile[]; meNam
     onError: (e) => toast.error("No se pudo crear: " + (e as Error).message),
   });
 
+  // Empleado sin compañeros visibles (RLS de profiles / jerarquía sin cargar): estado
+  // explicativo en lugar de la grilla. Quedará plenamente operativo cuando la migración 20
+  // + jerarquía permitan ver a los compañeros de equipo.
+  const sinDestinatarios = team.filter((u) => u.id !== meId).length === 0;
+
   const puede = title.trim().length > 0 && owners.length >= 1;
   const inputCls = "bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-[13px]";
 
@@ -50,7 +55,13 @@ export function DelegarModal({ team, meName, onClose }: { team: Profile[]; meNam
         className={inputCls + " w-full mb-4"} />
 
       <label className="block text-xs uppercase tracking-wide text-ink2 mb-1.5">Participantes</label>
-      <div className="grid grid-cols-2 gap-1.5 mb-4 max-h-[190px] overflow-y-auto">
+      {sinDestinatarios && (
+        <div className="border border-dashed border-line rounded-lg px-3 py-4 mb-4 text-[13px] text-ink2">
+          Todavía no ves compañeros para delegar. Pedile a tu encargado que te asigne compañeros
+          de equipo y vas a poder compartir tareas con ellos desde acá.
+        </div>
+      )}
+      {!sinDestinatarios && <div className="grid grid-cols-2 gap-1.5 mb-4 max-h-[190px] overflow-y-auto">
         {team.map((u) => {
           const on = owners.includes(u.id);
           return (
@@ -62,7 +73,7 @@ export function DelegarModal({ team, meName, onClose }: { team: Profile[]; meNam
             </button>
           );
         })}
-      </div>
+      </div>}
 
       <div className="flex flex-wrap gap-3 mb-5 text-sm text-ink2">
         <label className="flex items-center gap-1.5">Vence

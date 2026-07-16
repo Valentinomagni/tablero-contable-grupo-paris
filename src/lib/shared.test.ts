@@ -57,6 +57,20 @@ describe("filasCompartida", () => {
     expect(filas[0].history[1].txt).toContain("delegada por Jefe 1");
     expect(filas[0].history[1].txt).toContain("Jefe 1, Valentino");
   });
+  it("trazabilidad: cada fila lleva la marca y el timestamp de quién delegó (spec #4)", () => {
+    const filas = filasCompartida({
+      linkId: "L2", title: "Conciliar banco", owners: ["u1", "u2"], delegador: "Valentino",
+      due_date: null, effort: 2, priority: "media", at: "2026-07-16T14:30:00Z",
+      nameOf: () => "X",
+    });
+    for (const f of filas) {
+      expect(f.history.some((h) => h.txt.startsWith(SHARED_PREFIX))).toBe(true);
+      for (const h of f.history) {
+        expect(h.who).toBe("Valentino");
+        expect(h.at).toBe("2026-07-16T14:30:00Z"); // fecha y hora exactas de la delegación
+      }
+    }
+  });
 });
 
 describe("siblingSyncPatches", () => {

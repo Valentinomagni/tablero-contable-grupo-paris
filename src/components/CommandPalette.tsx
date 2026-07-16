@@ -20,8 +20,9 @@ export function CommandPalette({ me, team, cards, onNavigate, onOpenCard, onClos
     all.push({ g: "Vistas", t: "Cierre mensual", icon: <LayoutDashboard size={16} />, run: () => onNavigate("__cierre") });
     all.push({ g: "Vistas", t: "Organigrama", icon: <Network size={16} />, run: () => onNavigate("__organigrama") });
     all.push({ g: "Vistas", t: "Administración", icon: <Settings size={16} />, run: () => onNavigate("__admin") });
-    if (onDelegar) all.push({ g: "Acciones", t: "Delegar / compartir tarea…", icon: <Users size={16} />, run: () => onDelegar() });
   }
+  // Delegar disponible para todos los roles (spec #4); el modal resuelve destinatarios según alcance.
+  if (onDelegar) all.push({ g: "Acciones", t: "Delegar / compartir tarea…", icon: <Users size={16} />, run: () => onDelegar() });
   all.push({ g: "Vistas", t: "Tablón del equipo", icon: <Pin size={16} />, run: () => onNavigate("__tablon") });
   all.push({ g: "Vistas", t: "Anotaciones", icon: <StickyNote size={16} />, run: () => onNavigate("__notas") });
   all.push({ g: "Vistas", t: "Mi tablero", icon: <ClipboardList size={16} />, run: () => onNavigate(me.id) });
