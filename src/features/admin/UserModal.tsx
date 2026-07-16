@@ -18,6 +18,7 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
   const qc = useQueryClient();
   const { data: objectives = [] } = useObjectives();
   const [name, setName] = useState(u.name);
+  const [username, setUsername] = useState(u.username ?? "");
   const [role, setRole] = useState<Role>(u.role);
   const [puesto, setPuesto] = useState(u.puesto ?? "");
   const [ficha, setFicha] = useState(u.ficha ?? "");
@@ -40,7 +41,7 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
   const save = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("profiles")
-        .update({ name: name.trim(), role, puesto: puesto.trim(), ficha: ficha.trim(), manager_id: managerId, marca })
+        .update({ name: name.trim(), username: username.trim() || null, role, puesto: puesto.trim(), ficha: ficha.trim(), manager_id: managerId, marca })
         .eq("id", u.id);
       if (error) throw error;
     },
@@ -96,11 +97,17 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
   return (
     <Modal onClose={onClose}>
         <h3 className="text-lg font-semibold m-0">{u.name}</h3>
-        <div className="text-xs text-ink2 mb-3.5">{u.email || ""} · rol: {u.role}</div>
+        <div className="text-xs text-ink2 mb-3.5">{u.username ? "@" + u.username : "sin usuario"} · rol: {u.role}</div>
 
         <div className="grid gap-2.5 mb-1">
           <label className="text-[13px] text-ink2">Nombre
             <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
+          </label>
+          <label className="text-[13px] text-ink2">Usuario (para ingresar)
+            <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Ej: Vmagni" className={inputCls} />
+          </label>
+          <label className="text-[13px] text-ink2">Correo de recuperación
+            <input value={u.email || ""} disabled className={inputCls + " opacity-70"} />
           </label>
           <label className="text-[13px] text-ink2">Rol
             <select value={role} onChange={(e) => setRole(e.target.value as Role)} className={inputCls}>

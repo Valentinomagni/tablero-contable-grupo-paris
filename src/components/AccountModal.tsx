@@ -29,7 +29,7 @@ export function AccountModal({ name, email, onClose }: { name: string; email: st
   return (
     <Modal onClose={onClose} maxWidth={440}>
         <h3 className="text-lg font-semibold m-0">Mi cuenta</h3>
-        <div className="text-xs text-ink2 mb-3.5">{name} · {email}</div>
+        <div className="text-xs text-ink2 mb-3.5">{name} · correo de recuperación: {email}</div>
         <h4 className="text-xs uppercase tracking-wide text-ink2 mb-2">Cambiar contraseña</h4>
         <div className="grid gap-2.5">
           <label className="text-[13px] text-ink2">Contraseña actual

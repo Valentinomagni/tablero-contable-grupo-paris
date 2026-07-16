@@ -23,7 +23,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
   const [parBoardName, setParBoardName] = useState<string | null>(null);
   const [parWarn, setParWarn] = useState<string | null>(null);
   const [parStuck, setParStuck] = useState<string | null>(null);
-  const [nu, setNu] = useState({ email: "", name: "", role: "empleado" as Role, puesto: "", pass: "" });
+  const [nu, setNu] = useState({ email: "", username: "", name: "", role: "empleado" as Role, puesto: "", pass: "" });
   const [nuBusy, setNuBusy] = useState(false);
   const [nuMsg, setNuMsg] = useState<{ ok: boolean; txt: string } | null>(null);
 
@@ -43,7 +43,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
       const r = await fetch(SUPABASE_URL + "/functions/v1/crear-usuario", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + session?.access_token },
-        body: JSON.stringify({ email: nu.email.trim(), password: nu.pass, name: nu.name.trim(), role: nu.role, puesto: nu.puesto.trim() }),
+        body: JSON.stringify({ email: nu.email.trim(), username: nu.username.trim(), password: nu.pass, name: nu.name.trim(), role: nu.role, puesto: nu.puesto.trim() }),
       });
       out = await r.json();
     } catch {
@@ -51,7 +51,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
     }
     setNuBusy(false);
     setNuMsg(out.ok ? { ok: true, txt: "Usuario creado. Ya puede ingresar." } : { ok: false, txt: "" + (out.error ?? "Error") });
-    if (out.ok) { qc.invalidateQueries({ queryKey: ["team"] }); setNu({ email: "", name: "", role: "empleado", puesto: "", pass: "" }); }
+    if (out.ok) { qc.invalidateQueries({ queryKey: ["team"] }); setNu({ email: "", username: "", name: "", role: "empleado", puesto: "", pass: "" }); }
   }
 
   const inputCls = "bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-[13px]";
@@ -94,7 +94,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
             )}
             {equipo.map((u) => (
               <tr key={u.id} onClick={() => onOpenUser(u)} className="border-t border-line cursor-pointer hover:bg-surface2">
-                <td className="px-4 py-2.5"><div className="flex items-center gap-2"><Avatar name={u.name} size={24} /><div><b>{u.name}</b><br /><span className="text-ink2 text-xs">{u.email}</span></div></div></td>
+                <td className="px-4 py-2.5"><div className="flex items-center gap-2"><Avatar name={u.name} size={24} /><div><b>{u.name}</b><br /><span className="text-ink2 text-xs">{u.username ? "@" + u.username : "sin usuario"}</span></div></div></td>
                 <td className="px-4 py-2.5 capitalize">{u.role}</td>
                 <td className="px-4 py-2.5 text-ink2">{u.puesto || "—"}</td>
               </tr>
@@ -106,7 +106,8 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
       {!esEncargado && <>
       <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Crear usuario nuevo</h2>
       <div className="bg-surface border border-line rounded-xl p-4 mb-6 flex flex-wrap gap-2 items-center" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
-        <input type="email" placeholder="email de acceso" value={nu.email} onChange={(e) => setNu({ ...nu, email: e.target.value })} className={inputCls + " w-[200px]"} />
+        <input placeholder="usuario (ej: Vmagni)" value={nu.username} onChange={(e) => setNu({ ...nu, username: e.target.value })} className={inputCls + " w-[160px]"} />
+        <input type="email" placeholder="correo corporativo (acceso/recuperación)" value={nu.email} onChange={(e) => setNu({ ...nu, email: e.target.value })} className={inputCls + " w-[200px]"} />
         <input placeholder="nombre y apellido" value={nu.name} onChange={(e) => setNu({ ...nu, name: e.target.value })} className={inputCls + " w-[180px]"} />
         <select value={nu.role} onChange={(e) => setNu({ ...nu, role: e.target.value as Role })} className={inputCls}>
           <option value="empleado">empleado</option><option value="encargado">encargado</option><option value="jefe">jefe</option>
