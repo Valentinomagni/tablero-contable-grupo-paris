@@ -53,7 +53,7 @@ export function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promis
       style={{ background: "radial-gradient(1200px 700px at 30% 20%, #17181c 0%, #0b0b0d 60%)" }}>
       <div className="flex flex-col items-center gap-3 max-w-[380px]">
         {/* lockup oficial procesado desde logo.jpg (fondo removido) — fidelidad 1:1 */}
-        <img src="/brand/lockup-blanco.png" alt="Grupo Paris" className="w-[210px] h-auto" />
+        <img src="/brand/lockup-blanco.svg" alt="Grupo Paris" className="w-[210px] h-auto" />
         <p className="text-[#9aa0ab] tracking-[3px] uppercase text-xs mt-2">Tablero Contable</p>
         <p className="text-[#5c6270] text-[11px] tracking-[1.5px] uppercase mt-6 text-center leading-relaxed">
           整理 Seiri · 整頓 Seiton · 清掃 Seiso<br />清潔 Seiketsu · 躾 Shitsuke
