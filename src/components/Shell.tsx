@@ -73,6 +73,8 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
           </> : <>
             <div className="text-[10px] tracking-[1.4px] uppercase text-[color:var(--side-ink2)] px-2.5 pt-3.5 pb-1.5">Mi espacio</div>
             <NavItem v={me.id} icon={<Avatar name={me.name} size={22} />} label="Mi tablero" />
+            <NavItem v="__resumen" icon={<LayoutDashboard size={17} />} label="Mi resumen" />
+            <NavItem v="__reporte" icon={<TrendingUp size={17} />} label="Mi reporte" />
             <NavItem v="__calendario" icon={<CalendarRange size={17} />} label="Calendario" />
             <NavItem v="__bitacora" icon={<History size={17} />} label="Mi bitácora" />
             <NavItem v="__notas" icon={<StickyNote size={17} />} label="Anotaciones" />

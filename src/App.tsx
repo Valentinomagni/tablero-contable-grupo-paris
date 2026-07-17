@@ -89,8 +89,8 @@ export default function App() {
   // Resumen/Reporte: jefe recibe todas las cards; no-jefe solo las de su equipo visible (spec #5, #10).
   const scopedCards = isJefe ? cards : cardsDeEquipo(cards, fullTeam);
   const person = fullTeam.find((u) => u.id === view);
-  const title = view === "__resumen" ? "Resumen del equipo"
-    : view === "__reporte" ? "Reporte ejecutivo"
+  const title = view === "__resumen" ? (esGestor ? "Resumen del equipo" : "Mi resumen")
+    : view === "__reporte" ? (esGestor ? "Reporte ejecutivo" : "Mi reporte")
     : view === "__tablon" ? "Tablón del equipo"
     : view === "__admin" ? "Administración"
     : view === "__bitacora" ? "Bitácora"
@@ -148,7 +148,7 @@ export default function App() {
           )}
         </> : undefined}>
         <Suspense fallback={<div className="px-6 py-8 text-ink2 text-sm">Cargando…</div>}>
-        {view === "__resumen" ? <Resumen cards={scopedCards} team={fullTeam} activity={activity} onOpenCard={setOpenCard} onGoPerson={(id) => { setViewing(id); setMode("board"); }} onDelegar={() => setDelegar(true)} />
+        {view === "__resumen" ? <Resumen cards={scopedCards} team={fullTeam} activity={activity} onOpenCard={setOpenCard} onGoPerson={(id) => { setViewing(id); setMode("board"); }} onDelegar={esGestor ? () => setDelegar(true) : undefined} />
           : view === "__reporte" ? <Reporte cards={scopedCards} team={fullTeam} activity={activity} />
           : view === "__tablon" ? <Tablon me={me} team={fullTeam} onGoCalendario={() => setViewing("__calendario")} />
           : view === "__admin" ? <Admin team={fullTeam} cards={cards} me={me} meName={me.name} onOpenUser={setOpenUser} />
