@@ -13,11 +13,13 @@ export function AnuncioEditForm({ a, onDone }: { a: Announcement; onDone: () => 
   const [kind, setKind] = useState<Announcement["kind"]>(a.kind);
   const [detalle, setDetalle] = useState(a.detail ?? "");
   const [fecha, setFecha] = useState(a.due_date ?? "");
+  const [prioridad, setPrioridad] = useState<NonNullable<Announcement["prioridad"]>>(a.prioridad ?? "normal");
+  const [vigencia, setVigencia] = useState(a.vigente_hasta ?? "");
 
   const guardar = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("announcements")
-        .update({ title: titulo.trim(), kind, detail: detalle.trim(), due_date: fecha || a.due_date })
+        .update({ title: titulo.trim(), kind, detail: detalle.trim(), due_date: fecha || a.due_date, prioridad, vigente_hasta: vigencia || null })
         .eq("id", a.id);
       if (error) throw error;
     },
@@ -40,6 +42,15 @@ export function AnuncioEditForm({ a, onDone }: { a: Announcement; onDone: () => 
           <option value="proceso">Proceso</option>
         </select>
         <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className={inputCls + " w-auto"} />
+      </div>
+      <div className="flex gap-2 flex-wrap">
+        <select value={prioridad} onChange={(e) => setPrioridad(e.target.value as NonNullable<Announcement["prioridad"]>)} className={inputCls + " flex-1 min-w-[160px]"}>
+          <option value="normal">Prioridad normal</option>
+          <option value="importante">Importante</option>
+          <option value="urgente">Urgente</option>
+        </select>
+        <label className="flex items-center gap-1.5 text-ink2 text-[12px]">Vigente hasta
+          <input type="date" value={vigencia} onChange={(e) => setVigencia(e.target.value)} className={inputCls + " w-auto"} /></label>
       </div>
       <textarea value={detalle} onChange={(e) => setDetalle(e.target.value)} rows={2}
         placeholder="Detalle opcional" className={inputCls + " resize-y"} />
