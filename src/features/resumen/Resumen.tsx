@@ -8,6 +8,8 @@ import { buildCsv, standupText, cicloDelMes, cargaPorFecha, ultimos14 } from "..
 import { useSnapshots } from "../../hooks/useData";
 import { Avatar } from "../../lib/ui";
 import { DepGraph } from "./DepGraph";
+import { useArca } from "../tablon/arca";
+import { relevantes } from "../../lib/arca-filtro";
 
 // Kaizen: chip de variación semana vs. semana. Subir es bueno en flujo (verde); bajar, atención (ámbar).
 function DeltaChip({ w }: { w: Wow }) {
@@ -66,6 +68,7 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
   });
 
   const cardSh = { boxShadow: "var(--ring-sh),var(--shadow)" };
+  const arca = relevantes(useArca()).slice(0, 5);
   const { data: snaps = [] } = useSnapshots(true);
   const [copyMsg, setCopyMsg] = useState("");
   const ciclo = cicloDelMes(cards);
@@ -128,6 +131,19 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
           </div>
         ))}
       </div>
+
+      {arca.length > 0 && (
+        <div className="bg-surface border border-line rounded-2xl px-5 py-4 mb-5" style={cardSh}>
+          <h2 className="text-[11px] text-ink2 uppercase tracking-[0.08em] font-semibold mb-2.5">Vencimientos ARCA (próximos)</h2>
+          {arca.map((x, i) => (
+            <div key={i} className="flex items-center gap-3 py-1.5 border-b border-line last:border-0">
+              <span className="w-8 shrink-0 text-center rounded-md bg-chip text-ink2 text-[13px] font-semibold tnum py-0.5">{x.num}</span>
+              <span className="flex-1 min-w-0"><b className="block text-[13px] truncate">{x.titulo}</b>{x.sub && <span className="block text-xs text-ink2 truncate">{x.sub}</span>}</span>
+            </div>
+          ))}
+          <p className="text-ink2 text-[11px] mt-2 mb-0">Fuente: arca.gob.ar · se actualiza sola</p>
+        </div>
+      )}
 
       <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Equipo</h2>
       <div className="bg-surface border border-line rounded-xl overflow-hidden mb-6" style={cardSh}>

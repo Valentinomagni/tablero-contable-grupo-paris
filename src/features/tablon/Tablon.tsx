@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "../../lib/supabase";
 import { useAnnouncements } from "../../hooks/useData";
 import { useArca, ArcaAgenda } from "./arca";
+import { relevantes } from "../../lib/arca-filtro";
 import type { Announcement, Profile } from "../../lib/types";
 import { fmtDateTime } from "../../lib/metrics";
 import { PREF, setPref } from "../../lib/prefs";
@@ -43,7 +44,7 @@ export function Tablon({ me, team = [], onGoCalendario }: { me?: Profile; team?:
   const isJefe = me?.role === "jefe";
   const [editId, setEditId] = useState<string | null>(null);
   const [publicando, setPublicando] = useState(false);
-  const arca = useArca();
+  const arca = relevantes(useArca());
   const mes = new Date().toLocaleDateString("es-AR", { month: "long", year: "numeric" });
   const hoy = new Date().toISOString().slice(0, 10);
 

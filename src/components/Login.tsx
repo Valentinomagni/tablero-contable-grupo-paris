@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useArca, ArcaAgenda } from "../features/tablon/arca";
+import { relevantes } from "../lib/arca-filtro";
 
 interface PubVenc { title: string; due_date: string; detail: string; }
 
@@ -33,7 +34,7 @@ function VencBadge({ due }: { due: string }) {
 
 export function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promise<{ message: string } | null> }) {
   const vencs = usePublicVenc();
-  const arca = useArca();
+  const arca = relevantes(useArca());
   const mes = new Date().toLocaleDateString("es-AR", { month: "long", year: "numeric" });
   const [identificador, setIdentificador] = useState("");
   const [password, setPassword] = useState("");

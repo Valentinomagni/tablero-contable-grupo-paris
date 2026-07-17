@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, Plus, Trash2, Pencil, CalendarDays, LayoutGrid, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trash2, Pencil, CalendarDays, LayoutGrid, Check, Pin } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import type { Announcement, Profile, Card, TaskOccurrence } from "../../lib/types";
 import { useAnnouncements } from "../../hooks/useData";
@@ -11,6 +11,8 @@ import { CLS_TONO } from "../../lib/vencimientos";
 import { Modal } from "../../components/Modal";
 import { AnuncioEditForm } from "../../components/AnuncioEditForm";
 import { puedeEditarAnuncio } from "../../lib/anuncios";
+import { useArca } from "../tablon/arca";
+import { aEventosVirtuales, type EventoVirtual } from "../../lib/arca-filtro";
 import { cn, Avatar } from "../../lib/ui";
 
 type Kind = Announcement["kind"];
@@ -43,6 +45,14 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
   const porDia = useMemo(() => eventosPorDia(anuncios), [anuncios]);
   const grilla = useMemo(() => grillaMes(year, month, hoyISO), [year, month, hoyISO]);
   const conteoMeses = useMemo(() => conteoPorMes(anuncios, year), [anuncios, year]);
+
+  // Vencimientos ARCA relevantes como eventos VIRTUALES de solo-lectura (no se escriben en DB).
+  const arcaItems = useArca();
+  const arcaPorDia = useMemo(() => {
+    const m: Record<string, EventoVirtual[]> = {};
+    for (const e of aEventosVirtuales(arcaItems, year, month)) (m[e.date] ??= []).push(e);
+    return m;
+  }, [arcaItems, year, month]);
 
   const { data: ocurrencias = [] } = useOccurrences(year, month);
   const tituloDeCard = useMemo(() => {
@@ -90,8 +100,19 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["announcements"] }); toast.success("Evento eliminado"); },
     onError: (e: Error) => toast.error("No se pudo eliminar: " + e.message),
   });
+  // Fijar un vencimiento ARCA (evento virtual) como announcement permanente en el calendario.
+  const fijarArca = useMutation({
+    mutationFn: async (e: EventoVirtual) => {
+      const { error } = await supabase.from("announcements")
+        .insert({ kind: "vencimiento", title: e.title, detail: e.detail, due_date: e.date, created_by: me.name, owner_id: me.id, visible_to: [] });
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["announcements"] }); toast.success("Vencimiento ARCA fijado en el calendario"); },
+    onError: (e: Error) => toast.error("No se pudo fijar: " + e.message),
+  });
 
   const eventosDelDia = diaSel ? (porDia[diaSel] ?? []) : [];
+  const arcaDelDia = diaSel ? (arcaPorDia[diaSel] ?? []) : [];
   const inputCls = "w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-[13px]";
   const btn = "flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3 py-1.5 text-[13px]";
 
@@ -123,6 +144,7 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
             {grilla.map((c) => {
               const evs = porDia[c.date] ?? [];
               const occ = ocurrenciasPorDia[c.date] ?? [];
+              const arcaEvs = arcaPorDia[c.date] ?? [];
               return (
                 <button key={c.date} onClick={() => abrirDia(c.date)}
                   className={cn("min-h-[92px] border-b border-r border-line/70 p-1.5 text-left align-top transition hover:bg-surface2/60 flex flex-col gap-1",
@@ -141,6 +163,10 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
                     </span>
                   ))}
                   {occ.length > 2 && <span className="text-[10.5px] text-ink2 px-1">+{occ.length - 2} tarea(s)</span>}
+                  {arcaEvs.slice(0, 2).map((e, i) => (
+                    <span key={"arca" + i} title={`ARCA · ${e.title}`} className="text-[11px] rounded px-1.5 py-0.5 truncate font-medium bg-chip text-ink2">ARCA · {e.title}</span>
+                  ))}
+                  {arcaEvs.length > 2 && <span className="text-[10.5px] text-ink2 px-1">+{arcaEvs.length - 2} ARCA</span>}
                 </button>
               );
             })}
@@ -217,6 +243,26 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
                   <span className={o.done ? "line-through text-ink2" : ""}>{tituloDeCard[o.card_id] ?? "Tarea"}</span>
                 </label>
               ))}
+            </div>
+          )}
+
+          {arcaDelDia.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-line">
+              <h4 className="text-xs uppercase tracking-wide text-ink2 mb-2">Vencimientos ARCA (oficiales · solo lectura)</h4>
+              {arcaDelDia.map((e, i) => (
+                <div key={"arca" + i} className="flex items-start gap-2 py-2 border-b border-line/60 last:border-0">
+                  <span className="text-[10.5px] rounded px-1.5 py-0.5 font-semibold shrink-0 mt-0.5 bg-chip text-ink2">ARCA</span>
+                  <div className="flex-1 min-w-0">
+                    <b className="text-sm">{e.title}</b>
+                    {e.detail && <p className="text-ink2 text-[13px] m-0 mt-0.5 whitespace-pre-line">{e.detail}</p>}
+                  </div>
+                  <button onClick={() => fijarArca.mutate(e)} disabled={fijarArca.isPending} title="Fijar en el calendario"
+                    className="flex items-center gap-1 border border-line bg-surface2 rounded-lg px-2 py-1 text-[12px] text-ink2 hover:text-accent shrink-0 disabled:opacity-60">
+                    <Pin size={13} /> Fijar
+                  </button>
+                </div>
+              ))}
+              <p className="text-ink2 text-[11px] mt-2 mb-0">Fuente: arca.gob.ar · se actualizan solos. "Fijar" los deja permanentes en el calendario del equipo.</p>
             </div>
           )}
 
