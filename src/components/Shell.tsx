@@ -11,10 +11,10 @@ interface Props {
   theme: string; onCycleTheme: () => void; density: string; onCycleDensity: () => void;
   onOpenAccount: () => void; onOpenNovedades?: () => void; tablonBadge?: string; boardName?: string;
   onNavigate: (v: string) => void; onSignOut: () => void;
-  pendByOwner: (id: string) => number; subnav?: ReactNode; notifs?: ReactNode; children: ReactNode;
+  pendByOwner: (id: string) => number; subnav?: ReactNode; notifs?: ReactNode; fullWidth?: boolean; children: ReactNode;
 }
 
-export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, onCycleDensity, onOpenAccount, onOpenNovedades, tablonBadge, boardName, onNavigate, onSignOut, pendByOwner, subnav, notifs, children }: Props) {
+export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, onCycleDensity, onOpenAccount, onOpenNovedades, tablonBadge, boardName, onNavigate, onSignOut, pendByOwner, subnav, notifs, fullWidth = false, children }: Props) {
   // barra lateral como drawer desplegable (Seiton: se muestra a demanda, deja la vista limpia).
   const [open, setOpen] = useState(() => {
     const saved = getPref(PREF.sidebar);
@@ -131,8 +131,10 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
             {new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
           </span>
         </div>
-        {subnav && <div className="mx-auto w-full max-w-[1200px] flex gap-1.5 px-6 pt-3.5">{subnav}</div>}
-        <div className="mx-auto w-full max-w-[1200px] flex-1 flex flex-col min-w-0">{children}</div>
+        {/* El tablero (vista persona) necesita todo el ancho: 4 columnas ≈ 1300px.
+            Las demás vistas se centran con tope para verse equilibradas (spec 20 #6). */}
+        {subnav && <div className={cn("mx-auto w-full flex gap-1.5 px-6 pt-3.5", !fullWidth && "max-w-[1200px]")}>{subnav}</div>}
+        <div className={cn("mx-auto w-full flex-1 flex flex-col min-w-0", !fullWidth && "max-w-[1200px]")}>{children}</div>
       </main>
     </div>
   );

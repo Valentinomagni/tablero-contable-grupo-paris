@@ -122,6 +122,7 @@ export default function App() {
         onCycleTheme={cycle} density={density} onCycleDensity={cycleDensity}
         onOpenAccount={() => setAccount(true)} onOpenNovedades={() => setNovedades(true)} tablonBadge={tablonBadge} boardName={settings?.board_name}
         onNavigate={(v) => { setViewing(v); setMode("board"); setQuery(""); }} onSignOut={signOut} pendByOwner={pendByOwner}
+        fullWidth={isPersonView && mode === "board"}
         notifs={<NotificacionesBell onOpenCard={(id) => { const c = cards.find((x) => x.id === id); if (c) setOpenCard(c); else toast("La tarea de esta notificación ya no está disponible."); }} />}
         subnav={isPersonView ? <>
           <SubTab m="board" icon={<ClipboardList size={14} />} label="Tareas" />
