@@ -7,11 +7,9 @@ import type { ActivityLog, Card, Profile, Role } from "../../lib/types";
 import { useObjectives } from "../../hooks/useData";
 import { userMetrics30d } from "../../lib/metrics";
 import { nombreValido } from "../../lib/validacion";
-import { puedeSerManager, esSinAsignar } from "../../lib/jerarquia";
+import { puedeSerManager, esSinAsignar, MARCAS } from "../../lib/jerarquia";
 import { confirmacionValida } from "../../lib/borrado";
 import { toast } from "sonner";
-
-const MARCAS = ["Peugeot", "Citroën", "Chevrolet", "Honda"];
 
 export function UserModal({ user: u, meId, team, cards, activity, onClose }:
   { user: Profile; meId: string; team: Profile[]; cards: Card[]; activity: ActivityLog[]; onClose: () => void }) {

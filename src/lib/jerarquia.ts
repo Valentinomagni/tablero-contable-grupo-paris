@@ -1,5 +1,9 @@
 import type { Card, Profile } from "./types";
 
+// Marcas de la organización. "General" (administración transversal) va PRIMERO:
+// abarca a toda la empresa, no a una marca puntual.
+export const MARCAS = ["General", "Peugeot", "Citroën", "Chevrolet", "Honda"];
+
 // Perfil centinela "Sin asignar": dueño de las cards huérfanas tras eliminar un empleado.
 // Lo crea la edge function eliminar-usuario como auth user REAL (un uuid inventado viola
 // cards_owner_fkey), así que se lo identifica por EMAIL, no por un id fijo.

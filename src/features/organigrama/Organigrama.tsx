@@ -1,6 +1,6 @@
 import { Network } from "lucide-react";
 import type { Card, Profile } from "../../lib/types";
-import { construirArbol, porMarca, type NodoOrg } from "../../lib/jerarquia";
+import { construirArbol, porMarca, MARCAS, type NodoOrg } from "../../lib/jerarquia";
 import { Avatar } from "../../lib/ui";
 
 const cardSh = { boxShadow: "var(--ring-sh),var(--shadow)" };
@@ -33,13 +33,14 @@ function Nodo({ nodo, cards, nivel }: { nodo: NodoOrg; cards: Card[]; nivel: num
   );
 }
 
-function Seccion({ titulo, gente, cards }: { titulo: string; gente: Profile[]; cards: Card[] }) {
+function Seccion({ titulo, subtitulo, gente, cards }: { titulo: string; subtitulo?: string; gente: Profile[]; cards: Card[] }) {
   const arbol = construirArbol(gente);
   return (
     <section className="mb-7">
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-baseline gap-2 mb-3">
         <h2 className="text-[15px] font-bold tracking-[-0.01em]">{titulo}</h2>
-        <span className="text-[12px] text-ink2 tnum">{gente.length} {gente.length === 1 ? "persona" : "personas"}</span>
+        {subtitulo && <span className="text-[12px] text-ink2">{subtitulo}</span>}
+        <span className="text-[12px] text-ink2 tnum">· {gente.length} {gente.length === 1 ? "persona" : "personas"}</span>
       </div>
       <div className="flex flex-col gap-2">
         {arbol.map((n) => <Nodo key={n.profile.id} nodo={n} cards={cards} nivel={0} />)}
@@ -50,10 +51,9 @@ function Seccion({ titulo, gente, cards }: { titulo: string; gente: Profile[]; c
 
 export function Organigrama({ team, cards }: { team: Profile[]; cards: Card[] }) {
   const grupos = porMarca(team);
-  // Orden de marcas de la empresa; las demás quedan detrás alfabéticamente.
-  const ORDEN = ["Peugeot", "Citroën", "Chevrolet", "Honda"];
+  // Orden fijo de marcas (General primero); las demás quedan detrás alfabéticamente.
   const marcas = Object.keys(grupos).sort((a, b) => {
-    const ia = ORDEN.indexOf(a), ib = ORDEN.indexOf(b);
+    const ia = MARCAS.indexOf(a), ib = MARCAS.indexOf(b);
     return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b);
   });
   const sinMarca = team.filter((p) => !p.marca);
@@ -76,7 +76,7 @@ export function Organigrama({ team, cards }: { team: Profile[]; cards: Card[] })
           Sin marca asignada todavía. Cuando cargues marca y responsable de cada persona, el organigrama se arma por marca y jerarquía automáticamente.
         </div>
       )}
-      {marcas.map((m) => <Seccion key={m} titulo={m} gente={grupos[m]} cards={cards} />)}
+      {marcas.map((m) => <Seccion key={m} titulo={m} subtitulo={m === "General" ? "Administración transversal" : undefined} gente={grupos[m]} cards={cards} />)}
       {sinMarca.length > 0 && <Seccion titulo="Sin marca" gente={sinMarca} cards={cards} />}
     </div>
   );
