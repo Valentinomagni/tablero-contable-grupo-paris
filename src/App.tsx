@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Toaster, toast } from "sonner";
 import { deshacerUltimo } from "./lib/deshacer";
 import { PREF, getPref, setPref } from "./lib/prefs";
-import { ClipboardList, Target, TrendingUp, UserRound, CalendarDays, Users, Archive } from "lucide-react";
+import { ClipboardList, Target, TrendingUp, UserRound, CalendarDays, Users, Archive, Sun } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { useTheme } from "./hooks/useTheme";
 import { useTeam, useCards, useActivity, useAnnouncements, useSettings } from "./hooks/useData";
@@ -32,13 +32,14 @@ const Notas = lazy(() => import("./features/notas/Notas").then((m) => ({ default
 const Bitacora = lazy(() => import("./features/bitacora/Bitacora").then((m) => ({ default: m.Bitacora })));
 const Admin = lazy(() => import("./features/admin/Admin").then((m) => ({ default: m.Admin })));
 const HistorialMes = lazy(() => import("./features/historial/HistorialMes").then((m) => ({ default: m.HistorialMes })));
+const MiDia = lazy(() => import("./features/hoy/MiDia").then((m) => ({ default: m.MiDia })));
 import { CommandPalette } from "./components/CommandPalette";
 import type { Card, Profile, AppSettings } from "./lib/types";
 import { visiblesPara, cardsDeEquipo } from "./lib/jerarquia";
 import { proximosVencimientos } from "./lib/vencimientos";
 import { cn } from "./lib/ui";
 
-type Mode = "board" | "semana" | "obj" | "mimes" | "hist";
+type Mode = "hoy" | "board" | "semana" | "obj" | "mimes" | "hist";
 
 export default function App() {
   const { me, loading, signIn, signOut } = useAuth();
@@ -125,6 +126,7 @@ export default function App() {
         fullWidth={isPersonView && mode === "board"}
         notifs={<NotificacionesBell onOpenCard={(id) => { const c = cards.find((x) => x.id === id); if (c) setOpenCard(c); else toast("La tarea de esta notificación ya no está disponible."); }} />}
         subnav={isPersonView ? <>
+          <SubTab m="hoy" icon={<Sun size={14} />} label="Hoy" />
           <SubTab m="board" icon={<ClipboardList size={14} />} label="Tareas" />
           <SubTab m="semana" icon={<CalendarDays size={14} />} label="Semana" />
           <SubTab m="obj" icon={<Target size={14} />} label="Objetivos" />
@@ -157,6 +159,7 @@ export default function App() {
           : view === "__cierre" ? <Cierre cards={cards} team={fullTeam} isJefe={!!isJefe} meName={me.name} settings={settings ?? { edit_closed: false } as AppSettings} onOpenCard={setOpenCard} />
           : view === "__organigrama" ? <Organigrama team={fullTeam} cards={cards} />
           : view === "__notas" ? <Notas me={me} />
+          : mode === "hoy" ? <MiDia ownerId={view} cards={cards} onOpenCard={setOpenCard} />
           : mode === "semana" ? <Semana cards={cards} ownerId={view} meName={me.name} onOpen={setOpenCard} />
           : mode === "obj" ? <Objetivos ownerId={view} ownerName={person?.name ?? me.name} />
           : mode === "mimes" ? <MiMes cards={cards} activity={activity} ownerId={view} onOpenCard={setOpenCard} />
