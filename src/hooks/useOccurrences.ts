@@ -35,3 +35,18 @@ export function useCardOccurrences(cardId: string, year: number, month1a12: numb
     },
   });
 }
+
+// TODAS las ocurrencias de una card (sin filtro de mes) — para la evolución de cumplimiento
+// del arqueo. DEFENSIVA: ante cualquier error (migración no aplicada) devuelve [].
+export function useCardOccurrencesAll(cardId: string, enabled = true) {
+  return useQuery({
+    queryKey: ["occurrences", "card-all", cardId],
+    enabled,
+    queryFn: async (): Promise<TaskOccurrence[]> => {
+      const { data, error } = await supabase.from("task_occurrences")
+        .select("*").eq("card_id", cardId).order("fecha");
+      if (error) return [];
+      return (data as TaskOccurrence[]) ?? [];
+    },
+  });
+}

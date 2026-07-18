@@ -11,12 +11,13 @@ import { depInfoOf, dependentsOf, isBlocked, type DepMap } from "../../lib/deps"
 import { pushUndo } from "../../lib/undo";
 import { isShared, participantes, siblingSyncPatches } from "../../lib/shared";
 import { notifsAlFinalizar } from "../../lib/notificaciones";
-import { Check, Copy, Link2, Lock, Hourglass, X, Users, Pencil, Trash2, Minus, Plus, Shield, ShieldCheck } from "lucide-react";
+import { Check, Copy, Link2, Lock, Hourglass, X, Users, Pencil, Trash2, Minus, Plus, Shield, ShieldCheck, Coins } from "lucide-react";
 import { filaDuplicada } from "../../lib/duplicar";
 import { useDepsInfo, useReverseDeps, useSettings } from "../../hooks/useData";
 import { editarItem, borrarItem } from "../../lib/checklist";
 import { nuevaCantidad } from "../../lib/operativas";
 import { CumplimientoDiario } from "./CumplimientoDiario";
+import { ArqueoResultDialog } from "./ArqueoResultDialog";
 
 export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose, meId, meName = "—" }:
   { card: Card; cards: Card[]; team: Profile[]; activity?: ActivityLog[]; isJefe: boolean; onClose: () => void; meId?: string; meName?: string }) {
@@ -147,14 +148,25 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
   const nowRef = new Date();
   const { data: cardOccs = [] } = useCardOccurrences(c.id, nowRef.getFullYear(), nowRef.getMonth() + 1);
   const toggleOccCk = useMutation({
-    mutationFn: async (o: TaskOccurrence) => {
-      const { error } = await supabase.from("task_occurrences")
-        .update({ done: !o.done, done_at: !o.done ? new Date().toISOString() : null }).eq("id", o.id);
+    mutationFn: async ({ o, extra }: { o: TaskOccurrence; extra?: Partial<TaskOccurrence> }) => {
+      const done = !o.done;
+      const { error } = await supabase.from("task_occurrences").update({
+        done, done_at: done ? new Date().toISOString() : null,
+        resultado: done ? (extra?.resultado ?? null) : null,
+        dif_importe: done ? (extra?.dif_importe ?? null) : null,
+        dif_obs: done ? (extra?.dif_obs ?? null) : null,
+      }).eq("id", o.id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["occurrences"] }),
     onError: (e: Error) => toast.error("No se pudo actualizar: " + e.message),
   });
+  // Ocurrencia del checklist mensual pendiente de resultado de arqueo (card de control).
+  const [pendingOcc, setPendingOcc] = useState<TaskOccurrence | null>(null);
+  const onOccCkClick = (o: TaskOccurrence) => {
+    if (!o.done && c.requiere_resultado) { setPendingOcc(o); return; } // marcar → pedir resultado
+    toggleOccCk.mutate({ o });                                         // desmarcar o card normal
+  };
   const fechaCorta = (iso: string) => new Date(iso + "T12:00:00").toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" });
 
   const hist = (txt: string) => [...(c.history ?? []), { who: meName, at: new Date().toISOString(), txt }];
@@ -311,7 +323,7 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
           const now = new Date();
           return (
             <div className="mt-4">
-              <CumplimientoDiario cardId={c.id} owner={c.owner} year={now.getFullYear()} month={now.getMonth() + 1} />
+              <CumplimientoDiario cardId={c.id} owner={c.owner} year={now.getFullYear()} month={now.getMonth() + 1} requiere={!!c.requiere_resultado} />
             </div>
           );
         })()}
@@ -427,10 +439,21 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
             <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Checklist del mes (ocurrencias)</h4>
             {cardOccs.length === 0 && <p className="text-ink2 text-[13px] m-0">Guardá la recurrencia para generar las ocurrencias del mes.</p>}
             {cardOccs.map((o) => (
-              <label key={o.id} className="flex items-center gap-2 py-1 text-sm cursor-pointer">
-                <input type="checkbox" checked={o.done} onChange={() => toggleOccCk.mutate(o)} className="accent-accent w-4 h-4 shrink-0" />
-                <span className={"flex-1 capitalize " + (o.done ? "line-through text-ink2" : "")}>{fechaCorta(o.fecha)}</span>
-              </label>
+              <div key={o.id}>
+                <label className="flex items-center gap-2 py-1 text-sm cursor-pointer">
+                  <input type="checkbox" checked={o.done} onChange={() => onOccCkClick(o)} className="accent-accent w-4 h-4 shrink-0" />
+                  <span className={"flex-1 capitalize " + (o.done ? "line-through text-ink2" : "")}>{fechaCorta(o.fecha)}</span>
+                  {o.done && o.resultado === "ok" && <span className="text-[11px] text-done">sin diferencias</span>}
+                  {o.done && o.resultado === "dif" && (
+                    <span className="text-[11px] text-warn" title={o.dif_obs ?? undefined}>diferencia ${o.dif_importe ?? 0}</span>
+                  )}
+                </label>
+                {pendingOcc?.id === o.id && (
+                  <ArqueoResultDialog
+                    onResolve={(r) => { toggleOccCk.mutate({ o, extra: r }); setPendingOcc(null); }}
+                    onCancel={() => setPendingOcc(null)} />
+                )}
+              </div>
             ))}
           </>
         )) : (
@@ -510,6 +533,14 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
               className={"inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] border disabled:opacity-60 " +
                 (c.protected ? "border-accent bg-accent-soft text-accent font-semibold" : "border-line bg-surface2")}>
               {c.protected ? <ShieldCheck size={13} /> : <Shield size={13} />} Protegida</button>
+          )}
+          {isJefe && (
+            <button title={c.requiere_resultado ? "Quitar control de caja" : "Al marcar cada día pedirá el resultado del arqueo (sin/con diferencias)"}
+              onClick={() => patch.mutate({ requiere_resultado: !c.requiere_resultado, history: hist(c.requiere_resultado ? "Quitó control de caja" : "Marcó como control de caja (arqueo)") })}
+              disabled={patch.isPending}
+              className={"inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] border disabled:opacity-60 " +
+                (c.requiere_resultado ? "border-accent bg-accent-soft text-accent font-semibold" : "border-line bg-surface2")}>
+              <Coins size={13} /> Requiere resultado (control de caja)</button>
           )}
           {c.protected && !isJefe ? (
             <span className="inline-flex items-center gap-1.5 text-ink2 text-[13px]"><Lock size={13} /> Tarea protegida por un jefe</span>
