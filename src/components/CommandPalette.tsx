@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { LayoutDashboard, Pin, Settings, ClipboardList, Search, Users, Network, StickyNote } from "lucide-react";
 import { Avatar } from "../lib/ui";
-import { COLS, type Card, type Profile } from "../lib/types";
+import { COLS, type Card, type Profile, type Announcement } from "../lib/types";
 
 interface Item { g: string; t: string; sub?: string; icon?: React.ReactNode; av?: Profile; run: () => void; }
 
-export function CommandPalette({ me, team, cards, onNavigate, onOpenCard, onClose, onDelegar }: {
-  me: Profile; team: Profile[]; cards: Card[];
+export function CommandPalette({ me, team, cards, annos = [], onNavigate, onOpenCard, onClose, onDelegar }: {
+  me: Profile; team: Profile[]; cards: Card[]; annos?: Announcement[];
   onNavigate: (v: string) => void; onOpenCard: (c: Card) => void; onClose: () => void; onDelegar?: () => void;
 }) {
   const [q, setQ] = useState("");
@@ -32,6 +32,11 @@ export function CommandPalette({ me, team, cards, onNavigate, onOpenCard, onClos
     g: "Tareas", t: c.title,
     sub: `${team.find((u) => u.id === c.owner)?.name ?? ""} · ${c.card_type === "operativa" ? "operativa" : COLS.find((x) => x[0] === c.status)?.[1]}`,
     run: () => onOpenCard(c),
+  }));
+  // Búsqueda global: los avisos del tablón también son encontrables (Seiton)
+  annos.filter((a) => !a.archivado).forEach((a) => all.push({
+    g: "Tablón", t: a.title, sub: a.kind === "vencimiento" ? "vencimiento" : a.kind === "proceso" ? "proceso" : "aviso",
+    icon: <Pin size={16} />, run: () => onNavigate("__tablon"),
   }));
 
   const needle = q.trim().toLowerCase();

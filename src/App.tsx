@@ -171,7 +171,7 @@ export default function App() {
       {novedades && <NovedadesModal onClose={() => { setPref(PREF.version, APP_VERSION); setNovedades(false); }} />}
       {delegar && <DelegarModal team={fullTeam} meId={me.id} meName={me.name} onClose={() => setDelegar(false)} />}
       <Toaster position="bottom-center" toastOptions={{ style: { background: "var(--surface)", color: "var(--ink)", border: "1px solid var(--line)", boxShadow: "var(--shadow-lg)" } }} />
-      {cmdk && <CommandPalette me={me} team={fullTeam} cards={cards}
+      {cmdk && <CommandPalette me={me} team={fullTeam} cards={cards} annos={annos}
         onNavigate={(v) => { setViewing(v); setMode("board"); setQuery(""); }} onOpenCard={setOpenCard} onClose={() => setCmdk(false)}
         onDelegar={() => setDelegar(true)} />}
     </>

@@ -56,12 +56,29 @@ export function Reporte({ cards, team, activity }: { cards: Card[]; team: Profil
 
   return (
     <div className="px-6 py-4 w-full max-w-[940px] flex flex-col gap-4" id="reporte-print">
+      {/* Al imprimir/PDF: ocultamos sidebar/topbar/botones y mostramos un encabezado con la marca (P5) */}
+      <style>{`
+        .rep-print-header { display: none; }
+        @media print {
+          aside, .no-print, #reporte-print button { display: none !important; }
+          body { background: #fff !important; }
+          #reporte-print { max-width: 100% !important; padding: 0 !important; }
+          #reporte-print .rep-print-header { display: flex !important; }
+        }
+      `}</style>
+      <div className="rep-print-header items-center gap-3 pb-3 mb-1 border-b border-line">
+        <img src="/brand/isotipo-negro.svg" width={38} height={38} alt="Grupo Paris" />
+        <div className="leading-tight">
+          <b className="text-lg">Grupo Paris</b>
+          <div className="text-ink2 text-xs">Reporte ejecutivo — Equipo Contable · {new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" })}</div>
+        </div>
+      </div>
       <div className="flex justify-between items-end gap-4 flex-wrap">
         <div>
           <h1 className="text-[22px] font-bold tracking-tight m-0">Reporte ejecutivo — Equipo Contable</h1>
           <p className="text-ink2 text-sm m-0">Generado {new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" })} · últimos 30 días</p>
         </div>
-        <button onClick={() => window.print()} className="flex items-center gap-2 border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]" style={cardSh}>
+        <button onClick={() => window.print()} className="no-print flex items-center gap-2 border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]" style={cardSh}>
           <Download size={16} /> Imprimir / PDF
         </button>
       </div>
