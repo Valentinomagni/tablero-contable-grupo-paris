@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { rangoValido, estaDeVacaciones, ausentesEnFecha, vacacionesActivasYFuturas } from "./vacaciones";
-import type { Vacacion } from "./types";
+import { rangoValido, estaDeVacaciones, ausentesEnFecha, vacacionesActivasYFuturas, esCobertura } from "./vacaciones";
+import type { Vacacion, Card, HistoryEntry } from "./types";
 
 function mk(p: Partial<Vacacion>): Vacacion {
   return {
@@ -64,5 +64,40 @@ describe("vacacionesActivasYFuturas", () => {
   });
   it("hasta == hoy sigue activa (borde inclusive)", () => {
     expect(vacacionesActivasYFuturas([mk({ id: "x", desde: "2026-07-01", hasta: "2026-07-17" })], "2026-07-17").map((v) => v.id)).toEqual(["x"]);
+  });
+});
+
+describe("esCobertura", () => {
+  const h = (txt: string): HistoryEntry => ({ who: "Ana", at: "2026-07-10T00:00:00Z", txt });
+  const card = (history: HistoryEntry[]): Card => ({
+    id: "c", owner: "u1", title: "T", status: "pend", description: "",
+    checklist: [], comments: [], history, done_at: null, due_date: null,
+    recurring: false, priority: "media", effort: 1, card_type: "normal",
+    deps: [], created_at: "2026-07-01T00:00:00Z",
+  });
+
+  it("detecta cobertura activa y parsea el titular", () => {
+    const r = esCobertura(card([h("Creó la tarea"), h("Cobertura por vacaciones: de Juan Pérez a Ana Gómez (10/07–20/07)")]));
+    expect(r).toEqual({ activa: true, titular: "Juan Pérez" });
+  });
+
+  it("sin cobertura → activa false", () => {
+    expect(esCobertura(card([h("Creó la tarea")]))).toEqual({ activa: false, titular: null });
+  });
+
+  it("devuelta al titular posterior anula la cobertura", () => {
+    const r = esCobertura(card([
+      h("Cobertura por vacaciones: de Juan a Ana (10/07–20/07)"),
+      h("Devuelta al titular tras cobertura"),
+    ]));
+    expect(r.activa).toBe(false);
+  });
+
+  it("toma la última cobertura si hay varias", () => {
+    const r = esCobertura(card([
+      h("Cobertura por vacaciones: de Juan a Ana (…)"),
+      h("Cobertura por vacaciones: de Pedro a Ana (…)"),
+    ]));
+    expect(r).toEqual({ activa: true, titular: "Pedro" });
   });
 });

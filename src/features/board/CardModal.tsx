@@ -11,7 +11,8 @@ import { depInfoOf, dependentsOf, isBlocked, type DepMap } from "../../lib/deps"
 import { pushUndo } from "../../lib/undo";
 import { isShared, participantes, siblingSyncPatches } from "../../lib/shared";
 import { notifsAlFinalizar } from "../../lib/notificaciones";
-import { Check, Copy, Link2, Lock, Hourglass, X, Users, Pencil, Trash2, Minus, Plus, Shield, ShieldCheck, Coins } from "lucide-react";
+import { Check, Copy, Link2, Lock, Hourglass, X, Users, Pencil, Trash2, Minus, Plus, Shield, ShieldCheck, Coins, Plane } from "lucide-react";
+import { esCobertura } from "../../lib/vacaciones";
 import { filaDuplicada } from "../../lib/duplicar";
 import { useDepsInfo, useReverseDeps, useSettings } from "../../hooks/useData";
 import { editarItem, borrarItem } from "../../lib/checklist";
@@ -541,6 +542,19 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
               className={"inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] border disabled:opacity-60 " +
                 (c.requiere_resultado ? "border-accent bg-accent-soft text-accent font-semibold" : "border-line bg-surface2")}>
               <Coins size={13} /> Requiere resultado (control de caja)</button>
+          )}
+          {isJefe && esCobertura(c).activa && (
+            <button title="Reasignar la tarea a su titular original tras la cobertura"
+              onClick={() => {
+                const nom = esCobertura(c).titular;
+                const titular = nom ? team.find((u) => u.name === nom) : undefined;
+                if (!titular) { toast.error(`No se encontró al titular${nom ? ` "${nom}"` : ""} en el equipo.`); return; }
+                patch.mutate({ owner: titular.id, history: hist("Devuelta al titular tras cobertura") },
+                  { onSuccess: () => toast.success(`Devuelta a ${titular.name}`) });
+              }}
+              disabled={patch.isPending}
+              className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] border border-line bg-surface2 disabled:opacity-60">
+              <Plane size={13} /> Devolver al titular</button>
           )}
           {c.protected && !isJefe ? (
             <span className="inline-flex items-center gap-1.5 text-ink2 text-[13px]"><Lock size={13} /> Tarea protegida por un jefe</span>
