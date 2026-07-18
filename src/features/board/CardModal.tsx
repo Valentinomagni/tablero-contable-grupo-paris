@@ -11,12 +11,14 @@ import { depInfoOf, dependentsOf, isBlocked, type DepMap } from "../../lib/deps"
 import { pushUndo } from "../../lib/undo";
 import { isShared, participantes, siblingSyncPatches } from "../../lib/shared";
 import { notifsAlFinalizar } from "../../lib/notificaciones";
+import { detectarMenciones } from "../../lib/menciones";
 import { Check, Copy, Link2, Lock, Hourglass, X, Users, Pencil, Trash2, Minus, Plus, Shield, ShieldCheck, Coins, Plane } from "lucide-react";
 import { esCobertura } from "../../lib/vacaciones";
 import { filaDuplicada } from "../../lib/duplicar";
 import { useDepsInfo, useReverseDeps, useSettings } from "../../hooks/useData";
 import { editarItem, borrarItem } from "../../lib/checklist";
 import { nuevaCantidad } from "../../lib/operativas";
+import { Avatar } from "../../lib/ui";
 import { CumplimientoDiario } from "./CumplimientoDiario";
 import { ArqueoResultDialog } from "./ArqueoResultDialog";
 
@@ -176,6 +178,37 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
     if (t && t !== c.title) patch.mutate({ title: t, history: hist("Renombró la tarea") });
     setEditTitle(false);
   };
+  // Guarda una anotación y, si menciona a compañeros con @, les avisa (best-effort).
+  const anotar = () => {
+    const txt = newCm.trim();
+    if (!txt) return;
+    patch.mutate({ comments: [...c.comments, { who: meName, when: new Date().toISOString(), txt }] });
+    // Menciones @ → notificación tipo "sistema" (spec #8). Si la tabla notifications
+    // no existe aún, la anotación se guarda igual y esto se descarta en silencio.
+    try {
+      const ids = detectarMenciones(txt, team).filter((id) => id !== meId);
+      if (ids.length) {
+        void supabase.from("notifications").insert(ids.map((id) => ({
+          owner: id, tipo: "sistema" as const, titulo: `Te mencionaron en «${c.title}»`,
+          detalle: txt.slice(0, 120), card_id: c.id, leida: false,
+        }))).then(undefined, () => { /* secundario: se ignora */ });
+      }
+    } catch { /* secundario: se ignora */ }
+    setNewCm("");
+  };
+
+  // Autocompletar @: si el texto termina en "@" + letras, sugerir miembros que matcheen.
+  const mencionFrag = (() => {
+    const m = newCm.match(/@(\p{L}*)$/u);
+    return m ? m[1].normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase() : null;
+  })();
+  const mencionSug = mencionFrag === null ? [] : team.filter((u) => {
+    if (u.id === meId) return false;
+    const full = u.name.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+    return full.startsWith(mencionFrag) || full.split(/\s+/).some((p) => p.startsWith(mencionFrag));
+  }).slice(0, 5);
+  const completarMencion = (name: string) => setNewCm((t) => t.replace(/@\p{L}*$/u, "@" + name + " "));
+
   const toggleCk = (n: number) => {
     const list = c.checklist.map((i, idx) => idx === n ? { ...i, done: !i.done, done_at: !i.done ? new Date().toISOString() : null } : i);
     const allDone = list.length && list.every((i) => i.done);
@@ -499,10 +532,21 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
               <p className="text-sm m-0 mt-0.5">{m.txt}</p>
             </div>
           ))}
-        <div className="flex gap-1.5 mt-1">
-          <input value={newCm} onChange={(e) => setNewCm(e.target.value)} placeholder="Ej: no avanza porque falta…"
+        <div className="flex gap-1.5 mt-1 relative">
+          <input value={newCm} onChange={(e) => setNewCm(e.target.value)} placeholder="Ej: no avanza porque falta… (mencioná con @)"
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); anotar(); } }}
             className="flex-1 bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-[13px]" />
-          <button onClick={() => { if (newCm.trim()) { patch.mutate({ comments: [...c.comments, { who: meName, when: new Date().toISOString(), txt: newCm.trim() }] }); setNewCm(""); } }}
+          {mencionSug.length > 0 && (
+            <div className="absolute left-0 bottom-full mb-1 z-10 min-w-[180px] bg-surface2 border border-line rounded-lg shadow-lg overflow-hidden">
+              {mencionSug.map((u) => (
+                <button key={u.id} type="button" onMouseDown={(e) => { e.preventDefault(); completarMencion(u.name); }}
+                  className="flex items-center gap-2 w-full text-left px-2.5 py-1.5 text-[13px] hover:bg-accent-soft hover:text-accent">
+                  <Avatar name={u.name} size={18} /><span className="truncate">{u.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <button onClick={anotar}
             className="border border-line bg-surface2 rounded-lg px-3 text-[13px]">Anotar</button>
         </div>
 
