@@ -3,6 +3,8 @@ import type { Card, Profile, ActivityLog } from "../../lib/types";
 import { dueInfo, saludScore } from "../../lib/metrics";
 import { Donut, Gauge, Legend, type Seg } from "../../components/charts";
 import { Avatar } from "../../lib/ui";
+import { useSnapshots } from "../../hooks/useData";
+import { utilizacionEquipo } from "../../lib/ociosidad";
 
 // Paleta categórica del donut de personas: escala de GRISES (marca monocroma).
 // El segmento mayor lleva el acento; el resto, grises distinguibles entre sí.
@@ -42,6 +44,12 @@ export function Reporte({ cards, team, activity }: { cards: Card[]; team: Profil
     act: activity.filter((a) => a.owner === u.id && new Date(a.at).getTime() >= mes).reduce((s, a) => s + a.qty, 0),
   })).sort((a, b) => b.ef - a.ef);
   const maxEf = Math.max(1, ...rank.map((r) => r.ef));
+
+  // Utilización del tiempo (planificación de carga): últimos 30 días hasta hoy, días hábiles.
+  const snaps = useSnapshots(true).data ?? [];
+  const hastaISO = new Date(now).toISOString().slice(0, 10);
+  const desdeISO = new Date(now - 30 * day).toISOString().slice(0, 10);
+  const util = utilizacionEquipo(team.filter((u) => u.role !== "jefe"), cards, activity, snaps, desdeISO, hastaISO);
 
   const card = "bg-surface rounded-2xl p-[18px]";
   const cardSh = { boxShadow: "var(--ring),var(--shadow)" };
@@ -105,6 +113,20 @@ export function Reporte({ cards, team, activity }: { cards: Card[]; team: Profil
           </div>
         ))}
         {rank.every((r) => r.ef === 0 && r.act === 0) && <p className="text-ink2 text-sm">Sin actividad en el período.</p>}
+      </div>
+
+      <div className={card} style={cardSh}>
+        <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-3.5">Utilización del tiempo (30 días)</h3>
+        {util.length ? util.map((p) => (
+          <div key={p.id} className="flex items-center gap-3 py-2 text-sm border-t border-line first:border-0">
+            <Avatar name={p.name} size={26} />
+            <span className="w-[170px] shrink-0 truncate">{p.name}</span>
+            <div className="flex-1 h-[9px] bg-surface2 rounded-full overflow-hidden min-w-[60px]"><div className="h-full rounded-full" style={{ width: `${Math.round(p.indice * 100)}%`, background: "var(--s1)" }} /></div>
+            <span className="shrink-0 tnum font-semibold text-[13px] w-[44px] text-right">{Math.round(p.indice * 100)}%</span>
+            <span className="shrink-0 text-ink2 text-[12px] w-[150px] text-right">{p.diasSinActividad} días sin actividad registrada</span>
+          </div>
+        )) : <p className="text-ink2 text-sm">Sin datos de utilización.</p>}
+        <p className="text-[11px] text-ink2 mt-3">Indicador de planificación de carga — no mide presencia ni productividad individual</p>
       </div>
     </div>
   );
