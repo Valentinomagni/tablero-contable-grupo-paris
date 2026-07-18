@@ -5,6 +5,11 @@ import { Donut, Gauge, Legend, type Seg } from "../../components/charts";
 import { Avatar } from "../../lib/ui";
 import { useSnapshots } from "../../hooks/useData";
 import { utilizacionEquipo } from "../../lib/ociosidad";
+import { useArqueoStats } from "../../hooks/useArqueo";
+
+// Semáforo del cumplimiento de arqueo (SOLO sobre el número, marca monocroma).
+const colorArqueo = (pct: number) => (pct >= 98 ? "var(--done)" : pct >= 95 ? "var(--warn)" : "var(--danger)");
+const mesActualPrefix = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
 
 // Paleta categórica del donut de personas: escala de GRISES (marca monocroma).
 // El segmento mayor lleva el acento; el resto, grises distinguibles entre sí.
@@ -50,6 +55,9 @@ export function Reporte({ cards, team, activity }: { cards: Card[]; team: Profil
   const hastaISO = new Date(now).toISOString().slice(0, 10);
   const desdeISO = new Date(now - 30 * day).toISOString().slice(0, 10);
   const util = utilizacionEquipo(team.filter((u) => u.role !== "jefe"), cards, activity, snaps, desdeISO, hastaISO);
+
+  // Controles de caja (arqueo) — cumplimiento del mes actual por card de control (P1).
+  const arqueo = useArqueoStats(cards, mesActualPrefix());
 
   const card = "bg-surface rounded-2xl p-[18px]";
   const cardSh = { boxShadow: "var(--ring),var(--shadow)" };
@@ -145,6 +153,23 @@ export function Reporte({ cards, team, activity }: { cards: Card[]; team: Profil
         )) : <p className="text-ink2 text-sm">Sin datos de utilización.</p>}
         <p className="text-[11px] text-ink2 mt-3">Indicador de planificación de carga — no mide presencia ni productividad individual</p>
       </div>
+
+      {arqueo.length > 0 && (
+        <div className={card} style={cardSh}>
+          <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-3.5">Controles de caja (arqueo)</h3>
+          {arqueo.map(({ card: c, stats }) => {
+            const owner = team.find((u) => u.id === c.owner);
+            return (
+              <div key={c.id} className="flex items-center gap-3 py-2 text-sm border-t border-line first:border-0">
+                {owner && <Avatar name={owner.name} size={26} />}
+                <span className="flex-1 min-w-0 truncate">{c.title} <span className="text-ink2">· {owner?.name ?? "Sin responsable"}</span></span>
+                <span className="shrink-0 tnum font-semibold text-[15px] w-[64px] text-right" style={{ color: colorArqueo(stats.pctOk) }}>{stats.pctOk}%</span>
+                <span className="shrink-0 text-ink2 text-[12px] w-[140px] text-right">{stats.ok}/{stats.total} sin diferencias</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

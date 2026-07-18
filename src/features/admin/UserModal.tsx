@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase, SUPABASE_URL } from "../../lib/supabase";
 import type { ActivityLog, Card, Profile, Role } from "../../lib/types";
 import { useObjectives } from "../../hooks/useData";
+import { useArqueoStats } from "../../hooks/useArqueo";
 import { userMetrics30d } from "../../lib/metrics";
 import { nombreValido } from "../../lib/validacion";
 import { puedeSerManager, esSinAsignar, MARCAS } from "../../lib/jerarquia";
@@ -30,6 +31,13 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
   const puedeEliminar = esJefe && u.id !== meId && !esSinAsignar(u);
 
   const m = userMetrics30d(cards, objectives, activity, u.id, Date.now());
+
+  // Arqueo (mes): cumplimiento de las cards de control de las que esta persona es dueña (P1).
+  const mesPrefix = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; })();
+  const arqueoRows = useArqueoStats(cards, mesPrefix).filter((r) => r.card.owner === u.id);
+  const arqueoTot = arqueoRows.reduce((s, r) => s + r.stats.total, 0);
+  const arqueoOk = arqueoRows.reduce((s, r) => s + r.stats.ok, 0);
+  const arqueoPctOk = arqueoTot === 0 ? 0 : Math.round((arqueoOk / arqueoTot) * 10000) / 100;
 
   // Managers posibles: encargados/jefes que no generen ciclo (ni sí mismo ni un subordinado).
   const managerOpts = team.filter(
@@ -144,6 +152,7 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
           <Stat v={m.objWeight + "%"} label="Peso de objetivos" />
           <Stat v={m.kpiPerf !== null ? m.kpiPerf + "%" : "—"} label="Cumplimiento KPIs" />
           <Stat v={m.activity30} label="Actividad operativa (30 d)" />
+          {arqueoRows.length > 0 && <Stat v={arqueoPctOk + "%"} label="Arqueo (mes)" />}
         </div>
 
         {puedeEliminar && (
