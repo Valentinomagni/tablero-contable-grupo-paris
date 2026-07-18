@@ -1,8 +1,9 @@
 import { EmptyState } from "../../components/EmptyState";
 import { useState } from "react";
-import { Download, ClipboardCopy, Inbox, AlarmClock, CheckCircle2, Activity, ArrowUp, ArrowDown, ShieldCheck, Users } from "lucide-react";
+import { Download, ClipboardCopy, Inbox, AlarmClock, CheckCircle2, Activity, ArrowUp, ArrowDown, ShieldCheck, Users, AlertTriangle } from "lucide-react";
 import type { Card, Profile, ActivityLog } from "../../lib/types";
 import { dueInfo, fmtDateTime, wow, onTimeAdherence, type Wow } from "../../lib/metrics";
+import { alertasDeRiesgo } from "../../lib/alertas";
 import { isBlocked } from "../../lib/deps";
 import { buildCsv, standupText, cicloDelMes, cargaPorFecha, ultimos14 } from "../../lib/resumen";
 import { useSnapshots } from "../../hooks/useData";
@@ -79,6 +80,7 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
   const ciclo = cicloDelMes(cards);
   const evol = cargaPorFecha(snaps);
   const d14 = ultimos14(cards, now);
+  const alertas = alertasDeRiesgo(cards, team, now);
   const cargaPersona = team.map((u) => ({
     n: u.name,
     v: norm.filter((c) => c.owner === u.id && c.status !== "term").reduce((s, c) => s + (c.effort ?? 1), 0),
@@ -136,6 +138,18 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
           </div>
         ))}
       </div>
+
+      {alertas.length > 0 && (
+        <div className="bg-surface border border-line rounded-2xl px-5 py-4 mb-5" style={cardSh}>
+          <h2 className="text-[11px] text-ink2 uppercase tracking-[0.08em] font-semibold mb-2.5">Alertas</h2>
+          {alertas.slice(0, 6).map((a, i) => (
+            <div key={i} className="flex items-start gap-2.5 py-1.5 border-b border-line last:border-0">
+              <AlertTriangle size={14} className="shrink-0 mt-0.5" style={{ color: a.sev === "alta" ? "var(--danger)" : "var(--warn)" }} />
+              <span className="flex-1 min-w-0"><b className="block text-[13px]">{a.titulo}</b><span className="block text-xs text-ink2">{a.detalle}</span></span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {arca.length > 0 && (
         <div className="bg-surface border border-line rounded-2xl px-5 py-4 mb-5" style={cardSh}>
