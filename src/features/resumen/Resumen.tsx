@@ -6,6 +6,9 @@ import { dueInfo, fmtDateTime, wow, onTimeAdherence, type Wow } from "../../lib/
 import { isBlocked } from "../../lib/deps";
 import { buildCsv, standupText, cicloDelMes, cargaPorFecha, ultimos14 } from "../../lib/resumen";
 import { useSnapshots } from "../../hooks/useData";
+import { useVacaciones } from "../../hooks/useVacaciones";
+import { estaDeVacaciones } from "../../lib/vacaciones";
+import { claveFecha } from "../../lib/calendario";
 import { Avatar } from "../../lib/ui";
 import { DepGraph } from "./DepGraph";
 import { useArca } from "../tablon/arca";
@@ -45,6 +48,8 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
   onOpenCard: (c: Card) => void; onGoPerson: (id: string) => void; onDelegar?: () => void;
 }) {
   const now = Date.now(), day = 86400000, week = now - 7 * day;
+  const { data: vacaciones = [] } = useVacaciones();
+  const hoyISO = claveFecha(new Date());
   const norm = cards.filter((c) => c.card_type !== "operativa");
   const open = norm.filter((c) => c.status !== "term");
   const late = open.filter((c) => { const i = dueInfo(c); return i && i.days < 0; });
@@ -161,7 +166,8 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
               const ef = his.filter((c) => c.status === "term" && c.done_at && new Date(c.done_at).getTime() >= week).reduce((s, c) => s + (c.effort ?? 1), 0);
               return (
                 <tr key={u.id} onClick={() => onGoPerson(u.id)} className="border-t border-line cursor-pointer hover:bg-surface2 tnum">
-                  <td className="px-3 py-2.5 flex items-center gap-2"><Avatar name={u.name} size={22} /><b>{u.name}</b> <span className="text-ink2 text-xs capitalize">{u.role}</span></td>
+                  <td className="px-3 py-2.5 flex items-center gap-2"><Avatar name={u.name} size={22} /><b>{u.name}</b> <span className="text-ink2 text-xs capitalize">{u.role}</span>
+                    {estaDeVacaciones(vacaciones, u.id, hoyISO) && <span className="text-[11px] rounded px-1.5 py-0.5 font-medium bg-chip text-ink2">de vacaciones</span>}</td>
                   <td className="px-3 py-2.5 text-center">{his.filter((c) => c.status === "pend").length}</td>
                   <td className="px-3 py-2.5 text-center">{his.filter((c) => c.status === "proc").length}</td>
                   <td className="px-3 py-2.5 text-center">{his.filter((c) => c.status === "term" && c.done_at && new Date(c.done_at).getTime() >= week).length}</td>

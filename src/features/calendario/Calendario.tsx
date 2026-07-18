@@ -1,11 +1,14 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, Plus, Trash2, Pencil, CalendarDays, LayoutGrid, Check, Pin } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trash2, Pencil, CalendarDays, LayoutGrid, Check, Pin, Plane } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import type { Announcement, Profile, Card, TaskOccurrence } from "../../lib/types";
 import { useAnnouncements } from "../../hooks/useData";
 import { useOccurrences } from "../../hooks/useOccurrences";
+import { useVacaciones } from "../../hooks/useVacaciones";
+import { ausentesEnFecha } from "../../lib/vacaciones";
+import { VacacionesModal } from "./VacacionesModal";
 import { MESES, DIAS_SEMANA, grillaMes, eventosPorDia, conteoPorMes, claveFecha } from "../../lib/calendario";
 import { CLS_TONO } from "../../lib/vencimientos";
 import { Modal } from "../../components/Modal";
@@ -27,7 +30,10 @@ const fechaLarga = (iso: string) =>
 
 export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profile[]; cards?: Card[] }) {
   const isJefe = me.role === "jefe";
+  const esGestor = me.role === "jefe" || me.role === "encargado";
   const { data: anuncios = [] } = useAnnouncements();
+  const { data: vacaciones = [] } = useVacaciones();
+  const [vacModal, setVacModal] = useState(false);
   const qc = useQueryClient();
   const hoy = new Date();
   const hoyISO = claveFecha(hoy);
@@ -65,6 +71,9 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
     for (const o of ocurrencias) (m[o.fecha] ??= []).push(o);
     return m;
   }, [ocurrencias]);
+
+  // Nombre (primer nombre) del dueño de una vacación, para los chips de ausencia.
+  const primerNombre = (id: string) => (team.find((u) => u.id === id)?.name ?? "?").split(" ")[0];
 
   // Fuente única: marcar/desmarcar cumplimiento del día actualiza la MISMA fila (spec #12).
   const toggleOcc = useMutation({
@@ -113,6 +122,7 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
 
   const eventosDelDia = diaSel ? (porDia[diaSel] ?? []) : [];
   const arcaDelDia = diaSel ? (arcaPorDia[diaSel] ?? []) : [];
+  const ausentesDelDia = diaSel ? ausentesEnFecha(vacaciones, diaSel) : [];
   const inputCls = "w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-[13px]";
   const btn = "flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3 py-1.5 text-[13px]";
 
@@ -126,6 +136,9 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
           {vista === "mes" ? `${MESES[month - 1]} ${year}` : year}
         </h2>
         <div className="ml-auto flex gap-1.5">
+          {esGestor && (
+            <button onClick={() => setVacModal(true)} className={btn}><Plane size={14} /> Vacaciones</button>
+          )}
           <button onClick={() => setVista("mes")} className={cn(btn, vista === "mes" && "border-accent text-accent bg-accent-soft")}><CalendarDays size={14} /> Mes</button>
           <button onClick={() => setVista("anio")} className={cn(btn, vista === "anio" && "border-accent text-accent bg-accent-soft")}><LayoutGrid size={14} /> Año</button>
         </div>
@@ -145,6 +158,7 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
               const evs = porDia[c.date] ?? [];
               const occ = ocurrenciasPorDia[c.date] ?? [];
               const arcaEvs = arcaPorDia[c.date] ?? [];
+              const ausentes = ausentesEnFecha(vacaciones, c.date);
               return (
                 <button key={c.date} onClick={() => abrirDia(c.date)}
                   className={cn("min-h-[92px] border-b border-r border-line/70 p-1.5 text-left align-top transition hover:bg-surface2/60 flex flex-col gap-1",
@@ -167,6 +181,9 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
                     <span key={"arca" + i} title={`ARCA · ${e.title}`} className="text-[11px] rounded px-1.5 py-0.5 truncate font-medium bg-chip text-ink2">ARCA · {e.title}</span>
                   ))}
                   {arcaEvs.length > 2 && <span className="text-[10.5px] text-ink2 px-1">+{arcaEvs.length - 2} ARCA</span>}
+                  {ausentes.map((v) => (
+                    <span key={"vac" + v.id} title={`${primerNombre(v.owner)} ausente`} className="text-[11px] rounded px-1.5 py-0.5 truncate font-medium bg-chip text-ink2">{primerNombre(v.owner)} ausente</span>
+                  ))}
                 </button>
               );
             })}
@@ -266,6 +283,28 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
             </div>
           )}
 
+          {ausentesDelDia.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-line">
+              <h4 className="text-xs uppercase tracking-wide text-ink2 mb-2">Ausencias</h4>
+              {ausentesDelDia.map((v) => {
+                const ausenteNom = team.find((u) => u.id === v.owner)?.name ?? "?";
+                const replNom = v.reemplazante ? team.find((u) => u.id === v.reemplazante)?.name ?? null : null;
+                return (
+                  <div key={v.id} className="flex items-start gap-2 py-2 border-b border-line/60 last:border-0">
+                    <span className="text-[10.5px] rounded px-1.5 py-0.5 font-semibold shrink-0 mt-0.5 bg-chip text-ink2">Ausente</span>
+                    <div className="flex-1 min-w-0">
+                      <b className="text-sm">{ausenteNom}</b>
+                      <p className="text-ink2 text-[12px] m-0 mt-0.5">
+                        {fechaLarga(v.desde)} – {fechaLarga(v.hasta)} · {v.motivo}
+                        {replNom && <> · cubre {replNom}</>}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           <div className="mt-4 pt-3 border-t border-line">
             <h4 className="text-xs uppercase tracking-wide text-ink2 mb-2">Agregar evento</h4>
             <div className="grid gap-2">
@@ -304,6 +343,10 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
           </div>
           <button onClick={() => setDiaSel(null)} className="w-full mt-3 border border-line bg-surface2 rounded-lg py-2 text-[13px]">Cerrar</button>
         </Modal>
+      )}
+
+      {vacModal && esGestor && (
+        <VacacionesModal me={me} team={team} cards={cards} onClose={() => setVacModal(false)} />
       )}
     </div>
   );
