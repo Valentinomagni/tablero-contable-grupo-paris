@@ -53,6 +53,12 @@ export interface AppSettings {
   edit_closed: boolean; board_name?: string; due_warn_days?: number; stuck_days?: number;
   closing_template?: import("./plantilla").TemplateItem[];
   categorias?: string[];
+  plantillas?: PlantillaTareas[];
+}
+export interface PlantillaTareas {
+  nombre: string;
+  categoria: string;
+  items: { titulo: string; owner?: string; effort?: 1 | 2 | 3 | 5; priority?: "alta" | "media" | "baja" }[];
 }
 
 export const COLS: [Status, string][] = [["pend", "Pendiente"], ["proc", "En proceso"], ["term", "Terminado"]];

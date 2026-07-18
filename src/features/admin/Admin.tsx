@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Archive, Download, UserPlus, ArrowRightLeft, Plus, X } from "lucide-react";
+import { Archive, Download, UserPlus, ArrowRightLeft, Plus, X, Trash2, CalendarPlus } from "lucide-react";
 import { toast } from "sonner";
 import { mesLabel } from "../../lib/archivo";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase, SUPABASE_URL } from "../../lib/supabase";
-import type { Card, Profile, Role, AppSettings } from "../../lib/types";
+import type { Card, Profile, Role, AppSettings, PlantillaTareas } from "../../lib/types";
+import { filasDePlantilla } from "../../lib/plantillas";
 import { PlantillaCierre } from "./PlantillaCierre";
 import { ReasignarModal } from "./ReasignarModal";
 import { Huerfanas } from "./Huerfanas";
@@ -26,6 +27,11 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
   const [parWarn, setParWarn] = useState<string | null>(null);
   const [parStuck, setParStuck] = useState<string | null>(null);
   const [nuevaCat, setNuevaCat] = useState("");
+  // Plantillas de tareas (propuesta P6): responsable por defecto elegido al generar y borrador de creación.
+  const [plOwner, setPlOwner] = useState<Record<number, string>>({});
+  const [plGenBusy, setPlGenBusy] = useState<number | null>(null);
+  const [plDraft, setPlDraft] = useState<PlantillaTareas>({ nombre: "", categoria: "", items: [] });
+  const [plItem, setPlItem] = useState<{ titulo: string; owner: string; effort: 1 | 2 | 3 | 5; priority: "alta" | "media" | "baja" }>({ titulo: "", owner: "", effort: 1, priority: "media" });
   // Archivo mensual (spec 21 item 9): opciones = mes actual y anterior (YYYY-MM)
   const hoy = new Date();
   const mesFmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -41,6 +47,41 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
     setPermMsg(error ? "No se pudo guardar: " + error.message : okTxt);
     if (!error) qc.invalidateQueries({ queryKey: ["settings"] });
     setTimeout(() => setPermMsg(""), 3000);
+  }
+
+  const plantillas = settings.plantillas ?? [];
+
+  async function generarPlantilla(pl: PlantillaTareas, idx: number) {
+    const porDefecto = plOwner[idx] ?? "";
+    // Si algún ítem no tiene owner propio, necesitamos un responsable por defecto.
+    if (pl.items.some((it) => !it.owner) && !porDefecto) { toast.error("Elegí un responsable por defecto para los ítems sin responsable."); return; }
+    if (!pl.items.length) { toast.error("La plantilla no tiene ítems."); return; }
+    setPlGenBusy(idx);
+    const filas = filasDePlantilla(pl, meName, new Date().toISOString(), porDefecto);
+    const { error } = await supabase.from("cards").insert(filas);
+    setPlGenBusy(null);
+    if (error) { toast.error("No se pudo generar: " + error.message); return; }
+    qc.invalidateQueries({ queryKey: ["cards"] });
+    toast.success(`${filas.length} tarea(s) generada(s) desde "${pl.nombre}"`);
+  }
+
+  function eliminarPlantilla(idx: number) {
+    saveSettings({ ...settings, plantillas: plantillas.filter((_, i) => i !== idx) }, "Plantilla eliminada");
+  }
+
+  function agregarItem() {
+    if (!plItem.titulo.trim()) { toast.error("El ítem necesita un título."); return; }
+    setPlDraft({ ...plDraft, items: [...plDraft.items, { titulo: plItem.titulo.trim(), ...(plItem.owner ? { owner: plItem.owner } : {}), effort: plItem.effort, priority: plItem.priority }] });
+    setPlItem({ titulo: "", owner: "", effort: 1, priority: "media" });
+  }
+
+  function guardarPlantilla() {
+    if (!plDraft.nombre.trim()) { toast.error("Ponele un nombre a la plantilla."); return; }
+    if (!plDraft.categoria) { toast.error("Elegí una categoría."); return; }
+    if (!plDraft.items.length) { toast.error("Agregá al menos un ítem."); return; }
+    saveSettings({ ...settings, plantillas: [...plantillas, { ...plDraft, nombre: plDraft.nombre.trim() }] }, "Plantilla guardada");
+    setPlDraft({ nombre: "", categoria: "", items: [] });
+    setPlItem({ titulo: "", owner: "", effort: 1, priority: "media" });
   }
 
   async function crearUsuario() {
@@ -172,6 +213,77 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
             <Plus size={14} /> Agregar</button>
         </form>
         <p className="text-ink2 text-[13px] mt-2 mb-0">Aparecen como opción al crear o editar tareas y como filtros del tablero. Quitar una categoría no toca las tarjetas que ya la tienen.</p>
+        {permMsg && <p className={"text-sm mt-2 mb-0 " + (!permMsg.startsWith("No se pudo") ? "text-done" : "text-danger")}>{permMsg}</p>}
+      </div>
+
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Plantillas de tareas</h2>
+      <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
+        <p className="text-ink2 text-[13px] mt-0 mb-3 max-w-[640px]">Definí un lote de tareas repetitivo (conciliaciones, IVA por marca…) y generalo con un click. Cada ítem puede tener su responsable; si no, se usa el responsable por defecto que elijas al generar.</p>
+
+        {plantillas.length === 0 && <p className="text-ink2 text-[13px] m-0 mb-3">Todavía no hay plantillas. Creá una abajo.</p>}
+        {plantillas.map((pl, idx) => (
+          <div key={idx} className="flex flex-wrap items-center gap-2 py-2 border-b border-line/60 last:border-0">
+            <div className="min-w-[200px] flex-1">
+              <b className="text-[13px] text-ink">{pl.nombre}</b>
+              <span className="text-ink2 text-[12px]"> · {pl.categoria} · {pl.items.length} ítem{pl.items.length === 1 ? "" : "s"}</span>
+            </div>
+            <select value={plOwner[idx] ?? ""} onChange={(e) => setPlOwner({ ...plOwner, [idx]: e.target.value })} className={inputCls}
+              title="Responsable por defecto para los ítems sin responsable">
+              <option value="">Responsable por defecto…</option>
+              {equipo.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+            </select>
+            <button onClick={() => generarPlantilla(pl, idx)} disabled={plGenBusy === idx}
+              className="flex items-center gap-1.5 bg-[#0b0b0d] text-white rounded-lg px-3 py-1.5 text-[13px] font-semibold disabled:opacity-50">
+              <CalendarPlus size={14} /> {plGenBusy === idx ? "Generando…" : "Generar"}</button>
+            <button title="Eliminar plantilla" onClick={() => eliminarPlantilla(idx)}
+              className="border border-line bg-surface2 rounded-lg p-1.5 text-ink2 hover:text-danger"><Trash2 size={13} /></button>
+          </div>
+        ))}
+
+        <div className="border-t border-line mt-4 pt-4">
+          <h3 className="text-[13px] font-semibold text-ink mt-0 mb-2.5">Nueva plantilla</h3>
+          <div className="flex flex-wrap gap-2 mb-3">
+            <input value={plDraft.nombre} onChange={(e) => setPlDraft({ ...plDraft, nombre: e.target.value })} placeholder="Nombre (ej: IVA por marca)" className={inputCls + " w-[220px] max-w-full"} />
+            <select value={plDraft.categoria} onChange={(e) => setPlDraft({ ...plDraft, categoria: e.target.value })} className={inputCls}>
+              <option value="">Categoría…</option>
+              {(settings.categorias ?? []).map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          {(settings.categorias ?? []).length === 0 && <p className="text-ink2 text-[12px] mt-0 mb-2">Definí primero alguna categoría arriba para poder clasificar la plantilla.</p>}
+
+          {plDraft.items.length > 0 && (
+            <div className="mb-3">
+              {plDraft.items.map((it, i) => (
+                <div key={i} className="flex items-center gap-2 py-1 text-[13px]">
+                  <span className="flex-1 min-w-[160px] text-ink">{it.titulo}</span>
+                  <span className="text-ink2 text-[12px]">{it.owner ? (equipo.find((u) => u.id === it.owner)?.name ?? "responsable") : "por defecto"} · {it.effort} pt · {it.priority}</span>
+                  <button title="Quitar ítem" onClick={() => setPlDraft({ ...plDraft, items: plDraft.items.filter((_, idx) => idx !== i) })}
+                    className="border border-line bg-surface2 rounded-lg p-1 text-ink2 hover:text-danger"><X size={12} /></button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center gap-2">
+            <input value={plItem.titulo} onChange={(e) => setPlItem({ ...plItem, titulo: e.target.value })} placeholder="Título del ítem" className={inputCls + " flex-1 min-w-[180px]"} />
+            <select value={plItem.owner} onChange={(e) => setPlItem({ ...plItem, owner: e.target.value })} className={inputCls}>
+              <option value="">Responsable (opcional)…</option>
+              {equipo.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+            </select>
+            <select value={String(plItem.effort)} onChange={(e) => setPlItem({ ...plItem, effort: Number(e.target.value) as 1 | 2 | 3 | 5 })} className={inputCls}>
+              <option value="1">1 pt</option><option value="2">2 pts</option><option value="3">3 pts</option><option value="5">5 pts</option>
+            </select>
+            <select value={plItem.priority} onChange={(e) => setPlItem({ ...plItem, priority: e.target.value as "alta" | "media" | "baja" })} className={inputCls}>
+              <option value="alta">Alta</option><option value="media">Media</option><option value="baja">Baja</option>
+            </select>
+            <button onClick={agregarItem} disabled={!plItem.titulo.trim()}
+              className="flex items-center gap-1.5 border border-dashed border-line rounded-lg px-3 py-1.5 text-[13px] text-ink2 hover:text-accent hover:border-accent disabled:opacity-50">
+              <Plus size={14} /> Agregar ítem</button>
+          </div>
+
+          <button onClick={guardarPlantilla} disabled={!plDraft.nombre.trim() || !plDraft.categoria || !plDraft.items.length}
+            className="bg-accent text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold mt-3 disabled:opacity-60">Guardar plantilla</button>
+        </div>
         {permMsg && <p className={"text-sm mt-2 mb-0 " + (!permMsg.startsWith("No se pudo") ? "text-done" : "text-danger")}>{permMsg}</p>}
       </div>
 
