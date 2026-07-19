@@ -8,13 +8,10 @@ export const MARCAS = ["General", "Peugeot", "Citroën", "Chevrolet", "Honda"];
 // Lo crea la edge function eliminar-usuario como auth user REAL (un uuid inventado viola
 // cards_owner_fkey), así que se lo identifica por EMAIL, no por un id fijo.
 // SIN_ASIGNAR_ID queda por compatibilidad con bases donde la migración 17 sí insertó.
-export const SIN_ASIGNAR_ID = "00000000-0000-0000-0000-000000000000";
+const SIN_ASIGNAR_ID = "00000000-0000-0000-0000-000000000000";
 export const SIN_ASIGNAR_EMAIL = "sin-asignar@grupoparis.com";
 export const esSinAsignar = (p: Pick<Profile, "id" | "email">): boolean =>
   p.email === SIN_ASIGNAR_EMAIL || p.id === SIN_ASIGNAR_ID;
-// id real del centinela en esta base (null si todavía no existe)
-export const sinAsignarId = (profiles: Profile[]): string | null =>
-  profiles.find(esSinAsignar)?.id ?? null;
 
 export function reportesDirectos(managerId: string, profiles: Profile[]): Profile[] {
   return profiles.filter((p) => p.manager_id === managerId);

@@ -11,6 +11,8 @@ export default defineConfig({
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },
   },
+  // Respeta el puerto que asigne el entorno (PORT); si no hay, usa el default de Vite.
+  server: process.env.PORT ? { port: Number(process.env.PORT) } : undefined,
   // Vitest solo corre los tests unitarios de src; los E2E (e2e/*.spec.ts) los corre Playwright.
   test: {
     include: ["src/**/*.test.{ts,tsx}"],

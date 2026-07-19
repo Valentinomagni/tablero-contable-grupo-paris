@@ -1,14 +1,12 @@
-import type { Profile } from "./types";
-
 export function cn(...xs: (string | false | null | undefined)[]) {
   return xs.filter(Boolean).join(" ");
 }
 
 // paleta monocromática de marca: escala grafito (negro/gris), sin azul ni arcoíris
 const AV_COLORS = ["#18181b", "#27272a", "#3f3f46", "#52525b", "#2a2a2e", "#3a3a40"];
-export const initials = (n: string) =>
+const initials = (n: string) =>
   (n || "?").trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
-export const avColor = (n: string) =>
+const avColor = (n: string) =>
   AV_COLORS[[...(n || "?")].reduce((s, c) => s + c.charCodeAt(0), 0) % AV_COLORS.length];
 
 export function Avatar({ name, size = 26 }: { name: string; size?: number }) {
@@ -22,6 +20,3 @@ export function Avatar({ name, size = 26 }: { name: string; size?: number }) {
     </span>
   );
 }
-
-export function esc(s: unknown) { return String(s ?? ""); }
-export type { Profile };

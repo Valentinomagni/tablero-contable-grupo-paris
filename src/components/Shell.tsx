@@ -1,5 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
-import { LayoutDashboard, ClipboardList, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin, Settings, KeyRound, AlignJustify, History, CalendarRange, ClipboardCheck, Network, StickyNote, Sparkles, Keyboard } from "lucide-react";
+import { LayoutDashboard, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin, Settings, KeyRound, AlignJustify, History, CalendarRange, ClipboardCheck, Network, StickyNote, Sparkles, Keyboard } from "lucide-react";
 import { Avatar, cn } from "../lib/ui";
 import { PREF, getPref, setPref } from "../lib/prefs";
 import { LogoMark } from "./Logo";
@@ -141,5 +141,3 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
     </div>
   );
 }
-
-export const boardIcon = <ClipboardList size={16} />;

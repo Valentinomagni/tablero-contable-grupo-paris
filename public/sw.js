@@ -3,7 +3,7 @@
 // - cachea de paso lo que baja, y solo usa el cache si no hay conexión
 const CACHE = "tablero-2026-07-15";
 
-self.addEventListener("install", (e) => { self.skipWaiting(); });
+self.addEventListener("install", () => { self.skipWaiting(); });
 self.addEventListener("activate", (e) => {
   e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });

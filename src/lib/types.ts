@@ -9,7 +9,7 @@ export interface TaskOccurrence {
   // Resultado de control (migración 23, arqueo de caja): 'ok' sin diferencias, 'dif' con diferencias
   resultado?: "ok" | "dif" | null; dif_importe?: number | null; dif_obs?: string | null;
 }
-export interface Comment { who: string; when: string; txt: string; }
+interface Comment { who: string; when: string; txt: string; }
 export interface HistoryEntry { who: string; at: string; txt: string; }
 export interface Card {
   id: string; owner: string; title: string; status: Status; description: string;

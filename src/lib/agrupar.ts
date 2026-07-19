@@ -1,6 +1,6 @@
 import type { Card } from "./types";
 
-export const SIN_CATEGORIA = "Sin categoría";
+const SIN_CATEGORIA = "Sin categoría";
 
 // Agrupación del tablero (spec 21, item 13). Por categoría (las de más tareas
 // primero, "Sin categoría" al final); si NINGUNA card tiene categoría, por prioridad.

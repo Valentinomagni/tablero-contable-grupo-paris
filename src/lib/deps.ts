@@ -35,11 +35,11 @@ export function dependentsOf(cardId: string, cards: Card[], nameOf: (ownerId: st
 }
 
 // ---- layout del grafo (port de depGraphHTML) ----
-export interface GraphNode { id: string; x: number; y: number; title: string; owner_name: string; done: boolean; }
-export interface GraphEdge { from: string; to: string; x1: number; y1: number; x2: number; y2: number; done: boolean; }
+interface GraphNode { id: string; x: number; y: number; title: string; owner_name: string; done: boolean; }
+interface GraphEdge { from: string; to: string; x1: number; y1: number; x2: number; y2: number; done: boolean; }
 export interface GraphLayout { w: number; h: number; nw: number; nh: number; gx: number; nodes: GraphNode[]; edges: GraphEdge[]; }
 
-export const NW = 210, NH = 44, GX = 70, GY = 26, PAD = 14;
+const NW = 210, NH = 44, GX = 70, GY = 26, PAD = 14;
 
 export function depGraphLayout(cards: Card[], depMap: DepMap, nameOf: (ownerId: string) => string = () => ""): GraphLayout | null {
   const info = (id: string) => depInfoOf(id, cards, nameOf, depMap);

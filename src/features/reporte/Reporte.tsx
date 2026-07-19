@@ -92,9 +92,9 @@ export function Reporte({ cards, team, activity }: { cards: Card[]; team: Profil
       </div>
 
       <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))" }}>
-        {([["Salud del equipo", <Gauge key="g" pct={salud} color="var(--s1)" />, <b style={{ color: saludTxtColor }}>{saludTxt}</b>],
-          ["Avance del período", <Gauge key="g" pct={pctAvance} color="var(--s1)" />, <b>{term30.length}/{total} tareas</b>],
-          ["Entregado a tiempo", <Gauge key="g" pct={pctTiempo ?? 0} color="var(--s1)" />, <b>{pctTiempo !== null ? pctTiempo + "%" : "sin datos"}</b>]] as const)
+        {([["Salud del equipo", <Gauge key="g" pct={salud} color="var(--s1)" />, <b key="b" style={{ color: saludTxtColor }}>{saludTxt}</b>],
+          ["Avance del período", <Gauge key="g" pct={pctAvance} color="var(--s1)" />, <b key="b">{term30.length}/{total} tareas</b>],
+          ["Entregado a tiempo", <Gauge key="g" pct={pctTiempo ?? 0} color="var(--s1)" />, <b key="b">{pctTiempo !== null ? pctTiempo + "%" : "sin datos"}</b>]] as const)
           .map(([l, g, b], i) => (
             <div key={i} className="bg-surface rounded-2xl p-4 flex flex-col items-center gap-1.5" style={cardSh}>
               <span className="text-[11.5px] uppercase tracking-wide text-ink2">{l}</span>{g}<span className="text-[15px] font-semibold">{b}</span>

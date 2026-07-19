@@ -7,8 +7,6 @@ export function toARTDate(iso: string): string {
   const art = new Date(d.getTime() - 3 * 3600 * 1000);
   return art.toISOString().slice(0, 10);
 }
-export const fmtDate = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
 export const fmtDateTime = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
 
