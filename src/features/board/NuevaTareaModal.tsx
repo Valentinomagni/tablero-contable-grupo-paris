@@ -3,17 +3,17 @@ import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "../../components/Modal";
 import { supabase } from "../../lib/supabase";
-import { useSettings } from "../../hooks/useData";
 import { similares } from "../../lib/similitud";
+import { categoriasEnUso } from "../../lib/categorias";
 import type { Card } from "../../lib/types";
 
 // Flujo formal de alta (spec 21, item 2): las tareas nacen en Pendiente con sus
 // datos completos. Nunca ofrece "Marcar terminada" — eso es del ciclo de vida, no del alta.
-// cards: tareas del owner para detectar duplicadas al tipear (spec 21, item 12).
+// cards: tareas del owner para detectar duplicadas al tipear (spec 21, item 12) y para
+// sugerir categorías ya usadas (spec 21, item 11: visible/asignable para todos los roles).
 export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { ownerId: string; meName: string; cards?: Card[]; onClose: () => void }) {
   const qc = useQueryClient();
-  const { data: settings } = useSettings();
-  const categorias = settings?.categorias ?? [];
+  const categorias = categoriasEnUso(cards);
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState<Card["priority"]>("media");
@@ -25,7 +25,7 @@ export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { owne
       const row = {
         owner: ownerId, title: title.trim(), status: "pend" as const,
         due_date: dueDate || null, priority, effort,
-        categoria: categoria || null,
+        categoria: categoria.trim() || null,
         history: [{ who: meName, at: new Date().toISOString(), txt: "Creó la tarea" }],
       };
       const { error } = await supabase.from("cards").insert(row);
@@ -71,15 +71,14 @@ export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { owne
               <option value="1">1 — Baja</option><option value="2">2 — Media</option><option value="3">3 — Alta</option><option value="5">5 — Muy alta</option>
             </select>
           </label>
-          {categorias.length > 0 && (
-            <label className="flex items-center gap-1.5">Categoría
-              <select value={categoria} onChange={(e) => setCategoria(e.target.value)}
-                className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px]">
-                <option value="">—</option>
-                {categorias.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-              </select>
-            </label>
-          )}
+          <label className="flex items-center gap-1.5">Categoría
+            <input list="cats-nueva" value={categoria} onChange={(e) => setCategoria(e.target.value)}
+              placeholder="Sin categoría"
+              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] w-36" />
+            <datalist id="cats-nueva">
+              {categorias.map((cat) => <option key={cat} value={cat} />)}
+            </datalist>
+          </label>
         </div>
         {masParecida && (
           <div className="bg-warn-soft text-warn rounded-lg px-3 py-2 text-[13px] mb-3">

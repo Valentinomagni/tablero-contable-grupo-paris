@@ -16,6 +16,7 @@ import { Check, Copy, Link2, Lock, Hourglass, X, Users, Pencil, Trash2, Minus, P
 import { esCobertura } from "../../lib/vacaciones";
 import { filaDuplicada } from "../../lib/duplicar";
 import { useDepsInfo, useReverseDeps, useSettings } from "../../hooks/useData";
+import { categoriasEnUso } from "../../lib/categorias";
 import { editarItem, borrarItem } from "../../lib/checklist";
 import { nuevaCantidad } from "../../lib/operativas";
 import { Avatar } from "../../lib/ui";
@@ -273,17 +274,21 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
             </select>
           </label>
           {(() => {
-            // Opciones = categorías del Admin + la de la card si quedó fuera del listado (legacy).
-            const cats = settings.categorias ?? [];
-            const opciones = c.categoria && !cats.includes(c.categoria) ? [...cats, c.categoria] : cats;
-            return opciones.length > 0 && (
+            // Categorías en uso por el dueño de la tarea (spec 21 item 11: visible/asignable para todos los roles).
+            const cats = categoriasEnUso(cards.filter((x) => x.owner === c.owner));
+            return (
               <label className="flex items-center gap-1.5">Categoría
-                <select value={c.categoria ?? ""}
-                  onChange={(e) => patch.mutate({ categoria: e.target.value || null, history: hist("Cambió categoría a " + (e.target.value || "ninguna")) })}
-                  className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px]">
-                  <option value="">—</option>
-                  {opciones.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-                </select>
+                <input list="cats-card" defaultValue={c.categoria ?? ""}
+                  onBlur={(e) => {
+                    const v = e.target.value.trim();
+                    if (v === (c.categoria ?? "")) return;
+                    patch.mutate({ categoria: v || null, history: hist("Cambió categoría a " + (v || "ninguna")) });
+                  }}
+                  placeholder="Sin categoría"
+                  className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] w-36" />
+                <datalist id="cats-card">
+                  {cats.map((cat) => <option key={cat} value={cat} />)}
+                </datalist>
               </label>
             );
           })()}
