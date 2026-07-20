@@ -53,9 +53,16 @@ export function Adjuntos({ cardId, canEdit }: { cardId: string; canEdit: boolean
   });
 
   const descargar = async (name: string) => {
-    const { data, error } = await supabase.storage.from("adjuntos").createSignedUrl(`${cardId}/${name}`, 60);
-    if (error || !data?.signedUrl) { toast.error("No se pudo generar el enlace de descarga"); return; }
-    window.open(data.signedUrl, "_blank");
+    const win = window.open("", "_blank");
+    try {
+      const { data, error } = await supabase.storage.from("adjuntos").createSignedUrl(`${cardId}/${name}`, 60);
+      if (error || !data?.signedUrl) throw error ?? new Error("No se pudo generar el enlace de descarga");
+      if (win) win.location.href = data.signedUrl;
+      else window.open(data.signedUrl, "_blank");
+    } catch {
+      win?.close();
+      toast.error("No se pudo descargar el adjunto.");
+    }
   };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
