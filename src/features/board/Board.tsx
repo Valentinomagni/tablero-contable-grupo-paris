@@ -214,7 +214,7 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
         {mostrarSegmento && (
           <>
             <span className="w-px h-4 bg-line mx-1" />
-            <select value={marcaFiltro ?? ""} onChange={(e) => setMarcaFiltro(e.target.value || null)}
+            <select value={marcaFiltro ?? ""} onChange={(e) => { setMarcaFiltro(e.target.value || null); setSucursalFiltro(null); }}
               className="border border-line bg-surface2 text-ink2 rounded-full px-3 py-1 text-[12px] outline-none">
               <option value="">Todas las marcas</option>
               {org.marcas.map((m) => <option key={m} value={m}>{m}</option>)}

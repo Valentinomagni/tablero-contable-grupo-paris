@@ -24,6 +24,8 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
   const [sucursalFiltro, setSucursalFiltro] = useState<string | null>(null);
   const cards = filtrarPorSegmento(cardsIn, team, { marca: marcaFiltro, sucursal: sucursalFiltro });
   const segLbl = marcaFiltro ? ` — ${marcaFiltro}${sucursalFiltro ? ` · ${sucursalFiltro}` : ""}` : "";
+  // Dotación consistente con el segmento activo: usa el campo propio del perfil (sin filtro = equipo completo; perfil sin marca/sucursal no matchea un filtro activo).
+  const teamSeg = team.filter((u) => (!marcaFiltro || u.marca === marcaFiltro) && (!sucursalFiltro || u.sucursal === sucursalFiltro));
   const now = Date.now(), day = 86400000, mes = now - 30 * day;
   const norm = cards.filter((c) => c.card_type !== "operativa");
   const abiertas = norm.filter((c) => c.status !== "term");
@@ -47,11 +49,11 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
     { label: "En proceso", val: norm.filter((c) => c.status === "proc").length, color: "var(--s1)" },
     { label: "Terminado", val: norm.filter((c) => c.status === "term").length, color: "var(--done)" },
   ];
-  const personaSegs: Seg[] = team.map((u) => ({ label: u.name, val: abiertas.filter((c) => c.owner === u.id).length, color: "" }))
+  const personaSegs: Seg[] = teamSeg.map((u) => ({ label: u.name, val: abiertas.filter((c) => c.owner === u.id).length, color: "" }))
     .filter((s) => s.val > 0).sort((a, b) => b.val - a.val)
     .map((s, i) => ({ ...s, color: CAT[i % CAT.length] }));
 
-  const rank = team.map((u) => ({
+  const rank = teamSeg.map((u) => ({
     u, ef: term30.filter((c) => c.owner === u.id).reduce((s, c) => s + (c.effort ?? 1), 0),
     n: term30.filter((c) => c.owner === u.id).length,
     act: activity.filter((a) => a.owner === u.id && new Date(a.at).getTime() >= mes).reduce((s, a) => s + a.qty, 0),
@@ -62,7 +64,7 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
   const snaps = useSnapshots(true).data ?? [];
   const hastaISO = new Date(now).toISOString().slice(0, 10);
   const desdeISO = new Date(now - 30 * day).toISOString().slice(0, 10);
-  const util = utilizacionEquipo(team.filter((u) => u.role !== "jefe"), cards, activity, snaps, desdeISO, hastaISO);
+  const util = utilizacionEquipo(teamSeg.filter((u) => u.role !== "jefe"), cards, activity, snaps, desdeISO, hastaISO);
 
   // Controles de caja (arqueo) — cumplimiento del mes actual por card de control (P1).
   const arqueo = useArqueoStats(cards, mesActualPrefix());
@@ -130,7 +132,7 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
         {([["Vencidas", vencidas.length, vencidas.length ? "border-l-danger" : "border-l-done"],
           ["Bloqueadas", bloqueadas.length, bloqueadas.length ? "border-l-warn" : "border-l-done"],
           ["Abiertas", abiertas.length, "border-l-line"], ["Cerradas (30d)", term30.length, "border-l-line"],
-          ["Actividad op.", actMes, "border-l-line"], ["Personas", team.filter((u) => u.role !== "jefe").length, "border-l-line"]] as const)
+          ["Actividad op.", actMes, "border-l-line"], ["Personas", teamSeg.filter((u) => u.role !== "jefe").length, "border-l-line"]] as const)
           .map(([l, v, b], i) => (
             <div key={i} className={`bg-surface rounded-[14px] px-4 py-3.5 border-l-[3px] ${b}`} style={cardSh}>
               <b className="block text-2xl font-bold tracking-tight tnum">{v}</b>
