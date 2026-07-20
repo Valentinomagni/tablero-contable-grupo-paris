@@ -2,6 +2,7 @@ import { Download } from "lucide-react";
 import { useState } from "react";
 import type { Card, Profile, ActivityLog } from "../../lib/types";
 import { dueInfo, saludScore } from "../../lib/metrics";
+import { puntualidad } from "../../lib/puntualidad";
 import { Donut, Gauge, Legend, type Seg } from "../../components/charts";
 import { Avatar } from "../../lib/ui";
 import { useSnapshots, useOrganizacion } from "../../hooks/useData";
@@ -34,9 +35,8 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
   const bloqueadas = abiertas.filter((c) => (c.deps ?? []).some((id) => { const d = cards.find((x) => x.id === id); return d && d.status !== "term"; }) && c.status !== "term");
   const actMes = activity.filter((a) => new Date(a.at).getTime() >= mes).reduce((s, a) => s + a.qty, 0);
 
-  const conVto = term30.filter((c) => c.due_date);
-  const aTiempo = conVto.filter((c) => c.done_at && new Date(c.done_at) <= new Date(c.due_date + "T23:59:59"));
-  const pctTiempo = conVto.length ? Math.round((aTiempo.length / conVto.length) * 100) : null;
+  const hoyISO = new Date(now).toISOString().slice(0, 10);
+  const punt = puntualidad(norm, hoyISO);
   const total = abiertas.length + term30.length;
   const pctAvance = total ? Math.round((term30.length / total) * 100) : 0;
   const salud = saludScore(abiertas, term30);
@@ -119,13 +119,29 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
 
       <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))" }}>
         {([["Salud del equipo", <Gauge key="g" pct={salud} color="var(--s1)" />, <b key="b" style={{ color: saludTxtColor }}>{saludTxt}</b>],
-          ["Avance del período", <Gauge key="g" pct={pctAvance} color="var(--s1)" />, <b key="b">{term30.length}/{total} tareas</b>],
-          ["Entregado a tiempo", <Gauge key="g" pct={pctTiempo ?? 0} color="var(--s1)" />, <b key="b">{pctTiempo !== null ? pctTiempo + "%" : "sin datos"}</b>]] as const)
+          ["Avance del período", <Gauge key="g" pct={pctAvance} color="var(--s1)" />, <b key="b">{term30.length}/{total} tareas</b>]] as const)
           .map(([l, g, b], i) => (
             <div key={i} className="bg-surface rounded-2xl p-4 flex flex-col items-center gap-1.5" style={cardSh}>
               <span className="text-[11.5px] uppercase tracking-wide text-ink2">{l}</span>{g}<span className="text-[15px] font-semibold">{b}</span>
             </div>
           ))}
+        <div className="bg-surface rounded-2xl p-4 flex flex-col items-center gap-1.5" style={cardSh}>
+          <span className="text-[11.5px] uppercase tracking-wide text-ink2">Puntualidad</span>
+          {punt.pct === null ? (
+            <>
+              <Gauge pct={0} color="var(--s1)" />
+              <span className="text-[15px] font-semibold">sin datos</span>
+            </>
+          ) : punt.muestraChica ? (
+            <span className="text-ink2 text-[13px] text-center">Pocos datos (n={punt.n}) para medir</span>
+          ) : (
+            <>
+              <Gauge pct={punt.pct} color="var(--s1)" />
+              <span className="text-[15px] font-semibold">{punt.pct}%</span>
+              <span className="text-ink2 text-[11.5px] text-center">{punt.enFecha} de {punt.n} con vencimiento · {punt.sinFecha} sin fecha</span>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-2.5" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))" }}>

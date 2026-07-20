@@ -19,6 +19,7 @@ export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] 
       "Reporte con métricas de uso del tiempo del equipo.",
       "Se arregló la impresión del reporte: ahora sale completa y prolija.",
       "El resumen y el reporte ahora se adaptan al rol y la jerarquía de cada persona.",
+      "Reporte: el indicador de puntualidad ahora muestra cuántas tareas se midieron y avisa cuando la muestra es chica.",
     ],
   },
   {
