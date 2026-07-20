@@ -1,9 +1,5 @@
 import type { Card, Profile } from "./types";
 
-// DEPRECATED como fuente de verdad: la lista viva sale de useOrganizacion() (settings).
-// Queda como fallback de orden para el organigrama cuando settings aún no cargó.
-export const MARCAS = ["General", "Peugeot", "Citroën", "Chevrolet", "Honda", "Postventa"];
-
 // Perfil centinela "Sin asignar": dueño de las cards huérfanas tras eliminar un empleado.
 // Lo crea la edge function eliminar-usuario como auth user REAL (un uuid inventado viola
 // cards_owner_fkey), así que se lo identifica por EMAIL, no por un id fijo.
