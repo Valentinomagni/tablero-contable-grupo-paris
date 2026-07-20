@@ -1,5 +1,6 @@
 import { useState, useEffect, type ReactNode } from "react";
-import { LayoutDashboard, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin, Settings, KeyRound, AlignJustify, History, CalendarRange, ClipboardCheck, Network, StickyNote, Sparkles, Keyboard } from "lucide-react";
+import { LayoutDashboard, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin, Settings, KeyRound, AlignJustify, History, CalendarRange, ClipboardCheck, Network, StickyNote, Sparkles, Keyboard, WifiOff } from "lucide-react";
+import { useOnline } from "../hooks/useOnline";
 import { Avatar, cn } from "../lib/ui";
 import { PREF, getPref, setPref } from "../lib/prefs";
 import { LogoMark } from "./Logo";
@@ -16,6 +17,7 @@ interface Props {
 
 export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, onCycleDensity, onOpenAccount, onOpenNovedades, tablonBadge, boardName, onNavigate, onSignOut, pendByOwner, subnav, notifs, fullWidth = false, children }: Props) {
   // barra lateral como drawer desplegable (Seiton: se muestra a demanda, deja la vista limpia).
+  const online = useOnline();
   const [open, setOpen] = useState(() => {
     const saved = getPref(PREF.sidebar);
     if (saved) return saved === "open";
@@ -121,6 +123,11 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
 
       <main className="flex-1 min-w-0 flex flex-col"
         style={{ background: "radial-gradient(circle at 1px 1px, color-mix(in srgb,var(--ink) 4%,transparent) 1px, transparent 0) 0 0/22px 22px, var(--bg)" }}>
+        {!online && (
+          <div className="flex items-center gap-2 bg-warn-soft text-warn text-[13px] font-semibold px-4 py-2">
+            <WifiOff size={14} className="shrink-0" /> Sin conexión — los cambios no se van a guardar hasta que vuelva internet.
+          </div>
+        )}
         <div className="flex items-center gap-3.5 px-6 py-3 sticky top-0 z-10 border-b border-line/70"
           style={{ background: "color-mix(in srgb,var(--surface) 82%,transparent)", backdropFilter: "saturate(1.4) blur(14px)" }}>
           <button onClick={() => setOpen((o) => !o)} title="Mostrar/ocultar menú" className="border border-line bg-surface2 rounded-lg px-2.5 py-1.5 hover:bg-surface transition-colors"><Menu size={16} /></button>
