@@ -1,6 +1,7 @@
-import { TrendingUp, TrendingDown, AlertTriangle, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, AlertTriangle, Minus, FileSpreadsheet } from "lucide-react";
 import type { Card, Profile } from "../../lib/types";
 import { analizarMes } from "../../lib/analisis";
+import { armarLibroAnalisis, descargarExcel } from "../../lib/excel";
 import { Gauge } from "../../components/charts";
 import { useOccurrences } from "../../hooks/useOccurrences";
 import { useArchiveEquipo } from "../../hooks/useArchive";
@@ -15,13 +16,19 @@ const colorPct = (pct: number) => (pct >= 80 ? "var(--done)" : pct >= 50 ? "var(
 // Análisis ejecutivo de cierre del mes en curso (spec items 8 y 9). Recibe las cards YA
 // segmentadas y la dotación del segmento desde el Reporte; trae por su cuenta las ocurrencias
 // del mes y los archivos históricos del equipo. Imprimible (sin no-print).
-export function AnalisisMensual({ cards, team }: { cards: Card[]; team: Profile[] }) {
+export function AnalisisMensual({ cards, team, segmento = null }: { cards: Card[]; team: Profile[]; segmento?: string | null }) {
   const now = new Date();
   const year = now.getFullYear(), month = now.getMonth() + 1;
   const occs = useOccurrences(year, month).data ?? [];
   const archives = useArchiveEquipo().data ?? [];
   const a = analizarMes(cards, team, occs, archives, year, month);
   const mesLbl = now.toLocaleDateString("es-AR", { month: "long", year: "numeric" });
+
+  const exportarExcel = async () => {
+    const libro = armarLibroAnalisis(a, { mesLabel: mesLbl, segmento });
+    const nombreArchivo = `analisis-${year}-${String(month).padStart(2, "0")}.xlsx`;
+    await descargarExcel(libro, nombreArchivo);
+  };
 
   const byId = new Map(team.map((p) => [p.id, p]));
   const nombrar = (id: string) => byId.get(id)?.name ?? id;
@@ -32,9 +39,14 @@ export function AnalisisMensual({ cards, team }: { cards: Card[]; team: Profile[
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-[18px] font-bold tracking-tight m-0">Análisis del mes</h2>
-        <p className="text-ink2 text-sm m-0 capitalize">{mesLbl}</p>
+      <div className="flex justify-between items-end gap-4 flex-wrap">
+        <div>
+          <h2 className="text-[18px] font-bold tracking-tight m-0">Análisis del mes</h2>
+          <p className="text-ink2 text-sm m-0 capitalize">{mesLbl}</p>
+        </div>
+        <button onClick={exportarExcel} className="no-print flex items-center gap-2 border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]" style={cardSh}>
+          <FileSpreadsheet size={16} /> Exportar Excel
+        </button>
       </div>
 
       {/* KPIs: cumplimiento + evolución + rendimiento promedio histórico */}

@@ -22,6 +22,7 @@ export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] 
       "Se arregló la impresión del reporte: ahora sale completa y prolija.",
       "El resumen y el reporte ahora se adaptan al rol y la jerarquía de cada persona.",
       "Reporte: el indicador de puntualidad ahora muestra cuántas tareas se midieron y avisa cuando la muestra es chica.",
+      "Reporte: el análisis mensual ahora se puede exportar a Excel.",
     ],
   },
   {

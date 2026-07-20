@@ -214,7 +214,7 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
         </div>
       )}
 
-      <AnalisisMensual cards={cards} team={teamSeg} />
+      <AnalisisMensual cards={cards} team={teamSeg} segmento={marcaFiltro ? `${marcaFiltro}${sucursalFiltro ? ` · ${sucursalFiltro}` : ""}` : null} />
     </div>
   );
 }
