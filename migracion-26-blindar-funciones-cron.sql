@@ -22,3 +22,16 @@ revoke execute on function public.archivar_mes(text) from anon;
 -- Verificación (deben devolver 'f' = anon NO puede ejecutar):
 --   select has_function_privilege('anon', 'public.reset_recurrentes_seguro()', 'execute');
 --   select has_function_privilege('anon', 'public.materializar_mes_recurrentes(int,int)', 'execute');
+
+-- ------------------------------------------------------------
+-- Autoregistro (por si esta migración se corre antes que la 28,
+-- que es la que crea schema_migrations formalmente — misma
+-- definición exacta, idempotente).
+-- ------------------------------------------------------------
+create table if not exists public.schema_migrations (
+  id int primary key,
+  nombre text not null,
+  applied_at timestamptz not null default now()
+);
+insert into public.schema_migrations (id, nombre) values (26, 'migracion-26-blindar-funciones-cron.sql')
+on conflict (id) do nothing;

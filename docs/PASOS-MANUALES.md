@@ -44,6 +44,28 @@ Después de aplicar `migracion-27-organizacion.sql`:
    - **Responsable (manager)** y **Marca** de cada empleado/encargado → activa Resúmenes por rol, Organigrama y permisos del Encargado.
    - **Usuario** (username, ej. `Vmagni`) de cada persona → habilita el login por usuario. **El login por email sigue funcionando** mientras tanto (compatibilidad), así que nadie queda afuera.
 
+## Migración 28 — Infraestructura (registro de migraciones, adjuntos y resumen semanal)
+Después de aplicar `migracion-28-infraestructura.sql`:
+1. Verificá el registro de migraciones (deben aparecer 13 a 25, más 28 — y 26/27 si ya las corriste):
+   ```sql
+   select id, nombre, applied_at from public.schema_migrations order by id;
+   ```
+2. Verificá que el bucket de adjuntos se creó (privado):
+   ```sql
+   select id, public from storage.buckets where id = 'adjuntos';
+   ```
+3. Verificá que nadie desde la app puede disparar el resumen semanal a mano:
+   ```sql
+   select has_function_privilege('anon', 'public.resumen_semanal()', 'execute'); -- debe dar 'f'
+   ```
+4. **(Opcional) Cron semanal del resumen**: Supabase → **Cron Jobs** (o Database → Cron) → New Cron Job:
+   - Nombre: `resumen-semanal`
+   - Schedule: `0 12 * * 1` (todos los lunes a las 12:00 UTC)
+   - Comando: `select public.resumen_semanal();`
+
+   Esto publica un aviso en el tablón cada lunes con tareas cerradas, vencidas abiertas y arqueos
+   con diferencia de la semana. Es opcional: si no lo configurás, nada cambia.
+
 ## GitHub Actions (#2) — opcional
 El archivo del workflow está en `docs/ci-workflow.yml.txt`. Tu token no tiene scope `workflow`,
 así que no se pudo pushear. Para activarlo: GitHub → repo → pestaña **Actions** → New workflow →
