@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { TrendingUp, TrendingDown, AlertTriangle, Minus, FileSpreadsheet } from "lucide-react";
 import type { Card, Profile } from "../../lib/types";
 import { analizarMes } from "../../lib/analisis";
@@ -5,6 +6,7 @@ import { armarLibroAnalisis, descargarExcel } from "../../lib/excel";
 import { Gauge } from "../../components/charts";
 import { useOccurrences } from "../../hooks/useOccurrences";
 import { useArchiveEquipo } from "../../hooks/useArchive";
+import { toast } from "sonner";
 
 const cardSh = { boxShadow: "var(--ring),var(--shadow)" };
 const card = "bg-surface rounded-2xl p-[18px]";
@@ -23,11 +25,19 @@ export function AnalisisMensual({ cards, team, segmento = null }: { cards: Card[
   const archives = useArchiveEquipo().data ?? [];
   const a = analizarMes(cards, team, occs, archives, year, month);
   const mesLbl = now.toLocaleDateString("es-AR", { month: "long", year: "numeric" });
+  const [exportando, setExportando] = useState(false);
 
   const exportarExcel = async () => {
-    const libro = armarLibroAnalisis(a, { mesLabel: mesLbl, segmento });
-    const nombreArchivo = `analisis-${year}-${String(month).padStart(2, "0")}.xlsx`;
-    await descargarExcel(libro, nombreArchivo);
+    try {
+      setExportando(true);
+      const libro = armarLibroAnalisis(a, { mesLabel: mesLbl, segmento });
+      const nombreArchivo = `analisis-${year}-${String(month).padStart(2, "0")}.xlsx`;
+      await descargarExcel(libro, nombreArchivo);
+    } catch (error) {
+      toast.error("No se pudo exportar el Excel.");
+    } finally {
+      setExportando(false);
+    }
   };
 
   const byId = new Map(team.map((p) => [p.id, p]));
@@ -44,7 +54,7 @@ export function AnalisisMensual({ cards, team, segmento = null }: { cards: Card[
           <h2 className="text-[18px] font-bold tracking-tight m-0">Análisis del mes</h2>
           <p className="text-ink2 text-sm m-0 capitalize">{mesLbl}</p>
         </div>
-        <button onClick={exportarExcel} className="no-print flex items-center gap-2 border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]" style={cardSh}>
+        <button onClick={exportarExcel} disabled={exportando} className="no-print flex items-center gap-2 border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px] disabled:opacity-50" style={cardSh}>
           <FileSpreadsheet size={16} /> Exportar Excel
         </button>
       </div>
