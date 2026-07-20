@@ -22,6 +22,7 @@ import { nuevaCantidad } from "../../lib/operativas";
 import { Avatar } from "../../lib/ui";
 import { CumplimientoDiario } from "./CumplimientoDiario";
 import { ArqueoResultDialog } from "./ArqueoResultDialog";
+import { Adjuntos } from "./Adjuntos";
 
 export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose, meId, meName = "—" }:
   { card: Card; cards: Card[]; team: Profile[]; activity?: ActivityLog[]; isJefe: boolean; onClose: () => void; meId?: string; meName?: string }) {
@@ -371,6 +372,8 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
         <textarea defaultValue={c.description} placeholder="Descripción, instrucciones…"
           onBlur={(e) => { if (e.target.value !== c.description) patch.mutate({ description: e.target.value }); }}
           className="w-full bg-surface2 border border-line rounded-lg text-ink text-sm px-2.5 py-2 min-h-[52px] resize-y" />
+
+        <Adjuntos cardId={c.id} canEdit={!locked} />
 
         {c.card_type === "operativa" && (() => {
           const regs = activity.filter((a) => a.card_id === c.id);
