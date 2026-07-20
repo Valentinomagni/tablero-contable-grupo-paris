@@ -94,3 +94,5 @@ export function HistorialMes({ ownerId }: { ownerId: string }) {
     </div>
   );
 }
+
+export default HistorialMes;

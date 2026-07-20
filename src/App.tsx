@@ -24,14 +24,14 @@ import { Semana } from "./features/semana/Semana";
 import { UserModal } from "./features/admin/UserModal";
 
 // Code-split (Kaizen H2): vistas que no participan del primer render van a chunks propios.
-const Reporte = lazy(() => import("./features/reporte/Reporte").then((m) => ({ default: m.Reporte })));
-const Calendario = lazy(() => import("./features/calendario/Calendario").then((m) => ({ default: m.Calendario })));
+const Reporte = lazy(() => import("./features/reporte/Reporte"));
+const Calendario = lazy(() => import("./features/calendario/Calendario"));
 const Cierre = lazy(() => import("./features/cierre/Cierre").then((m) => ({ default: m.Cierre })));
-const Organigrama = lazy(() => import("./features/organigrama/Organigrama").then((m) => ({ default: m.Organigrama })));
+const Organigrama = lazy(() => import("./features/organigrama/Organigrama"));
 const Notas = lazy(() => import("./features/notas/Notas").then((m) => ({ default: m.Notas })));
-const Bitacora = lazy(() => import("./features/bitacora/Bitacora").then((m) => ({ default: m.Bitacora })));
+const Bitacora = lazy(() => import("./features/bitacora/Bitacora"));
 const Admin = lazy(() => import("./features/admin/Admin").then((m) => ({ default: m.Admin })));
-const HistorialMes = lazy(() => import("./features/historial/HistorialMes").then((m) => ({ default: m.HistorialMes })));
+const HistorialMes = lazy(() => import("./features/historial/HistorialMes"));
 const MiDia = lazy(() => import("./features/hoy/MiDia").then((m) => ({ default: m.MiDia })));
 import { CommandPalette } from "./components/CommandPalette";
 import type { Card, Profile, AppSettings } from "./lib/types";

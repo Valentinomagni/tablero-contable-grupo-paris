@@ -218,3 +218,5 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
     </div>
   );
 }
+
+export default Reporte;

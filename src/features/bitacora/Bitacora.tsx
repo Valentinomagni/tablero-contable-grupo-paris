@@ -89,3 +89,5 @@ export function Bitacora({ cards, activity, team, isJefe, meId, onOpenCard }: {
     </div>
   );
 }
+
+export default Bitacora;

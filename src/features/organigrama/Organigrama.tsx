@@ -86,3 +86,5 @@ export function Organigrama({ team, cards }: { team: Profile[]; cards: Card[] })
     </div>
   );
 }
+
+export default Organigrama;

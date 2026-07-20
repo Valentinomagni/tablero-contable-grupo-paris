@@ -351,3 +351,5 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
     </div>
   );
 }
+
+export default Calendario;
