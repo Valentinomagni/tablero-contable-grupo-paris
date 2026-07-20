@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Archive, Download, UserPlus, ArrowRightLeft, Plus, X, Trash2, CalendarPlus } from "lucide-react";
+import { Archive, Download, UserPlus, ArrowRightLeft, Plus, X, Trash2, CalendarPlus, ShieldCheck, AlertTriangle, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { mesLabel } from "../../lib/archivo";
 import { useQueryClient } from "@tanstack/react-query";
@@ -11,7 +11,33 @@ import { ReasignarModal } from "./ReasignarModal";
 import { Huerfanas } from "./Huerfanas";
 import { equipoDe } from "../../lib/jerarquia";
 import { Avatar } from "../../lib/ui";
-import { useSettings } from "../../hooks/useData";
+import { useSettings, useMigraciones } from "../../hooks/useData";
+import { estadoMigraciones } from "../../lib/migraciones";
+
+// chip de estado de migraciones (spec 27, T2): verde al día / ámbar faltan / gris desconocido
+function MigracionesChip() {
+  const { data: aplicadas } = useMigraciones();
+  const { ok, faltan, desconocido } = estadoMigraciones(aplicadas ?? null);
+  if (desconocido) {
+    return (
+      <span className="inline-flex items-center gap-1.5 bg-chip text-ink2 rounded-full px-3 py-1 text-[13px] font-medium mb-2.5">
+        <HelpCircle size={14} /> Estado de la base desconocido — corré la migración 28
+      </span>
+    );
+  }
+  if (!ok) {
+    return (
+      <span className="inline-flex items-center gap-1.5 bg-warn-soft text-warn rounded-full px-3 py-1 text-[13px] font-medium mb-2.5">
+        <AlertTriangle size={14} /> Faltan migraciones: {faltan.join(", ")}
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1.5 bg-accent-soft text-done rounded-full px-3 py-1 text-[13px] font-medium mb-2.5">
+      <ShieldCheck size={14} /> Base de datos al día
+    </span>
+  );
+}
 
 export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]; cards: Card[]; me: Profile; meName: string; onOpenUser: (u: Profile) => void }) {
   const qc = useQueryClient();
@@ -123,6 +149,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
 
   return (
     <div className="px-6 py-4 w-full max-w-[900px]">
+      <div><MigracionesChip /></div>
       <div className="flex items-center gap-3 mb-2.5">
         <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink m-0">
           {esEncargado ? "Mi equipo — clic en una persona para ver su ficha" : "Equipo — clic en una persona para editar su ficha"}

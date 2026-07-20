@@ -113,6 +113,19 @@ export function useTeam(enabled: boolean) {
   });
 }
 
+// estado de migraciones (spec 27, T2): null si la tabla no existe todavía (p.ej. sin migración 28 aplicada)
+export function useMigraciones() {
+  return useQuery({
+    queryKey: ["migraciones"],
+    staleTime: 5 * 60_000,
+    queryFn: async (): Promise<number[] | null> => {
+      const { data, error } = await supabase.from("schema_migrations").select("id");
+      if (error || !data) return null;
+      return (data as { id: number }[]).map((r) => r.id);
+    },
+  });
+}
+
 export function useCards() {
   const qc = useQueryClient();
   useEffect(() => {
