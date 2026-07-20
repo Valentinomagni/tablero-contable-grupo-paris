@@ -1,7 +1,26 @@
 // Versión de la app y changelog en lenguaje de usuario (se muestra en "Novedades").
-export const APP_VERSION = "2.1.0";
-
+// APP_VERSION se deriva SIEMPRE de la primera entrada del changelog: agregá la entrada
+// nueva arriba de todo y la versión se actualiza sola (ver docs/RELEASE.md).
 export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] = [
+  {
+    version: "2.2.0",
+    fecha: "2026-07-20",
+    cambios: [
+      "Mi día: tu agenda del día con lo urgente primero.",
+      "Arqueo de caja con resultado (ok o con diferencias) directamente desde tu día.",
+      "Avisos en el tablón con prioridad, vencimiento y ahora se pueden eliminar definitivamente.",
+      "Sucursales: organizá y filtrá el tablero y el reporte por marca y sucursal.",
+      "Nuevo modo de agrupación del tablero: elegí cómo querés ver tus tareas, con varias opciones a elección.",
+      "Registro de vacaciones y cobertura de tareas mientras alguien está de licencia.",
+      "Buscador rápido de avisos con Ctrl+K.",
+      "Plantillas para crear tareas frecuentes en un solo paso.",
+      "Alertas para gestores cuando algo necesita atención antes de que sea un problema.",
+      "Menciones con @ en los comentarios de las tareas, con notificación para la persona mencionada.",
+      "Reporte con métricas de uso del tiempo del equipo.",
+      "Se arregló la impresión del reporte: ahora sale completa y prolija.",
+      "El resumen y el reporte ahora se adaptan al rol y la jerarquía de cada persona.",
+    ],
+  },
   {
     version: "2.1.0",
     fecha: "2026-07-16",
@@ -25,3 +44,5 @@ export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] 
     cambios: ["Migración completa a la nueva plataforma."],
   },
 ];
+
+export const APP_VERSION = CHANGELOG[0].version;
