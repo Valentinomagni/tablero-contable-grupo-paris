@@ -72,6 +72,25 @@ describe("puntualidad", () => {
     expect(r.pct).toBeNull();
   });
 
+  it("borde: cerrada exactamente 30 dias atras (fecha calendario) cuenta", () => {
+    const cards = [
+      // hoyISO = 2026-07-20; 30 dias calendario atras = 2026-06-20
+      mk({ id: "a", done_at: "2026-06-20T23:30:00Z", due_date: "2026-06-20" }),
+    ];
+    const r = puntualidad(cards, hoyISO);
+    expect(r.n).toBe(1);
+    expect(r.pct).toBe(100);
+  });
+
+  it("borde: cerrada 31 dias atras (fecha calendario) no cuenta", () => {
+    const cards = [
+      mk({ id: "a", done_at: "2026-06-19T23:30:00Z", due_date: "2026-06-19" }),
+    ];
+    const r = puntualidad(cards, hoyISO);
+    expect(r.n).toBe(0);
+    expect(r.pct).toBeNull();
+  });
+
   it("ignora tarjetas que no estan status term", () => {
     const cards = [
       mk({ id: "a", status: "pend", done_at: "2026-07-10T12:00:00Z", due_date: "2026-07-10" }),

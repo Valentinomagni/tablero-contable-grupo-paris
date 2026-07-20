@@ -1,4 +1,5 @@
 import type { Card } from "./types";
+import { toARTDate } from "./metrics";
 
 // Puntualidad (spec 26 item 10): de las tareas CERRADAS en los últimos 30 días
 // respecto de hoyISO, qué % de las que tenían vencimiento se cerraron en fecha.
@@ -6,13 +7,20 @@ export function puntualidad(
   cards: Card[],
   hoyISO: string
 ): { pct: number | null; n: number; enFecha: number; sinFecha: number; muestraChica: boolean } {
-  const hoy = new Date(hoyISO + "T00:00:00").getTime();
-  const desde = hoy - 30 * 86400000;
+  // Ventana por FECHA CALENDARIO en zona Argentina (no por instante epoch), para ser
+  // consistente con el resto del proyecto (toARTDate) y con term30 en Reporte.tsx.
+  // Convertimos hoyISO (fecha calendario, ya en criterio ART) a un timestamp UTC puro
+  // sólo para hacer aritmética de días — nunca se reconstruye con medianoche LOCAL.
+  const [hy, hm, hd] = hoyISO.split("-").map(Number);
+  const hoyUTC = Date.UTC(hy, hm - 1, hd);
+  const desdeUTC = hoyUTC - 30 * 86400000; // ventana: hoy - 30 días .. hoy (ambos límites de fecha calendario inclusive)
 
   const cerradas30 = cards.filter((c) => {
     if (c.status !== "term" || !c.done_at) return false;
-    const t = new Date(c.done_at).getTime();
-    return t >= desde && t <= hoy + 86400000 - 1; // incluye hoy
+    const fecha = toARTDate(c.done_at);
+    const [y, m, d] = fecha.split("-").map(Number);
+    const t = Date.UTC(y, m - 1, d);
+    return t >= desdeUTC && t <= hoyUTC;
   });
 
   const conVto = cerradas30.filter((c) => c.due_date);

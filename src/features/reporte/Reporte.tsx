@@ -1,7 +1,7 @@
 import { Download } from "lucide-react";
 import { useState } from "react";
 import type { Card, Profile, ActivityLog } from "../../lib/types";
-import { dueInfo, saludScore } from "../../lib/metrics";
+import { dueInfo, saludScore, toARTDate } from "../../lib/metrics";
 import { puntualidad } from "../../lib/puntualidad";
 import { Donut, Gauge, Legend, type Seg } from "../../components/charts";
 import { Avatar } from "../../lib/ui";
@@ -35,7 +35,7 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
   const bloqueadas = abiertas.filter((c) => (c.deps ?? []).some((id) => { const d = cards.find((x) => x.id === id); return d && d.status !== "term"; }) && c.status !== "term");
   const actMes = activity.filter((a) => new Date(a.at).getTime() >= mes).reduce((s, a) => s + a.qty, 0);
 
-  const hoyISO = new Date(now).toISOString().slice(0, 10);
+  const hoyISO = toARTDate(new Date(now).toISOString());
   const punt = puntualidad(norm, hoyISO);
   const total = abiertas.length + term30.length;
   const pctAvance = total ? Math.round((term30.length / total) * 100) : 0;
