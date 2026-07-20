@@ -16,7 +16,7 @@ import { Check, Copy, Link2, Lock, Hourglass, X, Users, Pencil, Trash2, Minus, P
 import { esCobertura } from "../../lib/vacaciones";
 import { filaDuplicada } from "../../lib/duplicar";
 import { useDepsInfo, useReverseDeps, useSettings } from "../../hooks/useData";
-import { categoriasEnUso } from "../../lib/categorias";
+import { categoriasEnUso, mergeCategorias } from "../../lib/categorias";
 import { editarItem, borrarItem } from "../../lib/checklist";
 import { nuevaCantidad } from "../../lib/operativas";
 import { Avatar } from "../../lib/ui";
@@ -81,7 +81,7 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
   const { data: revDeps = [] } = useReverseDeps(cards.map((x) => x.id), !isJefe);
   const depMap: DepMap = Object.fromEntries(depsInfo.map((d) => [d.id, d]));
   const nameOf = (id: string) => team.find((u) => u.id === id)?.name ?? "";
-  const { data: settings = { edit_closed: false } } = useSettings();
+  const { data: settings = { edit_closed: false, categorias: [] } } = useSettings();
   // tarea cerrada: solo jefes la tocan salvo que el permiso edit_closed esté activo (RLS lo aplica en el server)
   const locked = c.status === "term" && !isJefe && !settings.edit_closed;
 
@@ -274,11 +274,11 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
             </select>
           </label>
           {(() => {
-            // Categorías en uso por el dueño de la tarea (spec 21 item 11: visible/asignable para todos los roles).
-            const cats = categoriasEnUso(cards.filter((x) => x.owner === c.owner));
+            // Categorías en uso por el dueño de la tarea + las definidas por el Admin (spec 21 item 11).
+            const cats = mergeCategorias(categoriasEnUso(cards.filter((x) => x.owner === c.owner)), settings.categorias ?? []);
             return (
               <label className="flex items-center gap-1.5">Categoría
-                <input list="cats-card" defaultValue={c.categoria ?? ""}
+                <input key={c.categoria ?? ""} list="cats-card" defaultValue={c.categoria ?? ""}
                   onBlur={(e) => {
                     const v = e.target.value.trim();
                     if (v === (c.categoria ?? "")) return;

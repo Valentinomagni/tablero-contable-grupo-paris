@@ -4,7 +4,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "../../components/Modal";
 import { supabase } from "../../lib/supabase";
 import { similares } from "../../lib/similitud";
-import { categoriasEnUso } from "../../lib/categorias";
+import { categoriasEnUso, mergeCategorias } from "../../lib/categorias";
+import { useSettings } from "../../hooks/useData";
 import type { Card } from "../../lib/types";
 
 // Flujo formal de alta (spec 21, item 2): las tareas nacen en Pendiente con sus
@@ -13,7 +14,8 @@ import type { Card } from "../../lib/types";
 // sugerir categorías ya usadas (spec 21, item 11: visible/asignable para todos los roles).
 export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { ownerId: string; meName: string; cards?: Card[]; onClose: () => void }) {
   const qc = useQueryClient();
-  const categorias = categoriasEnUso(cards);
+  const { data: settings = { categorias: [] } } = useSettings();
+  const categorias = mergeCategorias(categoriasEnUso(cards), settings.categorias ?? []);
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState<Card["priority"]>("media");
