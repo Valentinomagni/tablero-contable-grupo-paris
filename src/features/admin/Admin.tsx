@@ -149,7 +149,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
 
   return (
     <div className="px-6 py-4 w-full max-w-[900px]">
-      <div><MigracionesChip /></div>
+      <div>{!esEncargado && <MigracionesChip />}</div>
       <div className="flex items-center gap-3 mb-2.5">
         <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink m-0">
           {esEncargado ? "Mi equipo — clic en una persona para ver su ficha" : "Equipo — clic en una persona para editar su ficha"}
