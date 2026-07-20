@@ -11,6 +11,12 @@ test("login, vistas clave y delegar tarea", async ({ page }) => {
 
   await expect(page.getByText("Resumen del equipo")).toBeVisible();
 
+  // cerrar el modal de "Novedades" si aparece (sesión de browser nueva sin localStorage)
+  const novedadesBtn = page.getByRole("button", { name: "Entendido" });
+  if (await novedadesBtn.isVisible().catch(() => false)) {
+    await novedadesBtn.click();
+  }
+
   // abrir el modal de delegar/compartir
   await page.getByRole("button", { name: /Delegar tarea/ }).click();
   await expect(page.getByText("Delegar / compartir tarea")).toBeVisible();
