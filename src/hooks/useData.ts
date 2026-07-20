@@ -4,6 +4,8 @@ import { supabase } from "../lib/supabase";
 import type { Card, Profile, Objective, ActivityLog } from "../lib/types";
 import type { DepInfo, RevDep } from "../lib/deps";
 import { CardSchema, validateRows } from "../lib/schemas";
+import type { Organizacion } from "../lib/organizacion";
+import { parseOrganizacion, DEFAULT_ORG } from "../lib/organizacion";
 
 // título/estado/responsable de deps que apuntan a tarjetas ajenas (security definer)
 export function useDepsInfo(missing: string[]) {
@@ -83,6 +85,19 @@ export function useSettings() {
       return (data?.value as import("../lib/types").AppSettings) ?? { edit_closed: false };
     },
   });
+}
+
+// settings key='organizacion': { marcas: string[], sucursales: string[] } (spec 26)
+export function useOrganizacion(): Organizacion {
+  const { data } = useQuery({
+    queryKey: ["organizacion"],
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data } = await supabase.from("settings").select("value").eq("key", "organizacion").maybeSingle();
+      return parseOrganizacion(data?.value);
+    },
+  });
+  return data ?? DEFAULT_ORG;
 }
 
 // enabled: jefe y encargado traen los profiles (RLS del Plan 02 limita lo que ve el encargado).
