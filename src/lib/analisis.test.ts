@@ -56,6 +56,20 @@ describe("analizarMes", () => {
     expect(ana.total).toBe(2); expect(ana.pct).toBe(50); expect(ana.abiertas).toBe(1); expect(ana.vencidas).toBe(1);
   });
 
+  it("porPersona excluye al perfil centinela 'Sin asignar' y no afecta la mediana de carga", () => {
+    const sinAsignar: Profile = { ...p("sinasignar"), email: "sin-asignar@grupoparis.com" };
+    const profilesConSinAsignar = [...profiles, sinAsignar];
+    const cards = [
+      c("t1", "ana", { status: "pend" }),
+      c("t2", "sinasignar", { status: "pend" }), c("t3", "sinasignar", { status: "pend" }),
+      c("t4", "sinasignar", { status: "pend" }), c("t5", "sinasignar", { status: "pend" }),
+    ];
+    const r = analizarMes(cards, profilesConSinAsignar, [], [], 2026, 7);
+    expect(r.porPersona.some((x) => x.id === "sinasignar")).toBe(false);
+    // Sin el fix, sinasignar (4 abiertas) entraría en la mediana junto a ana(1) y bo(0), distorsionándola.
+    expect(r.distribucion.medianaAbiertas).toBe(0.5);
+  });
+
   it("distribucion: mediana de abiertas y sobrecargados > 1.5x", () => {
     const many = Array.from({ length: 10 }, (_, i) => c(`a${i}`, "ana", { status: "pend" }));
     const cards = [...many, c("b1", "bo", { status: "pend" })];

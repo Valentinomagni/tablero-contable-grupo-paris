@@ -4,6 +4,7 @@
 import type { Card, Profile, TaskOccurrence, CardArchive } from "./types";
 import { dueInfo } from "./metrics";
 import { marcaDe } from "./segmento";
+import { esSinAsignar } from "./jerarquia";
 
 export interface AnalisisMes {
   cumplimiento: number;                     // 0-100
@@ -64,7 +65,7 @@ export function analizarMes(
     .map(({ k, pct, total }) => ({ sucursal: k, pct, total }));
 
   // 4. Por persona (excluye jefes).
-  const personas = profiles.filter((p) => p.role !== "jefe");
+  const personas = profiles.filter((p) => p.role !== "jefe" && !esSinAsignar(p));
   const porPersona = personas.map((p) => {
     const suyas = norm.filter((c) => c.owner === p.id);
     const abiertas = suyas.filter((c) => c.status !== "term");
