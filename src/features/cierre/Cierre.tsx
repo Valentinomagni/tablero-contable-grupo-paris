@@ -76,6 +76,8 @@ export function Cierre({ cards, team, isJefe, meName, settings, onOpenCard }: {
   return (
     <div className="px-6 py-4 w-full max-w-[960px]">
       {/* Cierre unificado (alternativa A): un solo semáforo responde "¿cerré el mes?" */}
+      {/* El semáforo solo es relevante para el mes actual; datos de meses pasados son históricos y no se deben evaluar */}
+      {ym.year === hoy.getFullYear() && ym.month === hoy.getMonth() + 1 && (
       <div className="bg-surface border border-line rounded-2xl overflow-hidden mb-5" style={cardSh}>
         <div className="px-5 pt-4 pb-3">
           <h3 className="text-[15px] font-bold tracking-[-0.01em]">Cierre del mes</h3>
@@ -98,6 +100,7 @@ export function Cierre({ cards, team, isJefe, meName, settings, onOpenCard }: {
           </div>
         )}
       </div>
+      )}
 
       <div className="flex items-center gap-2 mb-4">
         <button onClick={() => nav(-1)} className="border border-line bg-surface2 rounded-lg p-1.5" title="Mes anterior"><ChevronLeft size={16} /></button>
