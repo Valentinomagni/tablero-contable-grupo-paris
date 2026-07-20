@@ -59,6 +59,17 @@
 }}
 
 html,body,#root{height:100%}
+
+/* Impresión (spec 26 item 3): en desktop el aside sticky h-screen dentro del flex row
+   + height:100% en html/body hacen que Chrome/Edge paginen mal y el PDF salga en blanco
+   (en mobile el aside es fixed —fuera del flujo— y por eso ahí imprimía bien).
+   Al imprimir: todo vuelve a flujo normal en bloque y solo queda el contenido. */
+@media print {
+  html, body, #root { height: auto !important; overflow: visible !important; }
+  #root div.flex.min-h-screen { display: block !important; min-height: 0 !important; }
+  #root aside { display: none !important; }
+  #root main { display: block !important; height: auto !important; max-height: none !important; overflow: visible !important; }
+}
 body{margin:0;background:var(--bg);color:var(--ink);
   font-family:"Inter","Segoe UI",system-ui,sans-serif;font-size:14.5px;line-height:1.5;
   -webkit-font-smoothing:antialiased;font-optical-sizing:auto;letter-spacing:-.006em}
