@@ -2,13 +2,15 @@ import { EmptyState } from "../../components/EmptyState";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, CalendarPlus, CheckCircle2, Circle, Clock, AlarmClock, Link2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarPlus, CheckCircle2, Circle, Clock, AlarmClock, Link2, AlertTriangle } from "lucide-react";
 import type { Card, Profile, AppSettings } from "../../lib/types";
 import { dueInfo } from "../../lib/metrics";
 import { isBlocked } from "../../lib/deps";
 import { supabase } from "../../lib/supabase";
 import { closingCards, cierreStats, ordenarCierre, shiftMonth, MESES } from "../../lib/cierre";
+import { estadoCierre } from "../../lib/cierre-unificado";
 import { faltantesDePlantilla, filasParaInsertar } from "../../lib/plantilla";
+import { useArchiveEquipo } from "../../hooks/useArchive";
 import { Avatar } from "../../lib/ui";
 
 const cardSh = { boxShadow: "var(--ring-sh),var(--shadow)" };
@@ -29,6 +31,24 @@ export function Cierre({ cards, team, isJefe, meName, settings, onOpenCard }: {
   const nom = (id: string) => team.find((u) => u.id === id)?.name ?? "?";
   const nav = (delta: number) => setYm(shiftMonth(ym.year, ym.month, delta));
 
+  // Semáforo de cierre unificado (alternativa A): junta checklist + archivo del mes
+  // previo + reinicio de recurrentes en una sola lectura. DEFENSIVO: sin datos → pendiente.
+  const archives = useArchiveEquipo().data ?? [];
+  const prev = shiftMonth(ym.year, ym.month, -1);
+  const mesPrevio = `${prev.year}-${String(prev.month).padStart(2, "0")}`;
+  const archivadoMesPrevio = archives.some((a) => a.mes === mesPrevio);
+  const recurrentesMensuales = cards.filter(
+    (c) => c.recur_rule != null && (c.reset_policy == null || c.reset_policy === "mensual"),
+  );
+  const recurrentesOk = !recurrentesMensuales.some(
+    (c) => c.status === "term" && !!c.done_at && c.done_at.slice(0, 7) === mesPrevio,
+  );
+  const semaforo = estadoCierre({
+    checklist: closing.length ? stats : null,
+    archivadoMesPrevio,
+    recurrentesOk,
+  });
+
   async function generar() {
     const faltan = faltantesDePlantilla(template, cards, ym.year, ym.month);
     if (!faltan.length) { toast(`El cierre de ${MESES[ym.month - 1]} ya está generado.`); return; }
@@ -48,8 +68,37 @@ export function Cierre({ cards, team, isJefe, meName, settings, onOpenCard }: {
     </div>
   );
 
+  const PasoIcon = ({ estado }: { estado: "ok" | "pendiente" | "atencion" }) =>
+    estado === "ok" ? <CheckCircle2 size={18} className="text-done shrink-0" />
+      : estado === "atencion" ? <AlertTriangle size={18} className="text-warn shrink-0" />
+      : <Circle size={18} className="text-ink2 shrink-0" />;
+
   return (
     <div className="px-6 py-4 w-full max-w-[960px]">
+      {/* Cierre unificado (alternativa A): un solo semáforo responde "¿cerré el mes?" */}
+      <div className="bg-surface border border-line rounded-2xl overflow-hidden mb-5" style={cardSh}>
+        <div className="px-5 pt-4 pb-3">
+          <h3 className="text-[15px] font-bold tracking-[-0.01em]">Cierre del mes</h3>
+          <div className="mt-3 flex flex-col gap-3">
+            {semaforo.pasos.map((p) => (
+              <div key={p.key} className="flex items-start gap-2.5">
+                <PasoIcon estado={p.estado} />
+                <div className="min-w-0">
+                  <div className="text-[13px] font-semibold text-ink leading-tight">{p.lbl}</div>
+                  <div className="text-[12px] text-ink2 leading-snug mt-0.5">{p.detalle}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        {semaforo.cerrado && (
+          <div className="bg-accent-soft px-5 py-2.5 flex items-center gap-2 border-t border-line">
+            <CheckCircle2 size={16} className="text-done shrink-0" />
+            <span className="text-[13px] font-semibold text-ink">Mes cerrado</span>
+          </div>
+        )}
+      </div>
+
       <div className="flex items-center gap-2 mb-4">
         <button onClick={() => nav(-1)} className="border border-line bg-surface2 rounded-lg p-1.5" title="Mes anterior"><ChevronLeft size={16} /></button>
         <h2 className="text-[16px] font-bold tracking-[-0.01em] capitalize min-w-[190px] text-center">{MESES[ym.month - 1]} de {ym.year}</h2>

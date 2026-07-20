@@ -201,7 +201,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
 
       <Huerfanas team={team} cards={cards} />
 
-      <PlantillaCierre team={team} cards={cards} meName={meName} />
+      <PlantillaCierre team={team} />
 
       <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Permisos</h2>
       <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>

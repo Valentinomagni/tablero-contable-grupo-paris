@@ -1,25 +1,17 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Trash2, CalendarPlus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
-import type { Card, Profile, AppSettings } from "../../lib/types";
-import { validarPlantilla, faltantesDePlantilla, filasParaInsertar, type TemplateItem } from "../../lib/plantilla";
+import type { Profile, AppSettings } from "../../lib/types";
+import { validarPlantilla, type TemplateItem } from "../../lib/plantilla";
 import { useSettings } from "../../hooks/useData";
 
-const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-
-export function PlantillaCierre({ team, cards, meName }: { team: Profile[]; cards: Card[]; meName: string }) {
+export function PlantillaCierre({ team }: { team: Profile[] }) {
   const qc = useQueryClient();
   const { data: settings = { edit_closed: false } as AppSettings } = useSettings();
   const [draft, setDraft] = useState<TemplateItem[] | null>(null);
-  const [busy, setBusy] = useState(false);
   const items = draft ?? settings.closing_template ?? [];
-
-  // mes objetivo: el que viene (el cierre se prepara antes de que empiece)
-  const hoy = new Date();
-  const target = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 1);
-  const [y, m] = [target.getFullYear(), target.getMonth() + 1];
 
   const upd = (i: number, patch: Partial<TemplateItem>) =>
     setDraft(items.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
@@ -30,20 +22,6 @@ export function PlantillaCierre({ team, cards, meName }: { team: Profile[]; card
     const { error } = await supabase.from("settings").update({ value: { ...settings, closing_template: items } }).eq("key", "permissions");
     if (error) toast.error("No se pudo guardar: " + error.message);
     else { toast.success("Plantilla guardada"); qc.invalidateQueries({ queryKey: ["settings"] }); setDraft(null); }
-  }
-
-  async function generar() {
-    const err = validarPlantilla(items);
-    if (err) { toast.error(err); return; }
-    const faltan = faltantesDePlantilla(items, cards, y, m);
-    if (!faltan.length) { toast(`Las ${items.length} tareas de ${MESES[m - 1]} ya estaban generadas.`); return; }
-    setBusy(true);
-    const { error } = await supabase.from("cards").insert(filasParaInsertar(faltan, y, m, meName));
-    setBusy(false);
-    if (error) { toast.error("No se pudo generar: " + error.message); return; }
-    qc.invalidateQueries({ queryKey: ["cards"] });
-    const salt = items.length - faltan.length;
-    toast.success(`${faltan.length} tarea(s) de ${MESES[m - 1]} generadas${salt ? ` (${salt} ya existían)` : ""}`);
   }
 
   const inputCls = "bg-surface2 border border-line rounded-lg px-2 py-1.5 text-ink text-[13px]";
@@ -83,10 +61,9 @@ export function PlantillaCierre({ team, cards, meName }: { team: Profile[]; card
             <Plus size={14} /> Agregar ítem</button>
           {draft && <button onClick={guardar} className="bg-accent text-white rounded-lg px-3.5 py-1.5 text-[13px] font-semibold">Guardar plantilla</button>}
           {items.length > 0 && (
-            <button onClick={generar} disabled={busy || !!draft}
-              title={draft ? "Guardá la plantilla primero" : ""}
-              className="flex items-center gap-1.5 ml-auto bg-[#0b0b0d] text-white rounded-lg px-3.5 py-1.5 text-[13px] font-semibold disabled:opacity-50">
-              <CalendarPlus size={14} /> {busy ? "Generando…" : `Generar cierre de ${MESES[m - 1]}`}</button>
+            <span className="ml-auto self-center text-[12px] text-ink2">
+              Las tareas del mes se generan desde <span className="text-accent font-semibold">Cierre mensual</span>.
+            </span>
           )}
         </div>
       </div>
