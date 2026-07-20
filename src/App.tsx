@@ -165,7 +165,7 @@ export default function App() {
           : mode === "mimes" ? <MiMes cards={cards} activity={activity} ownerId={view} onOpenCard={setOpenCard} />
           : mode === "hist" ? <HistorialMes ownerId={view} />
           : cardsLoading ? <BoardSkeleton />
-          : <Board cards={cards} activity={activity} ownerId={view} meId={me.id} meName={me.name} team={fullTeam} query={query} onOpen={setOpenCard} />}
+          : <Board cards={cards} activity={activity} ownerId={view} meId={me.id} meName={me.name} meRole={me.role} team={fullTeam} query={query} onOpen={setOpenCard} />}
         </Suspense>
       </Shell>
       {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} cards={cards} team={fullTeam} activity={activity} isJefe={!!isJefe} onClose={() => setOpenCard(null)} meId={me.id} meName={me.name} />}

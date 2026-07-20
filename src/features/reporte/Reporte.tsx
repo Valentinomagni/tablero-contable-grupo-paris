@@ -1,11 +1,13 @@
 import { Download } from "lucide-react";
+import { useState } from "react";
 import type { Card, Profile, ActivityLog } from "../../lib/types";
 import { dueInfo, saludScore } from "../../lib/metrics";
 import { Donut, Gauge, Legend, type Seg } from "../../components/charts";
 import { Avatar } from "../../lib/ui";
-import { useSnapshots } from "../../hooks/useData";
+import { useSnapshots, useOrganizacion } from "../../hooks/useData";
 import { utilizacionEquipo } from "../../lib/ociosidad";
 import { useArqueoStats } from "../../hooks/useArqueo";
+import { filtrarPorSegmento } from "../../lib/segmento";
 
 // Semáforo del cumplimiento de arqueo (SOLO sobre el número, marca monocroma).
 const colorArqueo = (pct: number) => (pct >= 98 ? "var(--done)" : pct >= 95 ? "var(--warn)" : "var(--danger)");
@@ -15,7 +17,13 @@ const mesActualPrefix = () => { const d = new Date(); return `${d.getFullYear()}
 // El segmento mayor lleva el acento; el resto, grises distinguibles entre sí.
 const CAT = ["#3f3f46", "#a1a1aa", "#71717a", "#d4d4d8", "#52525b", "#8b8b93"];
 
-export function Reporte({ cards, team, activity }: { cards: Card[]; team: Profile[]; activity: ActivityLog[] }) {
+export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; team: Profile[]; activity: ActivityLog[] }) {
+  const org = useOrganizacion();
+  // segmentación por marca/sucursal (spec 26 item 1): filtra ANTES de calcular métricas
+  const [marcaFiltro, setMarcaFiltro] = useState<string | null>(null);
+  const [sucursalFiltro, setSucursalFiltro] = useState<string | null>(null);
+  const cards = filtrarPorSegmento(cardsIn, team, { marca: marcaFiltro, sucursal: sucursalFiltro });
+  const segLbl = marcaFiltro ? ` — ${marcaFiltro}${sucursalFiltro ? ` · ${sucursalFiltro}` : ""}` : "";
   const now = Date.now(), day = 86400000, mes = now - 30 * day;
   const norm = cards.filter((c) => c.card_type !== "operativa");
   const abiertas = norm.filter((c) => c.status !== "term");
@@ -78,7 +86,7 @@ export function Reporte({ cards, team, activity }: { cards: Card[]; team: Profil
         <img src="/brand/isotipo-negro.svg" width={38} height={38} alt="Grupo Paris" />
         <div className="leading-tight">
           <b className="text-lg">Grupo Paris</b>
-          <div className="text-ink2 text-xs">Reporte ejecutivo — Equipo Contable · {new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" })}</div>
+          <div className="text-ink2 text-xs">Reporte ejecutivo — Equipo Contable{segLbl} · {new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" })}</div>
         </div>
       </div>
       <div className="flex justify-between items-end gap-4 flex-wrap">
@@ -86,9 +94,25 @@ export function Reporte({ cards, team, activity }: { cards: Card[]; team: Profil
           <h1 className="text-[22px] font-bold tracking-tight m-0">Reporte ejecutivo — Equipo Contable</h1>
           <p className="text-ink2 text-sm m-0">Generado {new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" })} · últimos 30 días</p>
         </div>
-        <button onClick={() => window.print()} className="no-print flex items-center gap-2 border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]" style={cardSh}>
-          <Download size={16} /> Imprimir / PDF
-        </button>
+        <div className="no-print flex items-center gap-2 flex-wrap">
+          {org.marcas.length > 0 && (
+            <select value={marcaFiltro ?? ""} onChange={(e) => { setMarcaFiltro(e.target.value || null); setSucursalFiltro(null); }}
+              className="border border-line bg-surface2 text-ink2 rounded-lg px-3 py-2 text-[13px] outline-none">
+              <option value="">Todas las marcas</option>
+              {org.marcas.map((m) => <option key={m} value={m}>{m}</option>)}
+            </select>
+          )}
+          {org.sucursales.length > 0 && (
+            <select value={sucursalFiltro ?? ""} onChange={(e) => setSucursalFiltro(e.target.value || null)}
+              className="border border-line bg-surface2 text-ink2 rounded-lg px-3 py-2 text-[13px] outline-none">
+              <option value="">Todas las sucursales</option>
+              {org.sucursales.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          )}
+          <button onClick={() => window.print()} className="flex items-center gap-2 border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]" style={cardSh}>
+            <Download size={16} /> Imprimir / PDF
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))" }}>

@@ -12,6 +12,8 @@ import { bloqueadaPorTitulos } from "../../lib/deps";
 import { categoriasEnUso, pasaFiltroCategoria } from "../../lib/categorias";
 import { agruparCards } from "../../lib/agrupar";
 import { getPref, setPref, PREF } from "../../lib/prefs";
+import { useOrganizacion } from "../../hooks/useData";
+import { filtrarPorSegmento } from "../../lib/segmento";
 import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Users, Shield, Layers, ChevronRight, ChevronDown, Plane } from "lucide-react";
 import { esCobertura } from "../../lib/vacaciones";
 import { NuevaTareaModal } from "./NuevaTareaModal";
@@ -59,14 +61,23 @@ function CardItem({ c, blocked, waiting, esperaTitulos = [], onOpen }: { c: Card
   );
 }
 
-export function Board({ cards, activity, ownerId, meId, meName, team = [], query = "", onOpen }: {
-  cards: Card[]; activity: ActivityLog[]; ownerId: string; meId?: string; meName: string; team?: Profile[]; query?: string; onOpen: (c: Card) => void;
+export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [], query = "", onOpen }: {
+  cards: Card[]; activity: ActivityLog[]; ownerId: string; meId?: string; meName: string; meRole?: string; team?: Profile[]; query?: string; onOpen: (c: Card) => void;
 }) {
   const qc = useQueryClient();
+  const org = useOrganizacion();
   const q = query.trim().toLowerCase();
   const matches = (c: Card) => !q || c.title.toLowerCase().includes(q) || (c.description ?? "").toLowerCase().includes(q);
   // filtro por categoría (spec 21 item 11): null = todas; "" = sin categoría
   const [catFiltro, setCatFiltro] = useState<string | null>(null);
+  // segmentación por marca/sucursal (spec 26 item 1): solo jefe/encargado, si hay marcas configuradas
+  const esGestor = meRole === "jefe" || meRole === "encargado";
+  const [marcaFiltro, setMarcaFiltro] = useState<string | null>(null);
+  const [sucursalFiltro, setSucursalFiltro] = useState<string | null>(null);
+  const mostrarSegmento = esGestor && org.marcas.length > 0;
+  const cardsSeg = mostrarSegmento
+    ? filtrarPorSegmento(cards, team, { marca: marcaFiltro, sucursal: sucursalFiltro })
+    : cards;
   // agrupar por categoría/prioridad con colapso apilado (spec 21 item 13)
   const [agrupar, setAgruparState] = useState(() => getPref(PREF.agrupar) === "1");
   const setAgrupar = (v: boolean) => { setAgruparState(v); setPref(PREF.agrupar, v ? "1" : "0"); };
@@ -80,7 +91,7 @@ export function Board({ cards, activity, ownerId, meId, meName, team = [], query
     setPref(grupoKey, JSON.stringify(next));
     return next;
   });
-  const visibles = cards.filter((c) => c.owner === ownerId && matches(c));
+  const visibles = cardsSeg.filter((c) => c.owner === ownerId && matches(c));
   const catsUsadas = categoriasEnUso(visibles);
   const hayMezcla = catsUsadas.length > 0 && visibles.some((c) => !c.categoria);
   const pasaCat = (c: Card) => pasaFiltroCategoria(c, catFiltro);
@@ -198,6 +209,23 @@ export function Board({ cards, activity, ownerId, meId, meName, team = [], query
               Todas</button>
             {catsUsadas.map((cat) => chipCat(cat, cat))}
             {hayMezcla && chipCat("Sin categoría", "")}
+          </>
+        )}
+        {mostrarSegmento && (
+          <>
+            <span className="w-px h-4 bg-line mx-1" />
+            <select value={marcaFiltro ?? ""} onChange={(e) => setMarcaFiltro(e.target.value || null)}
+              className="border border-line bg-surface2 text-ink2 rounded-full px-3 py-1 text-[12px] outline-none">
+              <option value="">Todas las marcas</option>
+              {org.marcas.map((m) => <option key={m} value={m}>{m}</option>)}
+            </select>
+            {org.sucursales.length > 0 && (
+              <select value={sucursalFiltro ?? ""} onChange={(e) => setSucursalFiltro(e.target.value || null)}
+                className="border border-line bg-surface2 text-ink2 rounded-full px-3 py-1 text-[12px] outline-none">
+                <option value="">Todas las sucursales</option>
+                {org.sucursales.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            )}
           </>
         )}
       </div>
