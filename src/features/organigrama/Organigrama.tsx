@@ -1,7 +1,8 @@
 import { Network } from "lucide-react";
 import type { Card, Profile } from "../../lib/types";
-import { construirArbol, porMarca, MARCAS, type NodoOrg } from "../../lib/jerarquia";
+import { construirArbol, porMarca, type NodoOrg } from "../../lib/jerarquia";
 import { Avatar } from "../../lib/ui";
+import { useOrganizacion } from "../../hooks/useData";
 
 const cardSh = { boxShadow: "var(--ring-sh),var(--shadow)" };
 const ROLE_LBL: Record<Profile["role"], string> = { jefe: "Jefe", encargado: "Encargado", empleado: "Empleado" };
@@ -17,6 +18,7 @@ function Nodo({ nodo, cards, nivel }: { nodo: NodoOrg; cards: Card[]; nivel: num
           <div className="flex items-center gap-2">
             <b className="text-[14px] tracking-[-0.01em] truncate">{p.name}</b>
             <span className="text-[10px] uppercase tracking-[0.06em] font-semibold text-ink2 bg-surface2 border border-line rounded-md px-1.5 py-px shrink-0">{ROLE_LBL[p.role]}</span>
+            {p.sucursal && <span className="text-[10.5px] text-ink2 bg-chip rounded px-1.5 py-0.5">{p.sucursal}</span>}
           </div>
           {p.puesto && <div className="text-[12px] text-ink2 truncate">{p.puesto}</div>}
         </div>
@@ -50,10 +52,11 @@ function Seccion({ titulo, subtitulo, gente, cards }: { titulo: string; subtitul
 }
 
 export function Organigrama({ team, cards }: { team: Profile[]; cards: Card[] }) {
+  const org = useOrganizacion();
   const grupos = porMarca(team);
   // Orden fijo de marcas (General primero); las demás quedan detrás alfabéticamente.
   const marcas = Object.keys(grupos).sort((a, b) => {
-    const ia = MARCAS.indexOf(a), ib = MARCAS.indexOf(b);
+    const ia = org.marcas.indexOf(a), ib = org.marcas.indexOf(b);
     return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b);
   });
   const sinMarca = team.filter((p) => !p.marca);

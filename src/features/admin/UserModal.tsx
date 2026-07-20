@@ -4,11 +4,11 @@ import { Modal } from "../../components/Modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase, SUPABASE_URL } from "../../lib/supabase";
 import type { ActivityLog, Card, Profile, Role } from "../../lib/types";
-import { useObjectives } from "../../hooks/useData";
+import { useObjectives, useOrganizacion } from "../../hooks/useData";
 import { useArqueoStats } from "../../hooks/useArqueo";
 import { userMetrics30d } from "../../lib/metrics";
 import { nombreValido } from "../../lib/validacion";
-import { puedeSerManager, esSinAsignar, MARCAS } from "../../lib/jerarquia";
+import { puedeSerManager, esSinAsignar } from "../../lib/jerarquia";
 import { confirmacionValida } from "../../lib/borrado";
 import { toast } from "sonner";
 
@@ -16,6 +16,7 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
   { user: Profile; meId: string; team: Profile[]; cards: Card[]; activity: ActivityLog[]; onClose: () => void }) {
   const qc = useQueryClient();
   const { data: objectives = [] } = useObjectives();
+  const org = useOrganizacion();
   const [name, setName] = useState(u.name);
   const [username, setUsername] = useState(u.username ?? "");
   const [role, setRole] = useState<Role>(u.role);
@@ -23,6 +24,7 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
   const [ficha, setFicha] = useState(u.ficha ?? "");
   const [managerId, setManagerId] = useState<string | null>(u.manager_id ?? null);
   const [marca, setMarca] = useState<string | null>(u.marca ?? null);
+  const [sucursal, setSucursal] = useState<string | null>(u.sucursal ?? null);
   const [msg, setMsg] = useState<{ ok: boolean; txt: string } | null>(null);
   const [borrando, setBorrando] = useState(false);
   const [tipeado, setTipeado] = useState("");
@@ -47,7 +49,7 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
   const save = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("profiles")
-        .update({ name: name.trim(), username: username.trim() || null, role, puesto: puesto.trim(), ficha: ficha.trim(), manager_id: managerId, marca })
+        .update({ name: name.trim(), username: username.trim() || null, role, puesto: puesto.trim(), ficha: ficha.trim(), manager_id: managerId, marca, sucursal: sucursal || null })
         .eq("id", u.id);
       if (error) throw error;
     },
@@ -134,7 +136,13 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
           <label className="text-[13px] text-ink2">Marca
             <select value={marca ?? ""} onChange={(e) => setMarca(e.target.value || null)} className={inputCls}>
               <option value="">—</option>
-              {MARCAS.map((mk) => <option key={mk} value={mk}>{mk}</option>)}
+              {org.marcas.map((mk) => <option key={mk} value={mk}>{mk}</option>)}
+            </select>
+          </label>
+          <label className="text-[13px] text-ink2">Sucursal
+            <select value={sucursal ?? ""} onChange={(e) => setSucursal(e.target.value || null)} className={inputCls}>
+              <option value="">— Sin sucursal —</option>
+              {org.sucursales.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </label>
           <label className="text-[13px] text-ink2">Ficha de puesto — qué se espera de este perfil
