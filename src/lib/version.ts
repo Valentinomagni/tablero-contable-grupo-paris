@@ -3,16 +3,10 @@
 // nueva arriba de todo y la versión se actualiza sola (ver docs/RELEASE.md).
 export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] = [
   {
-    version: "2.2.1",
-    fecha: "2026-07-20",
-    cambios: [
-      "Categorías: ahora cualquier persona puede asignarlas y filtrar por ellas en su tablero, no solo jefes y encargados.",
-    ],
-  },
-  {
     version: "2.2.0",
     fecha: "2026-07-20",
     cambios: [
+      "Categorías: ahora cualquier persona puede asignarlas y filtrar por ellas en su tablero, no solo jefes y encargados.",
       "Mi día: tu agenda del día con lo urgente primero.",
       "Arqueo de caja con resultado (ok o con diferencias) directamente desde tu día.",
       "Avisos en el tablón con prioridad, vencimiento y ahora se pueden eliminar definitivamente.",
