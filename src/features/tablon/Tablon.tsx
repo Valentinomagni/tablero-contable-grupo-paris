@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CalendarDays, Pencil, Archive, RotateCcw, Plus, Check } from "lucide-react";
+import { CalendarDays, Pencil, Archive, RotateCcw, Plus, Check, Trash2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "../../lib/supabase";
@@ -11,7 +11,7 @@ import { fmtDateTime } from "../../lib/metrics";
 import { PREF, setPref } from "../../lib/prefs";
 import { estadoVencimiento, ordenarVencimientos, CLS_TONO } from "../../lib/vencimientos";
 import { AnuncioEditForm } from "../../components/AnuncioEditForm";
-import { puedeEditarAnuncio } from "../../lib/anuncios";
+import { puedeEditarAnuncio, puedeEliminarAnuncio } from "../../lib/anuncios";
 import { activos, archivados } from "../../lib/tablon";
 import { cn, Avatar } from "../../lib/ui";
 
@@ -44,6 +44,7 @@ export function Tablon({ me, team = [], onGoCalendario }: { me?: Profile; team?:
   const isJefe = me?.role === "jefe";
   const [editId, setEditId] = useState<string | null>(null);
   const [publicando, setPublicando] = useState(false);
+  const [confirmDelId, setConfirmDelId] = useState<string | null>(null);
   const arca = relevantes(useArca());
   const mes = new Date().toLocaleDateString("es-AR", { month: "long", year: "numeric" });
   const hoy = new Date().toISOString().slice(0, 10);
@@ -59,6 +60,16 @@ export function Tablon({ me, team = [], onGoCalendario }: { me?: Profile; team?:
     },
     onSuccess: (_d, v) => { qc.invalidateQueries({ queryKey: ["announcements"] }); toast.success(v.valor ? "Aviso archivado" : "Aviso restaurado"); },
     onError: (e: Error) => toast.error("No se pudo actualizar: " + e.message),
+  });
+
+  // Eliminación definitiva — policy DELETE de la migración 27 (autor o jefe).
+  const eliminarAnuncio = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("announcements").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["announcements"] }); toast.success("Aviso eliminado definitivamente"); setConfirmDelId(null); },
+    onError: (e: Error) => toast.error("No se pudo eliminar: " + e.message),
   });
 
   const secciones: [Announcement["kind"], string, string][] = [
@@ -102,12 +113,24 @@ export function Tablon({ me, team = [], onGoCalendario }: { me?: Profile; team?:
                       <span className="flex items-center gap-2 flex-wrap"><b>{a.title}</b>{prioridadBadge(a.prioridad)}</span>
                       <span className="flex items-center gap-2">
                         {kind === "vencimiento" && dueBadge(a.due_date)}
-                        {me && puedeEditarAnuncio(a, me.id, isJefe) && (
+                        {confirmDelId === a.id ? (
+                          <span className="flex items-center gap-1.5 text-[12.5px]">
+                            <span className="text-ink2">¿Eliminar definitivamente?</span>
+                            <button onClick={() => eliminarAnuncio.mutate(a.id)} disabled={eliminarAnuncio.isPending}
+                              className="rounded-lg px-2.5 py-1 bg-danger text-white font-semibold disabled:opacity-60">Eliminar</button>
+                            <button onClick={() => setConfirmDelId(null)}
+                              className="rounded-lg px-2.5 py-1 border border-line bg-surface2 text-ink2">Cancelar</button>
+                          </span>
+                        ) : me && puedeEditarAnuncio(a, me.id, isJefe) && (
                           <>
                             <button onClick={() => setEditId(a.id)} title="Editar"
                               className="border border-line bg-surface2 rounded-lg p-1.5 text-ink2 hover:text-accent shrink-0"><Pencil size={13} /></button>
                             <button onClick={() => setArchivado.mutate({ id: a.id, valor: true })} title="Archivar"
                               className="border border-line bg-surface2 rounded-lg p-1.5 text-ink2 hover:text-accent shrink-0"><Archive size={13} /></button>
+                            {puedeEliminarAnuncio(a, me.id, isJefe) && (
+                              <button onClick={() => setConfirmDelId(a.id)} title="Eliminar definitivamente"
+                                className="border border-line bg-surface2 rounded-lg p-1.5 text-ink2 hover:text-danger shrink-0"><Trash2 size={13} /></button>
+                            )}
                           </>
                         )}
                       </span>
@@ -132,9 +155,23 @@ export function Tablon({ me, team = [], onGoCalendario }: { me?: Profile; team?:
               <div key={a.id} className="bg-surface border border-line rounded-xl px-4 py-3 mb-2 opacity-80">
                 <div className="flex justify-between items-center gap-2.5 flex-wrap">
                   <span className="flex items-center gap-2 flex-wrap"><b>{a.title}</b>{prioridadBadge(a.prioridad)}</span>
-                  {me && puedeEditarAnuncio(a, me.id, isJefe) && (
-                    <button onClick={() => setArchivado.mutate({ id: a.id, valor: false })} title="Restaurar"
-                      className="flex items-center gap-1 border border-line bg-surface2 rounded-lg px-2.5 py-1 text-[12px] text-ink2 hover:text-accent shrink-0"><RotateCcw size={13} /> Restaurar</button>
+                  {confirmDelId === a.id ? (
+                    <span className="flex items-center gap-1.5 text-[12.5px]">
+                      <span className="text-ink2">¿Eliminar definitivamente?</span>
+                      <button onClick={() => eliminarAnuncio.mutate(a.id)} disabled={eliminarAnuncio.isPending}
+                        className="rounded-lg px-2.5 py-1 bg-danger text-white font-semibold disabled:opacity-60">Eliminar</button>
+                      <button onClick={() => setConfirmDelId(null)}
+                        className="rounded-lg px-2.5 py-1 border border-line bg-surface2 text-ink2">Cancelar</button>
+                    </span>
+                  ) : me && puedeEditarAnuncio(a, me.id, isJefe) && (
+                    <span className="flex items-center gap-1.5">
+                      <button onClick={() => setArchivado.mutate({ id: a.id, valor: false })} title="Restaurar"
+                        className="flex items-center gap-1 border border-line bg-surface2 rounded-lg px-2.5 py-1 text-[12px] text-ink2 hover:text-accent shrink-0"><RotateCcw size={13} /> Restaurar</button>
+                      {puedeEliminarAnuncio(a, me.id, isJefe) && (
+                        <button onClick={() => setConfirmDelId(a.id)} title="Eliminar definitivamente"
+                          className="border border-line bg-surface2 rounded-lg p-1.5 text-ink2 hover:text-danger shrink-0"><Trash2 size={13} /></button>
+                      )}
+                    </span>
                   )}
                 </div>
                 {a.detail && <p className="text-sm my-1.5 whitespace-pre-line">{a.detail}</p>}

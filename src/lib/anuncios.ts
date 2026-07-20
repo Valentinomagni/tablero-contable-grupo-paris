@@ -6,3 +6,8 @@ export function puedeEditarAnuncio(a: Pick<Announcement, "owner_id">, meId: stri
   if (isJefe) return true;
   return !!a.owner_id && a.owner_id === meId;
 }
+
+// Alias semántico: hoy la regla de borrado es idéntica a la de edición (misma policy DELETE
+// de la migración 27), pero se mantiene como función separada por si el negocio la diferencia
+// en el futuro (ej. borrado solo por jefe, edición también por autor).
+export const puedeEliminarAnuncio = puedeEditarAnuncio;
