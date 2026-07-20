@@ -19,6 +19,24 @@ corras el SQL. El smoke confirma que todas las vistas cargan bien sin las migrac
    | 19 | `migracion-19-username.sql` | `username` + RPC `email_por_usuario` (#16) |
    | 20 | `migracion-20-delegacion-universal.sql` | Delegación de tareas para todos los roles (spec 20 #4) |
    | 21 | `migracion-21-notificaciones.sql` | Centro de notificaciones (campana, spec 20 #8) |
+   | 27 | `migracion-27-organizacion.sql` | Sucursales dinámicas, marcas en cards, DELETE de avisos (spec 26) |
+## Migración 27 — Estructura organizacional
+Después de aplicar `migracion-27-organizacion.sql`:
+1. Verificá que las columnas se crearon correctamente:
+   ```sql
+   select sucursal from public.profiles limit 1;
+   select sucursal, marca from public.cards limit 1;
+   ```
+2. Verificá que la configuración de organizacion se cargó:
+   ```sql
+   select value from public.settings where key='organizacion';
+   ```
+   Debe devolver un JSON con las 6 marcas (General, Peugeot, Citroën, Chevrolet, Honda, Postventa) y 4 sucursales (San Luis Capital, Villa Mercedes, Merlo, San Juan).
+3. Verificá que el policy de DELETE de avisos se creó:
+   ```sql
+   select * from pg_policies where tablename='announcements' and policyname='announcements_delete';
+   ```
+
 3. **Desplegá la Edge Function** `eliminar-usuario` (Supabase → Edge Functions → crear `eliminar-usuario` → pegar el contenido de `edge-function-eliminar-usuario.ts` → Deploy). Mismo flujo que `crear-usuario`.
 4. **Push del código** (deploy a Cloudflare). Desde la carpeta del proyecto:
    `git push origin main`  (o pedime que lo pushee yo).

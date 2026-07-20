@@ -1,7 +1,7 @@
 export type Role = "jefe" | "encargado" | "empleado";
 export type Status = "pend" | "proc" | "term";
 
-export interface Profile { id: string; name: string; role: Role; email: string; username: string | null; puesto: string; ficha: string; manager_id: string | null; marca: string | null; }
+export interface Profile { id: string; name: string; role: Role; email: string; username: string | null; puesto: string; ficha: string; manager_id: string | null; marca: string | null; sucursal?: string | null; }
 export interface ChecklistItem { txt: string; done: boolean; done_at: string | null; }
 export interface RecurRule { tipo: "diaria" | "semanal" | "mensual"; dias?: number[]; diaMes?: number; }
 export interface TaskOccurrence {
@@ -22,6 +22,8 @@ export interface Card {
   categoria?: string | null;
   reset_policy?: "mensual" | "mantener" | "manual";
   requiere_resultado?: boolean; // tarea de control (ej. arqueo): al completar pide resultado ok/dif
+  sucursal?: string | null; // sucursal (migración 27)
+  marca?: string | null; // marca dinámica (migración 27, consumida por Task 4)
 }
 export interface CardArchive { id: string; owner: string; mes: string; card: Card; archived_at: string; }
 export interface Objective {
