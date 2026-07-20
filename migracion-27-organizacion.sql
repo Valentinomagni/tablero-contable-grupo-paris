@@ -35,5 +35,6 @@ create table if not exists public.schema_migrations (
   nombre text not null,
   applied_at timestamptz not null default now()
 );
+alter table public.schema_migrations enable row level security;  -- sin RLS quedaría expuesta por la API
 insert into public.schema_migrations (id, nombre) values (27, 'migracion-27-organizacion.sql')
 on conflict (id) do nothing;
