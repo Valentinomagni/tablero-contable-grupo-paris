@@ -17,3 +17,19 @@ export function useArchive(ownerId: string) {
     enabled: !!ownerId,
   });
 }
+
+// TODOS los archives del equipo (sin filtro de owner) — para el análisis histórico del jefe.
+// RLS deja al jefe ver todo; el resto sólo ve lo suyo. DEFENSIVA: ante cualquier error (tabla
+// inexistente / migración sin aplicar) devuelve [] y el análisis muestra "Sin historial todavía".
+export function useArchiveEquipo(enabled = true) {
+  return useQuery({
+    queryKey: ["archive", "equipo"],
+    enabled,
+    queryFn: async (): Promise<CardArchive[]> => {
+      const { data, error } = await supabase.from("cards_archive")
+        .select("*").order("mes", { ascending: false });
+      if (error) return [];
+      return (data as CardArchive[]) ?? [];
+    },
+  });
+}

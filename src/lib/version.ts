@@ -3,6 +3,13 @@
 // nueva arriba de todo y la versión se actualiza sola (ver docs/RELEASE.md).
 export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] = [
   {
+    version: "2.2.1",
+    fecha: "2026-07-20",
+    cambios: [
+      "Categorías: ahora cualquier persona puede asignarlas y filtrar por ellas en su tablero, no solo jefes y encargados.",
+    ],
+  },
+  {
     version: "2.2.0",
     fecha: "2026-07-20",
     cambios: [
@@ -17,6 +24,7 @@ export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] 
       "Alertas para gestores cuando algo necesita atención antes de que sea un problema.",
       "Menciones con @ en los comentarios de las tareas, con notificación para la persona mencionada.",
       "Reporte con métricas de uso del tiempo del equipo.",
+      "Reporte: análisis ejecutivo del mes con cumplimiento por persona, marca y sucursal, más tu rendimiento promedio histórico para ver si mejoramos.",
       "Se arregló la impresión del reporte: ahora sale completa y prolija.",
       "El resumen y el reporte ahora se adaptan al rol y la jerarquía de cada persona.",
       "Reporte: el indicador de puntualidad ahora muestra cuántas tareas se midieron y avisa cuando la muestra es chica.",
