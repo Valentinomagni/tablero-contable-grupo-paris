@@ -2,6 +2,11 @@
 // hereda la del dueño. null/undefined en el filtro = no filtrar por ese eje.
 import type { Card, Profile } from "./types";
 
+// La card manda; si no tiene marca propia, hereda la del dueño.
+export function marcaDe(c: Card, byId: Map<string, Profile>): string | null {
+  return c.marca ?? byId.get(c.owner)?.marca ?? null;
+}
+
 export function filtrarPorSegmento(
   cards: Card[], profiles: Profile[],
   seg: { marca?: string | null; sucursal?: string | null },
@@ -10,7 +15,7 @@ export function filtrarPorSegmento(
   const byId = new Map(profiles.map((p) => [p.id, p]));
   return cards.filter((c) => {
     const dueño = byId.get(c.owner);
-    const marca = c.marca ?? dueño?.marca ?? null;
+    const marca = marcaDe(c, byId);
     const sucursal = c.sucursal ?? dueño?.sucursal ?? null;
     if (seg.marca && marca !== seg.marca) return false;
     if (seg.sucursal && sucursal !== seg.sucursal) return false;

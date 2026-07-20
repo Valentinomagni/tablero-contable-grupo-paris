@@ -7,6 +7,7 @@ export const PREF = {
   version: NS + "version-vista",
   tablon: NS + "tablon-visto",
   agrupar: NS + "agrupar",
+  agruparModo: NS + "agrupar-modo",
 } as const;
 
 export function getPref(k: string): string | null {
@@ -29,5 +30,10 @@ export function migrarPrefs(): void {
   for (const [vieja, nueva] of Object.entries(mapa)) {
     const v = getPref(vieja);
     if (v !== null && getPref(nueva) === null) setPref(nueva, v);
+  }
+  // migración del toggle "Agrupar" (booleano) al nuevo modo de agrupación:
+  // respeta la elección previa del usuario, mapeándola al modo "categoria".
+  if (getPref(PREF.agrupar) === "1" && getPref(PREF.agruparModo) === null) {
+    setPref(PREF.agruparModo, "categoria");
   }
 }

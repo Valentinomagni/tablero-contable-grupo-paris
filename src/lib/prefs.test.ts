@@ -39,4 +39,23 @@ describe("prefs", () => {
     migrarPrefs();
     expect(getPref(PREF.tablon)).toBe("2026-07-15");
   });
+
+  it("migrarPrefs setea modo 'categoria' si el toggle viejo estaba en '1' y no hay modo guardado", () => {
+    setPref(PREF.agrupar, "1");
+    migrarPrefs();
+    expect(getPref(PREF.agruparModo)).toBe("categoria");
+  });
+
+  it("migrarPrefs NO pisa un modo ya elegido por el usuario", () => {
+    setPref(PREF.agrupar, "1");
+    setPref(PREF.agruparModo, "marca");
+    migrarPrefs();
+    expect(getPref(PREF.agruparModo)).toBe("marca");
+  });
+
+  it("migrarPrefs no setea modo si el toggle viejo no estaba activo", () => {
+    setPref(PREF.agrupar, "0");
+    migrarPrefs();
+    expect(getPref(PREF.agruparModo)).toBeNull();
+  });
 });

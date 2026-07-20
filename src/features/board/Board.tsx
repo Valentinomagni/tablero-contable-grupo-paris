@@ -10,7 +10,7 @@ import { pushUndo } from "../../lib/undo";
 import { isShared, siblingSyncPatches } from "../../lib/shared";
 import { bloqueadaPorTitulos } from "../../lib/deps";
 import { categoriasEnUso, pasaFiltroCategoria } from "../../lib/categorias";
-import { agruparCards } from "../../lib/agrupar";
+import { agruparCards, type ModoAgrupar } from "../../lib/agrupar";
 import { getPref, setPref, PREF } from "../../lib/prefs";
 import { useOrganizacion } from "../../hooks/useData";
 import { filtrarPorSegmento } from "../../lib/segmento";
@@ -78,9 +78,13 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
   const cardsSeg = mostrarSegmento
     ? filtrarPorSegmento(cards, team, { marca: marcaFiltro, sucursal: sucursalFiltro })
     : cards;
-  // agrupar por categoría/prioridad con colapso apilado (spec 21 item 13)
-  const [agrupar, setAgruparState] = useState(() => getPref(PREF.agrupar) === "1");
-  const setAgrupar = (v: boolean) => { setAgruparState(v); setPref(PREF.agrupar, v ? "1" : "0"); };
+  // agrupar por categoría/prioridad/marca con colapso apilado (spec 21 item 13 / spec 26)
+  const MODOS_AGRUPAR: ModoAgrupar[] = ["ninguno", "categoria", "prioridad", "marca"];
+  const [agruparModo, setAgruparModoState] = useState<ModoAgrupar>(() => {
+    const v = getPref(PREF.agruparModo);
+    return (v && MODOS_AGRUPAR.includes(v as ModoAgrupar)) ? (v as ModoAgrupar) : "ninguno";
+  });
+  const setAgruparModo = (v: ModoAgrupar) => { setAgruparModoState(v); setPref(PREF.agruparModo, v); };
   const grupoKey = `tablero:grupos:${ownerId}`;
   const [colapsados, setColapsados] = useState<string[]>([]);
   useEffect(() => {
@@ -196,10 +200,18 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
   return (
     <div className="flex-1 flex flex-col min-w-0">
       <div className="flex gap-1.5 flex-wrap items-center px-6 pb-3">
-        <button onClick={() => setAgrupar(!agrupar)} title="Agrupar tarjetas por categoría"
+        <label title="Agrupar tarjetas dentro de cada columna"
           className={cn("inline-flex items-center gap-1.5 border rounded-full px-3 py-1 text-[12px] transition",
-            agrupar ? "bg-accent-soft border-accent text-accent font-semibold" : "border-line bg-surface2 text-ink2 hover:border-accent/40")}>
-          <Layers size={12} /> Agrupar</button>
+            agruparModo !== "ninguno" ? "bg-accent-soft border-accent text-accent font-semibold" : "border-line bg-surface2 text-ink2 hover:border-accent/40")}>
+          <Layers size={12} />
+          <select value={agruparModo} onChange={(e) => setAgruparModo(e.target.value as ModoAgrupar)}
+            className="bg-transparent outline-none cursor-pointer">
+            <option value="ninguno">Sin agrupar</option>
+            <option value="categoria">Categoría</option>
+            <option value="prioridad">Prioridad</option>
+            <option value="marca">Marca</option>
+          </select>
+        </label>
         {catsUsadas.length > 0 && (
           <>
             <span className="w-px h-4 bg-line mx-1" />
@@ -247,8 +259,8 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
                 <CardItem c={c} blocked={isBlocked(c)} waiting={c.status !== "term" && dependents(c.id).length > 0} esperaTitulos={bloqueadaPorTitulos(c, cards)} onOpen={onOpen} />
               </div>
             );
-            if (!agrupar) return colCards.map(renderCard);
-            return agruparCards(colCards, catsUsadas).map((g) => {
+            if (agruparModo === "ninguno") return colCards.map(renderCard);
+            return agruparCards(colCards, agruparModo, { profiles: team }).map((g) => {
               const cerrado = colapsados.includes(g.grupo);
               if (cerrado) {
                 // Pila visual compacta: 3 tarjetas fantasma superpuestas (spec 21 item 13)
