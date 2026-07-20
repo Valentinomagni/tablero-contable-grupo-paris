@@ -3,6 +3,7 @@ import type { Card, Profile } from "../../lib/types";
 import { construirArbol, porMarca, type NodoOrg } from "../../lib/jerarquia";
 import { Avatar } from "../../lib/ui";
 import { useOrganizacion } from "../../hooks/useData";
+import { MarcaIcon } from "../../components/MarcaIcon";
 
 const cardSh = { boxShadow: "var(--ring-sh),var(--shadow)" };
 const ROLE_LBL: Record<Profile["role"], string> = { jefe: "Jefe", encargado: "Encargado", empleado: "Empleado" };
@@ -40,6 +41,7 @@ function Seccion({ titulo, subtitulo, gente, cards }: { titulo: string; subtitul
   return (
     <section className="mb-7">
       <div className="flex items-baseline gap-2 mb-3">
+        <MarcaIcon marca={titulo} size={18} />
         <h2 className="text-[15px] font-bold tracking-[-0.01em]">{titulo}</h2>
         {subtitulo && <span className="text-[12px] text-ink2">{subtitulo}</span>}
         <span className="text-[12px] text-ink2 tnum">· {gente.length} {gente.length === 1 ? "persona" : "personas"}</span>
