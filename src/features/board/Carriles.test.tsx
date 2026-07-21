@@ -35,24 +35,31 @@ describe("Carriles", () => {
 
   it("soltar una card en otra columna del mismo carril reporta el estado destino", () => {
     const onDropCard = vi.fn();
-    const { container } = render(<Carriles cards={cards} modo="categoria" profiles={[]} columnas={COLS}
+    render(<Carriles cards={cards} modo="categoria" profiles={[]} columnas={COLS}
       renderCard={renderCard} onDropCard={onDropCard} />);
     // primer carril (Bancos) → tercera columna (Terminado)
-    const carril = container.querySelectorAll(".flex.gap-5.items-start")[0];
-    const colTerm = carril.children[2];
+    const colTerm = screen.getByTestId("carril-Bancos-term");
     fireEvent.drop(colTerm, { dataTransfer: dataTransfer("a") });
     expect(onDropCard).toHaveBeenCalledWith("a", "term");
   });
 
   it("cada columna del carril resuelve su propio estado destino", () => {
     const onDropCard = vi.fn();
-    const { container } = render(<Carriles cards={cards} modo="categoria" profiles={[]} columnas={COLS}
+    render(<Carriles cards={cards} modo="categoria" profiles={[]} columnas={COLS}
       renderCard={renderCard} onDropCard={onDropCard} />);
-    const carril = container.querySelectorAll(".flex.gap-5.items-start")[0];
-    fireEvent.drop(carril.children[0], { dataTransfer: dataTransfer("b") });
-    fireEvent.drop(carril.children[1], { dataTransfer: dataTransfer("b") });
+    fireEvent.drop(screen.getByTestId("carril-Bancos-pend"), { dataTransfer: dataTransfer("b") });
+    fireEvent.drop(screen.getByTestId("carril-Bancos-proc"), { dataTransfer: dataTransfer("b") });
     expect(onDropCard).toHaveBeenNthCalledWith(1, "b", "pend");
     expect(onDropCard).toHaveBeenNthCalledWith(2, "b", "proc");
+  });
+
+  it("soltar una card de otro carril no dispara el cambio de estado", () => {
+    const onDropCard = vi.fn();
+    render(<Carriles cards={cards} modo="categoria" profiles={[]} columnas={COLS}
+      renderCard={renderCard} onDropCard={onDropCard} />);
+    // "c" es de Impuestos; soltarla en una columna del carril Bancos no debe aceptar el drop.
+    fireEvent.drop(screen.getByTestId("carril-Bancos-term"), { dataTransfer: dataTransfer("c") });
+    expect(onDropCard).not.toHaveBeenCalled();
   });
 
   it("la cabecera colapsa el carril y lo persiste en localStorage", () => {
@@ -60,6 +67,6 @@ describe("Carriles", () => {
       renderCard={renderCard} onDropCard={vi.fn()} />);
     fireEvent.click(screen.getAllByTitle("Colapsar carril")[0]);
     expect(screen.queryByTestId("card-a")).not.toBeInTheDocument();
-    expect(JSON.parse(getPref(PREF.carrilesColapsados)!)).toEqual(["Bancos"]);
+    expect(JSON.parse(getPref(PREF.carrilesColapsados("categoria"))!)).toEqual(["Bancos"]);
   });
 });

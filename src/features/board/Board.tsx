@@ -279,13 +279,16 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
       {/* Agrupado: carriles horizontales por grupo que atraviesan las tres columnas
           de estado. La card cambia de columna sin salir de su carril. */}
       {agruparModo !== "ninguno" && (
-        <div className="flex flex-col gap-3 min-w-0">
+        <div className="flex flex-col gap-3 shrink-0">
           <Carriles cards={mine} modo={agruparModo} profiles={team} columnas={COLS}
             renderCard={renderCard} onDropCard={(id, status) => move.mutate({ id, status })} />
           {mine.length === 0 && <EmptyState title="Sin tareas acá." />}
           <button onClick={() => setCreando(true)}
             className="w-[290px] border border-dashed border-line rounded-lg py-2 text-[13px] text-ink2 hover:text-accent hover:border-accent transition">
             + Añadir tarea</button>
+          {/* Atajo inline de "En proceso" (spec 21 item 2), restaurado también en modo carriles:
+              la card nace sin categoría y cae en "Sin categoría", coherente con el resto. */}
+          <div className="w-[290px]">{addInline("proc", "Título y Enter…")}</div>
         </div>
       )}
 
