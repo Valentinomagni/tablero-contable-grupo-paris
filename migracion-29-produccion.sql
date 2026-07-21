@@ -34,6 +34,24 @@ create policy "schema_migrations_select" on public.schema_migrations
   for select using (auth.role() = 'authenticated');
 
 -- ------------------------------------------------------------
+-- 0-bis) settings.key debía ser único desde el principio: sin este
+--    índice, el upsert({key:'tiempos_max',...}, {onConflict:'key'})
+--    de Admin.tsx (Task 4) falla en runtime con "there is no unique
+--    or exclusion constraint matching the ON CONFLICT specification"
+--    (por eso la migración 27 tuvo que insertar 'organizacion' con
+--    insert...select where not exists en vez de on conflict). No hay
+--    filas duplicadas de key hoy (todo insert existente está guardado
+--    con where not exists), así que el índice se puede crear seguro.
+-- ------------------------------------------------------------
+create unique index if not exists settings_key_uidx on public.settings (key);
+
+-- Fila semilla para que el upsert de tiempos_max tenga sobre qué
+-- operar incluso antes del primer guardado desde Admin.tsx.
+insert into public.settings (key, value)
+  select 'tiempos_max', '{}'::jsonb
+  where not exists (select 1 from public.settings where key = 'tiempos_max');
+
+-- ------------------------------------------------------------
 -- 1) Columnas nuevas
 -- ------------------------------------------------------------
 alter table public.profiles add column if not exists oculto boolean not null default false;
