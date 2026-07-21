@@ -90,6 +90,29 @@ leen `process.env.E2E_USER` / `process.env.E2E_PASSWORD` y si faltan, se skipean
 hardcodeada en commits anteriores del historial de git (no se puede limpiar sin reescribir
 el historial). Rotá esa contraseña cuanto antes desde Supabase Auth o desde la app.
 
+## Smoke de RLS (manual)
+`scripts/rls-smoke.mjs` — verifica a mano (solo lectura + 1 delete a un id que
+no existe) que las policies de RLS estén haciendo lo que deben: el empleado
+solo ve sus propias cards, no puede borrar avisos ajenos, etc. Ver el detalle
+de qué chequea en `docs/BACKUP-RESTORE.md` y en el propio script.
+
+Usá SIEMPRE cuentas de **PRUEBA** (nunca las reales del jefe ni de un
+empleado real). En PowerShell:
+
+```powershell
+$env:SUPABASE_URL = "https://yyyrlopgwmuvfbzwxiwp.supabase.co"
+$env:SUPABASE_ANON_KEY = "sb_publishable_..."
+$env:TEST_EMPLEADO_EMAIL = "empleado.prueba@..."
+$env:TEST_EMPLEADO_PASS = "..."
+$env:TEST_JEFE_EMAIL = "jefe.prueba@..."
+$env:TEST_JEFE_PASS = "..."
+node scripts/rls-smoke.mjs
+```
+
+Si falta alguna variable, el script imprime las instrucciones y sale con
+código 1 sin tocar nada. La salida es una tabla PASS/FAIL/SKIP por check;
+sale con código 1 si hay algún FAIL.
+
 ## Notas de seguridad del rollout de login (#16)
 - El login acepta **usuario O email**. Desplegar antes de cargar usernames NO bloquea a nadie.
 - Recién cuando TODO el equipo tenga su username cargado y probado, se puede (a futuro) quitar
