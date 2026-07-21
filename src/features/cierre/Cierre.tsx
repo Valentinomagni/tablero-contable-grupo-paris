@@ -9,10 +9,10 @@ import { isBlocked } from "../../lib/deps";
 import { supabase } from "../../lib/supabase";
 import { closingCards, cierreStats, ordenarCierre, shiftMonth, MESES } from "../../lib/cierre";
 import { estadoCierre } from "../../lib/cierre-unificado";
-import { mesCerradoPor, mesesAbiertos, mesesConTrabajoDe, resumenEquipo, mesLegible } from "../../lib/periodos";
+import { mesCerradoPor, mesesAbiertos, mesesConTrabajoDe, resumenEquipo, mesLegible, formatearMeses } from "../../lib/periodos";
 import { faltantesDePlantilla, filasParaInsertar } from "../../lib/plantilla";
 import { useArchiveEquipo } from "../../hooks/useArchive";
-import { usePeriodos, usePeriodosDisponibles, useCerrarMes, useReabrirMes } from "../../hooks/usePeriodos";
+import { usePeriodos, esTablaInexistente, useCerrarMes, useReabrirMes } from "../../hooks/usePeriodos";
 import { Avatar } from "../../lib/ui";
 
 const cardSh = { boxShadow: "var(--ring-sh),var(--shadow)" };
@@ -36,6 +36,11 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
   const closing = closingCards(cards, ym.year, ym.month);
   const stats = cierreStats(closing);
   const orden = ordenarCierre(closing);
+  // El semáforo se declara personal ("Tareas del cierre: 12 de 40" debe ser lo SUYO),
+  // así que su checklist se calcula solo sobre las cards propias de `closing` — no
+  // sobre todo el equipo visible (eso lo cubre la tabla de `resumenEquipo` más abajo).
+  const closingMio = closing.filter((c) => c.owner === meId);
+  const statsMios = cierreStats(closingMio);
   const nom = (id: string) => team.find((u) => u.id === id)?.name ?? "?";
   const nav = (delta: number) => { setConfirmando(false); setYm(shiftMonth(ym.year, ym.month, delta)); };
 
@@ -52,7 +57,7 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
     (c) => c.status === "term" && !!c.done_at && c.done_at.slice(0, 7) === mesPrevio,
   );
   const semaforo = estadoCierre({
-    checklist: closing.length ? stats : null,
+    checklist: closingMio.length ? statsMios : null,
     archivadoMesPrevio,
     recurrentesOk,
   });
@@ -61,14 +66,21 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
   // Cada quien cierra SU mes cuando terminó. Varios meses pueden estar abiertos a la
   // vez sin conflicto: cerrar julio no toca junio. DEFENSIVO: sin la migración 29,
   // periodos = [] y disponible = false → el botón explica por qué no se habilita.
-  const periodos = usePeriodos().data ?? [];
-  const disponible = usePeriodosDisponibles().data === true;
+  const periodosQuery = usePeriodos();
+  const periodos = periodosQuery.data ?? [];
+  // Sin migración 29 aplicada, la tabla no existe: eso es un estado esperado, distinto
+  // de un error de red real. Se discriminan por código de error, no se asume "no
+  // disponible" ante cualquier falla (issue: mensaje falso ante error de red).
+  const migracionPendiente = periodosQuery.isError && esTablaInexistente(periodosQuery.error);
+  const errorReal = periodosQuery.isError && !migracionPendiente;
+  const disponible = !periodosQuery.isError;
   const cerrarMes = useCerrarMes();
   const reabrirMes = useReabrirMes();
   const mesNavegado = `${ym.year}-${String(ym.month).padStart(2, "0")}`;
+  const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
   const esMesEnCurso = ym.year === hoy.getFullYear() && ym.month === hoy.getMonth() + 1;
   const miCierre = mesCerradoPor(periodos, meId, mesNavegado);
-  const misAbiertos = mesesAbiertos(periodos, meId, mesesConTrabajoDe(cards, meId));
+  const misAbiertos = mesesAbiertos(periodos, meId, mesesConTrabajoDe(cards, meId), mesActual);
   const esGestor = isJefe || meRole === "encargado";
   const equipo = resumenEquipo(periodos, team, mesNavegado);
 
@@ -139,7 +151,7 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
       {misAbiertos.length > 1 && (
         <div className="inline-flex items-center gap-2 bg-surface2 border border-line rounded-full px-3.5 py-1.5 mb-4 text-[12px] text-ink2">
           <CalendarRange size={14} className="shrink-0" />
-          <span>Tenés {misAbiertos.length} meses abiertos: {misAbiertos.map(mesLegible).join(", ")}</span>
+          <span>Tenés {misAbiertos.length} meses abiertos: {formatearMeses(misAbiertos)}</span>
         </div>
       )}
 
@@ -151,7 +163,7 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
           <h3 className="text-[15px] font-bold tracking-[-0.01em]">Cierre del mes</h3>
           {!esMesEnCurso && (
             <p className="text-[12px] text-ink2 mt-1 leading-snug">
-              No es el mes en curso: mostramos sólo el avance de sus tareas, que es el dato histórico confiable.
+              En meses pasados solo mostramos el avance de las tareas del cierre: es el único dato histórico confiable.
             </p>
           )}
           <div className="mt-3 flex flex-col gap-3">
@@ -185,9 +197,13 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
           </div>
         ) : (
           <div className="px-5 py-3 border-t border-line">
-            {!disponible ? (
+            {migracionPendiente ? (
               <button disabled className="flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3.5 py-1.5 text-[13px] font-semibold text-ink2 opacity-70">
                 <Lock size={14} /> Se habilita tras la migración 29
+              </button>
+            ) : errorReal ? (
+              <button disabled className="flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3.5 py-1.5 text-[13px] font-semibold text-ink2 opacity-70">
+                <Lock size={14} /> No se pudieron cargar los cierres. Reintentá en un momento.
               </button>
             ) : confirmando ? (
               <div className="flex flex-wrap items-center gap-3">

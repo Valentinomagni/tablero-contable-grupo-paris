@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mesCerradoPor, mesesAbiertos, resumenEquipo, mesesConTrabajoDe, mesLegible } from "./periodos";
+import { mesCerradoPor, mesesAbiertos, resumenEquipo, mesesConTrabajoDe, mesLegible, formatearMeses } from "./periodos";
 import type { CierrePeriodo, Profile, Card } from "./types";
 
 const per = (owner: string, mes: string, cerrado_at = "2026-07-05T10:00:00Z"): CierrePeriodo =>
@@ -34,24 +34,44 @@ describe("mesCerradoPor", () => {
 });
 
 describe("mesesAbiertos", () => {
+  const hoy = "2026-07";
+
   it("persona sin filas de cierre → todos los meses con trabajo quedan abiertos", () => {
-    expect(mesesAbiertos([], "ana", ["2026-06", "2026-07"])).toEqual(["2026-06", "2026-07"]);
+    expect(mesesAbiertos([], "ana", ["2026-06", "2026-07"], hoy)).toEqual(["2026-06", "2026-07"]);
   });
   it("cerró junio pero no julio → solo julio abierto", () => {
-    expect(mesesAbiertos([per("ana", "2026-06")], "ana", ["2026-06", "2026-07"])).toEqual(["2026-07"]);
+    expect(mesesAbiertos([per("ana", "2026-06")], "ana", ["2026-06", "2026-07"], hoy)).toEqual(["2026-07"]);
   });
   it("un mes sin trabajo no cuenta como abierto", () => {
-    expect(mesesAbiertos([], "ana", ["2026-07"])).toEqual(["2026-07"]);
-    expect(mesesAbiertos([], "ana", [])).toEqual([]);
+    expect(mesesAbiertos([], "ana", ["2026-07"], hoy)).toEqual(["2026-07"]);
+    expect(mesesAbiertos([], "ana", [], hoy)).toEqual([]);
   });
   it("el cierre de otra persona no cierra el mes propio", () => {
-    expect(mesesAbiertos([per("beto", "2026-06")], "ana", ["2026-06"])).toEqual(["2026-06"]);
+    expect(mesesAbiertos([per("beto", "2026-06")], "ana", ["2026-06"], hoy)).toEqual(["2026-06"]);
   });
   it("ordena y deduplica los meses", () => {
-    expect(mesesAbiertos([], "ana", ["2026-07", "2026-06", "2026-07"])).toEqual(["2026-06", "2026-07"]);
+    expect(mesesAbiertos([], "ana", ["2026-07", "2026-06", "2026-07"], hoy)).toEqual(["2026-06", "2026-07"]);
   });
   it("es defensiva ante entradas nulas", () => {
-    expect(mesesAbiertos(undefined as unknown as CierrePeriodo[], "ana", undefined as unknown as string[])).toEqual([]);
+    expect(mesesAbiertos(undefined as unknown as CierrePeriodo[], "ana", undefined as unknown as string[], hoy)).toEqual([]);
+  });
+  it("ownerId vacío → sin meses abiertos (no todos los meses)", () => {
+    expect(mesesAbiertos([], "", ["2026-06", "2026-07"], hoy)).toEqual([]);
+    expect(mesesAbiertos([], undefined as unknown as string, ["2026-06", "2026-07"], hoy)).toEqual([]);
+  });
+  it("acota a los últimos 6 meses respecto de mesActual: meses viejos no cuentan como abiertos", () => {
+    // Con "hoy" = 2026-07, la ventana es 2026-02..2026-07. Enero 2026 queda afuera.
+    const meses = ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07"];
+    expect(mesesAbiertos([], "ana", meses, hoy)).toEqual(["2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07"]);
+  });
+  it("acota cruzando el límite de año", () => {
+    // "hoy" = 2026-02 → ventana: 2025-09..2026-02. Agosto 2025 queda afuera.
+    expect(mesesAbiertos([], "ana", ["2025-08", "2025-09", "2026-02"], "2026-02"))
+      .toEqual(["2025-09", "2026-02"]);
+  });
+  it("usa el mes actual real por default cuando no se pasa mesActual", () => {
+    const hoyReal = new Date().toISOString().slice(0, 7);
+    expect(mesesAbiertos([], "ana", [hoyReal])).toEqual([hoyReal]);
   });
 });
 
@@ -107,5 +127,18 @@ describe("mesLegible", () => {
   it("no crashea con basura", () => {
     expect(mesLegible("")).toBe("");
     expect(mesLegible("2026-99")).toBe("2026-99");
+  });
+});
+
+describe("formatearMeses", () => {
+  it("mismo año → sin año en el texto", () => {
+    expect(formatearMeses(["2026-06", "2026-07"])).toBe("junio, julio");
+  });
+  it("años distintos → agrega el año a cada mes (evita 'junio, junio')", () => {
+    expect(formatearMeses(["2025-06", "2026-06"])).toBe("junio 2025, junio 2026");
+  });
+  it("lista vacía o nula → string vacío", () => {
+    expect(formatearMeses([])).toBe("");
+    expect(formatearMeses(undefined as unknown as string[])).toBe("");
   });
 });

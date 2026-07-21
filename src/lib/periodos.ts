@@ -20,10 +20,37 @@ export function mesCerradoPor(periodos: CierrePeriodo[], ownerId: string, mes: s
   return periodos.find((p) => p?.owner === ownerId && p?.mes === mes) ?? null;
 }
 
-export function mesesAbiertos(periodos: CierrePeriodo[], ownerId: string, mesesConTrabajo: string[]): string[] {
-  if (!Array.isArray(mesesConTrabajo)) return [];
+// Cota temporal: sin esto, las cards de meses viejos nunca se borran y el día que se
+// aplique la migración 29 el chip diría "Tenés 7 meses abiertos: enero, febrero, ...".
+// Sólo se listan como abiertos los últimos 6 meses (incluido el actual) respecto de
+// `mesActual`; meses anteriores a esa ventana no cuentan aunque no tengan fila de cierre.
+function ultimosSeisMeses(mesActual: string): Set<string> {
+  const m = /^(\d{4})-(\d{2})$/.exec(mesActual ?? "");
+  if (!m) return new Set();
+  let year = Number(m[1]);
+  let month = Number(m[2]);
+  const out = new Set<string>();
+  for (let i = 0; i < 6; i++) {
+    out.add(`${year}-${String(month).padStart(2, "0")}`);
+    month -= 1;
+    if (month < 1) { month = 12; year -= 1; }
+  }
+  return out;
+}
+
+export function mesesAbiertos(
+  periodos: CierrePeriodo[],
+  ownerId: string,
+  mesesConTrabajo: string[],
+  mesActual: string = new Date().toISOString().slice(0, 7),
+): string[] {
+  if (!ownerId || !Array.isArray(mesesConTrabajo)) return [];
+  const ventana = ultimosSeisMeses(mesActual);
   const unicos = Array.from(new Set(mesesConTrabajo.filter(Boolean)));
-  return unicos.filter((mes) => mesCerradoPor(periodos, ownerId, mes) === null).sort();
+  return unicos
+    .filter((mes) => ventana.has(mes))
+    .filter((mes) => mesCerradoPor(periodos, ownerId, mes) === null)
+    .sort();
 }
 
 export function resumenEquipo(periodos: CierrePeriodo[], personas: Profile[], mes: string): {
@@ -61,4 +88,17 @@ export function mesLegible(mes: string): string {
   if (!m) return mes ?? "";
   const idx = Number(m[2]) - 1;
   return MESES[idx] ?? mes;
+}
+
+// Formatea una lista de meses para mostrar ("junio, julio"), agregando el año a cada
+// uno ("junio 2025, junio 2026") sólo cuando la lista mezcla años distintos — evita
+// mostrar "junio, junio" cuando hay meses homónimos de años diferentes.
+export function formatearMeses(meses: string[]): string {
+  if (!Array.isArray(meses) || meses.length === 0) return "";
+  const anios = new Set(meses.map((m) => /^(\d{4})-\d{2}$/.exec(m ?? "")?.[1]).filter(Boolean));
+  if (anios.size <= 1) return meses.map(mesLegible).join(", ");
+  return meses.map((m) => {
+    const anio = /^(\d{4})-\d{2}$/.exec(m ?? "")?.[1] ?? "";
+    return anio ? `${mesLegible(m)} ${anio}` : mesLegible(m);
+  }).join(", ");
 }
