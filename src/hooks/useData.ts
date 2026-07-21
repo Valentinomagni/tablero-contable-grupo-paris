@@ -160,9 +160,12 @@ export function useConsultas() {
 }
 
 // Solo para el badge del jefe en Administración: cuenta de estado 'nueva'.
-export function useConsultasNuevas() {
+// Sólo el jefe ve el badge de la bandeja: sin `enabled` esta query corría para los ~30
+// usuarios del equipo en cada carga, pidiendo filas que RLS les devuelve vacías igual.
+export function useConsultasNuevas(isJefe: boolean) {
   return useQuery({
     queryKey: ["consultas-nuevas"],
+    enabled: isJefe,
     queryFn: async (): Promise<import("../lib/types").Consulta[]> => {
       const { data, error } = await supabase.from("consultas").select("*").eq("estado", "nueva");
       if (error) return [];

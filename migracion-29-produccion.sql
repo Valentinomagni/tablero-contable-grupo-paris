@@ -208,12 +208,16 @@ set search_path = public
 as $$
 begin
   if auth.uid() is not null and not public.es_jefe() then
+    -- marca y sucursal alimentan la segmentación y el reporte ejecutivo: si cada uno
+    -- pudiera reescribir las suyas, podría sacarse de su segmento o entrar a otro.
     if new.role is distinct from old.role
        or new.manager_id is distinct from old.manager_id
        or new.oculto is distinct from old.oculto
        or new.username is distinct from old.username
-       or new.email is distinct from old.email then
-      raise exception 'Solo un jefe puede cambiar role, manager_id, oculto, username o email de un perfil';
+       or new.email is distinct from old.email
+       or new.marca is distinct from old.marca
+       or new.sucursal is distinct from old.sucursal then
+      raise exception 'Solo un jefe puede cambiar role, manager_id, oculto, username, email, marca o sucursal de un perfil';
     end if;
   end if;
   return new;
@@ -225,6 +229,56 @@ create trigger profiles_bloquear_campos_sensibles
   before update on public.profiles
   for each row
   execute function public.profiles_bloquear_campos_sensibles();
+
+-- ------------------------------------------------------------
+-- 6) Reset mensual de recurrentes: limpiar TAMBIÉN proc_at.
+--
+-- La función de la migración 24 reinicia las recurrentes con status='pend' y
+-- done_at=null, pero no conocía proc_at (columna nueva de esta migración). Sin
+-- limpiarlo, una recurrente reiniciada conserva el proc_at del mes pasado: al
+-- pasarla a "En proceso" el sello no se vuelve a poner (la app sólo sella si
+-- proc_at es null) y el SLA se mide desde hace un mes → entrada falsa de
+-- "Superó el tiempo máximo" en el historial.
+--
+-- Se replica la función de la 24 EXACTAMENTE, sumando `proc_at = null` al UPDATE.
+-- ------------------------------------------------------------
+create or replace function public.reset_recurrentes_seguro() returns text
+language plpgsql security definer set search_path = public as $$
+declare
+  mes_cerrado text := to_char((now() at time zone 'America/Argentina/Buenos_Aires') - interval '1 day', 'YYYY-MM');
+  archivadas int;
+  reseteadas int;
+begin
+  -- 1) Snapshot inmutable del mes que cierra (idempotente: borra lo previo de ese mes)
+  delete from public.cards_archive where mes = mes_cerrado;
+  insert into public.cards_archive (owner, mes, card)
+    select owner, mes_cerrado, to_jsonb(c) from public.cards c where c.card_type <> 'operativa';
+  get diagnostics archivadas = row_count;
+
+  -- 2) Reset SOLO de las recurrentes con ciclo 'mensual' (respeta 'mantener' / 'manual')
+  update public.cards c
+    set status = 'pend',
+        done_at = null,
+        proc_at = null,
+        checklist = coalesce(
+          (select jsonb_agg(jsonb_set(jsonb_set(item, '{done}', 'false'), '{done_at}', 'null'))
+           from jsonb_array_elements(c.checklist) item),
+          '[]'::jsonb),
+        history = c.history || jsonb_build_object(
+          'who','Sistema','at', now(),
+          'txt','Reinicio mensual automático (' || mes_cerrado || ' archivado)')
+    where (c.recurring = true or c.recur_rule is not null)
+      and coalesce(c.reset_policy, 'mensual') = 'mensual';
+  get diagnostics reseteadas = row_count;
+
+  return format('mes %s: %s archivadas, %s recurrentes reiniciadas', mes_cerrado, archivadas, reseteadas);
+end;
+$$;
+
+-- `create or replace` conserva los privilegios de la función previa, pero se repite el
+-- revoke de la migración 26 por si esta migración corre antes que aquélla: sólo el cron
+-- (postgres) debe poder ejecutarla, nunca anon/authenticated.
+revoke execute on function public.reset_recurrentes_seguro() from public, anon, authenticated;
 
 -- ------------------------------------------------------------
 -- Verificación (deben devolver sin error):

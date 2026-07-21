@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import { useConsultas } from "../../hooks/useData";
+import { esTablaInexistente } from "../../hooks/usePeriodos";
 import { ordenarConsultas } from "../../lib/consultas";
 import type { Consulta } from "../../lib/types";
 
@@ -12,13 +13,17 @@ const ESTADO_LBL: Record<Consulta["estado"], string> = { nueva: "Nueva", leida: 
 
 export function BandejaConsultas({ team }: { team: { id: string; name: string }[] }) {
   const qc = useQueryClient();
-  const { data: todas = [], isError } = useConsultas();
+  const { data: todas = [], isError, error } = useConsultas();
   const [filtro, setFiltro] = useState<"todas" | Consulta["estado"]>("todas");
   const [respondiendo, setRespondiendo] = useState<string | null>(null);
   const [borrador, setBorrador] = useState("");
 
+  // No mentir (MEDIA 4): "falta la migración" sólo cuando la tabla realmente no existe.
+  // Cualquier otro error (red, RLS) se reporta como error, no como función deshabilitada.
   if (isError) {
-    return <p className="text-ink2 text-[13px]">Las consultas se habilitan tras la migración 29.</p>;
+    return esTablaInexistente(error)
+      ? <p className="text-ink2 text-[13px]">Las consultas se habilitan tras la migración 29.</p>
+      : <p className="text-ink2 text-[13px]">No se pudieron cargar las consultas. Revisá tu conexión y probá de nuevo.</p>;
   }
 
   const ordenadas = ordenarConsultas(todas);

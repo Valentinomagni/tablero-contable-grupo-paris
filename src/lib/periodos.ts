@@ -53,17 +53,22 @@ export function mesesAbiertos(
     .sort();
 }
 
+// El jefe queda FUERA del denominador (mismo criterio que `analisis.ts`): no cierra
+// su propio mes, así que contarlo hacía que el resumen dijera para siempre "0 de 6
+// cerraron" incluyendo a quien nunca va a cerrar.
 export function resumenEquipo(periodos: CierrePeriodo[], personas: Profile[], mes: string): {
   cerraron: Profile[]; pendientes: Profile[]; pct: number;
 } {
-  if (!Array.isArray(personas) || personas.length === 0) return { cerraron: [], pendientes: [], pct: 0 };
+  if (!Array.isArray(personas)) return { cerraron: [], pendientes: [], pct: 0 };
+  const cuentan = personas.filter((p) => p?.role !== "jefe");
+  if (cuentan.length === 0) return { cerraron: [], pendientes: [], pct: 0 };
   const cerraron: Profile[] = [];
   const pendientes: Profile[] = [];
-  for (const p of personas) {
+  for (const p of cuentan) {
     if (mesCerradoPor(periodos, p.id, mes)) cerraron.push(p);
     else pendientes.push(p);
   }
-  return { cerraron, pendientes, pct: Math.round((cerraron.length / personas.length) * 100) };
+  return { cerraron, pendientes, pct: Math.round((cerraron.length / cuentan.length) * 100) };
 }
 
 // Meses (YYYY-MM) en los que esa persona tiene tareas de cierre generadas.

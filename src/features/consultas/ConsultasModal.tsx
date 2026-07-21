@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Modal } from "../../components/Modal";
 import { supabase } from "../../lib/supabase";
 import { useConsultas } from "../../hooks/useData";
+import { esTablaInexistente } from "../../hooks/usePeriodos";
 import { validarConsulta } from "../../lib/consultas";
 import type { Consulta } from "../../lib/types";
 
@@ -13,7 +14,10 @@ const ESTADO_LBL: Record<Consulta["estado"], string> = { nueva: "Enviada", leida
 
 export function ConsultasModal({ meId, onClose }: { meId: string; onClose: () => void }) {
   const qc = useQueryClient();
-  const { data: todas = [], isError } = useConsultas();
+  const { data: todas = [], isError, error } = useConsultas();
+  // No mentir (MEDIA 4): sólo si la tabla no existe se habla de la migración pendiente.
+  // Un error de red o de RLS es otra cosa y tiene que decirse como lo que es.
+  const faltaMigracion = isError && esTablaInexistente(error);
   const mias = todas.filter((c) => c.autor === meId);
   const [tipo, setTipo] = useState<Consulta["tipo"]>("consulta");
   const [texto, setTexto] = useState("");
@@ -41,7 +45,9 @@ export function ConsultasModal({ meId, onClose }: { meId: string; onClose: () =>
       <div className="text-xs text-ink2 mb-3.5">Canal interno para consultas, sugerencias o errores del tablero.</div>
 
       {isError ? (
-        <p className="text-ink2 text-sm">Las consultas se habilitan tras la migración 29.</p>
+        faltaMigracion
+          ? <p className="text-ink2 text-sm">Las consultas se habilitan tras la migración 29.</p>
+          : <p className="text-ink2 text-sm">No se pudieron cargar las consultas. Revisá tu conexión y probá de nuevo.</p>
       ) : (
         <>
           <div className="grid gap-2.5">

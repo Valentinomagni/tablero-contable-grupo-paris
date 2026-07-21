@@ -152,7 +152,6 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
                       if (v === (c.dato_control ?? "")) return;
                       patch.mutate({ dato_control: v || null });
                     }}
-                    placeholder="Referencia, código…"
                     className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] w-36" />
                 </label>
               </>

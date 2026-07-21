@@ -4,7 +4,8 @@ import { Modal } from "../../components/Modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase, SUPABASE_URL } from "../../lib/supabase";
 import type { ActivityLog, Card, Profile, Role } from "../../lib/types";
-import { useObjectives, useOrganizacion } from "../../hooks/useData";
+import { useObjectives, useOrganizacion, useMigraciones } from "../../hooks/useData";
+import { payloadProfiles } from "../../lib/esquema";
 import { useArqueoStats } from "../../hooks/useArqueo";
 import { userMetrics30d } from "../../lib/metrics";
 import { nombreValido } from "../../lib/validacion";
@@ -18,6 +19,9 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
   const qc = useQueryClient();
   const { data: objectives = [] } = useObjectives();
   const org = useOrganizacion();
+  // Esquema de la base (ALTA 1): sin la migración 29 la columna `oculto` no existe y el
+  // update entero falla con PGRST204 — no se podría guardar NINGÚN perfil.
+  const { data: migracionesAplicadas } = useMigraciones();
   const [name, setName] = useState(u.name);
   const [username, setUsername] = useState(u.username ?? "");
   const [role, setRole] = useState<Role>(u.role);
@@ -50,8 +54,9 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
 
   const save = useMutation({
     mutationFn: async () => {
+      const fila = { name: name.trim(), username: username.trim() || null, role, puesto: puesto.trim(), ficha: ficha.trim(), manager_id: managerId, marca, sucursal: sucursal || null, ...(esJefe ? { oculto } : {}) };
       const { error } = await supabase.from("profiles")
-        .update({ name: name.trim(), username: username.trim() || null, role, puesto: puesto.trim(), ficha: ficha.trim(), manager_id: managerId, marca, sucursal: sucursal || null, ...(esJefe ? { oculto } : {}) })
+        .update(payloadProfiles(fila, migracionesAplicadas))
         .eq("id", u.id);
       if (error) throw error;
     },

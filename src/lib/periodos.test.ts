@@ -5,8 +5,8 @@ import type { CierrePeriodo, Profile, Card } from "./types";
 const per = (owner: string, mes: string, cerrado_at = "2026-07-05T10:00:00Z"): CierrePeriodo =>
   ({ id: `${owner}-${mes}`, owner, mes, cerrado_at, nota: null });
 
-const persona = (id: string, name: string): Profile =>
-  ({ id, name, role: "empleado", email: `${id}@x.com`, username: null, puesto: "", ficha: "", manager_id: null, marca: null });
+const persona = (id: string, name: string, role: Profile["role"] = "empleado"): Profile =>
+  ({ id, name, role, email: `${id}@x.com`, username: null, puesto: "", ficha: "", manager_id: null, marca: null });
 
 const card = (owner: string, marcaMes: string): Card => ({
   id: `c-${owner}-${marcaMes}-${Math.random()}`, owner, title: "IVA", status: "pend",
@@ -103,6 +103,29 @@ describe("resumenEquipo", () => {
   });
   it("es defensiva ante entradas nulas", () => {
     const r = resumenEquipo(undefined as unknown as CierrePeriodo[], undefined as unknown as Profile[], "2026-06");
+    expect(r).toEqual({ cerraron: [], pendientes: [], pct: 0 });
+  });
+  it("el jefe NO cuenta en el denominador (no cierra su propio mes)", () => {
+    const personas = [persona("ana", "Ana"), persona("beto", "Beto"), persona("jefa", "Jefa", "jefe")];
+    const r = resumenEquipo([per("ana", "2026-06"), per("beto", "2026-06")], personas, "2026-06");
+    expect(r.pct).toBe(100);
+    expect(r.cerraron.map((p) => p.id)).toEqual(["ana", "beto"]);
+    expect(r.pendientes).toEqual([]);
+  });
+  it("el jefe tampoco aparece entre los pendientes", () => {
+    const personas = [persona("ana", "Ana"), persona("jefa", "Jefa", "jefe")];
+    const r = resumenEquipo([], personas, "2026-06");
+    expect(r.pct).toBe(0);
+    expect(r.pendientes.map((p) => p.id)).toEqual(["ana"]);
+  });
+  it("el encargado SÍ cuenta (también cierra su mes)", () => {
+    const personas = [persona("ana", "Ana"), persona("enca", "Enca", "encargado")];
+    const r = resumenEquipo([per("ana", "2026-06")], personas, "2026-06");
+    expect(r.pct).toBe(50);
+    expect(r.pendientes.map((p) => p.id)).toEqual(["enca"]);
+  });
+  it("equipo formado sólo por el jefe → pct 0 sin dividir por cero", () => {
+    const r = resumenEquipo([], [persona("jefa", "Jefa", "jefe")], "2026-06");
     expect(r).toEqual({ cerraron: [], pendientes: [], pct: 0 });
   });
 });

@@ -12,7 +12,8 @@ import { bloqueadaPorTitulos } from "../../lib/deps";
 import { categoriasEnUso, pasaFiltroCategoria } from "../../lib/categorias";
 import { type ModoAgrupar } from "../../lib/agrupar";
 import { getPref, setPref, PREF } from "../../lib/prefs";
-import { useOrganizacion, useTiemposMax } from "../../hooks/useData";
+import { useOrganizacion, useTiemposMax, useMigraciones } from "../../hooks/useData";
+import { payloadCards } from "../../lib/esquema";
 import { estadoTiempo, registrarIncumplimiento } from "../../lib/tiempos";
 import { filtrarPorSegmento } from "../../lib/segmento";
 import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Users, Shield, Layers, Plane } from "lucide-react";
@@ -70,6 +71,9 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
   const qc = useQueryClient();
   const org = useOrganizacion();
   const tiemposConfig = useTiemposMax();
+  // Esquema de la base (ALTA 1): si la migración 29 no está aplicada, el patch no puede
+  // mencionar proc_at o el update entero falla con PGRST204 y el drag & drop se rompe.
+  const { data: migracionesAplicadas } = useMigraciones();
   const q = query.trim().toLowerCase();
   const matches = (c: Card) => !q || c.title.toLowerCase().includes(q) || (c.description ?? "").toLowerCase().includes(q);
   // filtro por categoría (spec 21 item 11): null = todas; "" = sin categoría
@@ -115,8 +119,11 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
         const est = estadoTiempo({ ...c, ...patch }, tiemposConfig, now);
         hist = registrarIncumplimiento(hist, est, meName, now, patch.proc_at ?? c.proc_at ?? null);
       }
-      pushUndo(c, { ...patch, history: hist });
-      const { error } = await supabase.from("cards").update({ ...patch, history: hist }).eq("id", id);
+      // Se calcula UNA vez y se usa para el update y para la pila de deshacer: si el
+      // esquema es viejo, deshacer tampoco debe intentar reescribir proc_at.
+      const body = payloadCards({ ...patch, history: hist }, migracionesAplicadas);
+      pushUndo(c, body);
+      const { error } = await supabase.from("cards").update(body).eq("id", id);
       if (error) throw error;
       // tareas compartidas: sincroniza las hermanas (best-effort; el trigger de la DB cubre RLS cruzada)
       for (const s of siblingSyncPatches(c, cards, status, patch.done_at ?? new Date().toISOString())) {

@@ -67,7 +67,7 @@ export default function App() {
   const [delegar, setDelegar] = useState(false);
   const [novedades, setNovedades] = useState(false);
   const [consultas, setConsultas] = useState(false);
-  const { data: consultasNuevas = [] } = useConsultasNuevas();
+  const { data: consultasNuevas = [] } = useConsultasNuevas(!!isJefe);
   const adminBadgeN = contarNuevas(consultasNuevas);
 
   // Aviso de nueva versión: se muestra una sola vez tras el login (spec #10).
@@ -168,8 +168,8 @@ export default function App() {
           : view === "__reporte" ? <Reporte cards={scopedCards} team={equipoVisible} activity={activity} />
           : view === "__tablon" ? <Tablon me={me} team={equipoVisible} onGoCalendario={() => setViewing("__calendario")} />
           : view === "__admin" ? <Admin team={fullTeam} cards={cards} me={me} meName={me.name} onOpenUser={setOpenUser} />
-          : view === "__bitacora" ? <Bitacora cards={cards} activity={activity} team={equipoVisible} isJefe={!!isJefe} meId={me.id} onOpenCard={setOpenCard} />
-          : view === "__calendario" ? <Calendario me={me} team={equipoVisible} cards={cards} />
+          : view === "__bitacora" ? <Bitacora cards={scopedCards} activity={activity} team={equipoVisible} isJefe={!!isJefe} meId={me.id} onOpenCard={setOpenCard} />
+          : view === "__calendario" ? <Calendario me={me} team={equipoVisible} cards={scopedCards} />
           : view === "__cierre" ? <Cierre cards={scopedCards} team={equipoVisible} isJefe={!!isJefe} meId={me.id} meName={me.name} meRole={me.role} settings={settings ?? { edit_closed: false } as AppSettings} onOpenCard={setOpenCard} />
           : view === "__organigrama" ? <Organigrama team={equipoVisible} cards={cards} />
           : view === "__notas" ? <Notas me={me} />

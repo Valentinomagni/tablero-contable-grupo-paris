@@ -5,7 +5,8 @@ import { Modal } from "../../components/Modal";
 import { supabase } from "../../lib/supabase";
 import { similares } from "../../lib/similitud";
 import { categoriasEnUso, mergeCategorias } from "../../lib/categorias";
-import { useSettings } from "../../hooks/useData";
+import { useSettings, useMigraciones } from "../../hooks/useData";
+import { payloadCards } from "../../lib/esquema";
 import type { Card } from "../../lib/types";
 
 // Flujo formal de alta (spec 21, item 2): las tareas nacen en Pendiente con sus
@@ -15,6 +16,9 @@ import type { Card } from "../../lib/types";
 export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { ownerId: string; meName: string; cards?: Card[]; onClose: () => void }) {
   const qc = useQueryClient();
   const { data: settings = { categorias: [] } } = useSettings();
+  // Esquema de la base (ALTA 1): sin la migración 29 la columna dato_control no existe
+  // y el insert entero falla — crear una tarea dejaría de funcionar.
+  const { data: migracionesAplicadas } = useMigraciones();
   const categorias = mergeCategorias(categoriasEnUso(cards), settings.categorias ?? []);
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -32,7 +36,7 @@ export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { owne
         dato_control: datoControl.trim() || null,
         history: [{ who: meName, at: new Date().toISOString(), txt: "Creó la tarea" }],
       };
-      const { error } = await supabase.from("cards").insert(row);
+      const { error } = await supabase.from("cards").insert(payloadCards(row, migracionesAplicadas));
       if (error) throw error;
     },
     onSuccess: () => {
@@ -85,7 +89,6 @@ export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { owne
           </label>
           <label className="flex items-center gap-1.5">Dato de control a adjuntar
             <input value={datoControl} onChange={(e) => setDatoControl(e.target.value)}
-              placeholder="Referencia, código…"
               className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] w-36" />
           </label>
         </div>
