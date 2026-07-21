@@ -7,8 +7,10 @@ import { ocurrenciasFaltantes, OCC_CONFLICT } from "../../../lib/recurrencia";
 import { fmtDateTime } from "../../../lib/metrics";
 import { isShared, participantes } from "../../../lib/shared";
 import { categoriasEnUso, mergeCategorias } from "../../../lib/categorias";
-import { Users } from "lucide-react";
+import { Users, AlertTriangle } from "lucide-react";
 import { CumplimientoDiario } from "../CumplimientoDiario";
+import { estadoTiempo, registrarIncumplimiento } from "../../../lib/tiempos";
+import { useTiemposMax } from "../../../hooks/useData";
 
 type PatchMut = UseMutationResult<void, Error, Partial<Card>, unknown>;
 
@@ -17,6 +19,8 @@ type PatchMut = UseMutationResult<void, Error, Partial<Card>, unknown>;
 export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
   { c: Card; cards: Card[]; team: Profile[]; settings: AppSettings; patch: PatchMut; hist: (txt: string) => HistoryEntry[]; locked: boolean }) {
   const qc = useQueryClient();
+  const tiemposConfig = useTiemposMax();
+  const est = estadoTiempo(c, tiemposConfig, new Date().toISOString());
   const [recurTipo, setRecurTipo] = useState<RecurRule["tipo"] | "">(c.recur_rule?.tipo ?? "");
   const [recurDias, setRecurDias] = useState<number[]>(c.recur_rule?.dias ?? []);
   const [recurDiaMes, setRecurDiaMes] = useState<number>(c.recur_rule?.diaMes ?? 1);
@@ -62,15 +66,32 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
             <select value={c.status} disabled={locked}
               onChange={(e) => {
                 const s = e.target.value as Card["status"];
-                patch.mutate(s === "term"
-                  ? { status: "term", done_at: new Date().toISOString(), history: hist("Marcó terminada") }
-                  : { status: s, done_at: null, history: hist(s === "proc" ? "Pasó a En proceso" : "Volvió a Pendiente") });
+                const now = new Date().toISOString();
+                if (s === "term") {
+                  let h = hist("Marcó terminada");
+                  const estFinal = estadoTiempo({ ...c, status: "term", done_at: now }, tiemposConfig, now);
+                  const who = h[h.length - 1]?.who ?? "";
+                  h = registrarIncumplimiento(h, estFinal, who, now, c.proc_at ?? null);
+                  patch.mutate({ status: "term", done_at: now, history: h });
+                } else {
+                  // Sellar proc_at (spec 28, Task 4): igual criterio que Board.tsx (drag & drop).
+                  const p: Partial<Card> = { status: s, done_at: null, history: hist(s === "proc" ? "Pasó a En proceso" : "Volvió a Pendiente") };
+                  if (s === "proc" && !c.proc_at) p.proc_at = now;
+                  else if (s === "pend") p.proc_at = null;
+                  patch.mutate(p);
+                }
               }}
               className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] disabled:opacity-60">
               {COLS.map(([k, lbl]) => <option key={k} value={k}>{lbl}</option>)}
             </select>
           </label>
           {c.done_at && <span>terminada el {fmtDateTime(c.done_at)}</span>}
+          {est.maxHoras != null && est.horas != null && (
+            <span className={"flex items-center gap-1 font-semibold " + (est.excedido ? "text-danger" : "text-ink2")}>
+              {est.excedido && <AlertTriangle size={12} />}
+              {est.excedido ? `Superó el tiempo máximo (${est.horas.toFixed(1)}h de ${est.maxHoras}h)` : `${est.horas.toFixed(1)}h de ${est.maxHoras}h`}
+            </span>
+          )}
         </div>
         {isShared(c) && (
           <div className="flex items-center gap-2 bg-accent-soft text-accent rounded-lg px-3 py-2 text-[13px] mb-3.5">
@@ -96,23 +117,44 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
               <option value="1">1 — Baja</option><option value="2">2 — Media</option><option value="3">3 — Alta</option><option value="5">5 — Muy alta</option>
             </select>
           </label>
+          <label className="flex items-center gap-1.5">Tiempo máximo (horas)
+            <input type="number" min={1} step="1" placeholder="Sin límite" defaultValue={c.tiempo_max_horas ?? ""}
+              onBlur={(e) => {
+                const v = e.target.value.trim();
+                const n = v === "" ? null : Number(v);
+                if ((n ?? null) === (c.tiempo_max_horas ?? null)) return;
+                patch.mutate({ tiempo_max_horas: n, history: hist(n != null ? "Puso tiempo máximo de " + n + "h" : "Quitó el tiempo máximo") });
+              }}
+              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] w-24" />
+          </label>
           {(() => {
             // Categorías en uso por el dueño de la tarea + las definidas por el Admin (spec 21 item 11).
             const cats = mergeCategorias(categoriasEnUso(cards.filter((x) => x.owner === c.owner)), settings.categorias ?? []);
             return (
-              <label className="flex items-center gap-1.5">Categoría
-                <input key={c.categoria ?? ""} list="cats-card" defaultValue={c.categoria ?? ""}
-                  onBlur={(e) => {
-                    const v = e.target.value.trim();
-                    if (v === (c.categoria ?? "")) return;
-                    patch.mutate({ categoria: v || null, history: hist("Cambió categoría a " + (v || "ninguna")) });
-                  }}
-                  placeholder="Sin categoría"
-                  className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] w-36" />
-                <datalist id="cats-card">
-                  {cats.map((cat) => <option key={cat} value={cat} />)}
-                </datalist>
-              </label>
+              <>
+                <label className="flex items-center gap-1.5">Categoría
+                  <input key={c.categoria ?? ""} list="cats-card" defaultValue={c.categoria ?? ""}
+                    onBlur={(e) => {
+                      const v = e.target.value.trim();
+                      if (v === (c.categoria ?? "")) return;
+                      patch.mutate({ categoria: v || null, history: hist("Cambió categoría a " + (v || "ninguna")) });
+                    }}
+                    placeholder="Sin categoría"
+                    className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] w-36" />
+                  <datalist id="cats-card">
+                    {cats.map((cat) => <option key={cat} value={cat} />)}
+                  </datalist>
+                </label>
+                <label className="flex items-center gap-1.5">Dato de control a adjuntar
+                  <input key={c.dato_control ?? ""} defaultValue={c.dato_control ?? ""}
+                    onBlur={(e) => {
+                      const v = e.target.value.trim();
+                      if (v === (c.dato_control ?? "")) return;
+                      patch.mutate({ dato_control: v || null });
+                    }}
+                    className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] w-36" />
+                </label>
+              </>
             );
           })()}
         </div>

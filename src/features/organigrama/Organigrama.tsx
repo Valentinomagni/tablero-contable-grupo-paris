@@ -4,6 +4,7 @@ import { construirArbol, porMarca, type NodoOrg } from "../../lib/jerarquia";
 import { Avatar } from "../../lib/ui";
 import { useOrganizacion } from "../../hooks/useData";
 import { MarcaIcon } from "../../components/MarcaIcon";
+import { enLinea, textoUltimaConexion } from "../../lib/presencia";
 
 const cardSh = { boxShadow: "var(--ring-sh),var(--shadow)" };
 const ROLE_LBL: Record<Profile["role"], string> = { jefe: "Jefe", encargado: "Encargado", empleado: "Empleado" };
@@ -11,6 +12,8 @@ const ROLE_LBL: Record<Profile["role"], string> = { jefe: "Jefe", encargado: "En
 function Nodo({ nodo, cards, nivel }: { nodo: NodoOrg; cards: Card[]; nivel: number }) {
   const { profile: p, hijos } = nodo;
   const abiertas = cards.filter((c) => c.owner === p.id && c.status !== "term" && c.card_type !== "operativa").length;
+  const ahora = new Date().toISOString();
+  const online = enLinea(p.last_seen, ahora);
   return (
     <div className="min-w-0">
       <div className="flex items-center gap-3 bg-surface border border-line rounded-xl px-3.5 py-2.5" style={cardSh}>
@@ -21,7 +24,13 @@ function Nodo({ nodo, cards, nivel }: { nodo: NodoOrg; cards: Card[]; nivel: num
             <span className="text-[10px] uppercase tracking-[0.06em] font-semibold text-ink2 bg-surface2 border border-line rounded-md px-1.5 py-px shrink-0">{ROLE_LBL[p.role]}</span>
             {p.sucursal && <span className="text-[10.5px] text-ink2 bg-chip rounded px-1.5 py-0.5">{p.sucursal}</span>}
           </div>
-          {p.puesto && <div className="text-[12px] text-ink2 truncate">{p.puesto}</div>}
+          <div className="flex items-center gap-1.5">
+            {p.puesto && <div className="text-[12px] text-ink2 truncate">{p.puesto}</div>}
+            <span className="flex items-center gap-1 text-[11px] text-ink2 shrink-0">
+              {online && <span className="w-2 h-2 rounded-full bg-done" />}
+              {textoUltimaConexion(p.last_seen, ahora)}
+            </span>
+          </div>
         </div>
         <span className="shrink-0 text-[12px] text-ink2 tnum bg-surface2 border border-line rounded-full px-2.5 py-1" title="Tareas abiertas">
           <b className="text-ink">{abiertas}</b> abiertas

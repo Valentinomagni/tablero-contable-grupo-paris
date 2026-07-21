@@ -66,6 +66,51 @@ Después de aplicar `migracion-28-infraestructura.sql`:
    Esto publica un aviso en el tablón cada lunes con tareas cerradas, vencidas abiertas y arqueos
    con diferencia de la semana. Es opcional: si no lo configurás, nada cambia.
 
+## Migración 29 — Esquema de preparación para producción (spec 28 fase A)
+
+**IMPORTANTE: Después de correr la migración 29, avisale al equipo que recargue la app (F5).** Las pestañas abiertas seguirán usando el esquema viejo hasta que refresquen, porque la consulta del estado de migraciones se cachea 5 minutos.
+
+**0. ANTES de correr la migración 29**, auditá si hay una policy de UPDATE
+sobre `profiles` creada desde el dashboard de Supabase que esta migración
+no toca (las policies de RLS se combinan con OR entre sí, así que una
+policy vieja amplia se sigue aplicando aunque la 29 agregue la suya):
+```sql
+select polname, polcmd, pg_get_expr(polqual, polrelid) as expresion
+  from pg_policy where polrelid = 'public.profiles'::regclass;
+```
+Si aparece una policy de UPDATE que no sea la de la migración 29
+(`"usuario actualiza su propio perfil"`) y su expresión es permisiva
+(por ejemplo `using (true)`), borrala desde el dashboard: significa que
+cualquier empleado logueado podría editar perfiles ajenos, sin que el
+trigger de campos sensibles alcance a frenarlo del todo (el trigger solo
+protege role/manager_id/oculto/username/email, no el resto de las columnas).
+
+Después de aplicar `migracion-29-produccion.sql`:
+1. Verificá que las columnas nuevas de `profiles` se crearon:
+   ```sql
+   select column_name from information_schema.columns
+     where table_name = 'profiles' and column_name in ('oculto', 'last_seen');
+   ```
+   Debe devolver 2 filas.
+2. Verificá las columnas nuevas de `cards`:
+   ```sql
+   select column_name from information_schema.columns
+     where table_name = 'cards' and column_name in ('proc_at', 'tiempo_max_horas', 'dato_control');
+   ```
+   Debe devolver 3 filas.
+3. Verificá que las tablas nuevas existen y tienen RLS activo:
+   ```sql
+   select relname, relrowsecurity from pg_class
+     where relname in ('consultas', 'cierre_periodos');
+   ```
+   Ambas filas deben tener `relrowsecurity = true`.
+4. Verificá que un usuario no-jefe no puede cambiar `role`/`manager_id`/`oculto` de su propio
+   perfil (el trigger `profiles_bloquear_campos_sensibles` lo bloquea):
+   ```sql
+   select tgname from pg_trigger where tgrelid = 'public.profiles'::regclass and not tgisinternal;
+   ```
+   Debe listar `profiles_bloquear_campos_sensibles`.
+
 ## GitHub Actions (#2) — opcional
 El archivo del workflow está en `docs/ci-workflow.yml.txt`. Tu token no tiene scope `workflow`,
 así que no se pudo pushear. Para activarlo: GitHub → repo → pestaña **Actions** → New workflow →

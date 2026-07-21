@@ -1,7 +1,7 @@
 export type Role = "jefe" | "encargado" | "empleado";
 export type Status = "pend" | "proc" | "term";
 
-export interface Profile { id: string; name: string; role: Role; email: string; username: string | null; puesto: string; ficha: string; manager_id: string | null; marca: string | null; sucursal?: string | null; }
+export interface Profile { id: string; name: string; role: Role; email: string; username: string | null; puesto: string; ficha: string; manager_id: string | null; marca: string | null; sucursal?: string | null; oculto?: boolean; last_seen?: string | null; }
 export interface ChecklistItem { txt: string; done: boolean; done_at: string | null; }
 export interface RecurRule { tipo: "diaria" | "semanal" | "mensual"; dias?: number[]; diaMes?: number; }
 export interface TaskOccurrence {
@@ -24,8 +24,17 @@ export interface Card {
   requiere_resultado?: boolean; // tarea de control (ej. arqueo): al completar pide resultado ok/dif
   sucursal?: string | null; // sucursal (migración 27)
   marca?: string | null; // marca dinámica (migración 27, consumida por Task 4)
+  proc_at?: string | null; // cuándo pasó a "en proceso" (migración 29)
+  tiempo_max_horas?: number | null; // SLA en horas (migración 29)
+  dato_control?: string | null; // dato de control libre (migración 29)
 }
 export interface CardArchive { id: string; owner: string; mes: string; card: Card; archived_at: string; }
+export interface Consulta {
+  id: string; autor: string; tipo: "consulta" | "sugerencia" | "error";
+  texto: string; estado: "nueva" | "leida" | "archivada";
+  respuesta: string | null; created_at: string; respondida_at: string | null;
+}
+export interface CierrePeriodo { id: string; owner: string; mes: string; cerrado_at: string; nota: string | null; }
 export interface Objective {
   id: string; owner: string; title: string; description: string; weight: number;
   kpi_name: string; kpi_unit: string; kpi_target: number | null; kpi_current: number; notes: string;

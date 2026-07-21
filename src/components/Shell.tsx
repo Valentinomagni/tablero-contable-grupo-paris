@@ -1,5 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
-import { LayoutDashboard, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin, Settings, KeyRound, AlignJustify, History, CalendarRange, ClipboardCheck, Network, StickyNote, Sparkles, Keyboard, WifiOff } from "lucide-react";
+import { LayoutDashboard, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin, Settings, KeyRound, AlignJustify, History, CalendarRange, ClipboardCheck, Network, StickyNote, Sparkles, Keyboard, WifiOff, MessageSquarePlus } from "lucide-react";
 import { useOnline } from "../hooks/useOnline";
 import { Avatar, cn } from "../lib/ui";
 import { PREF, getPref, setPref } from "../lib/prefs";
@@ -10,12 +10,13 @@ import type { Profile } from "../lib/types";
 interface Props {
   me: Profile; team: Profile[]; viewing: string; title: string;
   theme: string; onCycleTheme: () => void; density: string; onCycleDensity: () => void;
-  onOpenAccount: () => void; onOpenNovedades?: () => void; tablonBadge?: string; boardName?: string;
+  onOpenAccount: () => void; onOpenNovedades?: () => void; onOpenConsultas?: () => void; tablonBadge?: string; boardName?: string;
+  adminBadge?: string;
   onNavigate: (v: string) => void; onSignOut: () => void;
   pendByOwner: (id: string) => number; subnav?: ReactNode; notifs?: ReactNode; fullWidth?: boolean; children: ReactNode;
 }
 
-export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, onCycleDensity, onOpenAccount, onOpenNovedades, tablonBadge, boardName, onNavigate, onSignOut, pendByOwner, subnav, notifs, fullWidth = false, children }: Props) {
+export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, onCycleDensity, onOpenAccount, onOpenNovedades, onOpenConsultas, tablonBadge, adminBadge, boardName, onNavigate, onSignOut, pendByOwner, subnav, notifs, fullWidth = false, children }: Props) {
   // barra lateral como drawer desplegable (Seiton: se muestra a demanda, deja la vista limpia).
   const online = useOnline();
   const [open, setOpen] = useState(() => {
@@ -69,7 +70,7 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
             <NavItem v="__calendario" icon={<CalendarRange size={17} />} label="Calendario" />
             <NavItem v="__bitacora" icon={<History size={17} />} label="Bitácora" />
             <NavItem v="__notas" icon={<StickyNote size={17} />} label="Anotaciones" />
-            <NavItem v="__admin" icon={<Settings size={17} />} label="Administración" />
+            <NavItem v="__admin" icon={<Settings size={17} />} label="Administración" badge={adminBadge} />
             <div className="text-[10px] tracking-[1.4px] uppercase text-[color:var(--side-ink2)] px-2.5 pt-3.5 pb-1.5">Equipo</div>
             {team.map((u) => <NavItem key={u.id} v={u.id} icon={<Avatar name={u.name} size={22} />} label={u.name} count={pendByOwner(u.id)} />)}
           </> : <>
@@ -104,6 +105,11 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
               <button onClick={() => { onCycleDensity(); }} className="flex items-center gap-2.5 w-full text-left rounded-md px-3 py-2.5 text-sm text-ink hover:bg-surface2">
                 <AlignJustify size={16} /> Densidad: {DENSITY_LBL[density as keyof typeof DENSITY_LBL]}
               </button>
+              {onOpenConsultas && (
+                <button onClick={() => { setMenu(false); onOpenConsultas(); }} className="flex items-center gap-2.5 w-full text-left rounded-md px-3 py-2.5 text-sm text-ink hover:bg-surface2">
+                  <MessageSquarePlus size={16} /> Consultas
+                </button>
+              )}
               {onOpenNovedades && (
                 <button onClick={() => { setMenu(false); onOpenNovedades(); }} className="flex items-center gap-2.5 w-full text-left rounded-md px-3 py-2.5 text-sm text-ink hover:bg-surface2">
                   <Sparkles size={16} /> Novedades

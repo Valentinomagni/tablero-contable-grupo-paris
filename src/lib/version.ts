@@ -3,6 +3,18 @@
 // nueva arriba de todo y la versión se actualiza sola (ver docs/RELEASE.md).
 export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] = [
   {
+    version: "2.4.0",
+    fecha: "2026-07-21",
+    cambios: [
+      "Consultas: desde el menú de tu perfil podés mandar consultas, sugerencias o avisar errores, y ver la respuesta.",
+      "Cerrá tu mes cuando vos terminaste: podés tener junio y julio abiertos a la vez, sin que uno trabe al otro.",
+      "Tiempo máximo por tarea: se puede configurar cuántas horas debería llevar cada tipo de tarea, y queda registrado si se pasa.",
+      "Ahora se ve quién está en línea y cuándo fue su última conexión.",
+      "Nuevo campo Dato de control a adjuntar para anotar una referencia, código o comprobante en la tarea.",
+      "El tablero agrupado ahora usa carriles: la tarea cambia de columna sin salirse de su grupo.",
+    ],
+  },
+  {
     version: "2.3.0",
     fecha: "2026-07-20",
     cambios: [

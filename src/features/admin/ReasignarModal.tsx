@@ -6,14 +6,18 @@ import { Modal } from "../../components/Modal";
 import { supabase } from "../../lib/supabase";
 import type { Card, Profile } from "../../lib/types";
 import { puedeReasignar } from "../../lib/jerarquia";
+import { personasVisibles } from "../../lib/visibilidad";
 import { Avatar } from "../../lib/ui";
 
 // Reasignar tareas abiertas de un miembro del equipo a otro (uso del Encargado, spec #9).
 // El alcance se valida con puedeReasignar (mismo helper testeado); RLS del Plan 02 lo respalda en el servidor.
+// `equipo` llega SIN filtrar (incluye al oculto) para que sus tareas puedan elegirse como ORIGEN
+// y reasignarse en masa; el select de DESTINO sí excluye al oculto (no se le puede asignar trabajo nuevo).
 export function ReasignarModal({ me, equipo, profiles, cards, onClose }: {
   me: Profile; equipo: Profile[]; profiles: Profile[]; cards: Card[]; onClose: () => void;
 }) {
   const qc = useQueryClient();
+  const equipoDestino = personasVisibles(equipo);
   const [origen, setOrigen] = useState("");
   const [destino, setDestino] = useState("");
   const [sel, setSel] = useState<string[]>([]);
@@ -52,7 +56,7 @@ export function ReasignarModal({ me, equipo, profiles, cards, onClose }: {
         <label className="flex items-center gap-1.5">Hacia
           <select value={destino} onChange={(e) => setDestino(e.target.value)} className={inputCls}>
             <option value="">Elegí…</option>
-            {equipo.filter((u) => u.id !== origen).map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+            {equipoDestino.filter((u) => u.id !== origen).map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select></label>
       </div>
 

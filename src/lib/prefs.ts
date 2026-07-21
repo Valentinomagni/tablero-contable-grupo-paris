@@ -8,6 +8,10 @@ export const PREF = {
   tablon: NS + "tablon-visto",
   agrupar: NS + "agrupar",
   agruparModo: NS + "agrupar-modo",
+  // namespaced por modo y owner: los colapsados de "categoria" no deben mezclarse
+  // con los de "prioridad" (una categoría "Alta" colisionaría con la prioridad "Alta"),
+  // ni entre personas (cada owner ve sus propios colapsados).
+  carrilesColapsados: (modo: string, ownerId: string) => NS + "carriles-colapsados:" + modo + ":" + ownerId,
 } as const;
 
 export function getPref(k: string): string | null {

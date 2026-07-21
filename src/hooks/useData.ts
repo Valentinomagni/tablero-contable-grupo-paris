@@ -100,8 +100,24 @@ export function useOrganizacion(): Organizacion {
   return data ?? DEFAULT_ORG;
 }
 
+// settings key='tiempos_max': Record<categoría, horas> — SLA por categoría (spec 28, Task 4).
+// Defensivo: sin fila o sin migración aplicada -> {} (sin límites configurados).
+export function useTiemposMax(): Record<string, number> {
+  const { data } = useQuery({
+    queryKey: ["tiempos_max"],
+    staleTime: 5 * 60_000,
+    queryFn: async (): Promise<Record<string, number>> => {
+      const { data } = await supabase.from("settings").select("value").eq("key", "tiempos_max").maybeSingle();
+      const v = data?.value;
+      return v && typeof v === "object" ? (v as Record<string, number>) : {};
+    },
+  });
+  return data ?? {};
+}
+
 // enabled: jefe y encargado traen los profiles (RLS del Plan 02 limita lo que ve el encargado).
 // El empleado no consulta — App le arma team = [me].
+// refrescá cada 90s pa' que la presencia no quede congelada
 export function useTeam(enabled: boolean) {
   return useQuery({
     queryKey: ["team", enabled],
@@ -109,6 +125,8 @@ export function useTeam(enabled: boolean) {
       const { data } = await supabase.from("profiles").select("*").order("role").order("name");
       return (data as Profile[]) ?? [];
     },
+    staleTime: 60_000,
+    refetchInterval: 90_000,
     enabled,
   });
 }
@@ -122,6 +140,36 @@ export function useMigraciones() {
       const { data, error } = await supabase.from("schema_migrations").select("id");
       if (error || !data) return null;
       return (data as { id: number }[]).map((r) => r.id);
+    },
+  });
+}
+
+// Consultas (Task 3, spec 28): defensivo — si la tabla no existe todavía (migración 29 sin correr),
+// la queryFn tira el error (react-query lo expone via isError) y quien no lo mira usa `data ?? []`.
+// RLS ya filtra: autor ve las suyas, jefe ve todas.
+export function useConsultas() {
+  return useQuery({
+    queryKey: ["consultas"],
+    queryFn: async (): Promise<import("../lib/types").Consulta[]> => {
+      const { data, error } = await supabase.from("consultas").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data as import("../lib/types").Consulta[]) ?? [];
+    },
+    retry: false,
+  });
+}
+
+// Solo para el badge del jefe en Administración: cuenta de estado 'nueva'.
+// Sólo el jefe ve el badge de la bandeja: sin `enabled` esta query corría para los ~30
+// usuarios del equipo en cada carga, pidiendo filas que RLS les devuelve vacías igual.
+export function useConsultasNuevas(isJefe: boolean) {
+  return useQuery({
+    queryKey: ["consultas-nuevas"],
+    enabled: isJefe,
+    queryFn: async (): Promise<import("../lib/types").Consulta[]> => {
+      const { data, error } = await supabase.from("consultas").select("*").eq("estado", "nueva");
+      if (error) return [];
+      return (data as import("../lib/types").Consulta[]) ?? [];
     },
   });
 }

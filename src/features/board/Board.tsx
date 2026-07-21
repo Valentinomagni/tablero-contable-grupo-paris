@@ -1,5 +1,5 @@
 import { EmptyState } from "../../components/EmptyState";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import { COLS, type Card, type Status, type ActivityLog, type Profile } from "../../lib/types";
@@ -10,13 +10,16 @@ import { pushUndo } from "../../lib/undo";
 import { isShared, siblingSyncPatches } from "../../lib/shared";
 import { bloqueadaPorTitulos } from "../../lib/deps";
 import { categoriasEnUso, pasaFiltroCategoria } from "../../lib/categorias";
-import { agruparCards, type ModoAgrupar } from "../../lib/agrupar";
+import { type ModoAgrupar } from "../../lib/agrupar";
 import { getPref, setPref, PREF } from "../../lib/prefs";
-import { useOrganizacion } from "../../hooks/useData";
+import { useOrganizacion, useTiemposMax, useMigraciones } from "../../hooks/useData";
+import { payloadCards } from "../../lib/esquema";
+import { estadoTiempo, registrarIncumplimiento } from "../../lib/tiempos";
 import { filtrarPorSegmento } from "../../lib/segmento";
-import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Users, Shield, Layers, ChevronRight, ChevronDown, Plane } from "lucide-react";
+import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Users, Shield, Layers, Plane } from "lucide-react";
 import { esCobertura } from "../../lib/vacaciones";
 import { NuevaTareaModal } from "./NuevaTareaModal";
+import { Carriles } from "./Carriles";
 
 const DOT: Record<string, string> = { pend: "bg-naranja", proc: "bg-s1", term: "bg-done" };
 
@@ -47,6 +50,7 @@ function CardItem({ c, blocked, waiting, esperaTitulos = [], onOpen }: { c: Card
         {waiting && <span className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Hourglass size={11} /> Te esperan</span>}
         {esCobertura(c).activa && <span title="Cubierta por vacaciones" className="inline-flex items-center gap-1 bg-chip text-ink2 rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Plane size={11} /> Cobertura</span>}
         {c.categoria && <span className="bg-chip rounded-md px-1.5 py-0.5 text-[11px] whitespace-nowrap">{c.categoria}</span>}
+        {c.dato_control && <span className="bg-chip rounded-md px-1.5 py-0.5 text-[11px] whitespace-nowrap tnum">{c.dato_control}</span>}
         {pr}<DueBadge c={c} />{c.recurring && <span title="Mensual"><Repeat size={12} /></span>}
         {(c.effort ?? 1) > 1 && <span className="bg-chip rounded-md px-1.5 py-0.5 tnum">{c.effort} pts</span>}
         {ck}{c.comments.length > 0 && <span className="inline-flex items-center gap-1"><MessageSquare size={11} /> {c.comments.length}</span>}
@@ -66,6 +70,10 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
 }) {
   const qc = useQueryClient();
   const org = useOrganizacion();
+  const tiemposConfig = useTiemposMax();
+  // Esquema de la base (ALTA 1): si la migración 29 no está aplicada, el patch no puede
+  // mencionar proc_at o el update entero falla con PGRST204 y el drag & drop se rompe.
+  const { data: migracionesAplicadas } = useMigraciones();
   const q = query.trim().toLowerCase();
   const matches = (c: Card) => !q || c.title.toLowerCase().includes(q) || (c.description ?? "").toLowerCase().includes(q);
   // filtro por categoría (spec 21 item 11): null = todas; "" = sin categoría
@@ -85,16 +93,6 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
     return (v && MODOS_AGRUPAR.includes(v as ModoAgrupar)) ? (v as ModoAgrupar) : "ninguno";
   });
   const setAgruparModo = (v: ModoAgrupar) => { setAgruparModoState(v); setPref(PREF.agruparModo, v); };
-  const grupoKey = `tablero:grupos:${ownerId}`;
-  const [colapsados, setColapsados] = useState<string[]>([]);
-  useEffect(() => {
-    try { setColapsados(JSON.parse(getPref(grupoKey) ?? "[]")); } catch { setColapsados([]); }
-  }, [grupoKey]);
-  const toggleGrupo = (g: string) => setColapsados((prev) => {
-    const next = prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g];
-    setPref(grupoKey, JSON.stringify(next));
-    return next;
-  });
   const visibles = cardsSeg.filter((c) => c.owner === ownerId && matches(c));
   const catsUsadas = categoriasEnUso(visibles);
   const hayMezcla = catsUsadas.length > 0 && visibles.some((c) => !c.categoria);
@@ -108,12 +106,24 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
   const move = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: Status }) => {
       const c = byId(id)!;
+      const now = new Date().toISOString();
       const patch: Partial<Card> = { status };
-      if (status === "term") patch.done_at = new Date().toISOString();
+      if (status === "term") patch.done_at = now;
       else if (c.status === "term") patch.done_at = null;
-      const hist = [...(c.history ?? []), { who: meName, at: new Date().toISOString(), txt: status === "term" ? "Marcó terminada" : "Movió la tarea" }];
-      pushUndo(c, { ...patch, history: hist });
-      const { error } = await supabase.from("cards").update({ ...patch, history: hist }).eq("id", id);
+      // Sellar proc_at (spec 28, Task 4): al entrar a "en proceso" por primera vez se marca el inicio del SLA;
+      // al volver a "pendiente" se limpia (arranca de nuevo la próxima vez que entre a proceso).
+      if (status === "proc" && !c.proc_at) patch.proc_at = now;
+      else if (status === "pend") patch.proc_at = null;
+      let hist = [...(c.history ?? []), { who: meName, at: now, txt: status === "term" ? "Marcó terminada" : "Movió la tarea" }];
+      if (status === "term") {
+        const est = estadoTiempo({ ...c, ...patch }, tiemposConfig, now);
+        hist = registrarIncumplimiento(hist, est, meName, now, patch.proc_at ?? c.proc_at ?? null);
+      }
+      // Se calcula UNA vez y se usa para el update y para la pila de deshacer: si el
+      // esquema es viejo, deshacer tampoco debe intentar reescribir proc_at.
+      const body = payloadCards({ ...patch, history: hist }, migracionesAplicadas);
+      pushUndo(c, body);
+      const { error } = await supabase.from("cards").update(body).eq("id", id);
       if (error) throw error;
       // tareas compartidas: sincroniza las hermanas (best-effort; el trigger de la DB cubre RLS cruzada)
       for (const s of siblingSyncPatches(c, cards, status, patch.done_at ?? new Date().toISOString())) {
@@ -184,6 +194,14 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
         + Añadir {col === "oper" ? "operativa" : "tarea"}</button>
     );
 
+  // Una sola forma de dibujar una card, la use la columna plana o un carril:
+  // así el arrastrar (setData con el id) es idéntico en los dos modos.
+  const renderCard = (c: Card) => (
+    <div key={c.id} draggable onDragStart={(e) => e.dataTransfer.setData("text/plain", c.id)}>
+      <CardItem c={c} blocked={isBlocked(c)} waiting={c.status !== "term" && dependents(c.id).length > 0} esperaTitulos={bloqueadaPorTitulos(c, cards)} onOpen={onOpen} />
+    </div>
+  );
+
   const hoyStr = new Date().toDateString();
   const colBg = { background: "color-mix(in srgb,var(--surface2) 55%,var(--bg))" };
 
@@ -200,7 +218,7 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
   return (
     <div className="flex-1 flex flex-col min-w-0">
       <div className="flex gap-1.5 flex-wrap items-center px-6 pb-3">
-        <label title="Agrupar tarjetas dentro de cada columna"
+        <label title="Agrupar en carriles que cruzan las tres columnas"
           className={cn("inline-flex items-center gap-1.5 border rounded-full px-3 py-1 text-[12px] transition",
             agruparModo !== "ninguno" ? "bg-accent-soft border-accent text-accent font-semibold" : "border-line bg-surface2 text-ink2 hover:border-accent/40")}>
           <Layers size={12} />
@@ -242,7 +260,8 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
         )}
       </div>
     <div className="flex gap-5 items-start px-6 pb-10 overflow-x-auto flex-1">
-      {COLS.map(([k, lbl]) => (
+      {/* Modo "ninguno": tres columnas planas, exactamente como siempre (ruta por defecto). */}
+      {agruparModo === "ninguno" && COLS.map(([k, lbl]) => (
         <div key={k}
           onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("ring-2", "ring-accent"); }}
           onDragLeave={(e) => e.currentTarget.classList.remove("ring-2", "ring-accent")}
@@ -252,44 +271,7 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
             <i className={cn("w-2 h-2 rounded-full", DOT[k])} />{lbl}
             <span className="ml-auto bg-chip rounded-full px-2 py-0.5 tnum">{mine.filter((c) => c.status === k).length}</span>
           </h2>
-          {(() => {
-            const colCards = mine.filter((c) => c.status === k);
-            const renderCard = (c: Card) => (
-              <div key={c.id} draggable onDragStart={(e) => e.dataTransfer.setData("text/plain", c.id)}>
-                <CardItem c={c} blocked={isBlocked(c)} waiting={c.status !== "term" && dependents(c.id).length > 0} esperaTitulos={bloqueadaPorTitulos(c, cards)} onOpen={onOpen} />
-              </div>
-            );
-            if (agruparModo === "ninguno") return colCards.map(renderCard);
-            return agruparCards(colCards, agruparModo, { profiles: team }).map((g) => {
-              const cerrado = colapsados.includes(g.grupo);
-              if (cerrado) {
-                // Pila visual compacta: 3 tarjetas fantasma superpuestas (spec 21 item 13)
-                return (
-                  <button key={g.grupo} onClick={() => toggleGrupo(g.grupo)} title="Expandir grupo"
-                    className="relative block w-full h-16 mb-2.5 text-left">
-                    <div className="absolute inset-x-0 top-[6px] h-12 bg-surface border border-line/70 rounded-xl shadow" style={{ transform: "scale(0.96)" }} />
-                    <div className="absolute inset-x-0 top-[3px] h-12 bg-surface border border-line/70 rounded-xl shadow" style={{ transform: "scale(0.98)" }} />
-                    <div className="absolute inset-x-0 top-0 h-12 bg-surface border border-line/70 rounded-xl shadow flex items-center gap-2 px-3.5">
-                      <ChevronRight size={13} className="text-ink2 shrink-0" />
-                      <span className="font-semibold text-[13px] tracking-tight truncate">{g.grupo}</span>
-                      <span className="ml-auto text-xs text-ink2 whitespace-nowrap tnum">{g.cards.length} {g.cards.length === 1 ? "tarea" : "tareas"}</span>
-                    </div>
-                  </button>
-                );
-              }
-              return (
-                <div key={g.grupo} className="mb-1">
-                  <button onClick={() => toggleGrupo(g.grupo)} title="Colapsar grupo"
-                    className="w-full flex items-center gap-1.5 text-xs text-ink2 font-semibold px-1 py-1 mb-1 hover:text-ink transition">
-                    <ChevronDown size={13} className="shrink-0" />
-                    <span className="truncate">{g.grupo}</span>
-                    <span className="bg-chip rounded-full px-2 py-0.5 tnum">{g.cards.length}</span>
-                  </button>
-                  {g.cards.map(renderCard)}
-                </div>
-              );
-            });
-          })()}
+          {mine.filter((c) => c.status === k).map(renderCard)}
           {mine.filter((c) => c.status === k).length === 0 && <div className="mb-2"><EmptyState title="Sin tareas acá." /></div>}
           {/* Pendiente abre el flujo formal (spec 21 item 2); "En proceso" conserva el atajo inline. */}
           {k === "pend" && (
@@ -300,6 +282,22 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
           {k === "proc" && addInline(k, "Título y Enter…")}
         </div>
       ))}
+
+      {/* Agrupado: carriles horizontales por grupo que atraviesan las tres columnas
+          de estado. La card cambia de columna sin salir de su carril. */}
+      {agruparModo !== "ninguno" && (
+        <div className="flex flex-col gap-3 shrink-0">
+          <Carriles cards={mine} modo={agruparModo} ownerId={ownerId} profiles={team} columnas={COLS}
+            renderCard={renderCard} onDropCard={(id, status) => move.mutate({ id, status })} />
+          {mine.length === 0 && <EmptyState title="Sin tareas acá." />}
+          <button onClick={() => setCreando(true)}
+            className="w-[290px] border border-dashed border-line rounded-lg py-2 text-[13px] text-ink2 hover:text-accent hover:border-accent transition">
+            + Añadir tarea</button>
+          {/* Atajo inline de "En proceso" (spec 21 item 2), restaurado también en modo carriles:
+              la card nace sin categoría y cae en "Sin categoría", coherente con el resto. */}
+          <div className="w-[290px]">{addInline("proc", "Título y Enter…")}</div>
+        </div>
+      )}
 
       <div className="min-w-[290px] w-[290px] shrink-0 rounded-2xl p-3 border border-dashed border-line/60" style={colBg}>
         <h2 className="text-xs uppercase tracking-wider text-ink2 mx-1.5 mt-1 mb-2.5 flex items-center gap-2 font-semibold">

@@ -12,7 +12,8 @@ import { notifsAlFinalizar } from "../../lib/notificaciones";
 import { Check, Copy, Lock, Pencil, Trash2, Minus, Plus, Shield, ShieldCheck, Coins, Plane } from "lucide-react";
 import { esCobertura } from "../../lib/vacaciones";
 import { filaDuplicada } from "../../lib/duplicar";
-import { useDepsInfo, useReverseDeps, useSettings } from "../../hooks/useData";
+import { useDepsInfo, useReverseDeps, useSettings, useMigraciones } from "../../hooks/useData";
+import { payloadCards } from "../../lib/esquema";
 import { nuevaCantidad } from "../../lib/operativas";
 import { Adjuntos } from "./Adjuntos";
 import { MetaSection } from "./card/MetaSection";
@@ -72,12 +73,17 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
   const { data: settings = { edit_closed: false, categorias: [] } } = useSettings();
   // tarea cerrada: solo jefes la tocan salvo que el permiso edit_closed esté activo (RLS lo aplica en el server)
   const locked = c.status === "term" && !isJefe && !settings.edit_closed;
+  const { data: migracionesAplicadas } = useMigraciones();
 
   const patch = useMutation({
     mutationFn: async (p: Partial<Card>) => {
       if (locked) throw new Error("Tarea cerrada — solo un jefe puede modificarla.");
-      pushUndo(c, p);
-      const { error } = await supabase.from("cards").update(p).eq("id", c.id);
+      // Esquema de la base (ALTA 1): sin la migración 29, mencionar proc_at / dato_control /
+      // tiempo_max_horas hace fallar el update entero (PGRST204). Se filtran acá, en la
+      // ÚNICA mutación de patch que usan MetaSection y el resto del modal.
+      const body = payloadCards(p, migracionesAplicadas);
+      pushUndo(c, body);
+      const { error } = await supabase.from("cards").update(body).eq("id", c.id);
       if (error) throw error;
       // tareas compartidas: si cambió el estado, sincroniza las hermanas (best-effort; trigger DB cubre RLS)
       if (p.status) {
