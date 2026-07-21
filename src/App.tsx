@@ -5,6 +5,7 @@ import { deshacerUltimo } from "./lib/deshacer";
 import { PREF, getPref, setPref } from "./lib/prefs";
 import { ClipboardList, Target, TrendingUp, UserRound, CalendarDays, Users, Archive, Sun } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
+import { usePresencia } from "./hooks/usePresencia";
 import { useTheme } from "./hooks/useTheme";
 import { useTeam, useCards, useActivity, useAnnouncements, useSettings, useConsultasNuevas } from "./hooks/useData";
 import { contarNuevas } from "./lib/consultas";
@@ -46,6 +47,7 @@ type Mode = "hoy" | "board" | "semana" | "obj" | "mimes" | "hist";
 
 export default function App() {
   const { me, loading, signIn, signOut } = useAuth();
+  usePresencia(me?.id);
   const { theme, cycle, density, cycleDensity } = useTheme();
   const { data: annos = [] } = useAnnouncements();
   const { data: settings } = useSettings();

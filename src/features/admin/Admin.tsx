@@ -14,6 +14,7 @@ import { personasVisibles } from "../../lib/visibilidad";
 import { Avatar } from "../../lib/ui";
 import { useSettings, useMigraciones, useTiemposMax } from "../../hooks/useData";
 import { estadoMigraciones } from "../../lib/migraciones";
+import { enLinea, textoUltimaConexion } from "../../lib/presencia";
 import { BandejaConsultas } from "../consultas/BandejaConsultas";
 
 // chip de estado de migraciones (spec 27, T2): verde al día / ámbar faltan / gris desconocido
@@ -202,17 +203,21 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
             {equipo.length === 0 && (
               <tr><td colSpan={5} className="px-4 py-4 text-ink2 text-[13px]">Todavía no tenés personas asignadas a tu equipo.</td></tr>
             )}
-            {equipo.map((u) => (
+            {equipo.map((u) => {
+              const ahora = new Date().toISOString();
+              const online = enLinea(u.last_seen, ahora);
+              return (
               <tr key={u.id} onClick={() => onOpenUser(u)} className="border-t border-line cursor-pointer hover:bg-surface2">
                 <td className="px-4 py-2.5"><div className="flex items-center gap-2"><Avatar name={u.name} size={24} /><div><div className="flex items-center gap-1.5"><b>{u.name}</b>{u.oculto === true && (
                   <span className="inline-flex items-center gap-1 bg-chip text-ink2 rounded-full px-2 py-0.5 text-[11px] font-medium"><EyeOff size={11} /> Oculto</span>
-                )}</div><span className="text-ink2 text-xs">{u.username ? "@" + u.username : "sin usuario"}</span></div></div></td>
+                )}</div><div className="flex items-center gap-2"><span className="text-ink2 text-xs">{u.username ? "@" + u.username : "sin usuario"}</span><span className="flex items-center gap-1 text-[11px] text-ink2">{online && <span className="w-2 h-2 rounded-full bg-done" />}{textoUltimaConexion(u.last_seen, ahora)}</span></div></div></div></td>
                 <td className="px-4 py-2.5 capitalize">{u.role}</td>
                 <td className="px-4 py-2.5 text-ink2">{u.puesto || "—"}</td>
                 <td className="px-4 py-2.5 text-[13px]">{u.marca ?? "—"}</td>
                 <td className="px-4 py-2.5 text-[13px]">{u.sucursal ?? "—"}</td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
