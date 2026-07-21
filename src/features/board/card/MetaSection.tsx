@@ -1,0 +1,194 @@
+import { useState } from "react";
+import { toast } from "sonner";
+import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
+import { supabase } from "../../../lib/supabase";
+import { COLS, type Card, type Profile, type HistoryEntry, type RecurRule, type AppSettings } from "../../../lib/types";
+import { ocurrenciasFaltantes, OCC_CONFLICT } from "../../../lib/recurrencia";
+import { fmtDateTime } from "../../../lib/metrics";
+import { isShared, participantes } from "../../../lib/shared";
+import { categoriasEnUso, mergeCategorias } from "../../../lib/categorias";
+import { Users } from "lucide-react";
+import { CumplimientoDiario } from "../CumplimientoDiario";
+
+type PatchMut = UseMutationResult<void, Error, Partial<Card>, unknown>;
+
+// Metadatos de la tarea: estado, tarea compartida, vencimiento/prioridad/esfuerzo/categoría,
+// recurrencia (presets + form + ciclo de vida) y la grilla de cumplimiento diario.
+export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
+  { c: Card; cards: Card[]; team: Profile[]; settings: AppSettings; patch: PatchMut; hist: (txt: string) => HistoryEntry[]; locked: boolean }) {
+  const qc = useQueryClient();
+  const [recurTipo, setRecurTipo] = useState<RecurRule["tipo"] | "">(c.recur_rule?.tipo ?? "");
+  const [recurDias, setRecurDias] = useState<number[]>(c.recur_rule?.dias ?? []);
+  const [recurDiaMes, setRecurDiaMes] = useState<number>(c.recur_rule?.diaMes ?? 1);
+
+  const buildRule = (): RecurRule | null => {
+    if (recurTipo === "") return null;
+    if (recurTipo === "diaria") return { tipo: "diaria" };
+    if (recurTipo === "semanal") return { tipo: "semanal", dias: [...recurDias].sort((a, b) => a - b) };
+    return { tipo: "mensual", diaMes: recurDiaMes };
+  };
+
+  // Guarda la regla en la card y materializa (idempotente) las ocurrencias del mes actual.
+  // Falla si la migración 16 aún no fue aplicada — se muestra por toast sin romper la app.
+  const guardarRecur = useMutation({
+    mutationFn: async (rule: RecurRule | null) => {
+      const { error: e1 } = await supabase.from("cards").update({ recur_rule: rule }).eq("id", c.id);
+      if (e1) throw e1;
+      if (rule) {
+        const now = new Date();
+        const year = now.getFullYear(), month = now.getMonth() + 1;
+        const { data: existentes, error: e2 } = await supabase.from("task_occurrences").select("fecha").eq("card_id", c.id);
+        if (e2) throw e2;
+        const faltan = ocurrenciasFaltantes(rule, year, month, (existentes ?? []).map((r) => (r as { fecha: string }).fecha));
+        if (faltan.length) {
+          const { error: e3 } = await supabase.from("task_occurrences")
+            .upsert(faltan.map((f) => ({ card_id: c.id, owner: c.owner, fecha: f })), { onConflict: OCC_CONFLICT });
+          if (e3) throw e3;
+        }
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cards"] });
+      qc.invalidateQueries({ queryKey: ["occurrences"] });
+      toast.success("Recurrencia guardada");
+    },
+    onError: (e: Error) => toast.error("No se pudo guardar la recurrencia: " + e.message),
+  });
+
+  return (
+    <>
+        <div className="flex items-center gap-2 text-xs text-ink2 mb-3.5">
+          <label className="flex items-center gap-1.5">Estado
+            <select value={c.status} disabled={locked}
+              onChange={(e) => {
+                const s = e.target.value as Card["status"];
+                patch.mutate(s === "term"
+                  ? { status: "term", done_at: new Date().toISOString(), history: hist("Marcó terminada") }
+                  : { status: s, done_at: null, history: hist(s === "proc" ? "Pasó a En proceso" : "Volvió a Pendiente") });
+              }}
+              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] disabled:opacity-60">
+              {COLS.map(([k, lbl]) => <option key={k} value={k}>{lbl}</option>)}
+            </select>
+          </label>
+          {c.done_at && <span>terminada el {fmtDateTime(c.done_at)}</span>}
+        </div>
+        {isShared(c) && (
+          <div className="flex items-center gap-2 bg-accent-soft text-accent rounded-lg px-3 py-2 text-[13px] mb-3.5">
+            <Users size={14} className="shrink-0" />
+            <span>Tarea compartida con <b>{participantes(c, cards, (id) => team.find((u) => u.id === id)?.name ?? "?").join(", ")}</b>. Al terminarla se marca para todos.</span>
+          </div>
+        )}
+
+        <div className="flex gap-4 flex-wrap items-center text-sm text-ink2 mb-2">
+          <label className="flex items-center gap-1.5">Vence
+            <input type="date" defaultValue={c.due_date ?? ""} onChange={(e) => patch.mutate({ due_date: e.target.value || null, history: hist(e.target.value ? "Puso vencimiento" : "Quitó vencimiento") })}
+              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px]" />
+          </label>
+          <label className="flex items-center gap-1.5">Prioridad
+            <select defaultValue={c.priority} onChange={(e) => patch.mutate({ priority: e.target.value as Card["priority"], history: hist("Cambió prioridad a " + e.target.value) })}
+              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px]">
+              <option value="alta">Alta</option><option value="media">Media</option><option value="baja">Baja</option>
+            </select>
+          </label>
+          <label className="flex items-center gap-1.5">Esfuerzo
+            <select defaultValue={String(c.effort ?? 1)} onChange={(e) => patch.mutate({ effort: Number(e.target.value) as Card["effort"], history: hist("Cambió esfuerzo a " + e.target.value) })}
+              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px]">
+              <option value="1">1 — Baja</option><option value="2">2 — Media</option><option value="3">3 — Alta</option><option value="5">5 — Muy alta</option>
+            </select>
+          </label>
+          {(() => {
+            // Categorías en uso por el dueño de la tarea + las definidas por el Admin (spec 21 item 11).
+            const cats = mergeCategorias(categoriasEnUso(cards.filter((x) => x.owner === c.owner)), settings.categorias ?? []);
+            return (
+              <label className="flex items-center gap-1.5">Categoría
+                <input key={c.categoria ?? ""} list="cats-card" defaultValue={c.categoria ?? ""}
+                  onBlur={(e) => {
+                    const v = e.target.value.trim();
+                    if (v === (c.categoria ?? "")) return;
+                    patch.mutate({ categoria: v || null, history: hist("Cambió categoría a " + (v || "ninguna")) });
+                  }}
+                  placeholder="Sin categoría"
+                  className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] w-36" />
+                <datalist id="cats-card">
+                  {cats.map((cat) => <option key={cat} value={cat} />)}
+                </datalist>
+              </label>
+            );
+          })()}
+        </div>
+
+        <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Recurrencia</h4>
+        {/* Presets de 1 clic (Kaizen H3): setean el form Y guardan en el mismo clic */}
+        <div className="flex flex-wrap items-center gap-2 mb-2">
+          {([
+            ["Todos los días", { tipo: "diaria" } as RecurRule, () => { setRecurTipo("diaria"); }],
+            ["Cada jueves", { tipo: "semanal", dias: [4] } as RecurRule, () => { setRecurTipo("semanal"); setRecurDias([4]); }],
+            ["Día 20 de cada mes", { tipo: "mensual", diaMes: 20 } as RecurRule, () => { setRecurTipo("mensual"); setRecurDiaMes(20); }],
+          ] as const).map(([lbl, rule, setForm]) => (
+            <button key={lbl} disabled={guardarRecur.isPending}
+              onClick={() => { setForm(); guardarRecur.mutate(rule); }}
+              className="border border-line bg-surface2 rounded-full px-3 py-1 text-[12px] hover:border-accent disabled:opacity-60">
+              {lbl}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <select value={recurTipo} onChange={(e) => setRecurTipo(e.target.value as RecurRule["tipo"] | "")}
+            className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px]">
+            <option value="">Sin recurrencia</option>
+            <option value="diaria">Diaria</option>
+            <option value="semanal">Semanal (días)</option>
+            <option value="mensual">Mensual (día del mes)</option>
+          </select>
+          {recurTipo === "semanal" && (
+            <div className="flex flex-wrap gap-1">
+              {[["Lun", 1], ["Mar", 2], ["Mié", 3], ["Jue", 4], ["Vie", 5], ["Sáb", 6], ["Dom", 0]].map(([lbl, v]) => {
+                const on = recurDias.includes(v as number);
+                return (
+                  <button key={lbl as string} type="button"
+                    onClick={() => setRecurDias((ds) => on ? ds.filter((x) => x !== v) : [...ds, v as number])}
+                    className={"rounded-lg px-2 py-1 text-[12px] border " + (on ? "border-accent bg-accent-soft text-accent" : "border-line bg-surface2")}>{lbl}</button>
+                );
+              })}
+            </div>
+          )}
+          {recurTipo === "mensual" && (
+            <label className="flex items-center gap-1.5">Día
+              <input type="number" min={1} max={31} value={recurDiaMes}
+                onChange={(e) => setRecurDiaMes(Math.min(31, Math.max(1, Number(e.target.value) || 1)))}
+                className="w-16 bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] tnum" />
+            </label>
+          )}
+          <button onClick={() => guardarRecur.mutate(buildRule())} disabled={guardarRecur.isPending}
+            className="border border-line bg-surface2 rounded-lg px-3 py-1 text-[13px] disabled:opacity-60">
+            {guardarRecur.isPending ? "Guardando…" : "Guardar recurrencia"}</button>
+        </div>
+        {recurTipo !== "" && <p className="text-ink2 text-[12px] mt-1">Genera las ocurrencias del mes en el calendario y en el cumplimiento diario.</p>}
+        {(c.recurring || c.recur_rule) && (
+          <div className="flex flex-wrap items-center gap-2 text-sm mt-2">
+            <label className="flex items-center gap-1.5 text-ink2 text-[13px]">Ciclo de vida
+              <select value={c.reset_policy ?? "mensual"}
+                onChange={(e) => {
+                  const v = e.target.value as NonNullable<Card["reset_policy"]>;
+                  patch.mutate({ reset_policy: v, history: hist("Cambió ciclo de vida a " + v) });
+                }}
+                className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px]">
+                <option value="mensual">Reinicia cada mes</option>
+                <option value="mantener">Mantiene su estado</option>
+                <option value="manual">Reinicio manual</option>
+              </select>
+            </label>
+          </div>
+        )}
+
+        {c.recur_rule?.tipo === "diaria" && (() => {
+          const now = new Date();
+          return (
+            <div className="mt-4">
+              <CumplimientoDiario cardId={c.id} owner={c.owner} year={now.getFullYear()} month={now.getMonth() + 1} requiere={!!c.requiere_resultado} />
+            </div>
+          );
+        })()}
+    </>
+  );
+}
