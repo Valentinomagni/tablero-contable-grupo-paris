@@ -67,6 +67,22 @@ Después de aplicar `migracion-28-infraestructura.sql`:
    con diferencia de la semana. Es opcional: si no lo configurás, nada cambia.
 
 ## Migración 29 — Esquema de preparación para producción (spec 28 fase A)
+
+**0. ANTES de correr la migración 29**, auditá si hay una policy de UPDATE
+sobre `profiles` creada desde el dashboard de Supabase que esta migración
+no toca (las policies de RLS se combinan con OR entre sí, así que una
+policy vieja amplia se sigue aplicando aunque la 29 agregue la suya):
+```sql
+select polname, polcmd, pg_get_expr(polqual, polrelid) as expresion
+  from pg_policy where polrelid = 'public.profiles'::regclass;
+```
+Si aparece una policy de UPDATE que no sea la de la migración 29
+(`"usuario actualiza su propio perfil"`) y su expresión es permisiva
+(por ejemplo `using (true)`), borrala desde el dashboard: significa que
+cualquier empleado logueado podría editar perfiles ajenos, sin que el
+trigger de campos sensibles alcance a frenarlo del todo (el trigger solo
+protege role/manager_id/oculto/username/email, no el resto de las columnas).
+
 Después de aplicar `migracion-29-produccion.sql`:
 1. Verificá que las columnas nuevas de `profiles` se crearon:
    ```sql

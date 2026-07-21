@@ -63,7 +63,12 @@ create policy "consultas_select" on public.consultas for select
 
 drop policy if exists "consultas_insert" on public.consultas;
 create policy "consultas_insert" on public.consultas for insert
-  with check (autor = auth.uid());
+  with check (
+    autor = auth.uid()
+    and estado = 'nueva'
+    and respuesta is null
+    and respondida_at is null
+  );
 
 drop policy if exists "consultas_update" on public.consultas;
 create policy "consultas_update" on public.consultas for update
@@ -71,6 +76,28 @@ create policy "consultas_update" on public.consultas for update
   with check (public.es_jefe());
 
 -- Sin policy de DELETE: no se permite borrar consultas desde la app.
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'consultas_tipo_check'
+  ) then
+    alter table public.consultas
+      add constraint consultas_tipo_check
+      check (tipo in ('consulta', 'sugerencia', 'error'));
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'consultas_estado_check'
+  ) then
+    alter table public.consultas
+      add constraint consultas_estado_check
+      check (estado in ('nueva', 'leida', 'archivada'));
+  end if;
+end $$;
 
 -- ------------------------------------------------------------
 -- 3) Cierre mensual POR PERSONA: cada quien cierra su mes cuando terminó.
@@ -102,6 +129,37 @@ drop policy if exists "cierre_periodos_delete" on public.cierre_periodos;
 create policy "cierre_periodos_delete" on public.cierre_periodos for delete
   using (owner = auth.uid());
 
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'cierre_periodos_mes_check'
+  ) then
+    alter table public.cierre_periodos
+      add constraint cierre_periodos_mes_check
+      check (mes ~ '^\d{4}-\d{2}$');
+  end if;
+end $$;
+
+-- Evita backdating: cerrado_at siempre lo pisa el servidor con now(),
+-- nunca el valor que mande el cliente.
+create or replace function public.cierre_periodos_forzar_cerrado_at()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.cerrado_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists cierre_periodos_forzar_cerrado_at on public.cierre_periodos;
+create trigger cierre_periodos_forzar_cerrado_at
+  before insert or update on public.cierre_periodos
+  for each row
+  execute function public.cierre_periodos_forzar_cerrado_at();
+
 -- ------------------------------------------------------------
 -- 4) profiles: policy de UPDATE propia (para que cada uno pueda
 --    actualizar su last_seen, entre otros campos no sensibles) +
@@ -129,11 +187,13 @@ security definer
 set search_path = public
 as $$
 begin
-  if not public.es_jefe() then
+  if auth.uid() is not null and not public.es_jefe() then
     if new.role is distinct from old.role
        or new.manager_id is distinct from old.manager_id
-       or new.oculto is distinct from old.oculto then
-      raise exception 'Solo un jefe puede cambiar role, manager_id u oculto de un perfil';
+       or new.oculto is distinct from old.oculto
+       or new.username is distinct from old.username
+       or new.email is distinct from old.email then
+      raise exception 'Solo un jefe puede cambiar role, manager_id, oculto, username o email de un perfil';
     end if;
   end if;
   return new;
