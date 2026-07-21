@@ -81,6 +81,7 @@ do $$
 begin
   if not exists (
     select 1 from pg_constraint where conname = 'consultas_tipo_check'
+      and conrelid = 'public.consultas'::regclass
   ) then
     alter table public.consultas
       add constraint consultas_tipo_check
@@ -92,6 +93,7 @@ do $$
 begin
   if not exists (
     select 1 from pg_constraint where conname = 'consultas_estado_check'
+      and conrelid = 'public.consultas'::regclass
   ) then
     alter table public.consultas
       add constraint consultas_estado_check
@@ -133,6 +135,7 @@ do $$
 begin
   if not exists (
     select 1 from pg_constraint where conname = 'cierre_periodos_mes_check'
+      and conrelid = 'public.cierre_periodos'::regclass
   ) then
     alter table public.cierre_periodos
       add constraint cierre_periodos_mes_check
@@ -140,8 +143,8 @@ begin
   end if;
 end $$;
 
--- Evita backdating: cerrado_at siempre lo pisa el servidor con now(),
--- nunca el valor que mande el cliente.
+-- Evita backdating: cerrado_at se setea con now() en INSERT.
+-- En UPDATE, preservá la fecha de cierre que ya tiene — nunca se reescribe.
 create or replace function public.cierre_periodos_forzar_cerrado_at()
 returns trigger
 language plpgsql
@@ -149,7 +152,11 @@ security definer
 set search_path = public
 as $$
 begin
-  new.cerrado_at := now();
+  if TG_OP = 'INSERT' then
+    new.cerrado_at := now();
+  else
+    new.cerrado_at := old.cerrado_at;
+  end if;
   return new;
 end;
 $$;
