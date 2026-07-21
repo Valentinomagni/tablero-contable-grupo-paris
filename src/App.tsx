@@ -170,7 +170,7 @@ export default function App() {
           : view === "__admin" ? <Admin team={fullTeam} cards={cards} me={me} meName={me.name} onOpenUser={setOpenUser} />
           : view === "__bitacora" ? <Bitacora cards={cards} activity={activity} team={equipoVisible} isJefe={!!isJefe} meId={me.id} onOpenCard={setOpenCard} />
           : view === "__calendario" ? <Calendario me={me} team={equipoVisible} cards={cards} />
-          : view === "__cierre" ? <Cierre cards={cards} team={equipoVisible} isJefe={!!isJefe} meName={me.name} settings={settings ?? { edit_closed: false } as AppSettings} onOpenCard={setOpenCard} />
+          : view === "__cierre" ? <Cierre cards={cards} team={equipoVisible} isJefe={!!isJefe} meId={me.id} meName={me.name} meRole={me.role} settings={settings ?? { edit_closed: false } as AppSettings} onOpenCard={setOpenCard} />
           : view === "__organigrama" ? <Organigrama team={equipoVisible} cards={cards} />
           : view === "__notas" ? <Notas me={me} />
           : mode === "hoy" ? <MiDia ownerId={view} cards={cards} onOpenCard={setOpenCard} />
