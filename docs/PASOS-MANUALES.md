@@ -86,9 +86,13 @@ leen `process.env.E2E_USER` / `process.env.E2E_PASSWORD` y si faltan, se skipean
    - `E2E_PASSWORD`: su contraseña
 3. El workflow (`.github/workflows/main.yml`, job `e2e`) ya pasa esas variables como `env`.
 
-**RECOMENDACIÓN URGENTE**: la contraseña real `jefe1@grupoparis.com / Paris2026!` quedó
-hardcodeada en commits anteriores del historial de git (no se puede limpiar sin reescribir
-el historial). Rotá esa contraseña cuanto antes desde Supabase Auth o desde la app.
+**RECOMENDACIÓN URGENTE**: la contraseña del usuario `jefe1` quedó hardcodeada en commits
+anteriores del historial de git (no se puede limpiar sin reescribir el historial). Rotá esa
+contraseña cuanto antes desde Supabase Auth o desde la app.
+
+**Orden de migraciones**: corré la 26, 27 y 28 SEGUIDAS y en ese orden. Si corrés solo la 26
+o la 27, el chip de Admin puede decir "faltan migraciones 13-25" hasta que corras la 28 (que
+hace el backfill del registro) — es cosmético, se arregla solo con la 28.
 
 ## Smoke de RLS (manual)
 `scripts/rls-smoke.mjs` — verifica a mano (solo lectura + 1 delete a un id que
