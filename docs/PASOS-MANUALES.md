@@ -68,6 +68,8 @@ Después de aplicar `migracion-28-infraestructura.sql`:
 
 ## Migración 29 — Esquema de preparación para producción (spec 28 fase A)
 
+**IMPORTANTE: Después de correr la migración 29, avisale al equipo que recargue la app (F5).** Las pestañas abiertas seguirán usando el esquema viejo hasta que refresquen, porque la consulta del estado de migraciones se cachea 5 minutos.
+
 **0. ANTES de correr la migración 29**, auditá si hay una policy de UPDATE
 sobre `profiles` creada desde el dashboard de Supabase que esta migración
 no toca (las policies de RLS se combinan con OR entre sí, así que una

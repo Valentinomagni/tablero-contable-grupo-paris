@@ -54,7 +54,7 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
 
   const save = useMutation({
     mutationFn: async () => {
-      const fila = { name: name.trim(), username: username.trim() || null, role, puesto: puesto.trim(), ficha: ficha.trim(), manager_id: managerId, marca, sucursal: sucursal || null, ...(esJefe ? { oculto } : {}) };
+      const fila = { name: name.trim(), username: username.trim() || null, role, puesto: puesto.trim(), ficha: ficha.trim(), manager_id: managerId, ...(esJefe ? { marca, sucursal: sucursal || null, oculto } : { marca: null, sucursal: null }) };
       const { error } = await supabase.from("profiles")
         .update(payloadProfiles(fila, migracionesAplicadas))
         .eq("id", u.id);
@@ -141,13 +141,13 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
             </select>
           </label>
           <label className="text-[13px] text-ink2">Marca
-            <select value={marca ?? ""} onChange={(e) => setMarca(e.target.value || null)} className={inputCls}>
+            <select value={marca ?? ""} onChange={(e) => setMarca(e.target.value || null)} disabled={!esJefe} className={inputCls}>
               <option value="">—</option>
               {org.marcas.map((mk) => <option key={mk} value={mk}>{mk}</option>)}
             </select>
           </label>
           <label className="text-[13px] text-ink2">Sucursal
-            <select value={sucursal ?? ""} onChange={(e) => setSucursal(e.target.value || null)} className={inputCls}>
+            <select value={sucursal ?? ""} onChange={(e) => setSucursal(e.target.value || null)} disabled={!esJefe} className={inputCls}>
               <option value="">— Sin sucursal —</option>
               {org.sucursales.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
