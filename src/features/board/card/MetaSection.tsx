@@ -131,19 +131,31 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
             // Categorías en uso por el dueño de la tarea + las definidas por el Admin (spec 21 item 11).
             const cats = mergeCategorias(categoriasEnUso(cards.filter((x) => x.owner === c.owner)), settings.categorias ?? []);
             return (
-              <label className="flex items-center gap-1.5">Categoría
-                <input key={c.categoria ?? ""} list="cats-card" defaultValue={c.categoria ?? ""}
-                  onBlur={(e) => {
-                    const v = e.target.value.trim();
-                    if (v === (c.categoria ?? "")) return;
-                    patch.mutate({ categoria: v || null, history: hist("Cambió categoría a " + (v || "ninguna")) });
-                  }}
-                  placeholder="Sin categoría"
-                  className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] w-36" />
-                <datalist id="cats-card">
-                  {cats.map((cat) => <option key={cat} value={cat} />)}
-                </datalist>
-              </label>
+              <>
+                <label className="flex items-center gap-1.5">Categoría
+                  <input key={c.categoria ?? ""} list="cats-card" defaultValue={c.categoria ?? ""}
+                    onBlur={(e) => {
+                      const v = e.target.value.trim();
+                      if (v === (c.categoria ?? "")) return;
+                      patch.mutate({ categoria: v || null, history: hist("Cambió categoría a " + (v || "ninguna")) });
+                    }}
+                    placeholder="Sin categoría"
+                    className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] w-36" />
+                  <datalist id="cats-card">
+                    {cats.map((cat) => <option key={cat} value={cat} />)}
+                  </datalist>
+                </label>
+                <label className="flex items-center gap-1.5">Dato de control a adjuntar
+                  <input key={c.dato_control ?? ""} defaultValue={c.dato_control ?? ""}
+                    onBlur={(e) => {
+                      const v = e.target.value.trim();
+                      if (v === (c.dato_control ?? "")) return;
+                      patch.mutate({ dato_control: v || null });
+                    }}
+                    placeholder="Referencia, código…"
+                    className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] w-36" />
+                </label>
+              </>
             );
           })()}
         </div>

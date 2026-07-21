@@ -48,6 +48,7 @@ function CardItem({ c, blocked, waiting, esperaTitulos = [], onOpen }: { c: Card
         {waiting && <span className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Hourglass size={11} /> Te esperan</span>}
         {esCobertura(c).activa && <span title="Cubierta por vacaciones" className="inline-flex items-center gap-1 bg-chip text-ink2 rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Plane size={11} /> Cobertura</span>}
         {c.categoria && <span className="bg-chip rounded-md px-1.5 py-0.5 text-[11px] whitespace-nowrap">{c.categoria}</span>}
+        {c.dato_control && <span className="bg-chip rounded-md px-1.5 py-0.5 text-[11px] whitespace-nowrap tnum">{c.dato_control}</span>}
         {pr}<DueBadge c={c} />{c.recurring && <span title="Mensual"><Repeat size={12} /></span>}
         {(c.effort ?? 1) > 1 && <span className="bg-chip rounded-md px-1.5 py-0.5 tnum">{c.effort} pts</span>}
         {ck}{c.comments.length > 0 && <span className="inline-flex items-center gap-1"><MessageSquare size={11} /> {c.comments.length}</span>}

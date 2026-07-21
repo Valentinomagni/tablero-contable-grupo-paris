@@ -21,6 +21,7 @@ export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { owne
   const [priority, setPriority] = useState<Card["priority"]>("media");
   const [effort, setEffort] = useState<Card["effort"]>(1);
   const [categoria, setCategoria] = useState("");
+  const [datoControl, setDatoControl] = useState("");
 
   const crear = useMutation({
     mutationFn: async () => {
@@ -28,6 +29,7 @@ export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { owne
         owner: ownerId, title: title.trim(), status: "pend" as const,
         due_date: dueDate || null, priority, effort,
         categoria: categoria.trim() || null,
+        dato_control: datoControl.trim() || null,
         history: [{ who: meName, at: new Date().toISOString(), txt: "Creó la tarea" }],
       };
       const { error } = await supabase.from("cards").insert(row);
@@ -80,6 +82,11 @@ export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { owne
             <datalist id="cats-nueva">
               {categorias.map((cat) => <option key={cat} value={cat} />)}
             </datalist>
+          </label>
+          <label className="flex items-center gap-1.5">Dato de control a adjuntar
+            <input value={datoControl} onChange={(e) => setDatoControl(e.target.value)}
+              placeholder="Referencia, código…"
+              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] w-36" />
           </label>
         </div>
         {masParecida && (
