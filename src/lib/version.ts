@@ -3,6 +3,18 @@
 // nueva arriba de todo y la versión se actualiza sola (ver docs/RELEASE.md).
 export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] = [
   {
+    version: "2.3.0",
+    fecha: "2026-07-20",
+    cambios: [
+      "Cierre del mes unificado: una sola pantalla te muestra con un semáforo si el mes quedó cerrado (checklist, historial guardado y tareas recurrentes en cero).",
+      "El análisis mensual del reporte ahora se exporta a Excel con un click.",
+      "Adjuntos en las tareas: subí comprobantes y archivos directamente en cada tarea (PDF, imágenes, Excel).",
+      "Aviso de sin conexión: si se corta internet, la app te lo dice antes de que pierdas cambios.",
+      "Administración muestra si la base de datos está al día o falta aplicar alguna actualización.",
+      "Resumen semanal automático en el tablón con lo importante de la semana (se activa con una configuración).",
+    ],
+  },
+  {
     version: "2.2.0",
     fecha: "2026-07-20",
     cambios: [
