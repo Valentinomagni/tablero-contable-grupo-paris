@@ -1,4 +1,4 @@
-import type { Card, Profile } from "./types";
+import type { Card, Profile, Status } from "./types";
 import { marcaDe } from "./segmento";
 
 const SIN_CATEGORIA = "Sin categoría";
@@ -55,4 +55,32 @@ export function agruparCards(
       if (b.grupo === SIN_CATEGORIA) return -1;
       return b.cards.length - a.cards.length || a.grupo.localeCompare(b.grupo, "es");
     });
+}
+
+export type Carril = { grupo: string; total: number; porEstado: Record<Status, Card[]> };
+
+// Carriles del tablero (spec 28, Task 8): la agrupación NO depende del estado.
+// Primero se agrupa el conjunto COMPLETO de cards y recién después, dentro de cada
+// grupo, se reparte por estado. Consecuencias buscadas:
+//  - el orden y la presencia de los carriles salen de agruparCards sobre el total,
+//    nunca de cuántas cards tenga cada columna;
+//  - un grupo con todas las tareas terminadas SIGUE existiendo, con sus columnas
+//    pendiente/en proceso vacías;
+//  - mover una card de estado la cambia de columna sin sacarla de su carril ni
+//    reordenar los carriles.
+export function carrilesPorGrupo(
+  cards: Card[],
+  modo: ModoAgrupar,
+  columnas: readonly Status[],
+  ctx: { profiles: Profile[]; estadoDe?: (c: Card) => Status },
+): Carril[] {
+  const estadoDe = ctx.estadoDe ?? ((c: Card) => c.status);
+  return agruparCards(cards, modo, { profiles: ctx.profiles }).map((g) => {
+    const porEstado = Object.fromEntries(columnas.map((k) => [k, [] as Card[]])) as Record<Status, Card[]>;
+    for (const c of g.cards) {
+      const k = estadoDe(c);
+      if (porEstado[k]) porEstado[k].push(c);
+    }
+    return { grupo: g.grupo, total: g.cards.length, porEstado };
+  });
 }

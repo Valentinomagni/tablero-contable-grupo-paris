@@ -8,6 +8,7 @@ export const PREF = {
   tablon: NS + "tablon-visto",
   agrupar: NS + "agrupar",
   agruparModo: NS + "agrupar-modo",
+  carrilesColapsados: NS + "carriles-colapsados",
 } as const;
 
 export function getPref(k: string): string | null {
