@@ -12,7 +12,7 @@ import { Huerfanas } from "./Huerfanas";
 import { equipoDe } from "../../lib/jerarquia";
 import { personasVisibles } from "../../lib/visibilidad";
 import { Avatar } from "../../lib/ui";
-import { useSettings, useMigraciones } from "../../hooks/useData";
+import { useSettings, useMigraciones, useTiemposMax } from "../../hooks/useData";
 import { estadoMigraciones } from "../../lib/migraciones";
 import { BandejaConsultas } from "../consultas/BandejaConsultas";
 
@@ -51,6 +51,10 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
   const equipoVisible = personasVisibles(equipo);
   const [reasignar, setReasignar] = useState(false);
   const { data: settings = { edit_closed: false } } = useSettings();
+  const tiemposMax = useTiemposMax();
+  const [tmCat, setTmCat] = useState("");
+  const [tmHoras, setTmHoras] = useState("");
+  const [tmMsg, setTmMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [permMsg, setPermMsg] = useState("");
@@ -81,6 +85,30 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
   }
 
   const plantillas = settings.plantillas ?? [];
+
+  // Tiempo máximo por categoría (settings key='tiempos_max', spec 28 Task 4). Patrón idéntico al de plantillas:
+  // se lee con un hook propio y se guarda con upsert directo a la fila de esa key.
+  async function saveTiemposMax(next: Record<string, number>, okTxt: string) {
+    const { error } = await supabase.from("settings").upsert({ key: "tiempos_max", value: next }, { onConflict: "key" });
+    setTmMsg(error ? "No se pudo guardar: " + error.message : okTxt);
+    if (!error) qc.invalidateQueries({ queryKey: ["tiempos_max"] });
+    setTimeout(() => setTmMsg(""), 3000);
+  }
+
+  function agregarTiempoMax() {
+    const cat = tmCat.trim();
+    const horas = Number(tmHoras);
+    if (!cat) { toast.error("Elegí una categoría."); return; }
+    if (!horas || horas <= 0) { toast.error("Ingresá un número de horas mayor a 0."); return; }
+    saveTiemposMax({ ...tiemposMax, [cat]: horas }, "Tiempo máximo guardado");
+    setTmCat(""); setTmHoras("");
+  }
+
+  function eliminarTiempoMax(cat: string) {
+    const next = { ...tiemposMax };
+    delete next[cat];
+    saveTiemposMax(next, "Tiempo máximo eliminado");
+  }
 
   async function generarPlantilla(pl: PlantillaTareas, idx: number) {
     const porDefecto = plOwner[idx] ?? "";
@@ -326,6 +354,30 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
             className="bg-accent text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold mt-3 disabled:opacity-60">Guardar plantilla</button>
         </div>
         {permMsg && <p className={"text-sm mt-2 mb-0 " + (!permMsg.startsWith("No se pudo") ? "text-done" : "text-danger")}>{permMsg}</p>}
+      </div>
+
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Tiempo máximo por categoría</h2>
+      <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
+        <p className="text-ink2 text-[13px] mt-0 mb-3 max-w-[640px]">SLA por categoría de tarea: horas máximas desde que entra en proceso hasta que se termina. Una tarea puede pisar este valor con su propio campo "Tiempo máximo (horas)".</p>
+        {Object.keys(tiemposMax).length === 0 && <p className="text-ink2 text-[13px] m-0 mb-3">Todavía no hay categorías con tiempo máximo configurado.</p>}
+        {Object.entries(tiemposMax).map(([cat, horas]) => (
+          <div key={cat} className="flex items-center gap-2 py-1.5 border-b border-line/60 last:border-0">
+            <span className="flex-1 text-[13px] text-ink">{cat}</span>
+            <span className="text-ink2 text-[13px]">{horas}h</span>
+            <button title={`Quitar "${cat}"`} onClick={() => eliminarTiempoMax(cat)}
+              className="border border-line bg-surface2 rounded-lg p-1.5 text-ink2 hover:text-danger"><Trash2 size={13} /></button>
+          </div>
+        ))}
+        <div className="flex flex-wrap items-center gap-2 mt-3">
+          <select value={tmCat} onChange={(e) => setTmCat(e.target.value)} className={inputCls}>
+            <option value="">Categoría…</option>
+            {(settings.categorias ?? []).map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <input type="number" min={0} step="0.5" placeholder="Horas" value={tmHoras} onChange={(e) => setTmHoras(e.target.value)} className={inputCls + " w-24"} />
+          <button onClick={agregarTiempoMax} className="flex items-center gap-1.5 bg-accent text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:opacity-60">
+            <Plus size={14} /> Agregar</button>
+        </div>
+        {tmMsg && <p className={"text-sm mt-2 mb-0 " + (!tmMsg.startsWith("No se pudo") ? "text-done" : "text-danger")}>{tmMsg}</p>}
       </div>
 
       <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Parámetros de la plataforma</h2>

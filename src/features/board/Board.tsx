@@ -12,7 +12,8 @@ import { bloqueadaPorTitulos } from "../../lib/deps";
 import { categoriasEnUso, pasaFiltroCategoria } from "../../lib/categorias";
 import { agruparCards, type ModoAgrupar } from "../../lib/agrupar";
 import { getPref, setPref, PREF } from "../../lib/prefs";
-import { useOrganizacion } from "../../hooks/useData";
+import { useOrganizacion, useTiemposMax } from "../../hooks/useData";
+import { estadoTiempo } from "../../lib/tiempos";
 import { filtrarPorSegmento } from "../../lib/segmento";
 import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Users, Shield, Layers, ChevronRight, ChevronDown, Plane } from "lucide-react";
 import { esCobertura } from "../../lib/vacaciones";
@@ -66,6 +67,7 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
 }) {
   const qc = useQueryClient();
   const org = useOrganizacion();
+  const tiemposConfig = useTiemposMax();
   const q = query.trim().toLowerCase();
   const matches = (c: Card) => !q || c.title.toLowerCase().includes(q) || (c.description ?? "").toLowerCase().includes(q);
   // filtro por categoría (spec 21 item 11): null = todas; "" = sin categoría
@@ -108,10 +110,21 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
   const move = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: Status }) => {
       const c = byId(id)!;
+      const now = new Date().toISOString();
       const patch: Partial<Card> = { status };
-      if (status === "term") patch.done_at = new Date().toISOString();
+      if (status === "term") patch.done_at = now;
       else if (c.status === "term") patch.done_at = null;
-      const hist = [...(c.history ?? []), { who: meName, at: new Date().toISOString(), txt: status === "term" ? "Marcó terminada" : "Movió la tarea" }];
+      // Sellar proc_at (spec 28, Task 4): al entrar a "en proceso" por primera vez se marca el inicio del SLA;
+      // al volver a "pendiente" se limpia (arranca de nuevo la próxima vez que entre a proceso).
+      if (status === "proc" && !c.proc_at) patch.proc_at = now;
+      else if (status === "pend") patch.proc_at = null;
+      let hist = [...(c.history ?? []), { who: meName, at: now, txt: status === "term" ? "Marcó terminada" : "Movió la tarea" }];
+      if (status === "term") {
+        const est = estadoTiempo({ ...c, ...patch }, tiemposConfig, now);
+        if (est.excedido && est.horas != null && est.maxHoras != null) {
+          hist = [...hist, { who: meName, at: now, txt: `Superó el tiempo máximo (${est.horas.toFixed(1)}h de ${est.maxHoras}h)` }];
+        }
+      }
       pushUndo(c, { ...patch, history: hist });
       const { error } = await supabase.from("cards").update({ ...patch, history: hist }).eq("id", id);
       if (error) throw error;

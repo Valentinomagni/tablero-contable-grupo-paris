@@ -100,6 +100,20 @@ export function useOrganizacion(): Organizacion {
   return data ?? DEFAULT_ORG;
 }
 
+// settings key='tiempos_max': Record<categoría, horas> — SLA por categoría (spec 28, Task 4).
+// Defensivo: sin fila o sin migración aplicada -> {} (sin límites configurados).
+export function useTiemposMax(): Record<string, number> {
+  const { data } = useQuery({
+    queryKey: ["tiempos_max"],
+    queryFn: async (): Promise<Record<string, number>> => {
+      const { data } = await supabase.from("settings").select("value").eq("key", "tiempos_max").maybeSingle();
+      const v = data?.value;
+      return v && typeof v === "object" ? (v as Record<string, number>) : {};
+    },
+  });
+  return data ?? {};
+}
+
 // enabled: jefe y encargado traen los profiles (RLS del Plan 02 limita lo que ve el encargado).
 // El empleado no consulta — App le arma team = [me].
 export function useTeam(enabled: boolean) {
