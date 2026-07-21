@@ -6,9 +6,11 @@ import { PREF, getPref, setPref } from "./lib/prefs";
 import { ClipboardList, Target, TrendingUp, UserRound, CalendarDays, Users, Archive, Sun } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { useTheme } from "./hooks/useTheme";
-import { useTeam, useCards, useActivity, useAnnouncements, useSettings } from "./hooks/useData";
+import { useTeam, useCards, useActivity, useAnnouncements, useSettings, useConsultasNuevas } from "./hooks/useData";
+import { contarNuevas } from "./lib/consultas";
 import { AccountModal } from "./components/AccountModal";
 import { NovedadesModal } from "./components/NovedadesModal";
+import { ConsultasModal } from "./features/consultas/ConsultasModal";
 import { NotificacionesBell } from "./components/NotificacionesPanel";
 import { APP_VERSION } from "./lib/version";
 import { Login } from "./components/Login";
@@ -62,6 +64,9 @@ export default function App() {
   const [cmdk, setCmdk] = useState(false);
   const [delegar, setDelegar] = useState(false);
   const [novedades, setNovedades] = useState(false);
+  const [consultas, setConsultas] = useState(false);
+  const { data: consultasNuevas = [] } = useConsultasNuevas();
+  const adminBadgeN = contarNuevas(consultasNuevas);
 
   // Aviso de nueva versión: se muestra una sola vez tras el login (spec #10).
   useEffect(() => {
@@ -127,7 +132,8 @@ export default function App() {
     <>
       <Shell me={me} team={equipoVisible} viewing={view} title={title} theme={theme}
         onCycleTheme={cycle} density={density} onCycleDensity={cycleDensity}
-        onOpenAccount={() => setAccount(true)} onOpenNovedades={() => setNovedades(true)} tablonBadge={tablonBadge} boardName={settings?.board_name}
+        onOpenAccount={() => setAccount(true)} onOpenNovedades={() => setNovedades(true)} onOpenConsultas={() => setConsultas(true)}
+        tablonBadge={tablonBadge} adminBadge={isJefe && adminBadgeN ? String(adminBadgeN) : undefined} boardName={settings?.board_name}
         onNavigate={(v) => { setViewing(v); setMode("board"); setQuery(""); }} onSignOut={signOut} pendByOwner={pendByOwner}
         fullWidth={isPersonView && mode === "board"}
         notifs={<NotificacionesBell onOpenCard={(id) => { const c = cards.find((x) => x.id === id); if (c) setOpenCard(c); else toast("La tarea de esta notificación ya no está disponible."); }} />}
@@ -178,6 +184,7 @@ export default function App() {
       {openUser && <UserModal user={fullTeam.find((t) => t.id === openUser.id) ?? openUser} meId={me.id} team={fullTeam} cards={cards} activity={activity} onClose={() => setOpenUser(null)} />}
       {account && <AccountModal name={me.name} email={me.email} onClose={() => setAccount(false)} />}
       {novedades && <NovedadesModal onClose={() => { setPref(PREF.version, APP_VERSION); setNovedades(false); }} />}
+      {consultas && <ConsultasModal meId={me.id} onClose={() => setConsultas(false)} />}
       {delegar && <DelegarModal team={equipoVisible} meId={me.id} meName={me.name} onClose={() => setDelegar(false)} />}
       <Toaster position="bottom-center" toastOptions={{ style: { background: "var(--surface)", color: "var(--ink)", border: "1px solid var(--line)", boxShadow: "var(--shadow-lg)" } }} />
       {cmdk && <CommandPalette me={me} team={equipoVisible} cards={cards} annos={annos}

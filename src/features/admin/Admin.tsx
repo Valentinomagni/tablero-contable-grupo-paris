@@ -14,6 +14,7 @@ import { personasVisibles } from "../../lib/visibilidad";
 import { Avatar } from "../../lib/ui";
 import { useSettings, useMigraciones } from "../../hooks/useData";
 import { estadoMigraciones } from "../../lib/migraciones";
+import { BandejaConsultas } from "../consultas/BandejaConsultas";
 
 // chip de estado de migraciones (spec 27, T2): verde al día / ámbar faltan / gris desconocido
 function MigracionesChip() {
@@ -189,6 +190,11 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
       </div>
 
       {!esEncargado && <>
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Consultas del equipo</h2>
+      <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
+        <BandejaConsultas team={team} />
+      </div>
+
       <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Crear usuario nuevo</h2>
       <div className="bg-surface border border-line rounded-xl p-4 mb-6 flex flex-wrap gap-2 items-center" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
         <input placeholder="usuario (ej: Vmagni)" value={nu.username} onChange={(e) => setNu({ ...nu, username: e.target.value })} className={inputCls + " w-[160px]"} />

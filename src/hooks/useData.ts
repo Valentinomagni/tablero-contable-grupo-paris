@@ -126,6 +126,33 @@ export function useMigraciones() {
   });
 }
 
+// Consultas (Task 3, spec 28): defensivo — si la tabla no existe todavía (migración 29 sin correr),
+// la queryFn tira el error (react-query lo expone via isError) y quien no lo mira usa `data ?? []`.
+// RLS ya filtra: autor ve las suyas, jefe ve todas.
+export function useConsultas() {
+  return useQuery({
+    queryKey: ["consultas"],
+    queryFn: async (): Promise<import("../lib/types").Consulta[]> => {
+      const { data, error } = await supabase.from("consultas").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data as import("../lib/types").Consulta[]) ?? [];
+    },
+    retry: false,
+  });
+}
+
+// Solo para el badge del jefe en Administración: cuenta de estado 'nueva'.
+export function useConsultasNuevas() {
+  return useQuery({
+    queryKey: ["consultas-nuevas"],
+    queryFn: async (): Promise<import("../lib/types").Consulta[]> => {
+      const { data, error } = await supabase.from("consultas").select("*").eq("estado", "nueva");
+      if (error) return [];
+      return (data as import("../lib/types").Consulta[]) ?? [];
+    },
+  });
+}
+
 export function useCards() {
   const qc = useQueryClient();
   useEffect(() => {
