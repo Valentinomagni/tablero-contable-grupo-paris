@@ -371,7 +371,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
       <p className="text-ink2 text-[13px] mt-1.5 max-w-[560px]">Todas las tablas en un archivo. Guardalo en el Drive del estudio una vez por mes: es tu seguro ante borrados accidentales.</p>
       </>}
 
-      {reasignar && <ReasignarModal me={me} equipo={equipoVisible} profiles={team} cards={cards} onClose={() => setReasignar(false)} />}
+      {reasignar && <ReasignarModal me={me} equipo={equipo} profiles={team} cards={cards} onClose={() => setReasignar(false)} />}
     </div>
   );
 }

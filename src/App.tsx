@@ -36,7 +36,7 @@ const MiDia = lazy(() => import("./features/hoy/MiDia").then((m) => ({ default: 
 import { CommandPalette } from "./components/CommandPalette";
 import type { Card, Profile, AppSettings } from "./lib/types";
 import { visiblesPara, cardsDeEquipo } from "./lib/jerarquia";
-import { personasVisibles } from "./lib/visibilidad";
+import { personasVisibles, cardsVisibles } from "./lib/visibilidad";
 import { proximosVencimientos } from "./lib/vencimientos";
 import { cn } from "./lib/ui";
 
@@ -93,7 +93,8 @@ export default function App() {
   // Administración, que sí debe poder ver y gestionar al usuario oculto.
   const equipoVisible = personasVisibles(fullTeam);
   // Resumen/Reporte: jefe recibe todas las cards; no-jefe solo las de su equipo visible (spec #5, #10).
-  const scopedCards = isJefe ? cards : cardsDeEquipo(cards, equipoVisible);
+  // En los dos caminos se excluyen siempre las cards del usuario oculto (spec 28): no participa de métricas/alertas.
+  const scopedCards = cardsVisibles(isJefe ? cards : cardsDeEquipo(cards, equipoVisible), fullTeam);
   const person = fullTeam.find((u) => u.id === view);
   const title = view === "__resumen" ? (esGestor ? "Resumen del equipo" : "Mi resumen")
     : view === "__reporte" ? (esGestor ? "Reporte ejecutivo" : "Mi reporte")
