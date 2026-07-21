@@ -4,9 +4,10 @@ import { test, expect } from "@playwright/test";
 // Auto-espera de Playwright: sin sleeps arbitrarios, con trace viewer si algo falla.
 
 test("login, vistas clave y delegar tarea", async ({ page }) => {
+  test.skip(!process.env.E2E_USER || !process.env.E2E_PASSWORD, "E2E_USER/E2E_PASSWORD no configuradas");
   await page.goto("/");
-  await page.fill('input[autocomplete="username"]', "jefe1@grupoparis.com");
-  await page.fill('input[type="password"]', "Paris2026!");
+  await page.fill('input[autocomplete="username"]', process.env.E2E_USER!);
+  await page.fill('input[type="password"]', process.env.E2E_PASSWORD!);
   await page.click('button[type="submit"]');
 
   await expect(page.getByText("Resumen del equipo")).toBeVisible();

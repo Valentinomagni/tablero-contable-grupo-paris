@@ -75,6 +75,21 @@ pegar ese contenido. (O regenerá el token con scope `workflow`.)
 Seguí `docs/PWA-REINSTALL.md`: desinstalar la PWA vieja y reinstalarla desde
 `https://tablero-contable-grupo-paris.pages.dev/`.
 
+## Secrets de CI (e2e)
+Los specs `e2e/app.spec.ts` y `e2e/a11y.spec.ts` ya NO tienen credenciales hardcodeadas:
+leen `process.env.E2E_USER` / `process.env.E2E_PASSWORD` y si faltan, se skipean solos
+(el job de CI queda verde igual). Para que el e2e corra de verdad en GitHub Actions:
+1. Creá (o pedile a alguien con acceso admin del repo que cree) una cuenta de **PRUEBA**
+   en el Supabase real del proyecto — NO la cuenta del jefe real.
+2. GitHub → repo → **Settings → Secrets and variables → Actions → New repository secret**:
+   - `E2E_USER`: email o username de esa cuenta de prueba
+   - `E2E_PASSWORD`: su contraseña
+3. El workflow (`.github/workflows/main.yml`, job `e2e`) ya pasa esas variables como `env`.
+
+**RECOMENDACIÓN URGENTE**: la contraseña real `jefe1@grupoparis.com / Paris2026!` quedó
+hardcodeada en commits anteriores del historial de git (no se puede limpiar sin reescribir
+el historial). Rotá esa contraseña cuanto antes desde Supabase Auth o desde la app.
+
 ## Notas de seguridad del rollout de login (#16)
 - El login acepta **usuario O email**. Desplegar antes de cargar usernames NO bloquea a nadie.
 - Recién cuando TODO el equipo tenga su username cargado y probado, se puede (a futuro) quitar

@@ -5,6 +5,7 @@ import AxeBuilder from "@axe-core/playwright";
 // Gate: cero violaciones de impacto "critical" en las vistas clave.
 
 test("a11y: sin violaciones críticas en Login y Resumen", async ({ page }) => {
+  test.skip(!process.env.E2E_USER || !process.env.E2E_PASSWORD, "E2E_USER/E2E_PASSWORD no configuradas");
   await page.goto("/");
 
   // Login (sin sesión)
@@ -14,8 +15,8 @@ test("a11y: sin violaciones críticas en Login y Resumen", async ({ page }) => {
   expect(loginCriticas, JSON.stringify(loginCriticas, null, 2)).toEqual([]);
 
   // Resumen (post-login)
-  await page.fill('input[autocomplete="username"]', "jefe1@grupoparis.com");
-  await page.fill('input[type="password"]', "Paris2026!");
+  await page.fill('input[autocomplete="username"]', process.env.E2E_USER!);
+  await page.fill('input[type="password"]', process.env.E2E_PASSWORD!);
   await page.click('button[type="submit"]');
   await expect(page.getByText("Resumen del equipo")).toBeVisible();
 

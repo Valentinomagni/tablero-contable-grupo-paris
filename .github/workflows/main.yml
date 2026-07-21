@@ -25,10 +25,15 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npx playwright install --with-deps chromium
-      # Ambos specs (app.spec.ts y a11y.spec.ts) loguean con credenciales de una cuenta
-      # de prueba ya seedeada en el Supabase real del proyecto (misma clave publishable
-      # que usa la app en producción, ya versionada en src/lib/supabase.ts). No hay
-      # secrets adicionales que configurar. webServer en playwright.config.ts levanta
-      # `vite preview` en :8124 y channel:"chromium" (vía CI=true) evita depender de
-      # Edge, que no está disponible en el runner ubuntu-latest.
+      # Ambos specs (app.spec.ts y a11y.spec.ts) loguean con una cuenta de PRUEBA cuyas
+      # credenciales viven en los secrets E2E_USER / E2E_PASSWORD (Settings > Secrets and
+      # variables > Actions), nunca en el código. Si esos secrets no están configurados
+      # en el repo, cada spec hace test.skip() al inicio y el job queda verde igual
+      # (no falla el pipeline, simplemente no corre el e2e real). webServer en
+      # playwright.config.ts levanta `vite preview` en :8124 y channel:"chromium"
+      # (vía CI=true) evita depender de Edge, que no está disponible en el runner
+      # ubuntu-latest.
       - run: npx playwright test
+        env:
+          E2E_USER: ${{ secrets.E2E_USER }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
