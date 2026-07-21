@@ -280,7 +280,7 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
           de estado. La card cambia de columna sin salir de su carril. */}
       {agruparModo !== "ninguno" && (
         <div className="flex flex-col gap-3 shrink-0">
-          <Carriles cards={mine} modo={agruparModo} profiles={team} columnas={COLS}
+          <Carriles cards={mine} modo={agruparModo} ownerId={ownerId} profiles={team} columnas={COLS}
             renderCard={renderCard} onDropCard={(id, status) => move.mutate({ id, status })} />
           {mine.length === 0 && <EmptyState title="Sin tareas acá." />}
           <button onClick={() => setCreando(true)}

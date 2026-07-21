@@ -8,9 +8,9 @@ import { getPref, setPref, PREF } from "../../lib/prefs";
 const DOT: Record<string, string> = { pend: "bg-naranja", proc: "bg-s1", term: "bg-done" };
 const colBg = { background: "color-mix(in srgb,var(--surface2) 55%,var(--bg))" };
 
-function leerColapsados(modo: string): string[] {
+function leerColapsados(modo: string, ownerId: string): string[] {
   try {
-    const v = JSON.parse(getPref(PREF.carrilesColapsados(modo)) ?? "[]");
+    const v = JSON.parse(getPref(PREF.carrilesColapsados(modo, ownerId)) ?? "[]");
     return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
   } catch { return []; }
 }
@@ -18,15 +18,16 @@ function leerColapsados(modo: string): string[] {
 // Carriles horizontales por grupo, que atraviesan las tres columnas de estado.
 // La jerarquía es grupo → estado (y no estado → grupo como antes): así la agrupación
 // deja de depender del estado. Ver carrilesPorGrupo en lib/agrupar.ts.
-export function Carriles({ cards, modo, profiles, columnas, renderCard, onDropCard }: {
+export function Carriles({ cards, modo, ownerId, profiles, columnas, renderCard, onDropCard }: {
   cards: Card[];
   modo: ModoAgrupar;
+  ownerId: string;
   profiles: Profile[];
   columnas: readonly (readonly [Status, string])[];
   renderCard: (c: Card) => ReactNode;
   onDropCard: (id: string, status: Status) => void;
 }) {
-  const [colapsados, setColapsados] = useState<string[]>(() => leerColapsados(modo));
+  const [colapsados, setColapsados] = useState<string[]>(() => leerColapsados(modo, ownerId));
   // Id de la card que se está arrastrando: se resuelve en "dragstart" (ahí sí se
   // puede leer dataTransfer; en "dragover" los navegadores no exponen el valor,
   // solo los tipos). Sirve para decidir si el anillo de aceptación debe encenderse
@@ -34,7 +35,7 @@ export function Carriles({ cards, modo, profiles, columnas, renderCard, onDropCa
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const toggle = (g: string) => setColapsados((prev) => {
     const next = prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g];
-    setPref(PREF.carrilesColapsados(modo), JSON.stringify(next));
+    setPref(PREF.carrilesColapsados(modo, ownerId), JSON.stringify(next));
     return next;
   });
 
