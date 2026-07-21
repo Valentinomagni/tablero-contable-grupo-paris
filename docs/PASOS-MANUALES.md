@@ -66,6 +66,33 @@ Después de aplicar `migracion-28-infraestructura.sql`:
    Esto publica un aviso en el tablón cada lunes con tareas cerradas, vencidas abiertas y arqueos
    con diferencia de la semana. Es opcional: si no lo configurás, nada cambia.
 
+## Migración 29 — Esquema de preparación para producción (spec 28 fase A)
+Después de aplicar `migracion-29-produccion.sql`:
+1. Verificá que las columnas nuevas de `profiles` se crearon:
+   ```sql
+   select column_name from information_schema.columns
+     where table_name = 'profiles' and column_name in ('oculto', 'last_seen');
+   ```
+   Debe devolver 2 filas.
+2. Verificá las columnas nuevas de `cards`:
+   ```sql
+   select column_name from information_schema.columns
+     where table_name = 'cards' and column_name in ('proc_at', 'tiempo_max_horas', 'dato_control');
+   ```
+   Debe devolver 3 filas.
+3. Verificá que las tablas nuevas existen y tienen RLS activo:
+   ```sql
+   select relname, relrowsecurity from pg_class
+     where relname in ('consultas', 'cierre_periodos');
+   ```
+   Ambas filas deben tener `relrowsecurity = true`.
+4. Verificá que un usuario no-jefe no puede cambiar `role`/`manager_id`/`oculto` de su propio
+   perfil (el trigger `profiles_bloquear_campos_sensibles` lo bloquea):
+   ```sql
+   select tgname from pg_trigger where tgrelid = 'public.profiles'::regclass and not tgisinternal;
+   ```
+   Debe listar `profiles_bloquear_campos_sensibles`.
+
 ## GitHub Actions (#2) — opcional
 El archivo del workflow está en `docs/ci-workflow.yml.txt`. Tu token no tiene scope `workflow`,
 así que no se pudo pushear. Para activarlo: GitHub → repo → pestaña **Actions** → New workflow →
