@@ -373,7 +373,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
             <option value="">Categoría…</option>
             {(settings.categorias ?? []).map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
-          <input type="number" min={0} step="0.5" placeholder="Horas" value={tmHoras} onChange={(e) => setTmHoras(e.target.value)} className={inputCls + " w-24"} />
+          <input type="number" min={0} step="1" placeholder="Horas" value={tmHoras} onChange={(e) => setTmHoras(e.target.value)} className={inputCls + " w-24"} />
           <button onClick={agregarTiempoMax} className="flex items-center gap-1.5 bg-accent text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:opacity-60">
             <Plus size={14} /> Agregar</button>
         </div>

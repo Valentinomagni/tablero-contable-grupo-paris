@@ -9,7 +9,7 @@ import { isShared, participantes } from "../../../lib/shared";
 import { categoriasEnUso, mergeCategorias } from "../../../lib/categorias";
 import { Users, AlertTriangle } from "lucide-react";
 import { CumplimientoDiario } from "../CumplimientoDiario";
-import { estadoTiempo } from "../../../lib/tiempos";
+import { estadoTiempo, registrarIncumplimiento } from "../../../lib/tiempos";
 import { useTiemposMax } from "../../../hooks/useData";
 
 type PatchMut = UseMutationResult<void, Error, Partial<Card>, unknown>;
@@ -70,10 +70,8 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
                 if (s === "term") {
                   let h = hist("Marcó terminada");
                   const estFinal = estadoTiempo({ ...c, status: "term", done_at: now }, tiemposConfig, now);
-                  if (estFinal.excedido && estFinal.horas != null && estFinal.maxHoras != null) {
-                    const who = h[h.length - 1]?.who ?? "";
-                    h = [...h, { who, at: now, txt: `Superó el tiempo máximo (${estFinal.horas.toFixed(1)}h de ${estFinal.maxHoras}h)` }];
-                  }
+                  const who = h[h.length - 1]?.who ?? "";
+                  h = registrarIncumplimiento(h, estFinal, who, now, c.proc_at ?? null);
                   patch.mutate({ status: "term", done_at: now, history: h });
                 } else {
                   // Sellar proc_at (spec 28, Task 4): igual criterio que Board.tsx (drag & drop).
@@ -120,7 +118,7 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
             </select>
           </label>
           <label className="flex items-center gap-1.5">Tiempo máximo (horas)
-            <input type="number" min={0} step="0.5" placeholder="Sin límite" defaultValue={c.tiempo_max_horas ?? ""}
+            <input type="number" min={1} step="1" placeholder="Sin límite" defaultValue={c.tiempo_max_horas ?? ""}
               onBlur={(e) => {
                 const v = e.target.value.trim();
                 const n = v === "" ? null : Number(v);

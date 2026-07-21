@@ -13,7 +13,7 @@ import { categoriasEnUso, pasaFiltroCategoria } from "../../lib/categorias";
 import { agruparCards, type ModoAgrupar } from "../../lib/agrupar";
 import { getPref, setPref, PREF } from "../../lib/prefs";
 import { useOrganizacion, useTiemposMax } from "../../hooks/useData";
-import { estadoTiempo } from "../../lib/tiempos";
+import { estadoTiempo, registrarIncumplimiento } from "../../lib/tiempos";
 import { filtrarPorSegmento } from "../../lib/segmento";
 import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Users, Shield, Layers, ChevronRight, ChevronDown, Plane } from "lucide-react";
 import { esCobertura } from "../../lib/vacaciones";
@@ -121,9 +121,7 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
       let hist = [...(c.history ?? []), { who: meName, at: now, txt: status === "term" ? "Marcó terminada" : "Movió la tarea" }];
       if (status === "term") {
         const est = estadoTiempo({ ...c, ...patch }, tiemposConfig, now);
-        if (est.excedido && est.horas != null && est.maxHoras != null) {
-          hist = [...hist, { who: meName, at: now, txt: `Superó el tiempo máximo (${est.horas.toFixed(1)}h de ${est.maxHoras}h)` }];
-        }
+        hist = registrarIncumplimiento(hist, est, meName, now, patch.proc_at ?? c.proc_at ?? null);
       }
       pushUndo(c, { ...patch, history: hist });
       const { error } = await supabase.from("cards").update({ ...patch, history: hist }).eq("id", id);

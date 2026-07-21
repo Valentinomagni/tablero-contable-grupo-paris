@@ -105,6 +105,7 @@ export function useOrganizacion(): Organizacion {
 export function useTiemposMax(): Record<string, number> {
   const { data } = useQuery({
     queryKey: ["tiempos_max"],
+    staleTime: 5 * 60_000,
     queryFn: async (): Promise<Record<string, number>> => {
       const { data } = await supabase.from("settings").select("value").eq("key", "tiempos_max").maybeSingle();
       const v = data?.value;
