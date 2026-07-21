@@ -36,6 +36,7 @@ const MiDia = lazy(() => import("./features/hoy/MiDia").then((m) => ({ default: 
 import { CommandPalette } from "./components/CommandPalette";
 import type { Card, Profile, AppSettings } from "./lib/types";
 import { visiblesPara, cardsDeEquipo } from "./lib/jerarquia";
+import { personasVisibles } from "./lib/visibilidad";
 import { proximosVencimientos } from "./lib/vencimientos";
 import { cn } from "./lib/ui";
 
@@ -87,8 +88,12 @@ export default function App() {
   // Alcance por rol: jefe ve todos; encargado ve su equipo (visiblesPara); empleado solo a sí mismo.
   // Ojo: si el Plan 02 aún no cargó manager_id, equipoDe devuelve [] y el encargado se ve solo a sí mismo (OK, no crashea).
   const fullTeam = esGestor ? visiblesPara(me, team) : [me];
+  // Administrador fantasma (spec 28, Fase A): equipoVisible excluye a quien tenga oculto=true
+  // de listados, organigrama y métricas. fullTeam (sin filtrar) sigue vivo para el panel de
+  // Administración, que sí debe poder ver y gestionar al usuario oculto.
+  const equipoVisible = personasVisibles(fullTeam);
   // Resumen/Reporte: jefe recibe todas las cards; no-jefe solo las de su equipo visible (spec #5, #10).
-  const scopedCards = isJefe ? cards : cardsDeEquipo(cards, fullTeam);
+  const scopedCards = isJefe ? cards : cardsDeEquipo(cards, equipoVisible);
   const person = fullTeam.find((u) => u.id === view);
   const title = view === "__resumen" ? (esGestor ? "Resumen del equipo" : "Mi resumen")
     : view === "__reporte" ? (esGestor ? "Reporte ejecutivo" : "Mi reporte")
@@ -119,7 +124,7 @@ export default function App() {
 
   return (
     <>
-      <Shell me={me} team={fullTeam} viewing={view} title={title} theme={theme}
+      <Shell me={me} team={equipoVisible} viewing={view} title={title} theme={theme}
         onCycleTheme={cycle} density={density} onCycleDensity={cycleDensity}
         onOpenAccount={() => setAccount(true)} onOpenNovedades={() => setNovedades(true)} tablonBadge={tablonBadge} boardName={settings?.board_name}
         onNavigate={(v) => { setViewing(v); setMode("board"); setQuery(""); }} onSignOut={signOut} pendByOwner={pendByOwner}
@@ -150,14 +155,14 @@ export default function App() {
           )}
         </> : undefined}>
         <Suspense fallback={<div className="px-6 py-8 text-ink2 text-sm">Cargando…</div>}>
-        {view === "__resumen" ? <Resumen cards={scopedCards} team={fullTeam} activity={activity} onOpenCard={setOpenCard} onGoPerson={(id) => { setViewing(id); setMode("board"); }} onDelegar={esGestor ? () => setDelegar(true) : undefined} />
-          : view === "__reporte" ? <Reporte cards={scopedCards} team={fullTeam} activity={activity} />
-          : view === "__tablon" ? <Tablon me={me} team={fullTeam} onGoCalendario={() => setViewing("__calendario")} />
+        {view === "__resumen" ? <Resumen cards={scopedCards} team={equipoVisible} activity={activity} onOpenCard={setOpenCard} onGoPerson={(id) => { setViewing(id); setMode("board"); }} onDelegar={esGestor ? () => setDelegar(true) : undefined} />
+          : view === "__reporte" ? <Reporte cards={scopedCards} team={equipoVisible} activity={activity} />
+          : view === "__tablon" ? <Tablon me={me} team={equipoVisible} onGoCalendario={() => setViewing("__calendario")} />
           : view === "__admin" ? <Admin team={fullTeam} cards={cards} me={me} meName={me.name} onOpenUser={setOpenUser} />
-          : view === "__bitacora" ? <Bitacora cards={cards} activity={activity} team={fullTeam} isJefe={!!isJefe} meId={me.id} onOpenCard={setOpenCard} />
-          : view === "__calendario" ? <Calendario me={me} team={fullTeam} cards={cards} />
-          : view === "__cierre" ? <Cierre cards={cards} team={fullTeam} isJefe={!!isJefe} meName={me.name} settings={settings ?? { edit_closed: false } as AppSettings} onOpenCard={setOpenCard} />
-          : view === "__organigrama" ? <Organigrama team={fullTeam} cards={cards} />
+          : view === "__bitacora" ? <Bitacora cards={cards} activity={activity} team={equipoVisible} isJefe={!!isJefe} meId={me.id} onOpenCard={setOpenCard} />
+          : view === "__calendario" ? <Calendario me={me} team={equipoVisible} cards={cards} />
+          : view === "__cierre" ? <Cierre cards={cards} team={equipoVisible} isJefe={!!isJefe} meName={me.name} settings={settings ?? { edit_closed: false } as AppSettings} onOpenCard={setOpenCard} />
+          : view === "__organigrama" ? <Organigrama team={equipoVisible} cards={cards} />
           : view === "__notas" ? <Notas me={me} />
           : mode === "hoy" ? <MiDia ownerId={view} cards={cards} onOpenCard={setOpenCard} />
           : mode === "semana" ? <Semana cards={cards} ownerId={view} meName={me.name} onOpen={setOpenCard} />
@@ -165,16 +170,16 @@ export default function App() {
           : mode === "mimes" ? <MiMes cards={cards} activity={activity} ownerId={view} onOpenCard={setOpenCard} />
           : mode === "hist" ? <HistorialMes ownerId={view} />
           : cardsLoading ? <BoardSkeleton />
-          : <Board cards={cards} activity={activity} ownerId={view} meId={me.id} meName={me.name} meRole={me.role} team={fullTeam} query={query} onOpen={setOpenCard} />}
+          : <Board cards={cards} activity={activity} ownerId={view} meId={me.id} meName={me.name} meRole={me.role} team={equipoVisible} query={query} onOpen={setOpenCard} />}
         </Suspense>
       </Shell>
-      {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} cards={cards} team={fullTeam} activity={activity} isJefe={!!isJefe} onClose={() => setOpenCard(null)} meId={me.id} meName={me.name} />}
+      {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} cards={cards} team={equipoVisible} activity={activity} isJefe={!!isJefe} onClose={() => setOpenCard(null)} meId={me.id} meName={me.name} />}
       {openUser && <UserModal user={fullTeam.find((t) => t.id === openUser.id) ?? openUser} meId={me.id} team={fullTeam} cards={cards} activity={activity} onClose={() => setOpenUser(null)} />}
       {account && <AccountModal name={me.name} email={me.email} onClose={() => setAccount(false)} />}
       {novedades && <NovedadesModal onClose={() => { setPref(PREF.version, APP_VERSION); setNovedades(false); }} />}
-      {delegar && <DelegarModal team={fullTeam} meId={me.id} meName={me.name} onClose={() => setDelegar(false)} />}
+      {delegar && <DelegarModal team={equipoVisible} meId={me.id} meName={me.name} onClose={() => setDelegar(false)} />}
       <Toaster position="bottom-center" toastOptions={{ style: { background: "var(--surface)", color: "var(--ink)", border: "1px solid var(--line)", boxShadow: "var(--shadow-lg)" } }} />
-      {cmdk && <CommandPalette me={me} team={fullTeam} cards={cards} annos={annos}
+      {cmdk && <CommandPalette me={me} team={equipoVisible} cards={cards} annos={annos}
         onNavigate={(v) => { setViewing(v); setMode("board"); setQuery(""); }} onOpenCard={setOpenCard} onClose={() => setCmdk(false)}
         onDelegar={() => setDelegar(true)} />}
     </>

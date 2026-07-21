@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Archive, Download, UserPlus, ArrowRightLeft, Plus, X, Trash2, CalendarPlus, ShieldCheck, AlertTriangle, HelpCircle } from "lucide-react";
+import { Archive, Download, UserPlus, ArrowRightLeft, Plus, X, Trash2, CalendarPlus, ShieldCheck, AlertTriangle, HelpCircle, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { mesLabel } from "../../lib/archivo";
 import { useQueryClient } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ import { PlantillaCierre } from "./PlantillaCierre";
 import { ReasignarModal } from "./ReasignarModal";
 import { Huerfanas } from "./Huerfanas";
 import { equipoDe } from "../../lib/jerarquia";
+import { personasVisibles } from "../../lib/visibilidad";
 import { Avatar } from "../../lib/ui";
 import { useSettings, useMigraciones } from "../../hooks/useData";
 import { estadoMigraciones } from "../../lib/migraciones";
@@ -44,6 +45,9 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
   const esEncargado = me.role === "encargado";
   // Encargado: solo su equipo (subordinados) + reasignar. Sin permisos/parámetros/respaldo/crear-usuario.
   const equipo = esEncargado ? equipoDe(me.id, team) : team;
+  // El roster (tabla de abajo) sí muestra al usuario oculto, con chip, para poder administrarlo.
+  // Todo lo demás (selects de responsable, reasignar, huérfanas, plantilla de cierre) lo excluye.
+  const equipoVisible = personasVisibles(equipo);
   const [reasignar, setReasignar] = useState(false);
   const { data: settings = { edit_closed: false } } = useSettings();
   const [busy, setBusy] = useState(false);
@@ -171,7 +175,9 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
             )}
             {equipo.map((u) => (
               <tr key={u.id} onClick={() => onOpenUser(u)} className="border-t border-line cursor-pointer hover:bg-surface2">
-                <td className="px-4 py-2.5"><div className="flex items-center gap-2"><Avatar name={u.name} size={24} /><div><b>{u.name}</b><br /><span className="text-ink2 text-xs">{u.username ? "@" + u.username : "sin usuario"}</span></div></div></td>
+                <td className="px-4 py-2.5"><div className="flex items-center gap-2"><Avatar name={u.name} size={24} /><div><div className="flex items-center gap-1.5"><b>{u.name}</b>{u.oculto === true && (
+                  <span className="inline-flex items-center gap-1 bg-chip text-ink2 rounded-full px-2 py-0.5 text-[11px] font-medium"><EyeOff size={11} /> Oculto</span>
+                )}</div><span className="text-ink2 text-xs">{u.username ? "@" + u.username : "sin usuario"}</span></div></div></td>
                 <td className="px-4 py-2.5 capitalize">{u.role}</td>
                 <td className="px-4 py-2.5 text-ink2">{u.puesto || "—"}</td>
                 <td className="px-4 py-2.5 text-[13px]">{u.marca ?? "—"}</td>
@@ -201,7 +207,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
 
       <Huerfanas team={team} cards={cards} />
 
-      <PlantillaCierre team={team} />
+      <PlantillaCierre team={equipoVisible} />
 
       <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Permisos</h2>
       <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
@@ -259,7 +265,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
             <select value={plOwner[idx] ?? ""} onChange={(e) => setPlOwner({ ...plOwner, [idx]: e.target.value })} className={inputCls}
               title="Responsable por defecto para los ítems sin responsable">
               <option value="">Responsable por defecto…</option>
-              {equipo.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+              {equipoVisible.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
             </select>
             <button onClick={() => generarPlantilla(pl, idx)} disabled={plGenBusy === idx}
               className="flex items-center gap-1.5 bg-[#0b0b0d] text-white rounded-lg px-3 py-1.5 text-[13px] font-semibold disabled:opacity-50">
@@ -297,7 +303,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
             <input value={plItem.titulo} onChange={(e) => setPlItem({ ...plItem, titulo: e.target.value })} placeholder="Título del ítem" className={inputCls + " flex-1 min-w-[180px]"} />
             <select value={plItem.owner} onChange={(e) => setPlItem({ ...plItem, owner: e.target.value })} className={inputCls}>
               <option value="">Responsable (opcional)…</option>
-              {equipo.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+              {equipoVisible.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
             </select>
             <select value={String(plItem.effort)} onChange={(e) => setPlItem({ ...plItem, effort: Number(e.target.value) as 1 | 2 | 3 | 5 })} className={inputCls}>
               <option value="1">1 pt</option><option value="2">2 pts</option><option value="3">3 pts</option><option value="5">5 pts</option>
@@ -365,7 +371,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
       <p className="text-ink2 text-[13px] mt-1.5 max-w-[560px]">Todas las tablas en un archivo. Guardalo en el Drive del estudio una vez por mes: es tu seguro ante borrados accidentales.</p>
       </>}
 
-      {reasignar && <ReasignarModal me={me} equipo={equipo} profiles={team} cards={cards} onClose={() => setReasignar(false)} />}
+      {reasignar && <ReasignarModal me={me} equipo={equipoVisible} profiles={team} cards={cards} onClose={() => setReasignar(false)} />}
     </div>
   );
 }

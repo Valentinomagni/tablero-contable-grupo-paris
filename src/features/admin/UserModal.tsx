@@ -9,6 +9,7 @@ import { useArqueoStats } from "../../hooks/useArqueo";
 import { userMetrics30d } from "../../lib/metrics";
 import { nombreValido } from "../../lib/validacion";
 import { puedeSerManager, esSinAsignar } from "../../lib/jerarquia";
+import { esVisible } from "../../lib/visibilidad";
 import { confirmacionValida } from "../../lib/borrado";
 import { toast } from "sonner";
 
@@ -25,6 +26,7 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
   const [managerId, setManagerId] = useState<string | null>(u.manager_id ?? null);
   const [marca, setMarca] = useState<string | null>(u.marca ?? null);
   const [sucursal, setSucursal] = useState<string | null>(u.sucursal ?? null);
+  const [oculto, setOculto] = useState(u.oculto === true);
   const [msg, setMsg] = useState<{ ok: boolean; txt: string } | null>(null);
   const [borrando, setBorrando] = useState(false);
   const [tipeado, setTipeado] = useState("");
@@ -43,13 +45,13 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
 
   // Managers posibles: encargados/jefes que no generen ciclo (ni sí mismo ni un subordinado).
   const managerOpts = team.filter(
-    (t) => (t.role === "encargado" || t.role === "jefe") && puedeSerManager(t.id, u.id, team),
+    (t) => (t.role === "encargado" || t.role === "jefe") && puedeSerManager(t.id, u.id, team) && esVisible(t),
   );
 
   const save = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("profiles")
-        .update({ name: name.trim(), username: username.trim() || null, role, puesto: puesto.trim(), ficha: ficha.trim(), manager_id: managerId, marca, sucursal: sucursal || null })
+        .update({ name: name.trim(), username: username.trim() || null, role, puesto: puesto.trim(), ficha: ficha.trim(), manager_id: managerId, marca, sucursal: sucursal || null, ...(esJefe ? { oculto } : {}) })
         .eq("id", u.id);
       if (error) throw error;
     },
@@ -149,6 +151,12 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
             <textarea value={ficha} onChange={(e) => setFicha(e.target.value)} rows={5}
               placeholder="Responsabilidades, entregables, estándares…" className={inputCls + " resize-y"} />
           </label>
+          {esJefe && (
+            <label className="flex items-center gap-2.5 text-[13px] text-ink2 cursor-pointer">
+              <input type="checkbox" checked={oculto} onChange={(e) => setOculto(e.target.checked)} className="accent-accent w-4 h-4" />
+              Usuario oculto (no aparece en listados ni métricas)
+            </label>
+          )}
         </div>
 
         <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Métricas (últimos 30 días)</h4>

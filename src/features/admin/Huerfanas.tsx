@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { ArrowRightLeft } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import type { Card, Profile } from "../../lib/types";
+import { personasVisibles } from "../../lib/visibilidad";
 
 // Tareas huérfanas: cards cuyo dueño ya no está en el equipo (centinela "Sin asignar"
 // tras eliminar un empleado, o cualquier dueño inexistente). Solo la ve el jefe, cuyo
@@ -14,6 +15,8 @@ export function Huerfanas({ team, cards }: { team: Profile[]; cards: Card[] }) {
   const teamIds = new Set(team.map((u) => u.id));
   const huerfanas = team.length ? cards.filter((c) => !teamIds.has(c.owner)) : [];
   const [destinos, setDestinos] = useState<Record<string, string>>({});
+  // Reasignar solo a personas visibles: no tiene sentido pasarle tareas a un usuario oculto.
+  const destinosPosibles = personasVisibles(team);
 
   const reasignar = useMutation({
     mutationFn: async ({ id, destino }: { id: string; destino: string }) => {
@@ -46,7 +49,7 @@ export function Huerfanas({ team, cards }: { team: Profile[]; cards: Card[] }) {
                   <span className="flex-1 min-w-[160px] text-[13px] text-ink truncate">{c.title}</span>
                   <select value={destino} onChange={(e) => setDestinos((d) => ({ ...d, [c.id]: e.target.value }))} className={inputCls}>
                     <option value="">Reasignar a…</option>
-                    {team.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                    {destinosPosibles.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
                   </select>
                   <button onClick={() => reasignar.mutate({ id: c.id, destino })} disabled={!destino || reasignar.isPending}
                     className="flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] rounded-lg px-3 py-1.5 text-[13px] font-semibold disabled:opacity-50">
