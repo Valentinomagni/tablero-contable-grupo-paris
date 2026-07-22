@@ -146,7 +146,20 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
         } catch { /* secundario: se ignora */ }
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["cards"] }),
+    // Optimista (spec 28, Task 12): la card cambia de columna al instante; el resto
+    // (proc_at, history, notifs, siblings) lo resuelve el servidor y llega con la
+    // invalidación de onSettled. Cancelamos antes de leer para que un refetch en
+    // vuelo no pise el snapshot ni, después, el propio optimismo.
+    onMutate: async ({ id, status }) => {
+      await qc.cancelQueries({ queryKey: ["cards"] });
+      const previous = qc.getQueryData<Card[]>(["cards"]);
+      qc.setQueryData<Card[]>(["cards"], (old) => old?.map((c) => (c.id === id ? { ...c, status } : c)) ?? old);
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(["cards"], ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["cards"] }),
   });
 
   const add = useMutation({
