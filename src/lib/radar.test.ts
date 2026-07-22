@@ -34,11 +34,11 @@ const hoyISO = "2026-07-22";
 const profiles = [mkProfile({})];
 
 describe("radarVencimientos", () => {
-  it("vencimiento sin card abierta que apunte → riesgo, 'Sin tarea creada'", () => {
+  it("vencimiento sin card abierta que apunte → riesgo, 'No encontramos una tarea vinculada'", () => {
     const r = radarVencimientos({ avisos: [mkAviso({})], cards: [], vacaciones: [], profiles, hoyISO });
     expect(r).toHaveLength(1);
     expect(r[0].riesgo).toBe("riesgo");
-    expect(r[0].motivo).toMatch(/Sin tarea creada/);
+    expect(r[0].motivo).toMatch(/No encontramos una tarea vinculada/);
   });
 
   it("con card en proceso y 10 días → ok", () => {
@@ -91,5 +91,24 @@ describe("radarVencimientos", () => {
     const aviso = mkAviso({ kind: "aviso" });
     const r = radarVencimientos({ avisos: [aviso], cards: [], vacaciones: [], profiles, hoyISO });
     expect(r).toHaveLength(0);
+  });
+
+  it("ordena por severidad (riesgo, atencion, ok) y por fecha ascendente dentro de cada grupo", () => {
+    const avisoOkTemprano = mkAviso({ id: "a-ok", due_date: "2026-07-23" });
+    const cardOk = mkCard({ id: "c-ok", owner: "u1", due_date: "2026-07-23", status: "proc" });
+    const avisoAtencion = mkAviso({ id: "a-atencion", due_date: "2026-07-24" });
+    const cardAtencion = mkCard({ id: "c-atencion", owner: "u1", due_date: "2026-07-24", status: "pend" });
+    const avisoRiesgoTarde = mkAviso({ id: "a-riesgo-tarde", due_date: "2026-08-10", owner_id: null });
+    const avisoRiesgoTemprano = mkAviso({ id: "a-riesgo-temprano", due_date: "2026-07-30", owner_id: null });
+
+    const r = radarVencimientos({
+      avisos: [avisoOkTemprano, avisoAtencion, avisoRiesgoTarde, avisoRiesgoTemprano],
+      cards: [cardOk, cardAtencion],
+      vacaciones: [], profiles, hoyISO: "2026-07-22",
+    });
+
+    expect(r.map((it) => it.aviso.id)).toEqual([
+      "a-riesgo-temprano", "a-riesgo-tarde", "a-atencion", "a-ok",
+    ]);
   });
 });

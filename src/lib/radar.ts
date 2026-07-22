@@ -58,7 +58,7 @@ export function radarVencimientos(input: {
 
     const card = cardQueApunta(aviso, cards);
     if (!card) {
-      items.push({ aviso, riesgo: "riesgo", motivo: "Sin tarea creada", responsable });
+      items.push({ aviso, riesgo: "riesgo", motivo: "No encontramos una tarea vinculada", responsable });
       continue;
     }
 
@@ -70,5 +70,10 @@ export function radarVencimientos(input: {
     items.push({ aviso, riesgo: "ok", motivo: "En curso", responsable });
   }
 
-  return items.sort((a, b) => (a.aviso.due_date ?? "").localeCompare(b.aviso.due_date ?? ""));
+  const ORDEN: Record<RiesgoVto, number> = { riesgo: 0, atencion: 1, ok: 2 };
+  return items.sort((a, b) => {
+    const porSeveridad = ORDEN[a.riesgo] - ORDEN[b.riesgo];
+    if (porSeveridad !== 0) return porSeveridad;
+    return (a.aviso.due_date ?? "").localeCompare(b.aviso.due_date ?? "");
+  });
 }
