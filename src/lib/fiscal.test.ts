@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { VENCIMIENTOS_FISCALES, ajustarFinDeSemana, generarVencimientosMes, tituloVencimiento } from "./fiscal";
+import { VENCIMIENTOS_FISCALES, ajustarFinDeSemana, generarVencimientosMes, tituloVencimiento, marcaFiscal } from "./fiscal";
 import type { Announcement } from "./types";
 
 function mkAnno(p: Partial<Announcement>): Announcement {
@@ -29,24 +29,43 @@ describe("generarVencimientosMes", () => {
     expect(props.map((p) => p.title)).toContain(tituloVencimiento("IVA", 2026, 3));
   });
 
-  it("mes ya generado: no propone nada (idempotencia)", () => {
+  it("mes ya generado (con la marca actual en detail): no propone nada (idempotencia)", () => {
     const existentes = VENCIMIENTOS_FISCALES.map((v) =>
-      mkAnno({ title: tituloVencimiento(v.nombre, 2026, 3) }),
+      mkAnno({
+        title: tituloVencimiento(v.nombre, 2026, 3),
+        detail: `${v.detalle} ${marcaFiscal(v.slug, 2026, 3)}`,
+        due_date: "2026-03-15",
+      }),
     );
     expect(generarVencimientosMes(2026, 3, existentes)).toHaveLength(0);
   });
 
   it("generación parcial: propone solo las que faltan", () => {
-    const existentes = [mkAnno({ title: tituloVencimiento("IVA", 2026, 3) })];
+    const iva = VENCIMIENTOS_FISCALES.find((v) => v.slug === "iva")!;
+    const existentes = [mkAnno({
+      title: tituloVencimiento(iva.nombre, 2026, 3),
+      detail: `${iva.detalle} ${marcaFiscal(iva.slug, 2026, 3)}`,
+      due_date: "2026-03-15",
+    })];
     const props = generarVencimientosMes(2026, 3, existentes);
     expect(props).toHaveLength(VENCIMIENTOS_FISCALES.length - 1);
-    expect(props.map((p) => p.title)).not.toContain(tituloVencimiento("IVA", 2026, 3));
+    expect(props.map((p) => p.title)).not.toContain(tituloVencimiento(iva.nombre, 2026, 3));
   });
 
   it("no descarta por vencimientos de otro mes ni de otro kind", () => {
+    const iva = VENCIMIENTOS_FISCALES.find((v) => v.slug === "iva")!;
     const existentes = [
-      mkAnno({ title: tituloVencimiento("IVA", 2026, 2) }), // otro mes
-      mkAnno({ kind: "aviso", title: tituloVencimiento("IVA", 2026, 3) }), // otro kind
+      mkAnno({
+        title: tituloVencimiento(iva.nombre, 2026, 2),
+        detail: `${iva.detalle} ${marcaFiscal(iva.slug, 2026, 2)}`,
+        due_date: "2026-02-18",
+      }), // otro mes
+      mkAnno({
+        kind: "aviso",
+        title: tituloVencimiento(iva.nombre, 2026, 3),
+        detail: `${iva.detalle} ${marcaFiscal(iva.slug, 2026, 3)}`,
+        due_date: "2026-03-18",
+      }), // otro kind
     ];
     expect(generarVencimientosMes(2026, 3, existentes)).toHaveLength(VENCIMIENTOS_FISCALES.length);
   });
@@ -55,5 +74,28 @@ describe("generarVencimientosMes", () => {
     const props = generarVencimientosMes(2026, 7, []);
     const iva = props.find((p) => p.title === tituloVencimiento("IVA", 2026, 7));
     expect(iva?.due_date).toBe("2026-07-20"); // 18/07/2026 es sábado
+  });
+
+  it("título editado (ej. desde AnuncioEditForm) pero marca intacta en detail: no se vuelve a proponer", () => {
+    const iva = VENCIMIENTOS_FISCALES.find((v) => v.slug === "iva")!;
+    const existentes = [mkAnno({
+      title: "IVA de julio - ya lo mandamos, pendiente de pago", // título reescrito a mano
+      detail: `${iva.detalle} ${marcaFiscal(iva.slug, 2026, 7)}`, // la marca sigue ahí
+      due_date: "2026-07-20",
+    })];
+    const props = generarVencimientosMes(2026, 7, existentes);
+    expect(props.map((p) => p.title)).not.toContain(tituloVencimiento(iva.nombre, 2026, 7));
+    expect(props).toHaveLength(VENCIMIENTOS_FISCALES.length - 1);
+  });
+
+  it("aviso generado con la versión vieja (solo título exacto, sin marca en detail): no se duplica", () => {
+    const existentes = VENCIMIENTOS_FISCALES.map((v) =>
+      mkAnno({
+        title: tituloVencimiento(v.nombre, 2026, 3),
+        detail: v.detalle, // sin marca: así quedó el detail antes del fix
+        due_date: "2026-03-15",
+      }),
+    );
+    expect(generarVencimientosMes(2026, 3, existentes)).toHaveLength(0);
   });
 });
