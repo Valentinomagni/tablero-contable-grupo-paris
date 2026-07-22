@@ -162,6 +162,17 @@ Si falta alguna variable, el script imprime las instrucciones y sale con
 código 1 sin tocar nada. La salida es una tabla PASS/FAIL/SKIP por check;
 sale con código 1 si hay algún FAIL.
 
+## Realtime de notificaciones (spec 28, Task 7)
+La campana ahora se actualiza en tiempo real vía un canal de Supabase, en vez de esperar
+al refresco periódico. Para habilitarlo falta un paso manual (checkbox del dashboard):
+
+1. Supabase → **Database → Replication**.
+2. En la publicación `supabase_realtime`, agregá la tabla `notifications`.
+
+Sin este paso **no se rompe nada**: la campana sigue funcionando con el refresco de
+respaldo cada 5 minutos (antes era cada 60 segundos), solo que las notificaciones nuevas
+tardan un poco más en aparecer.
+
 ## Notas de seguridad del rollout de login (#16)
 - El login acepta **usuario O email**. Desplegar antes de cargar usernames NO bloquea a nadie.
 - Recién cuando TODO el equipo tenga su username cargado y probado, se puede (a futuro) quitar
