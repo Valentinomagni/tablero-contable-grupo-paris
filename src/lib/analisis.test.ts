@@ -102,6 +102,16 @@ describe("analizarMes", () => {
     expect(r.arqueos).toEqual({ difs: 0, montoTotal: 0 });
   });
 
+  it("montoTotal es magnitud: faltantes (negativos) y sobrantes (positivos) no se cancelan", () => {
+    const occs = [
+      occ("o1", { resultado: "dif", dif_importe: -500 }),
+      occ("o2", { resultado: "dif", dif_importe: 300 }),
+    ];
+    const r = analizarMes([], profiles, occs, [], 2026, 7);
+    expect(r.arqueos.difs).toBe(2);
+    expect(r.arqueos.montoTotal).toBe(800);
+  });
+
   it("sin archives → delta y promedio null", () => {
     const cards = [c("t1", "ana", { status: "term" })];
     const r = analizarMes(cards, profiles, [], [], 2026, 7);

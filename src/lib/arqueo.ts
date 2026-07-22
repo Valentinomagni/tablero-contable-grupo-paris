@@ -36,6 +36,13 @@ function mesAnterior(mesPrefix: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
 }
 
+// El usuario siempre carga el importe en positivo; el signo lo decide el tipo elegido
+// ("falta" o "sobra"). Falta → negativo (faltó plata), sobra → positivo (sobró plata).
+export function importeConSigno(monto: number, tipo: "falta" | "sobra"): number {
+  const abs = Math.abs(monto);
+  return tipo === "falta" ? (abs === 0 ? 0 : -abs) : abs;
+}
+
 export interface DiferenciaHistorial { fecha: string; importe: number; obs: string | null; }
 export interface ResumenDiferencias { cantidad: number; total: number; faltantes: number; sobrantes: number; }
 

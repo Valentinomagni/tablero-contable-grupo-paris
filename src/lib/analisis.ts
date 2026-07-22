@@ -86,8 +86,10 @@ export function analizarMes(
     : [];
 
   // 6. Diferencias de arqueo del mes (occurrences con resultado 'dif').
+  // montoTotal es magnitud (faltantes negativos + sobrantes positivos no deben cancelarse
+  // entre sí): usamos Math.abs de cada importe, no la suma neta.
   const difs = occs.filter((o) => o.resultado === "dif");
-  const arqueos = { difs: difs.length, montoTotal: difs.reduce((s, o) => s + (o.dif_importe ?? 0), 0) };
+  const arqueos = { difs: difs.length, montoTotal: difs.reduce((s, o) => s + Math.abs(o.dif_importe ?? 0), 0) };
 
   // 7. Vencidas al cierre (abiertas con vencimiento pasado).
   const vencidas = norm.filter((c) => c.status !== "term").filter((c) => { const i = dueInfo(c); return i && i.days < 0; }).length;

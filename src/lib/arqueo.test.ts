@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { statsArqueo, evolucionMensual, historialDiferencias, resumenDiferencias } from "./arqueo";
+import { statsArqueo, evolucionMensual, historialDiferencias, resumenDiferencias, importeConSigno } from "./arqueo";
 import type { TaskOccurrence } from "./types";
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -110,5 +110,25 @@ describe("historialDiferencias / resumenDiferencias", () => {
     expect(r.total).toBe(0);
     expect(r.faltantes).toBe(0);
     expect(r.sobrantes).toBe(0);
+  });
+});
+
+describe("importeConSigno", () => {
+  it("falta → negativo", () => {
+    expect(importeConSigno(500, "falta")).toBe(-500);
+  });
+
+  it("sobra → positivo", () => {
+    expect(importeConSigno(500, "sobra")).toBe(500);
+  });
+
+  it("si el usuario ya tipeó negativo, se normaliza con abs antes de aplicar el signo", () => {
+    expect(importeConSigno(-500, "falta")).toBe(-500);
+    expect(importeConSigno(-500, "sobra")).toBe(500);
+  });
+
+  it("cero es cero en cualquier caso", () => {
+    expect(importeConSigno(0, "falta")).toBe(0);
+    expect(importeConSigno(0, "sobra")).toBe(0);
   });
 });
