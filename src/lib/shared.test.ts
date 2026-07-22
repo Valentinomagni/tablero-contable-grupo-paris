@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sharedLinkId, isShared, siblingIds, participantes, filasCompartida, siblingSyncPatches, SHARED_PREFIX } from "./shared";
+import { sharedLinkId, isShared, siblingIds, participantes, filasCompartida, siblingSyncPatches, delegadorDe, SHARED_PREFIX } from "./shared";
 import type { Card } from "./types";
 
 function mk(p: Partial<Card>): Card {
@@ -70,6 +70,21 @@ describe("filasCompartida", () => {
         expect(h.at).toBe("2026-07-16T14:30:00Z"); // fecha y hora exactas de la delegación
       }
     }
+  });
+});
+
+describe("delegadorDe", () => {
+  it("lee el nombre del delegador de la nota que escribe filasCompartida (fuente única)", () => {
+    const filas = filasCompartida({
+      linkId: "L3", title: "Revisar IVA", owners: ["u1", "u2"], delegador: "Jefe 1",
+      due_date: null, effort: 1, priority: "media", at: "2026-07-17T09:00:00Z",
+      nameOf: (id) => (id === "u1" ? "Jefe 1" : "Valentino"),
+    });
+    expect(delegadorDe(filas[0])).toBe("Jefe 1");
+  });
+  it("null si no hay nota de delegación", () => {
+    expect(delegadorDe(mk({ history: [] }))).toBeNull();
+    expect(delegadorDe(mk({ history: [{ who: "x", at: "2026-07-01T00:00:00Z", txt: "otra cosa" }] }))).toBeNull();
   });
 });
 

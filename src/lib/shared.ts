@@ -14,6 +14,25 @@ export function isShared(c: Pick<Card, "history">): boolean {
   return sharedLinkId(c) !== null;
 }
 
+// Prefijo literal de la nota de delegación que escribe filasCompartida() más abajo. El
+// matcher (RE_DELEGADA/delegadorDe) deriva de este mismo literal para que no puedan
+// desincronizarse: si el texto cambia acá, el regex se genera de nuevo automáticamente.
+const NOTA_DELEGADA_PREFIX = "Tarea compartida — delegada por ";
+const NOTA_DELEGADA_MID = " · con ";
+const RE_DELEGADA = new RegExp(
+  `^${NOTA_DELEGADA_PREFIX.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(.+?)${NOTA_DELEGADA_MID.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
+);
+
+// Nombre de quien delegó, leído de la nota que escribe filasCompartida(). Única fuente de
+// verdad del matcher: quien consuma esto (p. ej. delegaciones.ts) debe importarlo de acá,
+// nunca reescribir el regex a mano.
+export function delegadorDe(c: Pick<Card, "history">): string | null {
+  const h = (c.history ?? []).find((e) => RE_DELEGADA.test(e.txt));
+  if (!h) return null;
+  const m = h.txt.match(RE_DELEGADA);
+  return m ? m[1] : null;
+}
+
 // ids de las tarjetas hermanas (mismo vínculo), excluyendo la propia
 export function siblingIds(c: Card, cards: Card[]): string[] {
   const id = sharedLinkId(c);
@@ -43,7 +62,7 @@ export function filasCompartida(p: NuevaCompartida) {
     effort: p.effort, due_date: p.due_date, card_type: "normal" as const,
     history: [
       { who: p.delegador, at: p.at, txt: `${SHARED_PREFIX}${p.linkId}` },
-      { who: p.delegador, at: p.at, txt: `Tarea compartida — delegada por ${p.delegador} · con ${nombres}` },
+      { who: p.delegador, at: p.at, txt: `${NOTA_DELEGADA_PREFIX}${p.delegador}${NOTA_DELEGADA_MID}${nombres}` },
     ],
   }));
 }

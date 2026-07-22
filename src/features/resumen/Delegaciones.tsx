@@ -22,7 +22,7 @@ export function Delegaciones({ cards, team, hoyISO, onOpenCard }: {
           <span className="flex-1 min-w-0">
             <b className="block text-[13px]">{card.title}</b>
             <span className="block text-xs text-ink2">
-              De {de?.name ?? "?"} a {a?.name ?? "?"} · {diasSinMover === 0 ? "sin movimiento hoy" : `${diasSinMover} día${diasSinMover === 1 ? "" : "s"} sin movimiento`}
+              De {de?.name ?? "?"} a {a.length ? a.map((p) => p.name).join(", ") : "?"} · {diasSinMover === 0 ? "sin movimiento hoy" : `${diasSinMover} día${diasSinMover === 1 ? "" : "s"} sin movimiento`}
             </span>
           </span>
           {trabada && (
