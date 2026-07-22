@@ -6,17 +6,17 @@ function mkProfile(id: string, name: string, oculto = false): Profile {
   return { id, name, role: "empleado", email: `${id}@x.com`, username: null, puesto: "", ficha: "", manager_id: null, marca: null, oculto };
 }
 
-function mkCard(categoria: string | null, card_type: "normal" | "operativa" = "normal"): Card {
+function mkCard(categoria: string | null, card_type: "normal" | "operativa" = "normal", cardId = Math.random().toString()): Card {
   return {
-    id: Math.random().toString(), owner: "", title: "t", status: "term", description: "",
+    id: cardId, owner: "", title: "t", status: "term", description: "",
     checklist: [], comments: [], history: [], done_at: null, due_date: null, recurring: false,
     priority: "media", effort: 1, card_type, deps: [], created_at: "2026-01-01",
     categoria,
   };
 }
 
-function mkArchive(owner: string, categoria: string | null, card_type: "normal" | "operativa" = "normal", mes = "2026-01"): CardArchive {
-  return { id: Math.random().toString(), owner, mes, card: mkCard(categoria, card_type), archived_at: "2026-01-31" };
+function mkArchive(owner: string, categoria: string | null, card_type: "normal" | "operativa" = "normal", mes = "2026-01", cardId?: string): CardArchive {
+  return { id: Math.random().toString(), owner, mes, card: mkCard(categoria, card_type, cardId), archived_at: "2026-01-31" };
 }
 
 describe("concentracion", () => {
@@ -24,11 +24,49 @@ describe("concentracion", () => {
     expect(concentracion([], [])).toEqual([]);
   });
 
-  it("categoría con una sola persona -> pct 100 y personas 1", () => {
+  it("categoría con una sola persona pero pocas cards (< volumen mínimo) -> no aparece", () => {
     const profiles = [mkProfile("a", "Ana")];
     const archives = [mkArchive("a", "DDJJ IIBB"), mkArchive("a", "DDJJ IIBB")];
+    expect(concentracion(archives, profiles)).toEqual([]);
+  });
+
+  it("categoría con una sola persona y volumen suficiente -> pct 100 y personas 1", () => {
+    const profiles = [mkProfile("a", "Ana")];
+    const archives = [
+      mkArchive("a", "DDJJ IIBB"), mkArchive("a", "DDJJ IIBB"),
+      mkArchive("a", "DDJJ IIBB"), mkArchive("a", "DDJJ IIBB"),
+    ];
     const r = concentracion(archives, profiles);
     expect(r).toEqual([{ categoria: "DDJJ IIBB", personas: 1, principal: "Ana", pct: 100 }]);
+  });
+
+  it("misma card con snapshots en 3 meses distintos para el mismo owner -> cuenta como 1, no 3", () => {
+    const profiles = [mkProfile("a", "Ana"), mkProfile("b", "Beto")];
+    const archives = [
+      mkArchive("a", "DDJJ IIBB", "normal", "2026-01", "card-1"),
+      mkArchive("a", "DDJJ IIBB", "normal", "2026-02", "card-1"),
+      mkArchive("a", "DDJJ IIBB", "normal", "2026-03", "card-1"),
+      mkArchive("b", "DDJJ IIBB", "normal", "2026-01", "card-2"),
+      mkArchive("b", "DDJJ IIBB", "normal", "2026-02", "card-3"),
+      mkArchive("b", "DDJJ IIBB", "normal", "2026-03", "card-4"),
+    ];
+    const r = concentracion(archives, profiles);
+    // total único = 4 cards (card-1..4): Ana 1, Beto 3 -> no hay concentración >= 80%
+    expect(r).toEqual([]);
+  });
+
+  it("card reasignada entre meses -> cuenta una sola vez, para el owner del snapshot más reciente", () => {
+    const profiles = [mkProfile("a", "Ana"), mkProfile("b", "Beto")];
+    const archives = [
+      mkArchive("a", "DDJJ IIBB", "normal", "2026-01", "card-1"),
+      mkArchive("b", "DDJJ IIBB", "normal", "2026-02", "card-1"),
+      mkArchive("b", "DDJJ IIBB", "normal", "2026-01", "card-2"),
+      mkArchive("b", "DDJJ IIBB", "normal", "2026-01", "card-3"),
+      mkArchive("b", "DDJJ IIBB", "normal", "2026-01", "card-4"),
+    ];
+    const r = concentracion(archives, profiles);
+    // card-1 reasignada de Ana a Beto: cuenta 1 sola vez, para Beto (dueño final). Total 4, Beto 4/4 = 100%.
+    expect(r).toEqual([{ categoria: "DDJJ IIBB", personas: 1, principal: "Beto", pct: 100 }]);
   });
 
   it("categoría repartida 50/50 -> no aparece", () => {

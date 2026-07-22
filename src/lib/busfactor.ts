@@ -8,11 +8,27 @@ import { esVisible } from "./visibilidad";
 
 export interface Concentracion { categoria: string; personas: number; principal: string; pct: number }
 
+// Volumen mínimo de cards únicas para hablar de concentración. Por debajo de esto (p.ej. una
+// categoría con 1-3 cards históricas) no hay evidencia suficiente: es ruido, no un riesgo real.
+const VOLUMEN_MINIMO = 4;
+
 export function concentracion(archives: CardArchive[], profiles: Profile[]): Concentracion[] {
   const byId = new Map(profiles.map((p) => [p.id, p]));
   const visibles = new Set(profiles.filter((p) => esVisible(p)).map((p) => p.id));
 
-  const vivos = archives.filter(
+  // IMPORTANTE — dedupe por card, exclusivo de este archivo:
+  // cards_archive guarda un snapshot POR MES de cada card, así que una card que vivió N meses
+  // aparece N veces. concentracion() agrega sobre TODO el histórico, así que hay que contar cada
+  // card una sola vez (usando el owner de su snapshot más reciente, el dueño final que la hizo).
+  // comparador.ts y evolucion.ts trabajan mes a mes — ahí cada snapshot ES la foto de ese mes y
+  // contar una vez por mes es correcto. No "arreglar" esos archivos por analogía con este.
+  const ultimoPorCard = new Map<string, CardArchive>();
+  for (const a of archives) {
+    const prev = ultimoPorCard.get(a.card.id);
+    if (!prev || a.mes > prev.mes) ultimoPorCard.set(a.card.id, a);
+  }
+
+  const vivos = [...ultimoPorCard.values()].filter(
     (a) => visibles.has(a.owner) && a.card.card_type !== "operativa" && !!a.card.categoria,
   );
 
@@ -26,7 +42,7 @@ export function concentracion(archives: CardArchive[], profiles: Profile[]): Con
   const out: Concentracion[] = [];
   for (const [categoria, porOwner] of porCategoria) {
     const total = [...porOwner.values()].reduce((s, n) => s + n, 0);
-    if (!total) continue;
+    if (total < VOLUMEN_MINIMO) continue;
     let ownerTop = "", maxN = -1;
     for (const [owner, n] of porOwner) {
       if (n > maxN) { maxN = n; ownerTop = owner; }
