@@ -8,7 +8,7 @@ import { dueInfo, fmtDateTime, wow, onTimeAdherence, type Wow } from "../../lib/
 import { alertasDeRiesgo } from "../../lib/alertas";
 import { isBlocked } from "../../lib/deps";
 import { buildCsv, standupText, cicloDelMes, cargaPorFecha, ultimos14 } from "../../lib/resumen";
-import { useSnapshots } from "../../hooks/useData";
+import { useSnapshots, useOrganizacion } from "../../hooks/useData";
 import { useVacaciones } from "../../hooks/useVacaciones";
 import { estaDeVacaciones } from "../../lib/vacaciones";
 import { claveFecha } from "../../lib/calendario";
@@ -16,6 +16,7 @@ import { Avatar } from "../../lib/ui";
 import { DepGraph } from "./DepGraph";
 import { useArca } from "../tablon/arca";
 import { relevantes } from "../../lib/arca-filtro";
+import { filtrarPorSegmento } from "../../lib/segmento";
 
 // Kaizen: chip de variación semana vs. semana. Subir es bueno en flujo (verde); bajar, atención (ámbar).
 function DeltaChip({ w }: { w: Wow }) {
@@ -51,6 +52,15 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
   onOpenCard: (c: Card) => void; onGoPerson: (id: string) => void; onDelegar?: () => void;
   annos?: Announcement[]; esGestor?: boolean;
 }) {
+  const org = useOrganizacion();
+  // Filtros por marca/sucursal (spec 28D item 2): mismo patrón que Reporte.tsx — se filtra
+  // ANTES de calcular métricas, y también el equipo (teamSeg) para que la dotación mostrada
+  // sea coherente con las tareas filtradas.
+  const [marcaFiltro, setMarcaFiltro] = useState<string | null>(null);
+  const [sucursalFiltro, setSucursalFiltro] = useState<string | null>(null);
+  const cardsIn = cards;
+  cards = filtrarPorSegmento(cardsIn, team, { marca: marcaFiltro, sucursal: sucursalFiltro });
+  const teamSeg = team.filter((u) => (!marcaFiltro || u.marca === marcaFiltro) && (!sucursalFiltro || u.sucursal === sucursalFiltro));
   const now = Date.now(), day = 86400000, week = now - 7 * day;
   const { data: vacaciones = [] } = useVacaciones();
   const hoyISO = claveFecha(new Date());
@@ -83,8 +93,8 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
   const ciclo = cicloDelMes(cards);
   const evol = cargaPorFecha(snaps);
   const d14 = ultimos14(cards, now);
-  const alertas = alertasDeRiesgo(cards, team, now);
-  const cargaPersona = team.map((u) => ({
+  const alertas = alertasDeRiesgo(cards, teamSeg, now);
+  const cargaPersona = teamSeg.map((u) => ({
     n: u.name,
     v: norm.filter((c) => c.owner === u.id && c.status !== "term").reduce((s, c) => s + (c.effort ?? 1), 0),
   })).filter((f) => f.v > 0).sort((a, b) => b.v - a.v);
@@ -105,7 +115,21 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
 
   return (
     <div className="px-6 py-4 w-full max-w-[960px]">
-      <div className="flex gap-2 items-center mb-2">
+      <div className="flex gap-2 items-center mb-2 flex-wrap">
+        {org.marcas.length > 0 && (
+          <select value={marcaFiltro ?? ""} onChange={(e) => { setMarcaFiltro(e.target.value || null); setSucursalFiltro(null); }}
+            className="border border-line bg-surface2 text-ink2 rounded-lg px-3 py-2 text-[13px] outline-none">
+            <option value="">Todas las marcas</option>
+            {org.marcas.map((m) => <option key={m} value={m}>{m}</option>)}
+          </select>
+        )}
+        {org.sucursales.length > 0 && (
+          <select value={sucursalFiltro ?? ""} onChange={(e) => setSucursalFiltro(e.target.value || null)}
+            className="border border-line bg-surface2 text-ink2 rounded-lg px-3 py-2 text-[13px] outline-none">
+            <option value="">Todas las sucursales</option>
+            {org.sucursales.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        )}
         {adherencia !== null && (
           <span title="Adherencia (Shitsuke): porcentaje de tareas con vencimiento cerradas en fecha, últimos 30 días"
             className="flex items-center gap-1.5 text-[13px] font-semibold rounded-lg px-3 py-1.5 border"
@@ -155,10 +179,10 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
       )}
 
       {esGestor && (
-        <RadarVencimientos avisos={annos} cards={cards} vacaciones={vacaciones} profiles={team} hoyISO={hoyISO} />
+        <RadarVencimientos avisos={annos} cards={cards} vacaciones={vacaciones} profiles={teamSeg} hoyISO={hoyISO} />
       )}
 
-      {esGestor && <Delegaciones cards={cards} team={team} hoyISO={hoyISO} onOpenCard={onOpenCard} />}
+      {esGestor && <Delegaciones cards={cards} team={teamSeg} hoyISO={hoyISO} onOpenCard={onOpenCard} />}
 
       {arca.length > 0 && (
         <div className="bg-surface border border-line rounded-2xl px-5 py-4 mb-5" style={cardSh}>
@@ -181,7 +205,7 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
             <th className="px-3 py-2.5">Term. (7d)</th><th className="px-3 py-2.5">Esf. (7d)</th><th className="text-left px-3 py-2.5">Tarea más vieja</th>
           </tr></thead>
           <tbody>
-            {team.map((u) => {
+            {teamSeg.map((u) => {
               const his = norm.filter((c) => c.owner === u.id);
               const hisOpen = his.filter((c) => c.status !== "term");
               const oldest = hisOpen.reduce<Card | null>((m, c) => (!m || c.created_at < m.created_at ? c : m), null);
@@ -262,7 +286,7 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
 
       <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5 mt-6">Cadenas de dependencias entre tareas</h2>
       <div className="bg-surface border border-line rounded-xl p-3 mb-6" style={cardSh}>
-        <DepGraph cards={cards} team={team} onOpenCard={onOpenCard} />
+        <DepGraph cards={cards} team={teamSeg} onOpenCard={onOpenCard} />
       </div>
 
       <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5 mt-6">Terminadas los últimos 7 días</h2>
