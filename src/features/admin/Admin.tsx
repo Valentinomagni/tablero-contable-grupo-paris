@@ -19,6 +19,7 @@ import { useSettings, useMigraciones, useTiemposMax } from "../../hooks/useData"
 import { estadoMigraciones } from "../../lib/migraciones";
 import { enLinea, textoUltimaConexion } from "../../lib/presencia";
 import { BandejaConsultas } from "../consultas/BandejaConsultas";
+import { Empresas } from "./Empresas";
 
 // chip de estado de migraciones (spec 27, T2): verde al día / ámbar faltan / gris desconocido
 function MigracionesChip() {
@@ -254,6 +255,10 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
       </div>
 
       {!esEncargado && <>
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Empresas — datos estratégicos</h2>
+      <p className="text-ink2 text-[13px] mt-0 mb-2.5">CUIT, cierre de balance y si reporta a fábrica: prioriza el trabajo automáticamente.</p>
+      <Empresas />
+
       <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Consultas del equipo</h2>
       <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
         <BandejaConsultas team={team} />

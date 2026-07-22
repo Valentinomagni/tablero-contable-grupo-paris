@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
-import type { Card, Profile, Objective, ActivityLog, ResumenMensual } from "../lib/types";
+import type { Card, Profile, Objective, ActivityLog, ResumenMensual, Empresa } from "../lib/types";
 import type { DepInfo, RevDep } from "../lib/deps";
 import { CardSchema, validateRows } from "../lib/schemas";
 import { COLUMNAS_CARDS } from "../lib/esquema";
@@ -242,6 +242,58 @@ export function useConsultas() {
       return (data as import("../lib/types").Consulta[]) ?? [];
     },
     retry: false,
+  });
+}
+
+// Empresas (spec 28, Task 8): datos estratégicos para priorizar trabajo, tabla
+// `empresas` (migración 31). Mismo patrón defensivo que useConsultas: si la
+// migración todavía no corrió, la queryFn tira el error (react-query lo expone
+// via isError, Empresas.tsx lo chequea con esTablaInexistente) y quien no lo
+// mira usa `data ?? []`. RLS: SELECT para cualquier autenticado, escritura
+// solo `es_jefe()` — la UI igual gatea el CRUD para no mostrar controles que
+// el servidor va a rechazar.
+export function useEmpresas() {
+  return useQuery({
+    queryKey: ["empresas"],
+    queryFn: async (): Promise<Empresa[]> => {
+      const { data, error } = await supabase.from("empresas").select("*").order("nombre");
+      if (error) throw error;
+      return (data as Empresa[]) ?? [];
+    },
+    retry: false,
+  });
+}
+
+export function useCrearEmpresa() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (e: { nombre: string; cuit: string | null; cierre_balance: string | null; reporta_fabrica: boolean; prioridad: number }) => {
+      const { error } = await supabase.from("empresas").insert(e);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["empresas"] }),
+  });
+}
+
+export function useEditarEmpresa() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...cambios }: { id: string; nombre: string; cuit: string | null; cierre_balance: string | null; reporta_fabrica: boolean; prioridad: number }) => {
+      const { error } = await supabase.from("empresas").update(cambios).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["empresas"] }),
+  });
+}
+
+export function useBorrarEmpresa() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("empresas").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["empresas"] }),
   });
 }
 
