@@ -1,9 +1,12 @@
 import { describe, it, expect } from "vitest";
 import {
   MIGRACION_ESQUEMA_NUEVO,
+  MIGRACION_ETIQUETAS,
   CAMPOS_NUEVOS_CARDS,
   CAMPOS_NUEVOS_PROFILES,
+  CAMPOS_ETIQUETAS_CARDS,
   tieneEsquemaNuevo,
+  tieneEtiquetas,
   payloadCompatible,
   payloadCards,
   payloadProfiles,
@@ -60,6 +63,50 @@ describe("payloadCards", () => {
     const p = { status: "term", done_at: "x" };
     expect(payloadCards(p, null)).toEqual(p);
     expect(payloadCards(p, [29])).toEqual(p);
+  });
+});
+
+describe("tieneEtiquetas", () => {
+  it("true sólo si la 31 está en la lista", () => {
+    expect(tieneEtiquetas([29, 30, 31])).toBe(true);
+    expect(tieneEtiquetas([MIGRACION_ETIQUETAS])).toBe(true);
+  });
+  it("false si la 31 no está aplicada (aunque la 29 sí)", () => {
+    expect(tieneEtiquetas([28, 29, 30])).toBe(false);
+  });
+  it("null/undefined (desconocido) → false", () => {
+    expect(tieneEtiquetas(null)).toBe(false);
+    expect(tieneEtiquetas(undefined)).toBe(false);
+  });
+});
+
+describe("payloadCards — gating de etiquetas (migración 31), independiente de la 29", () => {
+  it("29 y 31 aplicadas: el payload va intacto, incluidas etiquetas", () => {
+    const p = { title: "x", proc_at: "t", etiquetas: ["Peugeot"] };
+    expect(payloadCards(p, [29, 31])).toEqual(p);
+  });
+
+  it("29 aplicada pero NO la 31: se saca sólo etiquetas, proc_at se conserva", () => {
+    const p = { title: "x", proc_at: "t", etiquetas: ["Peugeot"] };
+    expect(payloadCards(p, [29])).toEqual({ title: "x", proc_at: "t" });
+  });
+
+  it("31 aplicada pero NO la 29: se saca proc_at, etiquetas se conserva", () => {
+    const p = { title: "x", proc_at: "t", etiquetas: ["Peugeot"] };
+    expect(payloadCards(p, [31])).toEqual({ title: "x", etiquetas: ["Peugeot"] });
+  });
+
+  it("ninguna aplicada: se sacan ambos grupos de campos", () => {
+    const p = { title: "x", proc_at: "t", etiquetas: ["Peugeot"] };
+    expect(payloadCards(p, null)).toEqual({ title: "x" });
+  });
+
+  it("un patch que sólo toca etiquetas no rompe el guardado en una base sin la 31", () => {
+    expect(payloadCards({ etiquetas: ["Autocity"] }, [29])).toEqual({});
+  });
+
+  it("CAMPOS_ETIQUETAS_CARDS es exactamente ['etiquetas']", () => {
+    expect([...CAMPOS_ETIQUETAS_CARDS]).toEqual(["etiquetas"]);
   });
 });
 

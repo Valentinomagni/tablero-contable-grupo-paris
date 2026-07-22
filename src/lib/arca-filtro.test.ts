@@ -12,52 +12,85 @@ describe("relevantes", () => {
     expect(relevantes(items)).toHaveLength(1);
   });
 
-  it("descarta impuesto a los combustibles", () => {
-    const items = [it0({ titulo: "Impuesto a los combustibles" })];
-    expect(relevantes(items)).toHaveLength(0);
-  });
-
-  it("mantiene Aportes Seguridad Social (931)", () => {
-    const items = [it0({ titulo: "Aportes Seguridad Social (931)" })];
+  it("mantiene Libro IVA Digital", () => {
+    const items = [it0({ titulo: "Libro IVA Digital" })];
     expect(relevantes(items)).toHaveLength(1);
   });
 
-  it("matchea sin tildes ni mayúsculas (Autónomos)", () => {
-    const items = [it0({ titulo: "AUTONOMOS", sub: "pago mensual" })];
+  it("matchea sin tildes ni mayúsculas", () => {
+    const items = [it0({ titulo: "IVA", sub: "presentacion mensual" })];
     expect(relevantes(items)).toHaveLength(1);
   });
 
   it("matchea por el detalle (sub) además del título", () => {
-    const items = [it0({ titulo: "Régimen general", sub: "Retenciones SICORE" })];
+    const items = [it0({ titulo: "Régimen general", sub: "IVA mensual" })];
     expect(relevantes(items)).toHaveLength(1);
   });
 
-  it("descarta ruido no contable (tabaco, seguros)", () => {
+  it("descarta rubros no-IVA (autónomos, monotributo, ganancias, bienes personales)", () => {
     const items = [
-      it0({ titulo: "Impuestos internos - Tabaco" }),
-      it0({ titulo: "Seguros de vida" }),
+      it0({ titulo: "Autónomos" }),
+      it0({ titulo: "Monotributo" }),
+      it0({ titulo: "Ganancias" }),
+      it0({ titulo: "Bienes Personales" }),
+      it0({ titulo: "Aportes Seguridad Social (931)" }),
+      it0({ titulo: "Retenciones SICORE" }),
     ];
     expect(relevantes(items)).toHaveLength(0);
   });
 
-  it("filtra una lista mixta dejando solo las contables", () => {
+  it("descarta ruido no contable (tabaco, seguros, combustibles)", () => {
+    const items = [
+      it0({ titulo: "Impuestos internos - Tabaco" }),
+      it0({ titulo: "Seguros de vida" }),
+      it0({ titulo: "Impuesto a los combustibles" }),
+    ];
+    expect(relevantes(items)).toHaveLength(0);
+  });
+
+  it("filtra una lista mixta dejando solo IVA y Libro IVA Digital", () => {
     const items = [
       it0({ titulo: "IVA" }),
+      it0({ titulo: "Libro IVA Digital" }),
       it0({ titulo: "Combustibles líquidos" }),
       it0({ titulo: "Monotributo" }),
       it0({ titulo: "Bienes Personales" }),
       it0({ titulo: "Tabaco" }),
     ];
-    expect(relevantes(items).map((x) => x.titulo)).toEqual(["IVA", "Monotributo", "Bienes Personales"]);
+    expect(relevantes(items).map((x) => x.titulo)).toEqual(["IVA", "Libro IVA Digital"]);
+  });
+
+  it("EXCLUYE Percepciones IVA (obligación de agente de percepción, régimen distinto)", () => {
+    const items = [it0({ titulo: "Percepciones IVA" })];
+    expect(relevantes(items)).toHaveLength(0);
+  });
+
+  it("EXCLUYE Retenciones de IVA (obligación de agente de retención, régimen distinto)", () => {
+    const items = [it0({ titulo: "Retenciones de IVA" })];
+    expect(relevantes(items)).toHaveLength(0);
+  });
+
+  it("MANTIENE IVA - Declaración jurada (DDJJ de IVA, obligación estándar)", () => {
+    const items = [it0({ titulo: "IVA - Declaración jurada" })];
+    expect(relevantes(items)).toHaveLength(1);
+  });
+
+  it("MANTIENE Libro de IVA Digital (obligación estándar)", () => {
+    const items = [it0({ titulo: "Libro de IVA Digital" })];
+    expect(relevantes(items)).toHaveLength(1);
+  });
+
+  it("MANTIENE IVA Digital (obligación estándar)", () => {
+    const items = [it0({ titulo: "IVA Digital" })];
+    expect(relevantes(items)).toHaveLength(1);
   });
 
   it("no rompe con lista vacía (caso local)", () => {
     expect(relevantes([])).toEqual([]);
   });
 
-  it("expone la constante de keywords", () => {
-    expect(KEYWORDS_CONTABLES.length).toBeGreaterThan(5);
-    expect(KEYWORDS_CONTABLES).toContain("iva");
+  it("expone la keyword de IVA", () => {
+    expect(KEYWORDS_CONTABLES).toEqual(["iva"]);
   });
 });
 
@@ -66,12 +99,12 @@ describe("aEventosVirtuales", () => {
     const items = [
       it0({ num: 15, titulo: "IVA", sub: "Presentación y pago" }),
       it0({ num: 7, titulo: "Combustibles" }), // se descarta
-      it0({ num: 22, titulo: "Monotributo", sub: "" }),
+      it0({ num: 22, titulo: "Libro IVA Digital", sub: "" }),
     ];
     const ev = aEventosVirtuales(items, 2026, 7);
     expect(ev).toEqual([
       { date: "2026-07-15", title: "IVA", detail: "Presentación y pago" },
-      { date: "2026-07-22", title: "Monotributo", detail: "" },
+      { date: "2026-07-22", title: "Libro IVA Digital", detail: "" },
     ]);
   });
 

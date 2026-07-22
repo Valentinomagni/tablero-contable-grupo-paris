@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { Network, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { Card, CardArchive, Profile } from "../../lib/types";
-import { construirArbol, porMarca, type NodoOrg } from "../../lib/jerarquia";
+import { arbolConAncestros, porMarca, type NodoOrg } from "../../lib/jerarquia";
 import { Avatar } from "../../lib/ui";
 import { useOrganizacion } from "../../hooks/useData";
 import { useArchiveEquipo } from "../../hooks/useArchive";
@@ -66,6 +67,12 @@ function Nodo({ nodo, cards, nivel, archives }: { nodo: NodoOrg; cards: Card[]; 
           <div className="flex items-center gap-2">
             <b className="text-[14px] tracking-[-0.01em] truncate">{p.name}</b>
             <span className="text-[10px] uppercase tracking-[0.06em] font-semibold text-ink2 bg-surface2 border border-line rounded-md px-1.5 py-px shrink-0">{ROLE_LBL[p.role]}</span>
+            {p.marca && (
+              <span className="flex items-center gap-1 text-[10.5px] text-ink2 bg-chip rounded px-1.5 py-0.5 shrink-0">
+                <MarcaIcon marca={p.marca} size={11} />
+                {p.marca}
+              </span>
+            )}
             {p.sucursal && <span className="text-[10.5px] text-ink2 bg-chip rounded px-1.5 py-0.5">{p.sucursal}</span>}
           </div>
           <div className="flex items-center gap-1.5">
@@ -90,23 +97,6 @@ function Nodo({ nodo, cards, nivel, archives }: { nodo: NodoOrg; cards: Card[]; 
   );
 }
 
-function Seccion({ titulo, subtitulo, gente, cards, archives }: { titulo: string; subtitulo?: string; gente: Profile[]; cards: Card[]; archives: CardArchive[] }) {
-  const arbol = construirArbol(gente);
-  return (
-    <section className="mb-7">
-      <div className="flex items-baseline gap-2 mb-3">
-        <MarcaIcon marca={titulo} size={18} />
-        <h2 className="text-[15px] font-bold tracking-[-0.01em]">{titulo}</h2>
-        {subtitulo && <span className="text-[12px] text-ink2">{subtitulo}</span>}
-        <span className="text-[12px] text-ink2 tnum">· {gente.length} {gente.length === 1 ? "persona" : "personas"}</span>
-      </div>
-      <div className="flex flex-col gap-2">
-        {arbol.map((n) => <Nodo key={n.profile.id} nodo={n} cards={cards} nivel={0} archives={archives} />)}
-      </div>
-    </section>
-  );
-}
-
 export function Organigrama({ team, cards }: { team: Profile[]; cards: Card[] }) {
   const org = useOrganizacion();
   // OJO — `team` NO viene acotado por rol: App.tsx pasa personasVisibles(fullTeam), o sea
@@ -115,8 +105,10 @@ export function Organigrama({ team, cards }: { team: Profile[]; cards: Card[] })
   // data cruda que llega. Si alguna vez se abre esta vista a más roles, hay que filtrar el
   // `team` acá explícitamente — no hay ninguna protección implícita en este componente.
   const archives = useArchiveEquipo().data ?? [];
+  const [filtroMarca, setFiltroMarca] = useState<string | null>(null);
+
   const grupos = porMarca(team);
-  // Orden fijo de marcas (General primero); las demás quedan detrás alfabéticamente.
+  // Orden fijo de marcas (General primero) para el selector; las demás detrás, alfabéticamente.
   const marcas = Object.keys(grupos).sort((a, b) => {
     const ia = org.marcas.indexOf(a), ib = org.marcas.indexOf(b);
     return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b);
@@ -134,6 +126,13 @@ export function Organigrama({ team, cards }: { team: Profile[]; cards: Card[] })
     );
   }
 
+  // UN SOLO árbol jerárquico (spec 28 Fase D): antes se partía por marca y se armaba un
+  // árbol por cada grupo, lo que cortaba la cadena de mando apenas el manager quedaba en
+  // otra marca (ver comentario en jerarquia.ts / arbolConAncestros). Ahora la marca es una
+  // ETIQUETA por nodo (chip en Nodo), nunca una partición: el filtro de abajo sólo decide
+  // qué hojas mostrar, arrastrando siempre la cadena completa de superiores.
+  const arbol = arbolConAncestros(team, filtroMarca);
+
   return (
     <div className="px-6 py-4 w-full max-w-[820px]">
       {marcas.length === 0 && sinMarca.length === team.length && (
@@ -141,8 +140,23 @@ export function Organigrama({ team, cards }: { team: Profile[]; cards: Card[] })
           Sin marca asignada todavía. Cuando cargues marca y responsable de cada persona, el organigrama se arma por marca y jerarquía automáticamente.
         </div>
       )}
-      {marcas.map((m) => <Seccion key={m} titulo={m} subtitulo={m === "General" ? "Administración transversal" : undefined} gente={grupos[m]} cards={cards} archives={archives} />)}
-      {sinMarca.length > 0 && <Seccion titulo="Sin marca" gente={sinMarca} cards={cards} archives={archives} />}
+      {marcas.length > 0 && (
+        <div className="flex items-center gap-2 mb-5">
+          <label htmlFor="organigrama-filtro-marca" className="text-[12px] font-semibold text-ink2">Marca</label>
+          <select
+            id="organigrama-filtro-marca"
+            value={filtroMarca ?? ""}
+            onChange={(e) => setFiltroMarca(e.target.value || null)}
+            className="text-[13px] bg-surface border border-line rounded-lg px-2.5 py-1.5"
+          >
+            <option value="">Todas las marcas</option>
+            {marcas.map((m) => <option key={m} value={m}>{m} · {grupos[m].length}</option>)}
+          </select>
+        </div>
+      )}
+      <div className="flex flex-col gap-2">
+        {arbol.map((n) => <Nodo key={n.profile.id} nodo={n} cards={cards} nivel={0} archives={archives} />)}
+      </div>
     </div>
   );
 }

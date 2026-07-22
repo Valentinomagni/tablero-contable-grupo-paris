@@ -4,13 +4,14 @@ import { Avatar } from "../lib/ui";
 import { COLS, type Card, type Profile, type Announcement } from "../lib/types";
 import { useBuscarCards } from "../hooks/useData";
 import { combinarResultadosCards, idsDelServidor } from "../lib/buscador";
+import { agruparItemsPalette } from "../lib/commandPalette";
 
 // `servidor: true` marca los items que ya vinieron filtrados por el full-text de la base
 // (RPC buscar_cards). Esos NO vuelven a pasar por el filtro de substring local: si lo
 // hicieran, todo lo que aporta el full-text (stemming, multi-palabra y sobre todo los
 // matches en la DESCRIPCIÓN, que no está ni en `t` ni en `sub`) se descartaría antes de
 // renderizar y la búsqueda global no serviría para nada.
-interface Item { g: string; t: string; sub?: string; icon?: React.ReactNode; av?: Profile; servidor?: boolean; run: () => void; }
+interface Item { g: string; t: string; sub?: string; buscar?: string; icon?: React.ReactNode; av?: Profile; servidor?: boolean; run: () => void; }
 
 export function CommandPalette({ me, team, cards, annos = [], onNavigate, onOpenCard, onClose, onDelegar }: {
   me: Profile; team: Profile[]; cards: Card[]; annos?: Announcement[];
@@ -47,10 +48,16 @@ export function CommandPalette({ me, team, cards, annos = [], onNavigate, onOpen
   all.push({ g: "Vistas", t: "Anotaciones", icon: <StickyNote size={16} />, run: () => onNavigate("__notas") });
   all.push({ g: "Vistas", t: "Mi tablero", icon: <ClipboardList size={16} />, run: () => onNavigate(me.id) });
   all.push({ g: "Acciones", t: "Nueva anotación", icon: <StickyNote size={16} />, run: () => onNavigate("__notas") });
-  if (isJefe) team.forEach((u) => all.push({ g: "Personas", t: u.name, sub: u.role, av: u, run: () => onNavigate(u.id) }));
+  // El alcance de personas lo define el scope con el que llega `team` (visiblesPara/personasVisibles
+  // en App.tsx según el rol de `me`), no un gate acá: antes este `if (isJefe)` hacía que encargados
+  // y empleados no vieran a NADIE en "Personas" (ni siquiera a otros encargados) al buscar.
+  team.forEach((u) => all.push({ g: "Personas", t: u.name, sub: u.role, av: u, run: () => onNavigate(u.id) }));
   cardsCombinadas.forEach((c) => all.push({
     g: "Tareas", t: c.title,
     sub: `${team.find((u) => u.id === c.owner)?.name ?? ""} · ${c.card_type === "operativa" ? "operativa" : COLS.find((x) => x[0] === c.status)?.[1]}`,
+    // Etiquetas (spec 28, fase D, Task 5): buscables aunque no se muestren en `sub` (que ya
+    // ocupa el dueño/estado) — así "Autocity" encuentra la tarea sin agregar ruido visual.
+    buscar: (c.etiquetas ?? []).join(" "),
     servidor: idsServidor.has(c.id),
     run: () => onOpenCard(c),
   }));
@@ -64,8 +71,21 @@ export function CommandPalette({ me, team, cards, annos = [], onNavigate, onOpen
   // `i.servidor` pasa de largo: esas cards ya las filtró el full-text de la base (ver
   // idsDelServidor en lib/buscador.ts). El filtro de substring sólo aplica a lo que se
   // arma acá en el cliente (vistas, acciones, personas, avisos y cards en memoria).
-  const items = all.filter((i) => !needle || i.servidor
-    || i.t.toLowerCase().includes(needle) || (i.sub ?? "").toLowerCase().includes(needle)).slice(0, 12);
+  const filtrados = all.filter((i) => !needle || i.servidor
+    || i.t.toLowerCase().includes(needle) || (i.sub ?? "").toLowerCase().includes(needle)
+    || (i.buscar ?? "").toLowerCase().includes(needle));
+  // Sin texto de búsqueda (recién abierto / navegando la lista) un slice(12) plano sobre
+  // `all` deja afuera grupos enteros: como "Personas" se arma con team.forEach() en orden
+  // alfabético de rol ("empleado" < "encargado" < "jefe"), los primeros ~10 lugares ya los
+  // ocupan las Vistas/Acciones fijas y sólo entran los primeros empleados — los encargados
+  // (y cualquiera más abajo en la lista) nunca aparecen aunque estén en `team`. Un cupo fijo
+  // por grupo (incluso "5 por grupo") tiene el mismo problema en cuanto el equipo supera
+  // ese número de empleados: sigue siendo posible que ningún encargado entre en el preview.
+  // Por eso "Personas" NUNCA se capa acá (agruparItemsPalette la deja completa; la lista
+  // ya tiene su propio scroll) — sumar gente al equipo no puede esconder a nadie. El resto
+  // de los grupos sí mantiene un cupo razonable porque no crecen con el equipo. Al tipear,
+  // el filtro de arriba ya angosta por coincidencia y el cupo por grupo deja de importar.
+  const items = needle ? filtrados.slice(0, 12) : agruparItemsPalette(filtrados);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

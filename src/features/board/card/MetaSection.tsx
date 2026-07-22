@@ -7,11 +7,13 @@ import { ocurrenciasFaltantes, OCC_CONFLICT } from "../../../lib/recurrencia";
 import { fmtDateTime } from "../../../lib/metrics";
 import { isShared, participantes } from "../../../lib/shared";
 import { categoriasEnUso, mergeCategorias } from "../../../lib/categorias";
-import { Users, AlertTriangle } from "lucide-react";
+import { etiquetasEnUso, agregarEtiqueta } from "../../../lib/etiquetas";
+import { Users, AlertTriangle, X } from "lucide-react";
 import { CumplimientoDiario } from "../CumplimientoDiario";
 import { estadoTiempo, registrarIncumplimiento } from "../../../lib/tiempos";
 import { textoTransicion } from "../../../lib/retrabajo";
-import { useTiemposMax } from "../../../hooks/useData";
+import { useTiemposMax, useMigraciones } from "../../../hooks/useData";
+import { tieneEtiquetas } from "../../../lib/esquema";
 
 type PatchMut = UseMutationResult<void, Error, Partial<Card>, unknown>;
 
@@ -21,10 +23,18 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
   { c: Card; cards: Card[]; team: Profile[]; settings: AppSettings; patch: PatchMut; hist: (txt: string) => HistoryEntry[]; locked: boolean }) {
   const qc = useQueryClient();
   const tiemposConfig = useTiemposMax();
+  // Etiquetas (spec 28, fase D — review MEDIA 1): sin la migración 31 la columna
+  // `cards.etiquetas` no existe, `payloadCards()` descarta el campo y el guardado NO
+  // persiste nada — pero el `history` sí viaja, así que quedaría escrito "Agregó la
+  // etiqueta X" para una etiqueta que nunca se guardó. Falla en silencio y encima miente.
+  // Por eso el bloque entero se degrada igual que Empresas: aviso en vez de input.
+  const { data: migracionesAplicadas } = useMigraciones();
+  const etiquetasHabilitadas = tieneEtiquetas(migracionesAplicadas);
   const est = estadoTiempo(c, tiemposConfig, new Date().toISOString());
   const [recurTipo, setRecurTipo] = useState<RecurRule["tipo"] | "">(c.recur_rule?.tipo ?? "");
   const [recurDias, setRecurDias] = useState<number[]>(c.recur_rule?.dias ?? []);
   const [recurDiaMes, setRecurDiaMes] = useState<number>(c.recur_rule?.diaMes ?? 1);
+  const [nuevaEtiqueta, setNuevaEtiqueta] = useState("");
 
   const buildRule = (): RecurRule | null => {
     if (recurTipo === "") return null;
@@ -158,6 +168,46 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
               </>
             );
           })()}
+        </div>
+
+        {/* Etiquetas (spec 28, fase D, Task 5): contexto (empresa/marca puntual/cliente),
+            distintas de la categoría (tipo de trabajo). Múltiples por tarea. */}
+        <div className="flex items-center gap-1.5 flex-wrap text-sm mb-2">
+          <span className="text-ink2 text-[13px]">Etiquetas</span>
+          {!etiquetasHabilitadas && (
+            <span className="text-ink2 text-[12px]">Se habilita tras la migración 31.</span>
+          )}
+          {etiquetasHabilitadas && (c.etiquetas ?? []).map((et) => (
+            <span key={et} className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-full px-2.5 py-0.5 text-[12px] font-medium">
+              {et}
+              {!locked && (
+                <button type="button" title={`Quitar etiqueta "${et}"`}
+                  onClick={() => patch.mutate({ etiquetas: (c.etiquetas ?? []).filter((x) => x !== et), history: hist(`Quitó la etiqueta "${et}"`) })}
+                  className="hover:text-danger">
+                  <X size={11} />
+                </button>
+              )}
+            </span>
+          ))}
+          {etiquetasHabilitadas && !locked && (
+            <>
+              <input list="etiquetas-card" value={nuevaEtiqueta} placeholder="+ etiqueta"
+                onChange={(e) => setNuevaEtiqueta(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter") return;
+                  e.preventDefault();
+                  const actualizadas = agregarEtiqueta(c.etiquetas ?? [], nuevaEtiqueta);
+                  if (actualizadas.length !== (c.etiquetas ?? []).length) {
+                    patch.mutate({ etiquetas: actualizadas, history: hist(`Agregó la etiqueta "${actualizadas[actualizadas.length - 1]}"`) });
+                  }
+                  setNuevaEtiqueta("");
+                }}
+                className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] w-32" />
+              <datalist id="etiquetas-card">
+                {etiquetasEnUso(cards).map((et) => <option key={et} value={et} />)}
+              </datalist>
+            </>
+          )}
         </div>
 
         <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Recurrencia</h4>

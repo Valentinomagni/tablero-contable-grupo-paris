@@ -18,8 +18,21 @@
 /** Migración que introduce las columnas nuevas. */
 export const MIGRACION_ESQUEMA_NUEVO = 29;
 
+/**
+ * Migración que agrega `cards.etiquetas` (spec 28, fase D, Task 5). Se gatea APARTE de
+ * MIGRACION_ESQUEMA_NUEVO (29) porque es una migración distinta y puede no estar
+ * corrida aunque la 29 sí lo esté (o viceversa): si `etiquetas` viajara en el mismo
+ * gate que proc_at/tiempo_max_horas/dato_control, una base con la 29 aplicada pero
+ * sin la 31 mandaría la columna igual y el guardado de CUALQUIER tarea (no solo las
+ * que usan etiquetas) fallaría entero con 42703 ("column etiquetas does not exist").
+ */
+export const MIGRACION_ETIQUETAS = 31;
+
 /** Columnas de `cards` que sólo existen con la migración 29 aplicada. */
 export const CAMPOS_NUEVOS_CARDS = ["proc_at", "tiempo_max_horas", "dato_control"] as const;
+
+/** Columnas de `cards` que sólo existen con la migración 31 aplicada. */
+export const CAMPOS_ETIQUETAS_CARDS = ["etiquetas"] as const;
 
 /**
  * Columnas de `cards` que la app realmente usa, para pedirlas EXPLÍCITAMENTE en vez de
@@ -37,6 +50,7 @@ export const COLUMNAS_CARDS = [
   "done_at", "due_date", "recurring", "priority", "effort", "card_type", "deps",
   "created_at", "recur_rule", "protected", "categoria", "reset_policy",
   "requiere_resultado", "sucursal", "marca", "proc_at", "tiempo_max_horas", "dato_control",
+  "etiquetas",
 ].join(",");
 
 /** Columnas de `profiles` que sólo existen con la migración 29 aplicada. */
@@ -49,7 +63,17 @@ export const CAMPOS_NUEVOS_PROFILES = ["oculto", "last_seen"] as const;
  * Ante la duda → false (esquema viejo).
  */
 export function tieneEsquemaNuevo(aplicadas: number[] | null | undefined): boolean {
-  return Array.isArray(aplicadas) && aplicadas.includes(MIGRACION_ESQUEMA_NUEVO);
+  return tieneMigracion(aplicadas, MIGRACION_ESQUEMA_NUEVO);
+}
+
+/** ¿Está aplicada la migración 31 (`cards.etiquetas`)? Mismo criterio ante la duda: false. */
+export function tieneEtiquetas(aplicadas: number[] | null | undefined): boolean {
+  return tieneMigracion(aplicadas, MIGRACION_ETIQUETAS);
+}
+
+/** Helper genérico: ¿la lista de migraciones aplicadas incluye `id`? */
+function tieneMigracion(aplicadas: number[] | null | undefined, id: number): boolean {
+  return Array.isArray(aplicadas) && aplicadas.includes(id);
 }
 
 /** Saca del objeto las claves indicadas. No muta el original. */
@@ -60,21 +84,31 @@ function sinCampos<T extends object>(payload: T, campos: readonly string[]): T {
 }
 
 /**
- * Devuelve el payload listo para mandar a PostgREST: intacto si el esquema nuevo está
- * aplicado, y sin los campos nuevos si no lo está (o si no se sabe).
+ * Devuelve el payload listo para mandar a PostgREST: intacto si la migración indicada
+ * está aplicada, y sin los campos nuevos si no lo está (o si no se sabe).
+ *
+ * `migracion` default MIGRACION_ESQUEMA_NUEVO (29) por compatibilidad con el uso
+ * histórico de este helper; pasarla explícita para gatear contra otra migración
+ * (p.ej. MIGRACION_ETIQUETAS).
  */
 export function payloadCompatible<T extends object>(
   payload: T,
   aplicadas: number[] | null | undefined,
   campos: readonly string[],
+  migracion: number = MIGRACION_ESQUEMA_NUEVO,
 ): T {
   if (!payload || typeof payload !== "object") return payload;
-  return tieneEsquemaNuevo(aplicadas) ? payload : sinCampos(payload, campos);
+  return tieneMigracion(aplicadas, migracion) ? payload : sinCampos(payload, campos);
 }
 
-/** Azúcar para `cards` (proc_at / tiempo_max_horas / dato_control). */
+/**
+ * Azúcar para `cards`: aplica DOS gates independientes — proc_at/tiempo_max_horas/
+ * dato_control (migración 29) y etiquetas (migración 31) — porque una base puede
+ * tener una sin la otra.
+ */
 export function payloadCards<T extends object>(payload: T, aplicadas: number[] | null | undefined): T {
-  return payloadCompatible(payload, aplicadas, CAMPOS_NUEVOS_CARDS);
+  const sinViejos = payloadCompatible(payload, aplicadas, CAMPOS_NUEVOS_CARDS, MIGRACION_ESQUEMA_NUEVO);
+  return payloadCompatible(sinViejos, aplicadas, CAMPOS_ETIQUETAS_CARDS, MIGRACION_ETIQUETAS);
 }
 
 /** Azúcar para `profiles` (oculto / last_seen). */

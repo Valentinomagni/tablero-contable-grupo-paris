@@ -10,14 +10,15 @@ import { pushUndo } from "../../lib/undo";
 import { isShared, siblingSyncPatches } from "../../lib/shared";
 import { bloqueadaPorTitulos } from "../../lib/deps";
 import { categoriasEnUso, pasaFiltroCategoria } from "../../lib/categorias";
+import { etiquetasEnUso, pasaFiltroEtiquetas } from "../../lib/etiquetas";
 import { type ModoAgrupar } from "../../lib/agrupar";
 import { getPref, setPref, PREF } from "../../lib/prefs";
 import { useOrganizacion, useTiemposMax, useMigraciones, useTriggerNotificaciones } from "../../hooks/useData";
-import { payloadCards } from "../../lib/esquema";
+import { payloadCards, tieneEtiquetas } from "../../lib/esquema";
 import { estadoTiempo, registrarIncumplimiento } from "../../lib/tiempos";
 import { textoTransicion } from "../../lib/retrabajo";
 import { filtrarPorSegmento } from "../../lib/segmento";
-import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Users, Shield, Layers, Plane } from "lucide-react";
+import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Users, Shield, Layers, Plane, Tag } from "lucide-react";
 import { esCobertura } from "../../lib/vacaciones";
 import { NuevaTareaModal } from "./NuevaTareaModal";
 import { Carriles } from "./Carriles";
@@ -51,6 +52,13 @@ function CardItem({ c, blocked, waiting, esperaTitulos = [], onOpen }: { c: Card
         {waiting && <span className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Hourglass size={11} /> Te esperan</span>}
         {esCobertura(c).activa && <span title="Cubierta por vacaciones" className="inline-flex items-center gap-1 bg-chip text-ink2 rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Plane size={11} /> Cobertura</span>}
         {c.categoria && <span className="bg-chip rounded-md px-1.5 py-0.5 text-[11px] whitespace-nowrap">{c.categoria}</span>}
+        {/* Etiquetas (contexto: empresa/marca puntual) — chip redondeado + acento, para no
+            confundirse con la categoría (tipo de trabajo, chip cuadrado neutro de arriba). */}
+        {(c.etiquetas ?? []).map((et) => (
+          <span key={et} className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap">
+            <Tag size={10} />{et}
+          </span>
+        ))}
         {c.dato_control && <span className="bg-chip rounded-md px-1.5 py-0.5 text-[11px] whitespace-nowrap tnum">{c.dato_control}</span>}
         {pr}<DueBadge c={c} />{c.recurring && <span title="Mensual"><Repeat size={12} /></span>}
         {(c.effort ?? 1) > 1 && <span className="bg-chip rounded-md px-1.5 py-0.5 tnum">{c.effort} pts</span>}
@@ -82,6 +90,8 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
   const matches = (c: Card) => !q || c.title.toLowerCase().includes(q) || (c.description ?? "").toLowerCase().includes(q);
   // filtro por categoría (spec 21 item 11): null = todas; "" = sin categoría
   const [catFiltro, setCatFiltro] = useState<string | null>(null);
+  // filtro por etiquetas (spec 28, fase D, Task 5): AND — la card debe tener TODAS las tildadas
+  const [etFiltro, setEtFiltro] = useState<string[]>([]);
   // segmentación por marca/sucursal (spec 26 item 1): solo jefe/encargado, si hay marcas configuradas
   const esGestor = meRole === "jefe" || meRole === "encargado";
   const [marcaFiltro, setMarcaFiltro] = useState<string | null>(null);
@@ -100,7 +110,10 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
   const visibles = cardsSeg.filter((c) => c.owner === ownerId && matches(c));
   const catsUsadas = categoriasEnUso(visibles);
   const hayMezcla = catsUsadas.length > 0 && visibles.some((c) => !c.categoria);
-  const pasaCat = (c: Card) => pasaFiltroCategoria(c, catFiltro);
+  // Sin la migración 31 no hay columna `etiquetas`: ninguna card puede tenerlas y el
+  // filtro no debe ofrecerse (review MEDIA 1 — mismo gate que el editor en MetaSection).
+  const etsUsadas = tieneEtiquetas(migracionesAplicadas) ? etiquetasEnUso(visibles) : [];
+  const pasaCat = (c: Card) => pasaFiltroCategoria(c, catFiltro) && pasaFiltroEtiquetas(c, etFiltro);
   const mine = visibles.filter((c) => c.card_type !== "operativa" && pasaCat(c));
   const opers = visibles.filter((c) => c.card_type === "operativa" && pasaCat(c));
   const byId = (id: string) => cards.find((x) => x.id === id);
@@ -266,6 +279,25 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
               Todas</button>
             {catsUsadas.map((cat) => chipCat(cat, cat))}
             {hayMezcla && chipCat("Sin categoría", "")}
+          </>
+        )}
+        {etsUsadas.length > 0 && (
+          <>
+            <span className="w-px h-4 bg-line mx-1" />
+            {etsUsadas.map((et) => {
+              const activo = etFiltro.some((x) => x.toLowerCase() === et.toLowerCase());
+              return (
+                <button key={et} title="Filtrar por etiqueta (se pueden combinar varias)"
+                  onClick={() => setEtFiltro((fs) => activo ? fs.filter((x) => x.toLowerCase() !== et.toLowerCase()) : [...fs, et])}
+                  className={cn("inline-flex items-center gap-1 border rounded-full px-3 py-1 text-[12px] transition",
+                    activo ? "bg-accent-soft border-accent text-accent font-semibold" : "border-line bg-surface2 text-ink2 hover:border-accent/40")}>
+                  <Tag size={11} />{et}</button>
+              );
+            })}
+            {etFiltro.length > 0 && (
+              <button onClick={() => setEtFiltro([])} className="border border-line bg-surface2 rounded-full px-3 py-1 text-[12px] text-ink2 hover:border-accent/40">
+                Limpiar etiquetas</button>
+            )}
           </>
         )}
         {mostrarSegmento && (
