@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
-import type { Card, Profile, Objective, ActivityLog } from "../lib/types";
+import type { Card, Profile, Objective, ActivityLog, ResumenMensual } from "../lib/types";
 import type { DepInfo, RevDep } from "../lib/deps";
 import { CardSchema, validateRows } from "../lib/schemas";
 import type { Organizacion } from "../lib/organizacion";
@@ -28,6 +28,31 @@ export function useReverseDeps(cardIds: string[], enabled: boolean) {
       return (data as RevDep[]) ?? [];
     },
     enabled: enabled && cardIds.length > 0,
+  });
+}
+
+// KPIs precalculados por mes/owner/marca desde mv_resumen_mensual (migración 30, spec 28
+// fase C, Task 14). DEFENSIVA: si el RPC no existe (migración 30 sin aplicar) o falla por
+// cualquier motivo, devuelve [] sin romper nada.
+//
+// OJO — hoy NINGÚN consumidor del histórico (analizarMes, comparativaMensual, curvaPersona,
+// concentracion) puede migrarse a este hook sin cambiar la vista: todos excluyen
+// `card_type === 'operativa'` antes de calcular %, y mv_resumen_mensual cuenta TODAS las
+// cards de cards_archive sin ese filtro (total/terminadas quedarían mal desde el vamos).
+// Además comparador.ts necesita `sucursal` (no está en la vista) y filtra por
+// `esVisible(profile)` (la vista solo filtra por rol vía resumen_mensual, no por
+// visibilidad de perfil); busfactor.ts necesita `categoria` y dedupe por card individual,
+// imposibles de reconstruir a partir de conteos ya agregados. Ver docs/PASOS-MANUALES.md
+// y el reporte de la Task 14 para el detalle. Se deja este hook listo para cuando la vista
+// se actualice con esos campos/filtros.
+export function useResumenMensual(mes: string | null = null) {
+  return useQuery({
+    queryKey: ["resumen-mensual", mes],
+    queryFn: async (): Promise<ResumenMensual[]> => {
+      const { data, error } = await supabase.rpc("resumen_mensual", { p_mes: mes });
+      if (error) return [];
+      return (data as ResumenMensual[]) ?? [];
+    },
   });
 }
 

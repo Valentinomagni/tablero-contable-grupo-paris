@@ -273,6 +273,12 @@ Supabase → **Cron Jobs** (o Database → Cron) → New Cron Job:
 vista queda con los datos del último `refresh` manual (la migración hace uno al aplicarse);
 se puede refrescar a mano en cualquier momento con ese mismo comando.
 
+**Qué significa para quien lee `resumen_mensual()` sin el cron activo**: no hay error ni
+aviso — el RPC devuelve igual una respuesta válida, pero con los totales del último
+refresh (potencialmente meses viejo). Nadie se entera de que está desactualizado salvo
+comparando contra `cards_archive` a mano. Por eso el cron no es opcional en la práctica:
+sin él, la vista es un dato mudo que envejece en silencio.
+
 ## GitHub Actions (#2) — opcional
 El archivo del workflow está en `docs/ci-workflow.yml.txt`. Tu token no tiene scope `workflow`,
 así que no se pudo pushear. Para activarlo: GitHub → repo → pestaña **Actions** → New workflow →
