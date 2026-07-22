@@ -46,7 +46,8 @@ export function NotificacionesBell({ onOpenCard }: { onOpenCard: (cardId: string
 
   const clic = (n: Notification) => {
     if (!n.leida) marcar.mutate(n.id);
-    if (n.card_id) { setOpen(false); onOpenCard(n.card_id); }
+    // En vencimiento_propio, card_id es el id del aviso (tablón), no de tarea — no abrir.
+    if (n.card_id && n.tipo !== "vencimiento_propio") { setOpen(false); onOpenCard(n.card_id); }
   };
 
   return (

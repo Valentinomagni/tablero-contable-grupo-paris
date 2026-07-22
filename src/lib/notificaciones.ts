@@ -71,6 +71,8 @@ export function notifsAlFinalizar(p: {
 // para autonotificar al dueño. `hoyISO` viene ya calculado por el caller (toARTDate).
 // Excluye: de otro dueño, archivados, sin due_date, fuera de la ventana hoy/mañana,
 // y los que ya generaron notificación (yaNotificados: ids de aviso ya referenciados).
+// NOTA: Deduplicación es por id de aviso, NO por (id + día). Un aviso que pasa de
+// "vence mañana" a "vence hoy" NO genera segunda notificación (decisión anti-spam).
 export function avisosParaNotificar(
   annos: Announcement[], meId: string, hoyISO: string, yaNotificados: string[],
 ): Announcement[] {
