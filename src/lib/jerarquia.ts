@@ -61,6 +61,37 @@ export function construirArbol(profiles: Profile[]): NodoOrg[] {
   return profiles.filter(esRaiz).map((p) => ({ profile: p, hijos: hijosDe(p.id) }));
 }
 
+// Árbol jerárquico con filtro OPCIONAL por marca que nunca corta la cadena de mando.
+// Bug real (spec 28 Fase D): Organigrama.tsx armaba porMarca(team) y RECIÉN DESPUÉS
+// construirArbol(gente) por cada marca. Al construir el árbol sobre un subconjunto,
+// esRaiz() se dispara para cualquiera cuyo manager quedó afuera del grupo — así,
+// Juan (Gerente General, marca "General") desaparecía de la sección "Peugeot"/"Honda"
+// porque su propio manager_id (null) SÍ es raíz legítima, pero sus REPORTES en esas
+// marcas perdían a Juan como padre y quedaban como raíces sueltas.
+// La solución: un solo árbol armado sobre TODOS los profiles; el filtro por marca sólo
+// decide qué hojas mostrar, arrastrando siempre la cadena completa de superiores
+// (aunque sean de otra marca) para que la jerarquía nunca se corte.
+export function arbolConAncestros(profiles: Profile[], filtroMarca: string | null): NodoOrg[] {
+  if (!filtroMarca) return construirArbol(profiles);
+
+  const byId = new Map(profiles.map((p) => [p.id, p]));
+  // Conjunto de ids a conservar: las personas de la marca + toda su cadena de ancestros.
+  const incluidos = new Set<string>();
+  for (const p of profiles) {
+    if (p.marca !== filtroMarca) continue;
+    let actual: Profile | undefined = p;
+    // Guard anti-ciclo defensivo: un manager_id mal cargado que cicle nunca debería
+    // darse (puedeSerManager lo evita al asignar), pero si igual ocurriera, el Set ya
+    // marcado corta el walk en vez de loopear infinito.
+    while (actual && !incluidos.has(actual.id)) {
+      incluidos.add(actual.id);
+      actual = actual.manager_id ? byId.get(actual.manager_id) : undefined;
+    }
+  }
+  const subset = profiles.filter((p) => incluidos.has(p.id));
+  return construirArbol(subset);
+}
+
 // Guard anti-ciclo: un candidato NO puede ser manager de un empleado si es el propio empleado
 // o si ya forma parte del subárbol (equipo) del empleado (eso crearía un ciclo).
 export function puedeSerManager(candidatoId: string, empleadoId: string, profiles: Profile[]): boolean {

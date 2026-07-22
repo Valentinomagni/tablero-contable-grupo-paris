@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { reportesDirectos, equipoDe, visiblesPara, porMarca, puedeSerManager, cardsDeEquipo, puedeReasignar, construirArbol } from "./jerarquia";
+import { reportesDirectos, equipoDe, visiblesPara, porMarca, puedeSerManager, cardsDeEquipo, puedeReasignar, construirArbol, arbolConAncestros } from "./jerarquia";
 import type { Card, Profile } from "./types";
 const p = (id: string, role: Profile["role"], manager_id: string | null = null, marca: string | null = null): Profile =>
   ({ id, name: id, role, email: "", username: null, puesto: "", ficha: "", manager_id, marca });
@@ -85,6 +85,88 @@ describe("construirArbol", () => {
   });
   it("array vacío => []", () => {
     expect(construirArbol([])).toEqual([]);
+  });
+});
+
+describe("arbolConAncestros", () => {
+  // Juan (General) es manager de Ana (Peugeot) y de Beto (Honda) — jerarquía cruzada de marcas,
+  // el caso real reportado por el usuario.
+  const cruzado = [
+    p("juan", "jefe", null, "General"),
+    p("ana", "encargado", "juan", "Peugeot"),
+    p("e1", "empleado", "ana", "Peugeot"),
+    p("beto", "encargado", "juan", "Honda"),
+    p("e2", "empleado", "beto", "Honda"),
+  ];
+
+  it("sin filtro (null) => árbol completo, igual que construirArbol", () => {
+    const raices = arbolConAncestros(cruzado, null);
+    expect(raices.map((r) => r.profile.id)).toEqual(["juan"]);
+    expect(raices[0].hijos.map((h) => h.profile.id).sort()).toEqual(["ana", "beto"]);
+  });
+
+  it("filtrando por Peugeot, Juan (General) aparece como raíz con Ana colgando", () => {
+    const raices = arbolConAncestros(cruzado, "Peugeot");
+    expect(raices.map((r) => r.profile.id)).toEqual(["juan"]);
+    const juan = raices[0];
+    expect(juan.hijos.map((h) => h.profile.id)).toEqual(["ana"]);
+    expect(juan.hijos[0].hijos.map((h) => h.profile.id)).toEqual(["e1"]);
+    // Beto (Honda) no pertenece a la cadena de ancestros de Peugeot: no debe colgar de Juan.
+    expect(juan.hijos.some((h) => h.profile.id === "beto")).toBe(false);
+  });
+
+  it("filtrando por Honda, Juan también aparece como raíz con Beto colgando", () => {
+    const raices = arbolConAncestros(cruzado, "Honda");
+    expect(raices.map((r) => r.profile.id)).toEqual(["juan"]);
+    expect(raices[0].hijos.map((h) => h.profile.id)).toEqual(["beto"]);
+  });
+
+  it("dos jefes sin manager (marcas distintas) => dos raíces legítimas", () => {
+    const dosJefes = [
+      p("j1", "jefe", null, "Peugeot"),
+      p("j2", "jefe", null, "Honda"),
+      p("sub1", "empleado", "j1", "Peugeot"),
+    ];
+    const raices = arbolConAncestros(dosJefes, null);
+    expect(raices.map((r) => r.profile.id).sort()).toEqual(["j1", "j2"]);
+  });
+
+  it("un encargado filtrando su propia marca => solo su subárbol, sin superiores fantasma", () => {
+    const raices = arbolConAncestros(cruzado, "Peugeot");
+    // El único ancestro real de Ana es Juan; no debe aparecer nadie de Honda.
+    const ids: string[] = [];
+    const walk = (n: (typeof raices)[number]) => { ids.push(n.profile.id); n.hijos.forEach(walk); };
+    raices.forEach(walk);
+    expect(ids.sort()).toEqual(["ana", "e1", "juan"]);
+  });
+
+  it("array vacío => []", () => {
+    expect(arbolConAncestros([], "Peugeot")).toEqual([]);
+  });
+
+  // Reproducción literal del reporte del usuario: "Con 4 integrantes solo se visualiza
+  // correctamente mi equipo. Si selecciono a Juan puedo ver toda la estructura, pero al
+  // seleccionar cualquier otro integrante, Juan deja de aparecer." Juan es Gerente Contable
+  // General (marca "General", sin manager) y es jefe directo de un encargado por cada marca.
+  // Con la vista rediseñada, "seleccionar a otro integrante" equivale a filtrar por SU marca.
+  it("caso del usuario: 4 integrantes, Juan (Gerente Contable General) siempre visible con cualquier filtro", () => {
+    const equipo4 = [
+      p("juan", "jefe", null, "General"),          // máxima autoridad
+      p("ana", "encargado", "juan", "Peugeot"),
+      p("beto", "encargado", "juan", "Honda"),
+      p("cami", "encargado", "juan", "Citroën"),
+    ];
+    for (const marca of ["Peugeot", "Honda", "Citroën"]) {
+      const raices = arbolConAncestros(equipo4, marca);
+      expect(raices.map((r) => r.profile.id)).toEqual(["juan"]); // Juan sigue siendo la raíz
+      expect(raices[0].hijos.map((h) => h.profile.id)).toEqual([
+        equipo4.find((x) => x.marca === marca)!.id,
+      ]);
+    }
+    // Y sin filtro ("Todas las marcas"), Juan sigue siendo la única raíz con los 3 colgando.
+    const todas = arbolConAncestros(equipo4, null);
+    expect(todas.map((r) => r.profile.id)).toEqual(["juan"]);
+    expect(todas[0].hijos.map((h) => h.profile.id).sort()).toEqual(["ana", "beto", "cami"]);
   });
 });
 
