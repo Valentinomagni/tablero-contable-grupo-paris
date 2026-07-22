@@ -111,6 +111,101 @@ Después de aplicar `migracion-29-produccion.sql`:
    ```
    Debe listar `profiles_bloquear_campos_sensibles`.
 
+## Migración 30 — Analítica: trigger, full-text y vista materializada (spec 28 fase C)
+
+Correr `migracion-30-analitica.sql` completo en Supabase → SQL Editor. Es idempotente
+(se puede correr las veces que haga falta, en cualquier orden respecto de la 26/27/28/29).
+
+### AVISO IMPORTANTE — el trigger de notificaciones nace DESACTIVADO
+
+La migración crea el trigger `cards_notificar_finalizacion` sobre `public.cards`, que
+avisa al encargado/jefe cuando alguien termina una tarea con impacto. **Hoy la app
+(cliente) ya inserta esa misma notificación** al finalizar una tarea. Si el trigger
+quedara activo mientras el cliente sigue insertando, **cada finalización generaría DOS
+notificaciones idénticas** y el equipo recibiría todo duplicado.
+
+Por eso el trigger se crea **desactivado**: correr la migración 30 hoy es seguro y no
+cambia nada de lo que ve el usuario.
+
+Se activa **con un solo comando, y SOLO en el mismo momento en que se despliega la
+Task 11** de esta fase (la que quita el insert del cliente en `CardModal.tsx`):
+
+```sql
+alter table public.cards enable trigger cards_notificar_finalizacion;
+```
+
+Si hay que revertir ese deploy, revertir también el trigger:
+
+```sql
+alter table public.cards disable trigger cards_notificar_finalizacion;
+```
+
+Volver a correr la migración 30 **no** apaga un trigger que ya fue activado: el script
+lee el estado previo y lo restaura.
+
+### Verificaciones
+
+1. La migración quedó registrada:
+   ```sql
+   select id, nombre, applied_at from public.schema_migrations where id = 30;
+   ```
+2. El trigger existe y está **desactivado** (`tgenabled = 'D'`; pasa a `'O'` recién
+   cuando se despliega la Task 11):
+   ```sql
+   select tgname, tgenabled from pg_trigger
+     where tgrelid = 'public.cards'::regclass and not tgisinternal;
+   ```
+3. La columna full-text generada existe:
+   ```sql
+   select column_name, is_generated from information_schema.columns
+     where table_name = 'cards' and column_name = 'tsv';
+   ```
+   Debe devolver 1 fila con `is_generated = 'ALWAYS'`.
+4. El índice GIN existe:
+   ```sql
+   select indexname from pg_indexes where tablename = 'cards' and indexname = 'cards_tsv_gin';
+   ```
+5. La búsqueda anda y **respeta RLS** (probala logueado como empleado: solo puede
+   devolver tareas suyas o de su equipo, nunca de otro):
+   ```sql
+   select id, title from public.buscar_cards('arqueo caja');
+   ```
+6. La vista materializada y su índice único existen:
+   ```sql
+   select count(*) from public.mv_resumen_mensual;
+   select indexname from pg_indexes
+     where tablename = 'mv_resumen_mensual' and indexname = 'mv_resumen_mensual_uidx';
+   ```
+7. Nadie lee la vista materializada directo desde la app (las matviews **no** soportan
+   RLS, por eso se lee vía el RPC `public.resumen_mensual()`, que filtra por rol):
+   ```sql
+   select has_table_privilege('authenticated', 'public.mv_resumen_mensual', 'select'); -- debe dar 'f'
+   select * from public.resumen_mensual() limit 5;
+   ```
+
+**Nota**: `unaccent` es opcional. Si en este proyecto de Supabase no se puede crear la
+extensión, la migración **no falla** (el intento está envuelto en un bloque con
+`exception when others then null`) y la búsqueda funciona igual, solo que sensible a
+tildes.
+
+### Cron mensual — refrescar la vista materializada
+
+La vista se alimenta de `public.cards_archive`, que se llena al cerrar cada mes. Hay que
+refrescarla una vez por mes, después del cierre:
+
+Supabase → **Cron Jobs** (o Database → Cron) → New Cron Job:
+- Nombre: `refresh-resumen-mensual`
+- Schedule: `0 6 1 * *` (día 1 de cada mes a las 06:00 UTC = **03:00 hora Argentina**, UTC−3)
+- Comando:
+  ```sql
+  refresh materialized view concurrently public.mv_resumen_mensual;
+  ```
+
+`concurrently` no bloquea las lecturas mientras refresca — funciona gracias al índice
+único `mv_resumen_mensual_uidx` que crea la migración. Si el cron no se configura, la
+vista queda con los datos del último `refresh` manual (la migración hace uno al aplicarse);
+se puede refrescar a mano en cualquier momento con ese mismo comando.
+
 ## GitHub Actions (#2) — opcional
 El archivo del workflow está en `docs/ci-workflow.yml.txt`. Tu token no tiene scope `workflow`,
 así que no se pudo pushear. Para activarlo: GitHub → repo → pestaña **Actions** → New workflow →
