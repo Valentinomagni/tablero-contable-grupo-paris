@@ -2,6 +2,7 @@ import { useState } from "react";
 import { TrendingUp, TrendingDown, AlertTriangle, Minus, FileSpreadsheet } from "lucide-react";
 import type { Card, Profile } from "../../lib/types";
 import { analizarMes } from "../../lib/analisis";
+import { indiceRetrabajo } from "../../lib/retrabajo";
 import { armarLibroAnalisis, descargarExcel } from "../../lib/excel";
 import { Gauge } from "../../components/charts";
 import { useOccurrences } from "../../hooks/useOccurrences";
@@ -24,6 +25,7 @@ export function AnalisisMensual({ cards, team, segmento = null }: { cards: Card[
   const occs = useOccurrences(year, month).data ?? [];
   const archives = useArchiveEquipo().data ?? [];
   const a = analizarMes(cards, team, occs, archives, year, month);
+  const retrabajo = indiceRetrabajo(cards, team);
   const mesLbl = now.toLocaleDateString("es-AR", { month: "long", year: "numeric" });
   const [exportando, setExportando] = useState(false);
 
@@ -155,6 +157,65 @@ export function AnalisisMensual({ cards, team, segmento = null }: { cards: Card[
               ) : <p className="text-ink2 text-sm">Sin datos.</p>}
             </div>
           ))}
+      </div>
+
+      {/* Retrabajo: reaperturas de tareas ya terminadas. Encuadre no punitivo (spec 28 Fase B). */}
+      <div className={card} style={cardSh}>
+        <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-1">Retrabajo</h3>
+        <p className="text-ink2 text-[12.5px] mb-3.5">
+          Mide cuántas tareas terminadas se reabrieron, no quién las reabrió. Una tarea que se reabre
+          suele avisar que el criterio de "terminado" no quedó claro o que faltó una revisión, no que
+          alguien trabajó mal. Es una señal para mejorar el proceso, no un ranking de culpables.
+        </p>
+        <div className="flex items-center gap-2 mb-3.5">
+          {retrabajo.general.pct === null ? (
+            <span className="text-ink2 text-sm">Sin tareas terminadas este mes.</span>
+          ) : (
+            <>
+              <b className="text-2xl font-bold tracking-tight tnum" style={{ color: colorPct(100 - retrabajo.general.pct) }}>
+                {retrabajo.general.pct}%
+              </b>
+              <span className="text-ink2 text-[12.5px]">
+                de reaperturas sobre terminadas (<span className="tnum">{retrabajo.general.reaperturas}</span> de <span className="tnum">{retrabajo.general.terminadas}</span>)
+              </span>
+            </>
+          )}
+        </div>
+        {retrabajo.porPersona.length ? (
+          <table className="w-full text-sm mb-3.5">
+            <thead>
+              <tr className="text-ink2 text-[11.5px] uppercase tracking-wide text-left">
+                <th className="font-semibold py-1">Persona</th>
+                <th className="font-semibold py-1 text-right tnum">Terminadas</th>
+                <th className="font-semibold py-1 text-right tnum">Reaperturas</th>
+                <th className="font-semibold py-1 text-right tnum">%</th>
+              </tr>
+            </thead>
+            <tbody>
+              {retrabajo.porPersona.map((p) => (
+                <tr key={p.id} className="border-t border-line">
+                  <td className="py-2 truncate">{p.nombre}</td>
+                  <td className="py-2 text-right tnum">{p.terminadas}</td>
+                  <td className="py-2 text-right tnum">{p.reaperturas}</td>
+                  <td className="py-2 text-right tnum">{p.pct === null ? "—" : `${p.pct}%`}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : <p className="text-ink2 text-sm mb-3.5">Sin personas en este segmento.</p>}
+        {retrabajo.masReabiertas.length > 0 && (
+          <div>
+            <span className="text-[11.5px] text-ink2 uppercase tracking-wide">Tareas más reabiertas</span>
+            <ul className="text-sm mt-1.5 flex flex-col gap-1">
+              {retrabajo.masReabiertas.map((m) => (
+                <li key={m.id} className="flex justify-between gap-2">
+                  <span className="truncate">{m.title}</span>
+                  <span className="tnum text-ink2 shrink-0">{m.veces} veces</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       {/* Arqueos + distribución de carga */}

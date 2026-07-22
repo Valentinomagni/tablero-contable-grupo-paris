@@ -13,6 +13,19 @@ export default defineConfig({
   },
   // Respeta el puerto que asigne el entorno (PORT); si no hay, usa el default de Vite.
   server: process.env.PORT ? { port: Number(process.env.PORT) } : undefined,
+  build: {
+    rollupOptions: {
+      output: {
+        // rolldown-vite (Vite 8) solo acepta la forma de función para manualChunks;
+        // el objeto { chunkName: [paquetes] } de Rollup clásico no tipa (ManualChunksFunction).
+        manualChunks(id: string) {
+          if (id.includes("node_modules/motion")) return "vendor-motion";
+          if (id.includes("node_modules/@supabase/supabase-js")) return "vendor-supabase";
+          if (id.includes("node_modules/@tanstack/react-query")) return "vendor-query";
+        },
+      },
+    },
+  },
   // Vitest solo corre los tests unitarios de src; los E2E (e2e/*.spec.ts) los corre Playwright.
   test: {
     include: ["src/**/*.test.{ts,tsx}"],
