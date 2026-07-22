@@ -354,9 +354,12 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
         <div className={card} style={cardSh}>
           <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-1">Tareas operativas</h3>
           <p className="text-ink2 text-[12.5px] mb-3.5">
-            Cantidad ejecutada y, cuando hay dato, tiempo estimado por tarea. El objetivo es ver si
-            algún tipo de tarea consume una cantidad de tiempo excesiva para mejorar el proceso, no
-            evaluar a quién la ejecuta.
+            Cantidad ejecutada por tarea. El objetivo es ver si algún tipo de tarea concentra
+            demasiada carga para mejorar el proceso, no evaluar a quién la ejecuta.
+            <br />
+            No se muestra tiempo por tarea: hoy no hay cronómetro por tarea operativa (propuesto,
+            pendiente de aprobación) y estimarlo a partir de "en proceso" → "hecho" mide cuánto
+            estuvo abierta la card, no el trabajo efectivo — puede incluir días de inactividad.
           </p>
 
           <span className="text-[11.5px] text-ink2 uppercase tracking-wide">Por empleado</span>
@@ -366,7 +369,6 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
                 <tr className="text-ink2 text-[11.5px] uppercase tracking-wide text-left">
                   <th className="font-semibold py-1">Persona</th>
                   <th className="font-semibold py-1 text-right tnum">Cantidad ejecutada</th>
-                  <th className="font-semibold py-1 text-right tnum">Tiempo (estimado)</th>
                 </tr>
               </thead>
               <tbody>
@@ -374,9 +376,6 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
                   <tr key={p.id} className="border-t border-line">
                     <td className="py-2 truncate">{p.nombre}</td>
                     <td className="py-2 text-right tnum">{p.cantidadEjecutada}</td>
-                    <td className="py-2 text-right tnum text-ink2">
-                      {p.minutosPromedio === null ? "sin datos de tiempo" : `~${p.minutosPromedio} min prom. (n=${p.muestraTiempo})`}
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -390,7 +389,6 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
                 <tr className="text-ink2 text-[11.5px] uppercase tracking-wide text-left">
                   <th className="font-semibold py-1">Tarea</th>
                   <th className="font-semibold py-1 text-right tnum">Frecuencia</th>
-                  <th className="font-semibold py-1 text-right tnum">Duración prom.</th>
                   <th className="font-semibold py-1 text-right tnum">% del total</th>
                 </tr>
               </thead>
@@ -399,9 +397,6 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
                   <tr key={t.titulo} className="border-t border-line">
                     <td className="py-2 truncate">{t.titulo}</td>
                     <td className="py-2 text-right tnum">{t.frecuencia}</td>
-                    <td className="py-2 text-right tnum text-ink2">
-                      {t.minutosPromedio === null ? "sin datos de tiempo" : `~${t.minutosPromedio} min (n=${t.muestraTiempo})`}
-                    </td>
                     <td className="py-2 text-right tnum">{t.pctDelTotal}%</td>
                   </tr>
                 ))}
