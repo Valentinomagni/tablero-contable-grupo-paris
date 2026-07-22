@@ -297,6 +297,10 @@ Habilita:
   `categoria` (que sigue siendo una sola categoría por card).
 - Tabla `public.empresas`: catálogo de empresas del grupo (cualquier autenticado lee;
   solo el jefe crea/edita/borra).
+  - **IMPORTANTE — rango de prioridad**: la columna `prioridad` está acotada a 0–4
+    (CHECK constraint en la migración). La fórmula `prioridadEmpresa = prioridad + (reporta_fabrica ? 5 : 0)`
+    depende de este rango para garantizar que reportar a fábrica siempre pese más.
+    El UI refuerza este rango (max=4 en el input).
 - Tabla `public.card_pausas`: registro de pausas del cronómetro por card. Se crea ahora
   aunque el cronómetro esté condicionado a la aprobación del ICR — la tabla vacía no
   molesta y evita una migración extra después.

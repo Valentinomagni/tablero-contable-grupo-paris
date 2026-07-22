@@ -136,7 +136,10 @@ export function Empresas() {
             <input type="checkbox" checked={form.reporta_fabrica} onChange={(e) => setForm({ ...form, reporta_fabrica: e.target.checked })} className="accent-accent w-4 h-4" />
             Reporta a fábrica
           </label>
-          <input type="number" min={0} placeholder="prioridad" value={form.prioridad} onChange={(e) => setForm({ ...form, prioridad: Number(e.target.value) || 0 })} className={inputCls + " w-[90px]"} />
+          <div className="flex flex-col gap-1">
+            <input type="number" min={0} max={4} placeholder="prioridad" value={form.prioridad} onChange={(e) => setForm({ ...form, prioridad: Number(e.target.value) || 0 })} className={inputCls + " w-[90px]"} />
+            <span className="text-ink2 text-xs">Prioridad 0–4. Las empresas que reportan a fábrica siempre quedan por encima de las que no.</span>
+          </div>
           <button type="submit" disabled={busy || !form.nombre.trim()}
             className="flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] rounded-lg px-3 py-1.5 text-[13px] font-semibold disabled:opacity-50">
             {busy ? "Guardando…" : editId ? "Guardar cambios" : "Crear"}

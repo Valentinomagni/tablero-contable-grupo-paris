@@ -60,6 +60,11 @@ create index if not exists cards_etiquetas_gin
 -- 2) Empresas del grupo. RLS: cualquier autenticado lee; solo el
 --    jefe crea/edita/borra (mismo patrón que las tablas de catálogo
 --    administradas desde Admin.tsx).
+--
+-- IMPORTANTE: `prioridad` está acotada a 0..4 (constraint CHECK).
+-- La fórmula prioridadEmpresa = prioridad + (reporta_fabrica ? 5 : 0)
+-- depende de este rango: si prioridad manual fuera > 4, podría superar
+-- el bonus de fábrica (5 puntos). El UI también refuerza este rango.
 -- ------------------------------------------------------------
 create table if not exists public.empresas (
   id uuid primary key default gen_random_uuid(),
@@ -71,6 +76,19 @@ create table if not exists public.empresas (
   created_at timestamptz not null default now()
 );
 alter table public.empresas enable row level security;
+
+-- Agregar constraint de rango de prioridad (0..4) de forma idempotente
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname='empresas_prioridad_range'
+      and conrelid='public.empresas'::regclass
+  ) then
+    alter table public.empresas
+      add constraint empresas_prioridad_range check (prioridad >= 0 and prioridad <= 4);
+  end if;
+end $$;
 
 drop policy if exists "empresas_select" on public.empresas;
 create policy "empresas_select" on public.empresas for select

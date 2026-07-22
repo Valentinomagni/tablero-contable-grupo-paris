@@ -17,10 +17,28 @@ describe("prioridadEmpresa", () => {
     expect(prioridadEmpresa(conFabrica)).toBeGreaterThan(prioridadEmpresa(sinFabrica));
   });
 
-  it("prioridad manual alta gana aunque no reporte a fábrica", () => {
-    const manualAlta = empresa({ reporta_fabrica: false, prioridad: 10 });
+  it("reportar a fábrica siempre supera a quien no reporta, dentro del rango válido 0..4", () => {
+    const manualAlta = empresa({ reporta_fabrica: false, prioridad: 4 });
     const fabricaBaja = empresa({ reporta_fabrica: true, prioridad: 0 });
-    expect(prioridadEmpresa(manualAlta)).toBeGreaterThan(prioridadEmpresa(fabricaBaja));
+    // Esperado: prioridadEmpresa(fabricaBaja) = 0 + 5 = 5
+    //           prioridadEmpresa(manualAlta) = 4 + 0 = 4
+    // Fábrica baja gana: 5 > 4
+    expect(prioridadEmpresa(fabricaBaja)).toBeGreaterThan(prioridadEmpresa(manualAlta));
+  });
+
+  it("clampea defensivamente prioridad > 4 a 4 (datos de base vieja)", () => {
+    const viejaFueraRango = empresa({ reporta_fabrica: false, prioridad: 100 });
+    const fabricaBaja = empresa({ reporta_fabrica: true, prioridad: 0 });
+    // Aunque prioridad=100, se clampea a 4: prioridadEmpresa = 4 + 0 = 4
+    // Fábrica baja: 0 + 5 = 5, así que gana por el clamp defensivo
+    expect(prioridadEmpresa(fabricaBaja)).toBeGreaterThan(prioridadEmpresa(viejaFueraRango));
+  });
+
+  it("clampea defensivamente prioridad negativa a 0 (datos de base vieja)", () => {
+    const viejaNegativa = empresa({ reporta_fabrica: false, prioridad: -10 });
+    const valida = empresa({ reporta_fabrica: false, prioridad: 0 });
+    // -10 se clampea a 0: ambas dan prioridadEmpresa = 0
+    expect(prioridadEmpresa(viejaNegativa)).toBe(prioridadEmpresa(valida));
   });
 
   it("es determinística: misma empresa, mismo resultado", () => {
