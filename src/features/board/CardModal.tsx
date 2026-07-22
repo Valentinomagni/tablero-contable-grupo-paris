@@ -14,7 +14,7 @@ import { esCobertura } from "../../lib/vacaciones";
 import { filaDuplicada } from "../../lib/duplicar";
 import { useDepsInfo, useReverseDeps, useSettings, useMigraciones } from "../../hooks/useData";
 import { payloadCards } from "../../lib/esquema";
-import { nuevaCantidad } from "../../lib/operativas";
+import { nuevaCantidad, progresoCarga, extraerMetaCarga, conMetaCarga, descripcionSinMeta } from "../../lib/operativas";
 import { TXT_REAPERTURA } from "../../lib/retrabajo";
 import { Adjuntos } from "./Adjuntos";
 import { MetaSection } from "./card/MetaSection";
@@ -134,14 +134,27 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
         <MetaSection c={c} cards={cards} team={team} settings={settings} patch={patch} hist={hist} locked={locked} />
 
         <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Detalle</h4>
-        <textarea defaultValue={c.description} placeholder="Descripción, instrucciones…"
-          onBlur={(e) => { if (e.target.value !== c.description) patch.mutate({ description: e.target.value }); }}
+        <textarea defaultValue={descripcionSinMeta(c.description)} placeholder="Descripción, instrucciones…"
+          onBlur={(e) => {
+            const visible = descripcionSinMeta(c.description);
+            if (e.target.value !== visible) {
+              patch.mutate({ description: conMetaCarga(e.target.value, extraerMetaCarga(c.description)) });
+            }
+          }}
           className="w-full bg-surface2 border border-line rounded-lg text-ink text-sm px-2.5 py-2 min-h-[52px] resize-y" />
 
         <Adjuntos cardId={c.id} canEdit={!locked} />
 
         {c.card_type === "operativa" && (() => {
           const regs = activity.filter((a) => a.card_id === c.id);
+          const totalQty = regs.reduce((s, a) => s + a.qty, 0);
+          const meta = extraerMetaCarga(c.description);
+          const { pct, texto } = progresoCarga(totalQty, meta);
+          const saveMeta = (v: string) => {
+            const n = Math.round(Number(v));
+            const nuevaMeta = v.trim() === "" || !Number.isFinite(n) || n <= 0 ? null : n;
+            patch.mutate({ description: conMetaCarga(c.description, nuevaMeta) });
+          };
           const saveRegEdit = (id: string) => {
             const q = Math.max(0, Math.round(Number(editRegQty) || 0));
             setRegQty.mutate({ id, qty: q });
@@ -150,6 +163,19 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
           return (
             <>
               <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Registros ({regs.length})</h4>
+              <div className="flex items-center gap-2 mb-2">
+                <label className="text-ink2 text-xs shrink-0">Meta de carga</label>
+                <input type="number" min={1} placeholder="opcional" defaultValue={meta ?? ""} key={meta ?? "sin-meta"}
+                  onBlur={(e) => { if ((meta ?? "") !== (e.target.value === "" ? "" : Number(e.target.value))) saveMeta(e.target.value); }}
+                  className="w-20 bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] outline-none tnum" />
+                {meta !== null && <span className="text-ink2 text-xs tnum">{texto}</span>}
+              </div>
+              {meta !== null && (
+                <div className="w-full h-1.5 rounded-full bg-surface2 border border-line overflow-hidden mb-2" role="progressbar"
+                  aria-valuenow={pct ?? 0} aria-valuemin={0} aria-valuemax={100}>
+                  <div className="h-full bg-ink" style={{ width: `${pct}%` }} />
+                </div>
+              )}
               {regs.length === 0 && <p className="text-ink2 text-[13px] m-0">Sin registros todavía.</p>}
               {regs.map((a) => (
                 <div key={a.id} className="flex items-center gap-2 py-1 text-sm">
