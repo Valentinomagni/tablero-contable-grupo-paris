@@ -190,6 +190,43 @@ end $$;
 
 
 -- ------------------------------------------------------------
+-- 1-bis) ¿El trigger de notificaciones está ACTIVO? (spec 28 fase C, Task 11)
+--
+-- El cliente necesita saber la VERDAD sobre el trigger para decidir si inserta
+-- la notificación de finalización o si la deja en manos de la base:
+--   - trigger ACTIVO   → el cliente NO inserta (si lo hiciera, DUPLICA el aviso).
+--   - trigger APAGADO  → el cliente SIGUE insertando (si no, NADIE recibe nada).
+--
+-- No alcanza con mirar `schema_migrations`: la migración 30 puede estar aplicada
+-- y el trigger seguir DESACTIVADO, porque activarlo es un paso manual aparte.
+-- Deducirlo del número de migración daría la respuesta equivocada justo en la
+-- ventana entre "corrí la migración" y "activé el trigger".
+--
+-- Devuelve false si el trigger no existe (base sin migrar): ante la duda, el
+-- cliente notifica. Un duplicado ocasional se tolera; un silencio no.
+--
+-- SECURITY DEFINER: `authenticated` no tiene por qué poder leer pg_trigger.
+-- ------------------------------------------------------------
+create or replace function public.trigger_notificaciones_activo()
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select coalesce(
+    (select t.tgenabled <> 'D'
+       from pg_trigger t
+      where t.tgrelid = 'public.cards'::regclass
+        and t.tgname = 'cards_notificar_finalizacion'
+        and not t.tgisinternal),
+    false);
+$$;
+grant execute on function public.trigger_notificaciones_activo() to authenticated;
+revoke execute on function public.trigger_notificaciones_activo() from public, anon;
+
+
+-- ------------------------------------------------------------
 -- 2) Búsqueda full-text sobre cards (título + descripción).
 -- ------------------------------------------------------------
 
@@ -302,6 +339,8 @@ refresh materialized view public.mv_resumen_mensual;
 --   -- trigger creado y DESACTIVADO ('D' = disabled, 'O' = enabled):
 --   select tgname, tgenabled from pg_trigger
 --     where tgrelid = 'public.cards'::regclass and not tgisinternal;
+--   -- lo mismo, pero como lo ve el cliente (false = el cliente sigue notificando):
+--   select public.trigger_notificaciones_activo();
 --   -- full-text:
 --   select column_name, is_generated from information_schema.columns
 --     where table_name = 'cards' and column_name = 'tsv';

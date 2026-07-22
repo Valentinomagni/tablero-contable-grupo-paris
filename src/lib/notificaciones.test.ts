@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { tieneImpacto, esRelevante, notifsAlDelegar, notifsAlFinalizar, tiempoRelativo, avisosParaNotificar } from "./notificaciones";
+import { tieneImpacto, esRelevante, notifsAlDelegar, notifsAlFinalizar, tiempoRelativo, avisosParaNotificar, debeNotificarDesdeCliente } from "./notificaciones";
 import type { Announcement } from "./types";
 
 describe("tieneImpacto", () => {
@@ -74,6 +74,27 @@ describe("notifsAlFinalizar", () => {
   it("sin manager, o el manager es quien finaliza → nada (no auto-notificarse)", () => {
     expect(notifsAlFinalizar({ card, actorId: "emp", actorName: "V", managerId: null })).toEqual([]);
     expect(notifsAlFinalizar({ card, actorId: "boss", actorName: "B", managerId: "boss" })).toEqual([]);
+  });
+});
+
+describe("debeNotificarDesdeCliente (Task 11: trigger de base vs insert del cliente)", () => {
+  it("trigger ACTIVO → el cliente NO inserta (si insertara, el aviso saldría duplicado)", () => {
+    expect(debeNotificarDesdeCliente(true)).toBe(false);
+  });
+  it("trigger APAGADO → el cliente inserta (si no, nadie recibe nada)", () => {
+    expect(debeNotificarDesdeCliente(false)).toBe(true);
+  });
+  it("DESCONOCIDO (null) → el cliente inserta: mejor un duplicado que un silencio", () => {
+    expect(debeNotificarDesdeCliente(null)).toBe(true);
+  });
+  it("DESCONOCIDO (undefined, query todavía cargando) → el cliente inserta", () => {
+    expect(debeNotificarDesdeCliente(undefined)).toBe(true);
+  });
+  it("SOLO el true explícito apaga el camino del cliente", () => {
+    // Todo lo que no sea exactamente `true` cae del lado seguro (el cliente notifica).
+    // Es la propiedad que sostiene el criterio: el silencio del cliente exige una
+    // confirmación positiva de que la base se está ocupando.
+    for (const v of [null, undefined, false]) expect(debeNotificarDesdeCliente(v)).toBe(true);
   });
 });
 

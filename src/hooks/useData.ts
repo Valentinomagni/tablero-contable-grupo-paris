@@ -144,6 +144,28 @@ export function useMigraciones() {
   });
 }
 
+// ¿El trigger `cards_notificar_finalizacion` está ACTIVO en la base? (spec 28 fase C, Task 11)
+//
+// No se puede deducir de useMigraciones(): la migración 30 crea el trigger DESACTIVADO a
+// propósito y activarlo es un paso manual aparte, así que "migración 30 aplicada" no
+// implica "trigger activo". El RPC lee pg_trigger.tgenabled, o sea el estado real.
+//
+// Devuelve null cuando no se pudo saber (RPC inexistente porque la 30 no corrió, error de
+// red, RLS). null → debeNotificarDesdeCliente() decide que el cliente notifique igual:
+// preferimos un duplicado ocasional antes que un silencio permanente.
+export function useTriggerNotificaciones() {
+  return useQuery({
+    queryKey: ["trigger-notificaciones"],
+    staleTime: 5 * 60_000,
+    retry: false,
+    queryFn: async (): Promise<boolean | null> => {
+      const { data, error } = await supabase.rpc("trigger_notificaciones_activo");
+      if (error) return null;
+      return typeof data === "boolean" ? data : null;
+    },
+  });
+}
+
 // Consultas (Task 3, spec 28): defensivo — si la tabla no existe todavía (migración 29 sin correr),
 // la queryFn tira el error (react-query lo expone via isError) y quien no lo mira usa `data ?? []`.
 // RLS ya filtra: autor ve las suyas, jefe ve todas.

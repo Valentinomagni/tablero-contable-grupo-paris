@@ -8,11 +8,11 @@ import { fmtDateTime } from "../../lib/metrics";
 import { type DepMap } from "../../lib/deps";
 import { pushUndo } from "../../lib/undo";
 import { siblingSyncPatches } from "../../lib/shared";
-import { notifsAlFinalizar } from "../../lib/notificaciones";
+import { notifsAlFinalizar, debeNotificarDesdeCliente } from "../../lib/notificaciones";
 import { Check, Copy, Lock, Pencil, Trash2, Minus, Plus, Shield, ShieldCheck, Coins, Plane } from "lucide-react";
 import { esCobertura } from "../../lib/vacaciones";
 import { filaDuplicada } from "../../lib/duplicar";
-import { useDepsInfo, useReverseDeps, useSettings, useMigraciones } from "../../hooks/useData";
+import { useDepsInfo, useReverseDeps, useSettings, useMigraciones, useTriggerNotificaciones } from "../../hooks/useData";
 import { payloadCards } from "../../lib/esquema";
 import { nuevaCantidad, progresoCarga, extraerMetaCarga, conMetaCarga, descripcionSinMeta } from "../../lib/operativas";
 import { TXT_REAPERTURA } from "../../lib/retrabajo";
@@ -75,6 +75,9 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
   // tarea cerrada: solo jefes la tocan salvo que el permiso edit_closed esté activo (RLS lo aplica en el server)
   const locked = c.status === "term" && !isJefe && !settings.edit_closed;
   const { data: migracionesAplicadas } = useMigraciones();
+  // Task 11: con el trigger de la migración 30 activo, la notificación de finalización la
+  // genera la base. Si el cliente además la insertara, el aviso saldría DUPLICADO.
+  const { data: triggerNotifsActivo } = useTriggerNotificaciones();
 
   const patch = useMutation({
     mutationFn: async (p: Partial<Card>) => {
@@ -94,7 +97,8 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
       }
       // Finalización con impacto → notif al encargado/jefe (spec #8). Best-effort:
       // si la tabla notifications no existe aún, la tarea se termina igual.
-      if (p.status === "term" && meId) {
+      // Con el trigger de la base activo esto NO corre: lo hace el servidor (Task 11).
+      if (p.status === "term" && meId && debeNotificarDesdeCliente(triggerNotifsActivo)) {
         try {
           const notifs = notifsAlFinalizar({
             card: c, actorId: meId, actorName: meName,

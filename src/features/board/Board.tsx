@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import { COLS, type Card, type Status, type ActivityLog, type Profile } from "../../lib/types";
-import { notifsAlFinalizar } from "../../lib/notificaciones";
+import { notifsAlFinalizar, debeNotificarDesdeCliente } from "../../lib/notificaciones";
 import { dueInfo, fmtDateTime } from "../../lib/metrics";
 import { cn } from "../../lib/ui";
 import { pushUndo } from "../../lib/undo";
@@ -12,7 +12,7 @@ import { bloqueadaPorTitulos } from "../../lib/deps";
 import { categoriasEnUso, pasaFiltroCategoria } from "../../lib/categorias";
 import { type ModoAgrupar } from "../../lib/agrupar";
 import { getPref, setPref, PREF } from "../../lib/prefs";
-import { useOrganizacion, useTiemposMax, useMigraciones } from "../../hooks/useData";
+import { useOrganizacion, useTiemposMax, useMigraciones, useTriggerNotificaciones } from "../../hooks/useData";
 import { payloadCards } from "../../lib/esquema";
 import { estadoTiempo, registrarIncumplimiento } from "../../lib/tiempos";
 import { textoTransicion } from "../../lib/retrabajo";
@@ -75,6 +75,9 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
   // Esquema de la base (ALTA 1): si la migración 29 no está aplicada, el patch no puede
   // mencionar proc_at o el update entero falla con PGRST204 y el drag & drop se rompe.
   const { data: migracionesAplicadas } = useMigraciones();
+  // Task 11: con el trigger de la migración 30 activo, la notificación de finalización la
+  // genera la base. Si el cliente además la insertara, el aviso saldría DUPLICADO.
+  const { data: triggerNotifsActivo } = useTriggerNotificaciones();
   const q = query.trim().toLowerCase();
   const matches = (c: Card) => !q || c.title.toLowerCase().includes(q) || (c.description ?? "").toLowerCase().includes(q);
   // filtro por categoría (spec 21 item 11): null = todas; "" = sin categoría
@@ -132,7 +135,8 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
       }
       // Finalización con impacto → notif al encargado/jefe (spec #8). Best-effort:
       // si la tabla notifications no existe aún, la tarea se termina igual.
-      if (status === "term" && meId) {
+      // Con el trigger de la base activo esto NO corre: lo hace el servidor (Task 11).
+      if (status === "term" && meId && debeNotificarDesdeCliente(triggerNotifsActivo)) {
         try {
           const notifs = notifsAlFinalizar({
             card: c, actorId: meId, actorName: meName,

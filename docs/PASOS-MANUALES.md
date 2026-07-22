@@ -133,18 +133,57 @@ notificaciones idénticas** y el equipo recibiría todo duplicado.
 Por eso el trigger se crea **desactivado**: correr la migración 30 hoy es seguro y no
 cambia nada de lo que ve el usuario.
 
-Se activa **con un solo comando, y SOLO en el mismo momento en que se despliega la
-Task 11** de esta fase (la que quita el insert del cliente en `CardModal.tsx`):
+### PASO MANUAL OBLIGATORIO — activar el trigger (después de desplegar la Task 11)
 
-```sql
-alter table public.cards enable trigger cards_notificar_finalizacion;
-```
+El código de la Task 11 (`debeNotificarDesdeCliente` en `src/lib/notificaciones.ts`) ya
+pregunta a la base, en cada carga, si el trigger está activo:
 
-Si hay que revertir ese deploy, revertir también el trigger:
+- trigger **activo** → el cliente **no** inserta la notificación (la genera la base);
+- trigger **apagado** o desconocido → el cliente **sigue** insertando, como siempre.
+
+O sea que el cliente se adapta solo. Falta un único comando del lado de la base.
+
+**Orden obligatorio: primero desplegar el código, después correr el comando.**
+
+1. Desplegar la Task 11 a producción y confirmar que quedó arriba (recargar el tablero).
+2. Recién ahí, en Supabase → SQL Editor:
+   ```sql
+   alter table public.cards enable trigger cards_notificar_finalizacion;
+   ```
+3. Verificar que quedó activo (`tgenabled` debe ser `'O'`):
+   ```sql
+   select tgname, tgenabled from pg_trigger
+     where tgrelid = 'public.cards'::regclass
+       and tgname = 'cards_notificar_finalizacion';
+   ```
+   Y lo mismo tal como lo ve la app (debe devolver `true`):
+   ```sql
+   select public.trigger_notificaciones_activo();
+   ```
+4. Prueba de humo: terminar una tarea con prioridad alta (o con vencimiento) cuyo dueño
+   tenga manager, y confirmar que al manager le llega **una sola** notificación
+   "Tarea importante terminada". Si llegan dos, el navegador está con la versión vieja
+   del código: recargar con caché limpia. Si no llega ninguna, revisar el paso 3.
+
+**ADVERTENCIA — si activás el trigger ANTES de desplegar el código**, el cliente viejo
+sigue insertando su propia notificación y **cada finalización genera avisos duplicados**
+hasta que el deploy salga. No se pierde nada ni se rompe nada, pero el equipo recibe todo
+por duplicado mientras dure la ventana. Si pasó, o desplegá ya, o apagalo de nuevo:
 
 ```sql
 alter table public.cards disable trigger cards_notificar_finalizacion;
 ```
+
+Ese mismo comando es el **rollback**: si hay que revertir el deploy de la Task 11, apagá
+el trigger. Da igual el orden en este sentido — con el trigger apagado el cliente vuelve
+a notificar por su cuenta y no hay ventana de silencio.
+
+> **Nota si ya corriste la migración 30 antes de esta task:** la función
+> `public.trigger_notificaciones_activo()` se agregó junto con la Task 11, así que no
+> existe en tu base todavía. Volvé a correr `migracion-30-analitica.sql` completo (es
+> idempotente y **no** apaga el trigger si ya lo habías activado). Mientras la función no
+> exista, el RPC falla, el cliente lo interpreta como "desconocido" y sigue notificando él
+> mismo: seguro, pero el trigger no se puede activar sin duplicar hasta que la corras.
 
 Volver a correr la migración 30 **no** apaga un trigger que ya fue activado: el script
 lee el estado previo y lo restaura.
@@ -156,10 +195,15 @@ lee el estado previo y lo restaura.
    select id, nombre, applied_at from public.schema_migrations where id = 30;
    ```
 2. El trigger existe y está **desactivado** (`tgenabled = 'D'`; pasa a `'O'` recién
-   cuando se despliega la Task 11):
+   cuando se corre el paso manual de arriba, después de desplegar la Task 11):
    ```sql
    select tgname, tgenabled from pg_trigger
      where tgrelid = 'public.cards'::regclass and not tgisinternal;
+   ```
+   La función que consulta el cliente devuelve lo mismo en booleano (`false` mientras el
+   trigger esté apagado, `true` una vez activado):
+   ```sql
+   select public.trigger_notificaciones_activo();
    ```
 3. La columna full-text generada existe:
    ```sql
