@@ -5,6 +5,10 @@ import type { ArcaItem } from "../features/tablon/arca";
 // monotributo, ganancias, bienes personales, combustibles, tabaco, seguros, etc.) es
 // información repetida o irrelevante para las tres superficies (Login, Calendario, Tablón)
 // y se descarta.
+//
+// NOTA: "información repetida" (mismo vencimiento en Login, Calendario, Tablón) NO es
+// duplicación a eliminar. Cada superficie tiene propósito distinto: aviso al entrar,
+// vista por día, agenda del mes. Son tres flujos de usuario independientes.
 
 // Keyword normalizada (minúscula, sin tildes) que identifica IVA y Libro IVA Digital: ambos
 // títulos oficiales contienen "iva" como palabra, y es el único rubro que el estudio sigue acá.
@@ -16,7 +20,17 @@ const normalizar = (s: string) =>
 
 function esContable(it: ArcaItem): boolean {
   const texto = normalizar(`${it.titulo} ${it.sub}`);
-  return /\biva\b/.test(texto);
+
+  // Incluir si menciona IVA como palabra.
+  if (!/\biva\b/.test(texto)) return false;
+
+  // EXCLUIR si es una obligación de retención o percepción (regímenes de agente de retención/percepción).
+  // Estos son rubros distintos aunque mencionen "IVA". Es fácil de revertir si el usuario
+  // solicita incluirlos: solo comentá estas dos líneas.
+  if (/\bpercepcion(es)?\b/.test(texto)) return false;
+  if (/\bretencion(es)?\b/.test(texto)) return false;
+
+  return true;
 }
 
 // Filtra el feed dejando solo IVA y Libro IVA Digital. Defensivo ante lista vacía.

@@ -60,6 +60,31 @@ describe("relevantes", () => {
     expect(relevantes(items).map((x) => x.titulo)).toEqual(["IVA", "Libro IVA Digital"]);
   });
 
+  it("EXCLUYE Percepciones IVA (obligación de agente de percepción, régimen distinto)", () => {
+    const items = [it0({ titulo: "Percepciones IVA" })];
+    expect(relevantes(items)).toHaveLength(0);
+  });
+
+  it("EXCLUYE Retenciones de IVA (obligación de agente de retención, régimen distinto)", () => {
+    const items = [it0({ titulo: "Retenciones de IVA" })];
+    expect(relevantes(items)).toHaveLength(0);
+  });
+
+  it("MANTIENE IVA - Declaración jurada (DDJJ de IVA, obligación estándar)", () => {
+    const items = [it0({ titulo: "IVA - Declaración jurada" })];
+    expect(relevantes(items)).toHaveLength(1);
+  });
+
+  it("MANTIENE Libro de IVA Digital (obligación estándar)", () => {
+    const items = [it0({ titulo: "Libro de IVA Digital" })];
+    expect(relevantes(items)).toHaveLength(1);
+  });
+
+  it("MANTIENE IVA Digital (obligación estándar)", () => {
+    const items = [it0({ titulo: "IVA Digital" })];
+    expect(relevantes(items)).toHaveLength(1);
+  });
+
   it("no rompe con lista vacía (caso local)", () => {
     expect(relevantes([])).toEqual([]);
   });
