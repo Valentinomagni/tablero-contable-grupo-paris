@@ -47,7 +47,10 @@ export function CommandPalette({ me, team, cards, annos = [], onNavigate, onOpen
   all.push({ g: "Vistas", t: "Anotaciones", icon: <StickyNote size={16} />, run: () => onNavigate("__notas") });
   all.push({ g: "Vistas", t: "Mi tablero", icon: <ClipboardList size={16} />, run: () => onNavigate(me.id) });
   all.push({ g: "Acciones", t: "Nueva anotación", icon: <StickyNote size={16} />, run: () => onNavigate("__notas") });
-  if (isJefe) team.forEach((u) => all.push({ g: "Personas", t: u.name, sub: u.role, av: u, run: () => onNavigate(u.id) }));
+  // El alcance de personas lo define el scope con el que llega `team` (visiblesPara/personasVisibles
+  // en App.tsx según el rol de `me`), no un gate acá: antes este `if (isJefe)` hacía que encargados
+  // y empleados no vieran a NADIE en "Personas" (ni siquiera a otros encargados) al buscar.
+  team.forEach((u) => all.push({ g: "Personas", t: u.name, sub: u.role, av: u, run: () => onNavigate(u.id) }));
   cardsCombinadas.forEach((c) => all.push({
     g: "Tareas", t: c.title,
     sub: `${team.find((u) => u.id === c.owner)?.name ?? ""} · ${c.card_type === "operativa" ? "operativa" : COLS.find((x) => x[0] === c.status)?.[1]}`,
@@ -64,8 +67,23 @@ export function CommandPalette({ me, team, cards, annos = [], onNavigate, onOpen
   // `i.servidor` pasa de largo: esas cards ya las filtró el full-text de la base (ver
   // idsDelServidor en lib/buscador.ts). El filtro de substring sólo aplica a lo que se
   // arma acá en el cliente (vistas, acciones, personas, avisos y cards en memoria).
-  const items = all.filter((i) => !needle || i.servidor
-    || i.t.toLowerCase().includes(needle) || (i.sub ?? "").toLowerCase().includes(needle)).slice(0, 12);
+  const filtrados = all.filter((i) => !needle || i.servidor
+    || i.t.toLowerCase().includes(needle) || (i.sub ?? "").toLowerCase().includes(needle));
+  // Sin texto de búsqueda (recién abierto / navegando la lista) un slice(12) plano sobre
+  // `all` deja afuera grupos enteros: como "Personas" se arma con team.forEach() en orden
+  // alfabético de rol ("empleado" < "encargado" < "jefe"), los primeros ~10 lugares ya los
+  // ocupan las Vistas/Acciones fijas y sólo entran los primeros empleados — los encargados
+  // (y cualquiera más abajo en la lista) nunca aparecen aunque estén en `team`. Por eso, sin
+  // needle, se previsualiza por grupo (todos los roles entran) en vez de cortar la lista
+  // entera de una; al tipear, el filtro de arriba ya angosta por coincidencia y el cupo
+  // por grupo deja de importar.
+  const items = needle ? filtrados.slice(0, 12) : (() => {
+    const porGrupo = new Map<string, Item[]>();
+    for (const i of filtrados) { const arr = porGrupo.get(i.g) ?? []; arr.push(i); porGrupo.set(i.g, arr); }
+    const previa: Item[] = [];
+    for (const arr of porGrupo.values()) previa.push(...arr.slice(0, 5));
+    return previa.slice(0, 16);
+  })();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
