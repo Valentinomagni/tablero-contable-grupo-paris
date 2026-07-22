@@ -52,3 +52,18 @@ export function esCobertura(card: Card): { activa: boolean; titular: string | nu
   }
   return { activa: false, titular: null };
 }
+
+// Impacto de una licencia (spec 28 fase C, task 8): tareas abiertas del ausente cuyo
+// vencimiento cae dentro del rango [desde, hasta] — lo que hay que cubrir o planificar
+// si se aprueba la ausencia. Las operativas no tienen vencimiento real y quedan afuera.
+export function impactoLicencia(
+  cards: Card[], ownerId: string, desde: string, hasta: string,
+): { tareas: Card[]; effortTotal: number } {
+  const tareas = cards
+    .filter((c) =>
+      c.owner === ownerId && c.status !== "term" && c.card_type !== "operativa" &&
+      !!c.due_date && c.due_date >= desde && c.due_date <= hasta)
+    .sort((a, b) => (a.due_date as string).localeCompare(b.due_date as string));
+  const effortTotal = tareas.reduce((sum, c) => sum + (c.effort ?? 1), 0);
+  return { tareas, effortTotal };
+}
