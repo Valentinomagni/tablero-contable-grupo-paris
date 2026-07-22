@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Download, ClipboardCopy, Inbox, AlarmClock, CheckCircle2, Activity, ArrowUp, ArrowDown, ShieldCheck, Users, AlertTriangle } from "lucide-react";
 import type { Card, Profile, ActivityLog, Announcement } from "../../lib/types";
 import { RadarVencimientos } from "./RadarVencimientos";
+import { Delegaciones } from "./Delegaciones";
 import { dueInfo, fmtDateTime, wow, onTimeAdherence, type Wow } from "../../lib/metrics";
 import { alertasDeRiesgo } from "../../lib/alertas";
 import { isBlocked } from "../../lib/deps";
@@ -156,6 +157,8 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
       {esGestor && (
         <RadarVencimientos avisos={annos} cards={cards} vacaciones={vacaciones} profiles={team} hoyISO={hoyISO} />
       )}
+
+      {esGestor && <Delegaciones cards={cards} team={team} hoyISO={hoyISO} onOpenCard={onOpenCard} />}
 
       {arca.length > 0 && (
         <div className="bg-surface border border-line rounded-2xl px-5 py-4 mb-5" style={cardSh}>
