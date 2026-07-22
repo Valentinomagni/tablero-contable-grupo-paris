@@ -34,13 +34,36 @@ export function NotificacionesBell({ onOpenCard }: { onOpenCard: (cardId: string
     return () => document.removeEventListener("mousedown", onDown);
   }, [open]);
 
-  // best-effort: si falla (tabla inexistente) no rompe nada
+  // Optimista (spec 28, Task 12): el punto/badge desaparece al instante, sin esperar
+  // el round-trip. best-effort: si la tabla no existe, el rollback restaura el snapshot.
   const marcar = useMutation({
     mutationFn: async (id: string) => { await supabase.from("notifications").update({ leida: true }).eq("id", id); },
+    onMutate: async (id: string) => {
+      await qc.cancelQueries({ queryKey: ["notifications"] });
+      const previous = qc.getQueryData<Notification[]>(["notifications"]);
+      qc.setQueryData<Notification[]>(["notifications"], (old) => old?.map((n) => (n.id === id ? { ...n, leida: true } : n)) ?? old);
+      return { previous };
+    },
+    // Rollback como patch de la notificación fallida, no como reemplazo del snapshot
+    // completo: si dos "marcar" se solapan, restaurar todo el array pisaría el optimismo
+    // de la otra (el invalidate de onSettled autosana, pero evita el flash innecesario).
+    onError: (_err, id, ctx) => {
+      const prev = ctx?.previous?.find((n) => n.id === id);
+      if (prev) qc.setQueryData<Notification[]>(["notifications"], (old) => old?.map((n) => (n.id === id ? { ...n, leida: prev.leida } : n)) ?? old);
+    },
     onSettled: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
   const marcarTodas = useMutation({
     mutationFn: async () => { await supabase.from("notifications").update({ leida: true }).eq("leida", false); },
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ["notifications"] });
+      const previous = qc.getQueryData<Notification[]>(["notifications"]);
+      qc.setQueryData<Notification[]>(["notifications"], (old) => old?.map((n) => ({ ...n, leida: true })) ?? old);
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(["notifications"], ctx.previous);
+    },
     onSettled: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
 

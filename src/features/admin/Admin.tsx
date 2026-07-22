@@ -6,6 +6,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase, SUPABASE_URL } from "../../lib/supabase";
 import type { Card, Profile, Role, AppSettings, PlantillaTareas } from "../../lib/types";
 import { filasDePlantilla } from "../../lib/plantillas";
+import { generarVencimientosMes } from "../../lib/fiscal";
+import { MESES } from "../../lib/cierre";
+import { useAnnouncements } from "../../hooks/useData";
 import { PlantillaCierre } from "./PlantillaCierre";
 import { ReasignarModal } from "./ReasignarModal";
 import { Huerfanas } from "./Huerfanas";
@@ -77,6 +80,14 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
   const [nu, setNu] = useState({ email: "", username: "", name: "", role: "empleado" as Role, puesto: "", pass: "" });
   const [nuBusy, setNuBusy] = useState(false);
   const [nuMsg, setNuMsg] = useState<{ ok: boolean; txt: string } | null>(null);
+  // Calendario fiscal autogenerado (spec 28, E3 Task 2): jefe genera con vista previa,
+  // nunca inserta a ciegas — se muestra qué se va a crear antes de confirmar.
+  const { data: annos = [] } = useAnnouncements();
+  const [fiscalPreview, setFiscalPreview] = useState<{ title: string; detail: string; due_date: string }[] | null>(null);
+  const [fiscalBusy, setFiscalBusy] = useState(false);
+  const hoyFiscal = new Date();
+  const fiscalYear = hoyFiscal.getFullYear();
+  const fiscalMonth = hoyFiscal.getMonth() + 1;
 
   async function saveSettings(next: AppSettings, okTxt: string) {
     const { error } = await supabase.from("settings").update({ value: next }).eq("key", "permissions");
@@ -123,6 +134,26 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
     if (error) { toast.error("No se pudo generar: " + error.message); return; }
     qc.invalidateQueries({ queryKey: ["cards"] });
     toast.success(`${filas.length} tarea(s) generada(s) desde "${pl.nombre}"`);
+  }
+
+  function armarPreviewFiscal() {
+    const props = generarVencimientosMes(fiscalYear, fiscalMonth, annos);
+    if (!props.length) { toast(`Los vencimientos fiscales de ${MESES[fiscalMonth - 1]} ya están generados.`); setFiscalPreview(null); return; }
+    setFiscalPreview(props);
+  }
+
+  async function confirmarVencimientosFiscales() {
+    if (!fiscalPreview || !fiscalPreview.length) return;
+    setFiscalBusy(true);
+    const { error } = await supabase.from("announcements").insert(fiscalPreview.map((p) => ({
+      kind: "vencimiento" as const, title: p.title, detail: p.detail, due_date: p.due_date,
+      created_by: meName, owner_id: me.id, visible_to: [],
+    })));
+    setFiscalBusy(false);
+    if (error) { toast.error("No se pudo generar: " + error.message); return; }
+    qc.invalidateQueries({ queryKey: ["announcements"] });
+    toast.success(`${fiscalPreview.length} vencimiento(s) fiscal(es) generado(s)`);
+    setFiscalPreview(null);
   }
 
   function eliminarPlantilla(idx: number) {
@@ -247,6 +278,38 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
       <Huerfanas team={team} cards={cards} />
 
       <PlantillaCierre team={equipoVisible} />
+
+      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Calendario fiscal</h2>
+      <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
+        <p className="text-ink2 text-[13px] mt-0 mb-3">
+          Genera en el Tablón los vencimientos impositivos de {MESES[fiscalMonth - 1]} ({fiscalYear}): IVA, F931, IIBB y SICORE.
+          Son fechas de referencia para gestión interna, no la fecha exacta por terminación de CUIT.
+        </p>
+        {!fiscalPreview && (
+          <button onClick={armarPreviewFiscal}
+            className="flex items-center gap-1.5 bg-accent text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold">
+            <CalendarPlus size={15} /> Generar vencimientos fiscales del mes</button>
+        )}
+        {fiscalPreview && (
+          <div>
+            <p className="text-ink text-[13px] font-semibold mt-0 mb-2">Se van a crear {fiscalPreview.length} vencimiento(s):</p>
+            <ul className="mb-3 pl-0 list-none grid gap-1.5">
+              {fiscalPreview.map((p) => (
+                <li key={p.title} className="bg-surface2 border border-line rounded-lg px-3 py-2 text-[13px]">
+                  <b>{p.title}</b> — vence {p.due_date}
+                </li>
+              ))}
+            </ul>
+            <div className="flex gap-2">
+              <button onClick={() => setFiscalPreview(null)} disabled={fiscalBusy}
+                className="bg-surface2 border border-line rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:opacity-60">Cancelar</button>
+              <button onClick={confirmarVencimientosFiscales} disabled={fiscalBusy}
+                className="flex items-center gap-1.5 bg-accent text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:opacity-60">
+                <CalendarPlus size={15} /> {fiscalBusy ? "Generando…" : "Confirmar"}</button>
+            </div>
+          </div>
+        )}
+      </div>
 
       <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Permisos</h2>
       <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>

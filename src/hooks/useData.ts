@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
-import type { Card, Profile, Objective, ActivityLog } from "../lib/types";
+import type { Card, Profile, Objective, ActivityLog, ResumenMensual } from "../lib/types";
 import type { DepInfo, RevDep } from "../lib/deps";
 import { CardSchema, validateRows } from "../lib/schemas";
+import { COLUMNAS_CARDS } from "../lib/esquema";
 import type { Organizacion } from "../lib/organizacion";
 import { parseOrganizacion, DEFAULT_ORG } from "../lib/organizacion";
 
@@ -28,6 +29,31 @@ export function useReverseDeps(cardIds: string[], enabled: boolean) {
       return (data as RevDep[]) ?? [];
     },
     enabled: enabled && cardIds.length > 0,
+  });
+}
+
+// KPIs precalculados por mes/owner/marca desde mv_resumen_mensual (migración 30, spec 28
+// fase C, Task 14). DEFENSIVA: si el RPC no existe (migración 30 sin aplicar) o falla por
+// cualquier motivo, devuelve [] sin romper nada.
+//
+// OJO — hoy NINGÚN consumidor del histórico (analizarMes, comparativaMensual, curvaPersona,
+// concentracion) puede migrarse a este hook sin cambiar la vista: todos excluyen
+// `card_type === 'operativa'` antes de calcular %, y mv_resumen_mensual cuenta TODAS las
+// cards de cards_archive sin ese filtro (total/terminadas quedarían mal desde el vamos).
+// Además comparador.ts necesita `sucursal` (no está en la vista) y filtra por
+// `esVisible(profile)` (la vista solo filtra por rol vía resumen_mensual, no por
+// visibilidad de perfil); busfactor.ts necesita `categoria` y dedupe por card individual,
+// imposibles de reconstruir a partir de conteos ya agregados. Ver docs/PASOS-MANUALES.md
+// y el reporte de la Task 14 para el detalle. Se deja este hook listo para cuando la vista
+// se actualice con esos campos/filtros.
+export function useResumenMensual(mes: string | null = null) {
+  return useQuery({
+    queryKey: ["resumen-mensual", mes],
+    queryFn: async (): Promise<ResumenMensual[]> => {
+      const { data, error } = await supabase.rpc("resumen_mensual", { p_mes: mes });
+      if (error) return [];
+      return (data as ResumenMensual[]) ?? [];
+    },
   });
 }
 
@@ -144,6 +170,66 @@ export function useMigraciones() {
   });
 }
 
+// ¿El trigger `cards_notificar_finalizacion` está ACTIVO en la base? (spec 28 fase C, Task 11)
+//
+// No se puede deducir de useMigraciones(): la migración 30 crea el trigger DESACTIVADO a
+// propósito y activarlo es un paso manual aparte, así que "migración 30 aplicada" no
+// implica "trigger activo". El RPC lee pg_trigger.tgenabled, o sea el estado real.
+//
+// Devuelve null cuando no se pudo saber (RPC inexistente porque la 30 no corrió, error de
+// red, RLS). null → debeNotificarDesdeCliente() decide que el cliente notifique igual:
+// preferimos un duplicado ocasional antes que un silencio permanente.
+export function useTriggerNotificaciones() {
+  return useQuery({
+    queryKey: ["trigger-notificaciones"],
+    staleTime: 5 * 60_000,
+    // El QueryClient global tiene refetchOnWindowFocus:false y no hay otro disparador de
+    // refetch automático: sin este intervalo, alguien parado en el tablero (pestaña nunca
+    // desmontada) se quedaría con el valor viejo indefinidamente tras un rollback del trigger.
+    refetchInterval: 5 * 60_000,
+    retry: false,
+    queryFn: async (): Promise<boolean | null> => {
+      const { data, error } = await supabase.rpc("trigger_notificaciones_activo");
+      if (error) return null;
+      return typeof data === "boolean" ? data : null;
+    },
+  });
+}
+
+// Búsqueda full-text sobre `cards` (spec 28 fase C, Task 13) vía RPC público.buscar_cards.
+// SECURITY INVOKER en el servidor: la RLS de `cards` sigue aplicando, cada quien ve lo suyo.
+//
+// Sólo se pega a la base con q.trim().length >= 3 (por debajo no vale la pena). El propio
+// hook debounce-a el disparo del RPC (300ms) para no mandar un request por cada tecla.
+//
+// Defensivo: si la RPC no está expuesta (migración 30 no corrida, PGRST202/42883) o falla
+// por cualquier otro motivo (red, RLS), se resuelve con data: [] y NO se propaga como error —
+// el CommandPalette debe seguir funcionando con el filtro en memoria de siempre (fallback
+// obligatorio, ver src/components/CommandPalette.tsx).
+export function useBuscarCards(q: string) {
+  const trimmed = q.trim();
+  const habilitada = trimmed.length >= 3;
+  const [debounced, setDebounced] = useState(trimmed);
+
+  useEffect(() => {
+    if (!habilitada) { setDebounced(""); return; }
+    const t = setTimeout(() => setDebounced(trimmed), 300);
+    return () => clearTimeout(t);
+  }, [trimmed, habilitada]);
+
+  return useQuery({
+    queryKey: ["buscar-cards", debounced],
+    enabled: debounced.length >= 3,
+    staleTime: 30_000,
+    retry: false,
+    queryFn: async (): Promise<Card[]> => {
+      const { data, error } = await supabase.rpc("buscar_cards", { q: debounced });
+      if (error) return [];
+      return (data as Card[]) ?? [];
+    },
+  });
+}
+
 // Consultas (Task 3, spec 28): defensivo — si la tabla no existe todavía (migración 29 sin correr),
 // la queryFn tira el error (react-query lo expone via isError) y quien no lo mira usa `data ?? []`.
 // RLS ya filtra: autor ve las suyas, jefe ve todas.
@@ -188,8 +274,17 @@ export function useCards() {
   return useQuery({
     queryKey: ["cards"],
     queryFn: async (): Promise<Card[]> => {
-      const { data } = await supabase.from("cards").select("*").order("created_at");
-      return validateRows((data as Card[]) ?? [], CardSchema, "cards");
+      // Columnas explícitas (no `*`): evita arrastrar el tsvector `tsv` de la migración 30
+      // en cada refetch — y hay uno por cada evento realtime. Ver COLUMNAS_CARDS.
+      const { data, error } = await supabase.from("cards").select(COLUMNAS_CARDS).order("created_at");
+      // Fallback a `*` si la base todavía no tiene alguna de esas columnas (42703 /
+      // PGRST204 en una base sin migrar): pedir columnas explícitas hace fallar el select
+      // ENTERO, y quedarse sin tablero es peor que traer un tsvector de más.
+      if (error) {
+        const { data: todo } = await supabase.from("cards").select("*").order("created_at");
+        return validateRows((todo as Card[]) ?? [], CardSchema, "cards");
+      }
+      return validateRows((data as unknown as Card[]) ?? [], CardSchema, "cards");
     },
   });
 }

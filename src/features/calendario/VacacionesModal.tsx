@@ -6,7 +6,7 @@ import { Modal } from "../../components/Modal";
 import { supabase } from "../../lib/supabase";
 import type { Card, Profile } from "../../lib/types";
 import { useVacaciones } from "../../hooks/useVacaciones";
-import { rangoValido, vacacionesActivasYFuturas } from "../../lib/vacaciones";
+import { rangoValido, vacacionesActivasYFuturas, impactoLicencia } from "../../lib/vacaciones";
 import { claveFecha } from "../../lib/calendario";
 import { Avatar } from "../../lib/ui";
 
@@ -29,6 +29,11 @@ export function VacacionesModal({ me, team, cards, onClose }: {
 
   const nombreDe = (id: string | null) => team.find((u) => u.id === id)?.name ?? "—";
   const activas = useMemo(() => vacacionesActivasYFuturas(vacs, hoyISO), [vacs, hoyISO]);
+
+  const impacto = useMemo(() => {
+    if (!owner || !rangoValido(desde, hasta) || cards.length === 0) return null;
+    return impactoLicencia(cards, owner, desde, hasta);
+  }, [cards, owner, desde, hasta]);
 
   const crear = useMutation({
     mutationFn: async () => {
@@ -98,7 +103,39 @@ export function VacacionesModal({ me, team, cards, onClose }: {
           <option value="">Sin reemplazante</option>
           {team.filter((u) => u.id !== owner).map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
         </select>
-        <textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2} placeholder="Notas (opcional)" className={inputCls + " resize-y"} />
+        {reemplazante ? (
+          <>
+            <label className="text-xs uppercase tracking-wide text-ink2">Novedades para quien me cubre (opcional)</label>
+            <textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2}
+              placeholder="Ej: el banco X quedó a medias, ojo con el proveedor Y…" className={inputCls + " resize-y"} />
+            <p className="text-ink2 text-xs m-0">Visible para todo el equipo, no solo para tu reemplazante.</p>
+          </>
+        ) : (
+          <textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2} placeholder="Notas (opcional)" className={inputCls + " resize-y"} />
+        )}
+
+        {impacto && impacto.tareas.length > 0 && (
+          <div className="border border-line rounded-lg p-2.5 bg-surface2/60 text-[13px]">
+            <p className="m-0 mb-1.5">
+              Si aprobás esta licencia, quedan <b>{impacto.tareas.length}</b> tarea{impacto.tareas.length === 1 ? "" : "s"} con
+              vencimiento en ese período (esfuerzo total: <b>{impacto.effortTotal}</b>).
+            </p>
+            <ul className="m-0 mb-1.5 pl-4 flex flex-col gap-0.5">
+              {impacto.tareas.slice(0, 5).map((c) => (
+                <li key={c.id} className="text-ink2 truncate">{c.title} <span className="text-ink2/80">· {fmt(c.due_date!)}</span></li>
+              ))}
+            </ul>
+            {impacto.tareas.length > 5 && (
+              <p className="text-ink2 text-[12px] m-0">y {impacto.tareas.length - 5} más.</p>
+            )}
+            {reemplazante && (
+              <p className="text-ink2 text-[12px] m-0 mt-1">
+                Convendría traspasarle estas tareas a {nombreDe(reemplazante)} para que queden cubiertas.
+              </p>
+            )}
+          </div>
+        )}
+
         <button onClick={() => puede ? crear.mutate() : toast.error("Elegí persona y un rango de fechas válido")}
           disabled={crear.isPending}
           className="flex items-center justify-center gap-1.5 bg-accent text-[color:var(--accent-ink)] rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:opacity-60">

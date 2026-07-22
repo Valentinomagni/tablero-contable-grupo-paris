@@ -8,7 +8,8 @@ import { dueInfo } from "../../lib/metrics";
 import { isBlocked } from "../../lib/deps";
 import { supabase } from "../../lib/supabase";
 import { closingCards, cierreStats, ordenarCierre, shiftMonth, MESES } from "../../lib/cierre";
-import { estadoCierre } from "../../lib/cierre-unificado";
+import { estadoCierre, proyeccionCierre } from "../../lib/cierre-unificado";
+import { useSnapshots } from "../../hooks/useData";
 import { mesCerradoPor, mesesAbiertos, mesesConTrabajoDe, resumenEquipo, mesLegible, formatearMeses } from "../../lib/periodos";
 import { faltantesDePlantilla, filasParaInsertar } from "../../lib/plantilla";
 import { useArchiveEquipo } from "../../hooks/useArchive";
@@ -91,6 +92,16 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
   // en meses pasados se muestra sólo el paso del checklist —que sí es histórico y confiable—
   // más el estado de tu propio cierre, que es el dato que realmente manda.
   const pasosVisibles = esMesEnCurso ? semaforo.pasos : semaforo.pasos.filter((p) => p.key === "checklist");
+
+  // J8 — proyección "al ritmo actual, ¿llega?" (spec 28, task 9). Sólo tiene sentido en
+  // el mes en curso (mismo criterio que el semáforo: en meses pasados ya pasó o no pasó).
+  // Se mira SU propio avance (closingMio), igual que el semáforo. Silencio cuando va bien
+  // o cuando no hay ritmo medible: no alarmar sin datos.
+  const snapshots = useSnapshots(esMesEnCurso).data ?? [];
+  const hoyISO = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
+  const ultimoDia = new Date(ym.year, ym.month, 0).getDate();
+  const finDeMesISO = `${ym.year}-${String(ym.month).padStart(2, "0")}-${String(ultimoDia).padStart(2, "0")}`;
+  const proyeccion = esMesEnCurso ? proyeccionCierre(closingMio, snapshots, hoyISO, finDeMesISO) : null;
 
   async function toggleCierre() {
     if (!disponible) return;
@@ -182,6 +193,17 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
           <div className="bg-accent-soft px-5 py-2.5 flex items-center gap-2 border-t border-line">
             <CheckCircle2 size={16} className="text-done shrink-0" />
             <span className="text-[13px] font-semibold text-ink">Todo al día en el mes en curso</span>
+          </div>
+        )}
+
+        {/* Alerta temprana (spec 28, J8): sólo aparece si al ritmo actual NO llega —
+            silencio cuando va bien o cuando no hay ritmo medible, para no alarmar sin datos. */}
+        {proyeccion && !proyeccion.alcanza && proyeccion.diasNecesarios !== null && (
+          <div className="px-5 py-2.5 flex items-center gap-2 border-t border-line">
+            <AlarmClock size={16} className="text-warn shrink-0" />
+            <span className="text-[13px] font-semibold text-ink">
+              Al ritmo de los últimos días, faltarían {proyeccion.diasNecesarios} día(s) más de los que quedan en el mes.
+            </span>
           </div>
         )}
 

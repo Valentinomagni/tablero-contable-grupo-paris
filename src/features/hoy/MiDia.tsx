@@ -4,13 +4,15 @@ import { toast } from "sonner";
 import { EmptyState } from "../../components/EmptyState";
 import { itemsDelDia, type MotivoDia } from "../../lib/midia";
 import { cierreDelDia } from "../../lib/cierre-dia";
+import { novedadesPara } from "../../lib/vacaciones";
 import { toARTDate } from "../../lib/metrics";
 import { cn } from "../../lib/ui";
 import { supabase } from "../../lib/supabase";
 import { useCardOccurrences, useOccurrences } from "../../hooks/useOccurrences";
+import { useVacaciones } from "../../hooks/useVacaciones";
 import { ArqueoResultDialog } from "../board/ArqueoResultDialog";
-import type { Card } from "../../lib/types";
-import { Sun, AlertTriangle, Clock, Flame, Check, CheckCircle2, Circle } from "lucide-react";
+import type { Card, Profile } from "../../lib/types";
+import { Sun, AlertTriangle, Clock, Flame, Check, CheckCircle2, Circle, Plane } from "lucide-react";
 
 const CHIP: Record<MotivoDia, { lbl: string; cls: string; icon: typeof Clock }> = {
   vencida: { lbl: "Vencida", cls: "bg-danger-soft text-danger", icon: AlertTriangle },
@@ -94,11 +96,17 @@ function ArqueoHoyCard({ card, owner, hoyISO }: { card: Card; owner: string; hoy
 }
 
 // "Mi día" (propuesta P4): agenda personal priorizada para HOY del owner.
-export function MiDia({ ownerId, meId, cards, onOpenCard }: {
-  ownerId: string; meId: string; cards: Card[]; onOpenCard: (c: Card) => void;
+export function MiDia({ ownerId, meId, cards, team, onOpenCard }: {
+  ownerId: string; meId: string; cards: Card[]; team: Profile[]; onOpenCard: (c: Card) => void;
 }) {
   const hoyISO = toARTDate(new Date().toISOString());
   const misCards = cards.filter((c) => c.owner === ownerId);
+
+  // Novedades de quienes cubro (spec 28 fase C, task 4): DEFENSIVA — useVacaciones ya
+  // devuelve [] si la migración 23 no está aplicada. Solo se muestran en "mi" propio día.
+  const { data: vacs = [] } = useVacaciones();
+  const novedades = ownerId === meId ? novedadesPara(vacs, meId, hoyISO) : [];
+  const nombreDe = (id: string) => team.find((u) => u.id === id)?.name ?? "—";
   const items = itemsDelDia(misCards, hoyISO);
   // Cards de control (arqueo): defensivo — sin migración 23, requiere_resultado undefined → [].
   const controles = misCards.filter((c) => c.requiere_resultado);
@@ -143,6 +151,23 @@ export function MiDia({ ownerId, meId, cards, onOpenCard }: {
         <h2 className="text-lg font-semibold tracking-tight m-0">Mi día</h2>
         {items.length > 0 && <span className="ml-auto bg-chip rounded-full px-2 py-0.5 text-xs tnum text-ink2">{items.length}</span>}
       </div>
+      {novedades.length > 0 && (
+        <div className="mb-4 rounded-xl border border-line bg-surface2/40 p-3.5 sm:p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Plane size={15} className="text-ink2 shrink-0" />
+            <span className="text-xs uppercase tracking-wide text-ink2 font-semibold">Novedades de quien cubrís</span>
+          </div>
+          <div className="flex flex-col gap-2">
+            {novedades.map((v) => (
+              <div key={v.id} className="text-[13px]">
+                <b className="text-ink">{nombreDe(v.owner)}</b>
+                <span className="text-ink2"> · hasta {v.hasta}</span>
+                <p className="text-ink2 m-0 mt-0.5 whitespace-pre-line">{v.notas}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {controles.map((c) => (
         <ArqueoHoyCard key={c.id} card={c} owner={ownerId} hoyISO={hoyISO} />
       ))}

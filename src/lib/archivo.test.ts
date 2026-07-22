@@ -55,3 +55,14 @@ describe("mesLabel", () => {
   it("formato inválido: devuelve tal cual", () => expect(mesLabel("junio")).toBe("junio"));
   it("mes fuera de rango: devuelve tal cual", () => expect(mesLabel("2026-13")).toBe("2026-13"));
 });
+
+describe("cardsDeArchivo — la marca interna de meta no se filtra al archivo", () => {
+  it("saca el separador \x1f[[meta:N]] de la descripción", () => {
+    const out = cardsDeArchivo([arch("2026-06", { description: "Cargar remitos\n\n\x1f[[meta:30]]" })], "2026-06");
+    expect(out[0].description).toBe("Cargar remitos");
+  });
+  it("deja intacta una descripción sin marca", () => {
+    const out = cardsDeArchivo([arch("2026-06", { description: "Revisar IVA" })], "2026-06");
+    expect(out[0].description).toBe("Revisar IVA");
+  });
+});

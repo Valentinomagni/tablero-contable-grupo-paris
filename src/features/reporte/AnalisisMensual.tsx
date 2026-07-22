@@ -4,6 +4,7 @@ import type { Card, Profile } from "../../lib/types";
 import { analizarMes } from "../../lib/analisis";
 import { indiceRetrabajo } from "../../lib/retrabajo";
 import { tendenciaDiferencias } from "../../lib/arqueo";
+import { concentracion } from "../../lib/busfactor";
 import { armarLibroAnalisis, descargarExcel } from "../../lib/excel";
 import { Gauge } from "../../components/charts";
 import { useOccurrences } from "../../hooks/useOccurrences";
@@ -30,6 +31,7 @@ export function AnalisisMensual({ cards, team, segmento = null }: { cards: Card[
   const retrabajo = indiceRetrabajo(cards, team);
   const occsArqueoTodas = useArqueoOccsAll(cards);
   const tendencia = tendenciaDiferencias(occsArqueoTodas, team);
+  const busFactor = concentracion(archives, team);
   const mesLbl = now.toLocaleDateString("es-AR", { month: "long", year: "numeric" });
   const [exportando, setExportando] = useState(false);
 
@@ -301,6 +303,40 @@ export function AnalisisMensual({ cards, team, segmento = null }: { cards: Card[
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Concentración de conocimiento (bus factor): riesgo de continuidad del negocio, no
+          una evaluación de nadie. Si nadie concentra una categoría al 80%+, no hay nada que
+          mostrar y el bloque directamente no aparece. */}
+      {busFactor.length > 0 && (
+        <div className={card} style={cardSh}>
+          <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-1">Concentración de conocimiento</h3>
+          <p className="text-ink2 text-[12.5px] mb-3.5">
+            Categorías donde una sola persona concentra la mayor parte del trabajo histórico. No es
+            una crítica: suele pasar justamente con la persona más confiable del equipo. Pero si se
+            toma vacaciones, se enferma o se va, conviene tener a alguien más formado como backup.
+          </p>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-ink2 text-[11.5px] uppercase tracking-wide text-left">
+                <th className="font-semibold py-1">Categoría</th>
+                <th className="font-semibold py-1">Quién la concentra</th>
+                <th className="font-semibold py-1 text-right tnum">%</th>
+                <th className="font-semibold py-1 text-right tnum">Personas</th>
+              </tr>
+            </thead>
+            <tbody>
+              {busFactor.map((b) => (
+                <tr key={b.categoria} className="border-t border-line">
+                  <td className="py-2 truncate">{b.categoria}</td>
+                  <td className="py-2 truncate">{b.principal}</td>
+                  <td className="py-2 text-right tnum font-semibold" style={{ color: "var(--warn)" }}>{b.pct}%</td>
+                  <td className="py-2 text-right tnum">{b.personas}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

@@ -1,4 +1,5 @@
 import type { Card, CardArchive } from "./types";
+import { descripcionSinMeta } from "./operativas";
 
 // Archivo mensual (spec 21, item 9): helpers puros para leer los snapshots
 // jsonb de cards_archive. El historial se consulta desde acá; NADA se pisa.
@@ -21,7 +22,9 @@ export function cardsDeArchivo(archives: CardArchive[], mes: string): Card[] {
         owner: c.owner ?? a.owner,
         title: c.title ?? "(sin título)",
         status: c.status === "proc" || c.status === "term" ? c.status : "pend",
-        description: c.description ?? "",
+        // Sin la marca interna de meta (`\x1f[[meta:N]]`, ver operativas.ts): el archivo
+        // mensual se muestra y se exporta tal cual, y ese separador no es texto del usuario.
+        description: descripcionSinMeta(c.description ?? ""),
         checklist: Array.isArray(c.checklist) ? c.checklist : [],
         comments: Array.isArray(c.comments) ? c.comments : [],
         history: Array.isArray(c.history) ? c.history : [],

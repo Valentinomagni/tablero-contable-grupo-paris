@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { rangoValido, estaDeVacaciones, ausentesEnFecha, vacacionesActivasYFuturas, esCobertura } from "./vacaciones";
+import { rangoValido, estaDeVacaciones, ausentesEnFecha, vacacionesActivasYFuturas, esCobertura, novedadesPara, impactoLicencia } from "./vacaciones";
 import type { Vacacion, Card, HistoryEntry } from "./types";
 
 function mk(p: Partial<Vacacion>): Vacacion {
@@ -67,6 +67,32 @@ describe("vacacionesActivasYFuturas", () => {
   });
 });
 
+describe("novedadesPara", () => {
+  it("sin licencias → vacío", () => {
+    expect(novedadesPara([], "u2", "2026-07-15")).toEqual([]);
+  });
+  it("licencia vigente con novedades → la ve el reemplazante", () => {
+    const vacs = [mk({ id: "a", reemplazante: "u2", notas: "Ojo con el proveedor X", desde: "2026-07-10", hasta: "2026-07-20" })];
+    expect(novedadesPara(vacs, "u2", "2026-07-15").map((v) => v.id)).toEqual(["a"]);
+  });
+  it("licencia vencida → no aparece", () => {
+    const vacs = [mk({ id: "a", reemplazante: "u2", notas: "Algo", desde: "2026-06-01", hasta: "2026-06-10" })];
+    expect(novedadesPara(vacs, "u2", "2026-07-15")).toEqual([]);
+  });
+  it("licencia de otro reemplazante → no aparece", () => {
+    const vacs = [mk({ id: "a", reemplazante: "u3", notas: "Algo", desde: "2026-07-10", hasta: "2026-07-20" })];
+    expect(novedadesPara(vacs, "u2", "2026-07-15")).toEqual([]);
+  });
+  it("licencia sin novedades → no aparece", () => {
+    const vacs = [mk({ id: "a", reemplazante: "u2", notas: "", desde: "2026-07-10", hasta: "2026-07-20" })];
+    expect(novedadesPara(vacs, "u2", "2026-07-15")).toEqual([]);
+  });
+  it("notas solo con espacios → no aparece", () => {
+    const vacs = [mk({ id: "a", reemplazante: "u2", notas: "   ", desde: "2026-07-10", hasta: "2026-07-20" })];
+    expect(novedadesPara(vacs, "u2", "2026-07-15")).toEqual([]);
+  });
+});
+
 describe("esCobertura", () => {
   const h = (txt: string): HistoryEntry => ({ who: "Ana", at: "2026-07-10T00:00:00Z", txt });
   const card = (history: HistoryEntry[]): Card => ({
@@ -99,5 +125,71 @@ describe("esCobertura", () => {
       h("Cobertura por vacaciones: de Pedro a Ana (…)"),
     ]));
     expect(r).toEqual({ activa: true, titular: "Pedro" });
+  });
+});
+
+describe("impactoLicencia", () => {
+  function card(p: Partial<Card>): Card {
+    return {
+      id: "c", owner: "u1", title: "T", status: "pend", description: "",
+      checklist: [], comments: [], history: [], done_at: null, due_date: null,
+      recurring: false, priority: "media", effort: 1, card_type: "normal",
+      deps: [], created_at: "2026-07-01T00:00:00Z", ...p,
+    };
+  }
+
+  it("sin tareas → lista vacía y effort 0", () => {
+    expect(impactoLicencia([], "u1", "2026-07-10", "2026-07-20")).toEqual({ tareas: [], effortTotal: 0 });
+  });
+
+  it("tarea dentro del rango → aparece", () => {
+    const c = card({ id: "a", due_date: "2026-07-15" });
+    expect(impactoLicencia([c], "u1", "2026-07-10", "2026-07-20")).toEqual({ tareas: [c], effortTotal: 1 });
+  });
+
+  it("tarea fuera del rango → no aparece", () => {
+    const c = card({ id: "a", due_date: "2026-07-25" });
+    expect(impactoLicencia([c], "u1", "2026-07-10", "2026-07-20")).toEqual({ tareas: [], effortTotal: 0 });
+  });
+
+  it("tarea terminada → no aparece aunque esté en rango", () => {
+    const c = card({ id: "a", due_date: "2026-07-15", status: "term" });
+    expect(impactoLicencia([c], "u1", "2026-07-10", "2026-07-20")).toEqual({ tareas: [], effortTotal: 0 });
+  });
+
+  it("tarea operativa → no aparece (no tiene vencimiento real)", () => {
+    const c = card({ id: "a", due_date: "2026-07-15", card_type: "operativa" });
+    expect(impactoLicencia([c], "u1", "2026-07-10", "2026-07-20")).toEqual({ tareas: [], effortTotal: 0 });
+  });
+
+  it("sin due_date → no aparece", () => {
+    const c = card({ id: "a", due_date: null });
+    expect(impactoLicencia([c], "u1", "2026-07-10", "2026-07-20")).toEqual({ tareas: [], effortTotal: 0 });
+  });
+
+  it("otro owner → no aparece", () => {
+    const c = card({ id: "a", owner: "u2", due_date: "2026-07-15" });
+    expect(impactoLicencia([c], "u1", "2026-07-10", "2026-07-20")).toEqual({ tareas: [], effortTotal: 0 });
+  });
+
+  it("effort undefined → cuenta 1", () => {
+    const c = card({ id: "a", due_date: "2026-07-15", effort: undefined as unknown as 1 });
+    expect(impactoLicencia([c], "u1", "2026-07-10", "2026-07-20")).toEqual({ tareas: [c], effortTotal: 1 });
+  });
+
+  it("bordes exactos del rango inclusive", () => {
+    const cd = card({ id: "d", due_date: "2026-07-10" });
+    const ch = card({ id: "h", due_date: "2026-07-20" });
+    const r = impactoLicencia([cd, ch], "u1", "2026-07-10", "2026-07-20");
+    expect(r.tareas.map((c) => c.id)).toEqual(["d", "h"]);
+    expect(r.effortTotal).toBe(2);
+  });
+
+  it("ordena por due_date ascendente y suma efforts distintos", () => {
+    const c1 = card({ id: "later", due_date: "2026-07-18", effort: 5 });
+    const c2 = card({ id: "earlier", due_date: "2026-07-12", effort: 2 });
+    const r = impactoLicencia([c1, c2], "u1", "2026-07-10", "2026-07-20");
+    expect(r.tareas.map((c) => c.id)).toEqual(["earlier", "later"]);
+    expect(r.effortTotal).toBe(7);
   });
 });

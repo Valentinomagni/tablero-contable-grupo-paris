@@ -1,15 +1,59 @@
-import { Network } from "lucide-react";
-import type { Card, Profile } from "../../lib/types";
+import { Network, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import type { Card, CardArchive, Profile } from "../../lib/types";
 import { construirArbol, porMarca, type NodoOrg } from "../../lib/jerarquia";
 import { Avatar } from "../../lib/ui";
 import { useOrganizacion } from "../../hooks/useData";
+import { useArchiveEquipo } from "../../hooks/useArchive";
 import { MarcaIcon } from "../../components/MarcaIcon";
 import { enLinea, textoUltimaConexion } from "../../lib/presencia";
+import { curvaPersona, tendencia, type PuntoCurva } from "../../lib/evolucion";
 
 const cardSh = { boxShadow: "var(--ring-sh),var(--shadow)" };
 const ROLE_LBL: Record<Profile["role"], string> = { jefe: "Jefe", encargado: "Encargado", empleado: "Empleado" };
 
-function Nodo({ nodo, cards, nivel }: { nodo: NodoOrg; cards: Card[]; nivel: number }) {
+// Sparkline monocromo: barras chicas por mes, sin librería nueva. Es un acompañamiento
+// para detectar quién necesita apoyo, no una nota — por eso escala de grises, sin semáforo.
+function Sparkline({ curva }: { curva: PuntoCurva[] }) {
+  const w = 8, gap = 2, h = 20;
+  return (
+    <svg width={curva.length * (w + gap)} height={h} className="shrink-0" aria-hidden>
+      {curva.map((p, i) => {
+        const barH = Math.max(2, Math.round((p.cumplimiento / 100) * h));
+        return (
+          <rect key={p.mes} x={i * (w + gap)} y={h - barH} width={w} height={barH} rx={1}
+            className="fill-ink2" opacity={0.35 + (i / Math.max(1, curva.length - 1)) * 0.65} />
+        );
+      })}
+    </svg>
+  );
+}
+
+const TENDENCIA_ICON = { sube: TrendingUp, baja: TrendingDown, estable: Minus };
+// El sujeto de la etiqueta es el DATO (la curva), nunca la persona: "Viene bajando"
+// describe la serie; "Necesita apoyo" era un juicio sobre quien está al lado del avatar.
+const TENDENCIA_LBL = { sube: "Viene subiendo", baja: "Viene bajando", estable: "Estable" };
+
+// Curva de evolución (spec 28, Fase C, Task 6): acompaña, no califica. Por eso las tres
+// tendencias van en el MISMO gris (text-ink2), sin color de alerta: pintar la baja en
+// `warn` la convertía en un señalamiento sobre la persona, visible junto a su nombre y su
+// avatar. La interpretación (qué hacer con una curva que baja) queda en el tooltip.
+function Evolucion({ ownerId, archives }: { ownerId: string; archives: CardArchive[] }) {
+  const curva = curvaPersona(archives, ownerId, 6);
+  if (curva.length < 2) return null;
+  const t = tendencia(curva);
+  const Icon = TENDENCIA_ICON[t];
+  return (
+    <div className="flex items-center gap-2 shrink-0" title="Cumplimiento de los últimos meses. Es un dato para acompañar y ver si hace falta apoyo o redistribuir carga, no una calificación de la persona.">
+      <Sparkline curva={curva} />
+      <span className="flex items-center gap-1 text-[11px] text-ink2">
+        <Icon size={13} />
+        {TENDENCIA_LBL[t]}
+      </span>
+    </div>
+  );
+}
+
+function Nodo({ nodo, cards, nivel, archives }: { nodo: NodoOrg; cards: Card[]; nivel: number; archives: CardArchive[] }) {
   const { profile: p, hijos } = nodo;
   const abiertas = cards.filter((c) => c.owner === p.id && c.status !== "term" && c.card_type !== "operativa").length;
   const ahora = new Date().toISOString();
@@ -32,20 +76,21 @@ function Nodo({ nodo, cards, nivel }: { nodo: NodoOrg; cards: Card[]; nivel: num
             </span>
           </div>
         </div>
+        {archives.length > 0 && <Evolucion ownerId={p.id} archives={archives} />}
         <span className="shrink-0 text-[12px] text-ink2 tnum bg-surface2 border border-line rounded-full px-2.5 py-1" title="Tareas abiertas">
           <b className="text-ink">{abiertas}</b> abiertas
         </span>
       </div>
       {hijos.length > 0 && (
         <div className="mt-2 ml-5 pl-4 border-l border-line flex flex-col gap-2">
-          {hijos.map((h) => <Nodo key={h.profile.id} nodo={h} cards={cards} nivel={nivel + 1} />)}
+          {hijos.map((h) => <Nodo key={h.profile.id} nodo={h} cards={cards} nivel={nivel + 1} archives={archives} />)}
         </div>
       )}
     </div>
   );
 }
 
-function Seccion({ titulo, subtitulo, gente, cards }: { titulo: string; subtitulo?: string; gente: Profile[]; cards: Card[] }) {
+function Seccion({ titulo, subtitulo, gente, cards, archives }: { titulo: string; subtitulo?: string; gente: Profile[]; cards: Card[]; archives: CardArchive[] }) {
   const arbol = construirArbol(gente);
   return (
     <section className="mb-7">
@@ -56,7 +101,7 @@ function Seccion({ titulo, subtitulo, gente, cards }: { titulo: string; subtitul
         <span className="text-[12px] text-ink2 tnum">· {gente.length} {gente.length === 1 ? "persona" : "personas"}</span>
       </div>
       <div className="flex flex-col gap-2">
-        {arbol.map((n) => <Nodo key={n.profile.id} nodo={n} cards={cards} nivel={0} />)}
+        {arbol.map((n) => <Nodo key={n.profile.id} nodo={n} cards={cards} nivel={0} archives={archives} />)}
       </div>
     </section>
   );
@@ -64,6 +109,12 @@ function Seccion({ titulo, subtitulo, gente, cards }: { titulo: string; subtitul
 
 export function Organigrama({ team, cards }: { team: Profile[]; cards: Card[] }) {
   const org = useOrganizacion();
+  // OJO — `team` NO viene acotado por rol: App.tsx pasa personasVisibles(fullTeam), o sea
+  // el equipo completo. Lo único que hoy evita que un empleado vea la curva de sus pares es
+  // que el Organigrama no está en su navegación, más la RLS de cards_archive, que limita la
+  // data cruda que llega. Si alguna vez se abre esta vista a más roles, hay que filtrar el
+  // `team` acá explícitamente — no hay ninguna protección implícita en este componente.
+  const archives = useArchiveEquipo().data ?? [];
   const grupos = porMarca(team);
   // Orden fijo de marcas (General primero); las demás quedan detrás alfabéticamente.
   const marcas = Object.keys(grupos).sort((a, b) => {
@@ -90,8 +141,8 @@ export function Organigrama({ team, cards }: { team: Profile[]; cards: Card[] })
           Sin marca asignada todavía. Cuando cargues marca y responsable de cada persona, el organigrama se arma por marca y jerarquía automáticamente.
         </div>
       )}
-      {marcas.map((m) => <Seccion key={m} titulo={m} subtitulo={m === "General" ? "Administración transversal" : undefined} gente={grupos[m]} cards={cards} />)}
-      {sinMarca.length > 0 && <Seccion titulo="Sin marca" gente={sinMarca} cards={cards} />}
+      {marcas.map((m) => <Seccion key={m} titulo={m} subtitulo={m === "General" ? "Administración transversal" : undefined} gente={grupos[m]} cards={cards} archives={archives} />)}
+      {sinMarca.length > 0 && <Seccion titulo="Sin marca" gente={sinMarca} cards={cards} archives={archives} />}
     </div>
   );
 }

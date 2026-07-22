@@ -67,6 +67,28 @@ export function notifsAlFinalizar(p: {
   }];
 }
 
+// ¿El cliente tiene que insertar la notificación de finalización, o ya la genera la base?
+// (spec 28 fase C, Task 11.)
+//
+// Desde la migración 30 existe el trigger `cards_notificar_finalizacion`, que hace
+// EXACTAMENTE lo mismo que notifsAlFinalizar() pero del lado del servidor. Las dos vías
+// no pueden convivir:
+//   - trigger activo + insert del cliente → CADA finalización avisa DOS veces.
+//   - trigger apagado + sin insert        → NADIE recibe nada, y nadie se entera.
+//
+// `triggerActivo` viene de useTriggerNotificaciones(), que llama al RPC
+// `public.trigger_notificaciones_activo()`: ese RPC lee pg_trigger.tgenabled, o sea la
+// verdad real. NO se deduce del número de migración: la 30 puede estar aplicada y el
+// trigger seguir apagado, porque activarlo es un paso manual aparte.
+//
+// CRITERIO ANTE LO DESCONOCIDO (null/undefined: query cargando, sin red, RPC inexistente
+// porque la 30 no corrió): el cliente SÍ inserta. Es la asimetría del daño — un duplicado
+// ocasional es una molestia visible y transitoria, mientras que un silencio es una falla
+// invisible y permanente: el encargado nunca se entera de que dejó de recibir avisos.
+export function debeNotificarDesdeCliente(triggerActivo: boolean | null | undefined): boolean {
+  return triggerActivo !== true;
+}
+
 // E8: avisos propios (tablón) cuyo vencimiento es hoy o mañana (fecha calendario ART),
 // para autonotificar al dueño. `hoyISO` viene ya calculado por el caller (toARTDate).
 // Excluye: de otro dueño, archivados, sin due_date, fuera de la ventana hoy/mañana,
