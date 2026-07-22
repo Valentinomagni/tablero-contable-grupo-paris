@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { reaperturasDe, indiceRetrabajo } from "./retrabajo";
+import { reaperturasDe, indiceRetrabajo, textoTransicion, TXT_REAPERTURA } from "./retrabajo";
 import type { Card, Profile } from "./types";
 
 const mkCard = (over: Partial<Card> = {}): Card => ({
@@ -36,6 +36,28 @@ describe("reaperturasDe", () => {
       { who: "u1", at: "2026-01-04", txt: "Reabrió la tarea" },
     ];
     expect(reaperturasDe({ history })).toBe(3);
+  });
+});
+
+describe("textoTransicion", () => {
+  it("term -> pend es reapertura", () => {
+    expect(textoTransicion("term", "pend", "Movió la tarea")).toBe(TXT_REAPERTURA);
+  });
+
+  it("term -> proc es reapertura", () => {
+    expect(textoTransicion("term", "proc", "Volvió a Pendiente")).toBe(TXT_REAPERTURA);
+  });
+
+  it("term -> term no es reapertura (usa el default)", () => {
+    expect(textoTransicion("term", "term", "Marcó terminada")).toBe("Marcó terminada");
+  });
+
+  it("pend -> proc no es reapertura", () => {
+    expect(textoTransicion("pend", "proc", "Pasó a En proceso")).toBe("Pasó a En proceso");
+  });
+
+  it("proc -> term no es reapertura", () => {
+    expect(textoTransicion("proc", "term", "Marcó terminada")).toBe("Marcó terminada");
   });
 });
 

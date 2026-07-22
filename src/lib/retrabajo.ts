@@ -1,10 +1,26 @@
 // Índice de retrabajo (spec 28 Fase B, J1): cuántas veces se reabrió una tarea ya
 // dada por terminada. Señal de calidad del trabajo o de criterios poco claros — NO es
 // un ranking de culpables (ver encuadre en AnalisisMensual.tsx). Función PURA.
-import type { Card, Profile } from "./types";
+import type { Card, Profile, Status } from "./types";
 import { esVisible } from "./visibilidad";
 
-const TXT_REAPERTURA = "Reabrió la tarea";
+// El índice cuenta reaperturas matcheando este texto en el history. Hay tres caminos de UI
+// que sacan una tarea de "term" (botón Reabrir del modal, drag & drop y el selector de Estado
+// del modal); los tres deben escribir exactamente este texto para que el índice los detecte —
+// usar textoTransicion() en cada uno en vez de un literal suelto.
+// IMPORTANTE: esto rige desde que se unificó (spec 28 Fase B, fix de los tres caminos) en
+// adelante. El historial viejo registrado como "Movió la tarea" / "Volvió a Pendiente" no se
+// puede reclasificar retroactivamente (no sabemos si esas transiciones partían de "term"), así
+// que el índice es fiable desde esta versión en adelante, no para datos históricos previos.
+export const TXT_REAPERTURA = "Reabrió la tarea";
+
+// Función pura que decide qué texto de historial corresponde a una transición de estado.
+// Cualquier transición que parta de "term" hacia otro estado es una reapertura, sin importar
+// por qué camino de la UI se hizo (drag & drop, selector de Estado, botón Reabrir).
+export function textoTransicion(anterior: Status, nuevo: Status, textoPorDefecto: string): string {
+  if (anterior === "term" && nuevo !== "term") return TXT_REAPERTURA;
+  return textoPorDefecto;
+}
 
 export interface IndiceRetrabajo {
   general: { reaperturas: number; terminadas: number; pct: number | null };

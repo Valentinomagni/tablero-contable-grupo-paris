@@ -15,6 +15,7 @@ import { getPref, setPref, PREF } from "../../lib/prefs";
 import { useOrganizacion, useTiemposMax, useMigraciones } from "../../hooks/useData";
 import { payloadCards } from "../../lib/esquema";
 import { estadoTiempo, registrarIncumplimiento } from "../../lib/tiempos";
+import { textoTransicion } from "../../lib/retrabajo";
 import { filtrarPorSegmento } from "../../lib/segmento";
 import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Users, Shield, Layers, Plane } from "lucide-react";
 import { esCobertura } from "../../lib/vacaciones";
@@ -114,7 +115,7 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
       // al volver a "pendiente" se limpia (arranca de nuevo la próxima vez que entre a proceso).
       if (status === "proc" && !c.proc_at) patch.proc_at = now;
       else if (status === "pend") patch.proc_at = null;
-      let hist = [...(c.history ?? []), { who: meName, at: now, txt: status === "term" ? "Marcó terminada" : "Movió la tarea" }];
+      let hist = [...(c.history ?? []), { who: meName, at: now, txt: textoTransicion(c.status, status, status === "term" ? "Marcó terminada" : "Movió la tarea") }];
       if (status === "term") {
         const est = estadoTiempo({ ...c, ...patch }, tiemposConfig, now);
         hist = registrarIncumplimiento(hist, est, meName, now, patch.proc_at ?? c.proc_at ?? null);
