@@ -36,6 +36,29 @@ function mesAnterior(mesPrefix: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
 }
 
+export interface DiferenciaHistorial { fecha: string; importe: number; obs: string | null; }
+export interface ResumenDiferencias { cantidad: number; total: number; faltantes: number; sobrantes: number; }
+
+// Historial personal de diferencias de arqueo (Task 1, spec28 fase B): de las ocurrencias
+// de un owner desde una fecha, sólo las con resultado 'dif' (las 'ok' no aportan diferencia).
+// Orden descendente por fecha (más reciente primero). dif_importe null → 0 (no rompe).
+export function historialDiferencias(occs: TaskOccurrence[], ownerId: string, desdeISO: string): DiferenciaHistorial[] {
+  return (occs ?? [])
+    .filter((o) => o.owner === ownerId && o.resultado === "dif" && o.fecha >= desdeISO)
+    .map((o) => ({ fecha: o.fecha, importe: o.dif_importe ?? 0, obs: o.dif_obs ?? null }))
+    .sort((a, b) => (a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : 0));
+}
+
+// Resumen del historial: cantidad de diferencias, total neto, y el desglose por signo
+// (faltantes = suma de importes negativos, sobrantes = suma de importes positivos). 0 no cuenta.
+export function resumenDiferencias(items: DiferenciaHistorial[]): ResumenDiferencias {
+  const cantidad = items.length;
+  const total = items.reduce((s, i) => s + i.importe, 0);
+  const faltantes = items.filter((i) => i.importe < 0).reduce((s, i) => s + i.importe, 0);
+  const sobrantes = items.filter((i) => i.importe > 0).reduce((s, i) => s + i.importe, 0);
+  return { cantidad, total, faltantes, sobrantes };
+}
+
 // Últimos n meses hasta hastaMesPrefix (inclusive), de más viejo a más nuevo,
 // con el pctOk de cada uno según sus ocurrencias done.
 export function evolucionMensual(

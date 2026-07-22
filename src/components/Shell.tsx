@@ -1,5 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
-import { LayoutDashboard, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin, Settings, KeyRound, AlignJustify, History, CalendarRange, ClipboardCheck, Network, StickyNote, Sparkles, Keyboard, WifiOff, MessageSquarePlus } from "lucide-react";
+import { LayoutDashboard, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin, Settings, KeyRound, AlignJustify, History, CalendarRange, ClipboardCheck, Network, StickyNote, Sparkles, Keyboard, WifiOff, MessageSquarePlus, Wallet } from "lucide-react";
 import { useOnline } from "../hooks/useOnline";
 import { Avatar, cn } from "../lib/ui";
 import { PREF, getPref, setPref } from "../lib/prefs";
@@ -14,9 +14,10 @@ interface Props {
   adminBadge?: string;
   onNavigate: (v: string) => void; onSignOut: () => void;
   pendByOwner: (id: string) => number; subnav?: ReactNode; notifs?: ReactNode; fullWidth?: boolean; children: ReactNode;
+  misArqueosVisible?: boolean;
 }
 
-export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, onCycleDensity, onOpenAccount, onOpenNovedades, onOpenConsultas, tablonBadge, adminBadge, boardName, onNavigate, onSignOut, pendByOwner, subnav, notifs, fullWidth = false, children }: Props) {
+export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, onCycleDensity, onOpenAccount, onOpenNovedades, onOpenConsultas, tablonBadge, adminBadge, boardName, onNavigate, onSignOut, pendByOwner, subnav, notifs, fullWidth = false, misArqueosVisible = false, children }: Props) {
   // barra lateral como drawer desplegable (Seiton: se muestra a demanda, deja la vista limpia).
   const online = useOnline();
   const [open, setOpen] = useState(() => {
@@ -70,6 +71,7 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
             <NavItem v="__calendario" icon={<CalendarRange size={17} />} label="Calendario" />
             <NavItem v="__bitacora" icon={<History size={17} />} label="Bitácora" />
             <NavItem v="__notas" icon={<StickyNote size={17} />} label="Anotaciones" />
+            {misArqueosVisible && <NavItem v="__misarqueos" icon={<Wallet size={17} />} label="Mis arqueos" />}
             <NavItem v="__admin" icon={<Settings size={17} />} label="Administración" badge={adminBadge} />
             <div className="text-[10px] tracking-[1.4px] uppercase text-[color:var(--side-ink2)] px-2.5 pt-3.5 pb-1.5">Equipo</div>
             {team.map((u) => <NavItem key={u.id} v={u.id} icon={<Avatar name={u.name} size={22} />} label={u.name} count={pendByOwner(u.id)} />)}
@@ -81,6 +83,7 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
             <NavItem v="__calendario" icon={<CalendarRange size={17} />} label="Calendario" />
             <NavItem v="__bitacora" icon={<History size={17} />} label="Mi bitácora" />
             <NavItem v="__notas" icon={<StickyNote size={17} />} label="Anotaciones" />
+            {misArqueosVisible && <NavItem v="__misarqueos" icon={<Wallet size={17} />} label="Mis arqueos" />}
             <NavItem v="__tablon" icon={<Pin size={17} />} label="Tablón" badge={tablonBadge} />
           </>}
         </nav>

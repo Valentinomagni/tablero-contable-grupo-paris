@@ -25,6 +25,7 @@ import { MiMes } from "./features/mimes/MiMes";
 import { Tablon } from "./features/tablon/Tablon";
 import { Semana } from "./features/semana/Semana";
 import { UserModal } from "./features/admin/UserModal";
+import { cardsDeControl } from "./hooks/useArqueo";
 
 // Code-split (Kaizen H2): vistas que no participan del primer render van a chunks propios.
 const Reporte = lazy(() => import("./features/reporte/Reporte"));
@@ -36,6 +37,7 @@ const Bitacora = lazy(() => import("./features/bitacora/Bitacora"));
 const Admin = lazy(() => import("./features/admin/Admin").then((m) => ({ default: m.Admin })));
 const HistorialMes = lazy(() => import("./features/historial/HistorialMes"));
 const MiDia = lazy(() => import("./features/hoy/MiDia").then((m) => ({ default: m.MiDia })));
+const MisArqueos = lazy(() => import("./features/arqueo/MisArqueos"));
 import { CommandPalette } from "./components/CommandPalette";
 import type { Card, Profile, AppSettings } from "./lib/types";
 import { visiblesPara, cardsDeEquipo } from "./lib/jerarquia";
@@ -103,7 +105,11 @@ export default function App() {
   // En los dos caminos se excluyen siempre las cards del usuario oculto (spec 28): no participa de métricas/alertas.
   const scopedCards = cardsVisibles(isJefe ? cards : cardsDeEquipo(cards, equipoVisible), fullTeam);
   const person = fullTeam.find((u) => u.id === view);
+  // Acceso a "Mis arqueos" (spec28 fase B, Task 1): sólo si el usuario tiene alguna card de
+  // control (requiere_resultado) asignada, para no ensuciar el menú de quien no hace arqueos.
+  const misArqueosVisible = cardsDeControl(cards).some((c) => c.owner === me.id);
   const title = view === "__resumen" ? (esGestor ? "Resumen del equipo" : "Mi resumen")
+    : view === "__misarqueos" ? "Mis arqueos"
     : view === "__reporte" ? (esGestor ? "Reporte ejecutivo" : "Mi reporte")
     : view === "__tablon" ? "Tablón del equipo"
     : view === "__admin" ? "Administración"
@@ -114,7 +120,7 @@ export default function App() {
     : view === "__notas" ? "Anotaciones"
     : esGestor && person && person.id !== me.id ? `Tablero de ${person.name}` : "Mi tablero";
   const pendByOwner = (id: string) => cards.filter((c) => c.owner === id && c.status !== "term" && c.card_type !== "operativa").length;
-  const isPersonView = !["__resumen", "__reporte", "__tablon", "__admin", "__bitacora", "__calendario", "__cierre", "__organigrama", "__notas"].includes(view);
+  const isPersonView = !["__resumen", "__reporte", "__tablon", "__admin", "__bitacora", "__calendario", "__cierre", "__organigrama", "__notas", "__misarqueos"].includes(view);
 
   // badge del tablón: vencimientos próximos o publicaciones no vistas (por navegador)
   const vencProximos = proximosVencimientos(annos, new Date(), 5).length;
@@ -137,6 +143,7 @@ export default function App() {
         onOpenAccount={() => setAccount(true)} onOpenNovedades={() => setNovedades(true)} onOpenConsultas={() => setConsultas(true)}
         tablonBadge={tablonBadge} adminBadge={isJefe && adminBadgeN ? String(adminBadgeN) : undefined} boardName={settings?.board_name}
         onNavigate={(v) => { setViewing(v); setMode("board"); setQuery(""); }} onSignOut={signOut} pendByOwner={pendByOwner}
+        misArqueosVisible={misArqueosVisible}
         fullWidth={isPersonView && mode === "board"}
         notifs={<NotificacionesBell onOpenCard={(id) => { const c = cards.find((x) => x.id === id); if (c) setOpenCard(c); else toast("La tarea de esta notificación ya no está disponible."); }} />}
         subnav={isPersonView ? <>
@@ -173,6 +180,7 @@ export default function App() {
           : view === "__cierre" ? <Cierre cards={scopedCards} team={equipoVisible} isJefe={!!isJefe} meId={me.id} meName={me.name} meRole={me.role} settings={settings ?? { edit_closed: false } as AppSettings} onOpenCard={setOpenCard} />
           : view === "__organigrama" ? <Organigrama team={equipoVisible} cards={cards} />
           : view === "__notas" ? <Notas me={me} />
+          : view === "__misarqueos" ? <MisArqueos cards={cards} ownerId={me.id} />
           : mode === "hoy" ? <MiDia ownerId={view} cards={cards} onOpenCard={setOpenCard} />
           : mode === "semana" ? <Semana cards={cards} ownerId={view} meName={me.name} onOpen={setOpenCard} />
           : mode === "obj" ? <Objetivos ownerId={view} ownerName={person?.name ?? me.name} />
