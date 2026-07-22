@@ -157,6 +157,10 @@ export function useTriggerNotificaciones() {
   return useQuery({
     queryKey: ["trigger-notificaciones"],
     staleTime: 5 * 60_000,
+    // El QueryClient global tiene refetchOnWindowFocus:false y no hay otro disparador de
+    // refetch automático: sin este intervalo, alguien parado en el tablero (pestaña nunca
+    // desmontada) se quedaría con el valor viejo indefinidamente tras un rollback del trigger.
+    refetchInterval: 5 * 60_000,
     retry: false,
     queryFn: async (): Promise<boolean | null> => {
       const { data, error } = await supabase.rpc("trigger_notificaciones_activo");

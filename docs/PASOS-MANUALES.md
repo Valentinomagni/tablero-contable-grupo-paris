@@ -146,11 +146,23 @@ O sea que el cliente se adapta solo. Falta un único comando del lado de la base
 **Orden obligatorio: primero desplegar el código, después correr el comando.**
 
 1. Desplegar la Task 11 a producción y confirmar que quedó arriba (recargar el tablero).
-2. Recién ahí, en Supabase → SQL Editor:
+2. **OBLIGATORIO antes de activar el trigger** — verificar que PostgREST ya expone el RPC:
+   tras el `create or replace function` de la migración 30, PostgREST no lo ve hasta que
+   recarga su schema cache. Si activás el trigger con el RPC en 404, el cliente sigue
+   insertando por su cuenta y **cada finalización duplica el aviso, en silencio**.
+   - Forzar la recarga (Supabase → SQL Editor):
+     ```sql
+     notify pgrst, 'reload schema';
+     ```
+   - Verificar **desde la app**, no desde el SQL Editor: con el tablero abierto, DevTools →
+     Network debe mostrar `POST /rest/v1/rpc/trigger_notificaciones_activo` con respuesta
+     `200` y cuerpo `false`. Si da `404` (`PGRST202`), **no** actives el trigger todavía —
+     esperá un momento y repetí el `notify` hasta que el RPC responda `200`.
+3. Recién ahí, en Supabase → SQL Editor:
    ```sql
    alter table public.cards enable trigger cards_notificar_finalizacion;
    ```
-3. Verificar que quedó activo (`tgenabled` debe ser `'O'`):
+4. Verificar que quedó activo (`tgenabled` debe ser `'O'`):
    ```sql
    select tgname, tgenabled from pg_trigger
      where tgrelid = 'public.cards'::regclass
@@ -160,10 +172,13 @@ O sea que el cliente se adapta solo. Falta un único comando del lado de la base
    ```sql
    select public.trigger_notificaciones_activo();
    ```
-4. Prueba de humo: terminar una tarea con prioridad alta (o con vencimiento) cuyo dueño
+5. Prueba de humo: terminar una tarea con prioridad alta (o con vencimiento) cuyo dueño
    tenga manager, y confirmar que al manager le llega **una sola** notificación
-   "Tarea importante terminada". Si llegan dos, el navegador está con la versión vieja
-   del código: recargar con caché limpia. Si no llega ninguna, revisar el paso 3.
+   "Tarea importante terminada". Si llegan dos, hay tres causas posibles: (a) el navegador
+   tiene la versión vieja del código (recargar con caché limpia), (b) el cliente cacheó el
+   valor viejo del RPC (`useTriggerNotificaciones` tiene `staleTime` de 5 min: esperá o
+   recargá la pestaña), o (c) el RPC sigue en 404 (repetir la verificación del paso 2). Si
+   no llega ninguna, revisar el paso 4.
 
 **ADVERTENCIA — si activás el trigger ANTES de desplegar el código**, el cliente viejo
 sigue insertando su propia notificación y **cada finalización genera avisos duplicados**
@@ -175,8 +190,10 @@ alter table public.cards disable trigger cards_notificar_finalizacion;
 ```
 
 Ese mismo comando es el **rollback**: si hay que revertir el deploy de la Task 11, apagá
-el trigger. Da igual el orden en este sentido — con el trigger apagado el cliente vuelve
-a notificar por su cuenta y no hay ventana de silencio.
+el trigger. Ojo: esto **sí tiene una ventana de silencio**, no es instantáneo para todos —
+`useTriggerNotificaciones` cachea el valor 5 minutos, así que un usuario con el tablero ya
+abierto sigue sin notificar (creyendo que el trigger sigue activo) hasta que ese dato
+refresque, en el peor caso hasta ~5 minutos. Recargar la pestaña lo hace inmediato.
 
 > **Nota si ya corriste la migración 30 antes de esta task:** la función
 > `public.trigger_notificaciones_activo()` se agregó junto con la Task 11, así que no

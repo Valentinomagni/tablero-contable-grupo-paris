@@ -215,7 +215,7 @@ stable
 set search_path = public
 as $$
   select coalesce(
-    (select t.tgenabled <> 'D'
+    (select t.tgenabled in ('O', 'A')   -- 'R' (replica) NO dispara en sesión normal
        from pg_trigger t
       where t.tgrelid = 'public.cards'::regclass
         and t.tgname = 'cards_notificar_finalizacion'
