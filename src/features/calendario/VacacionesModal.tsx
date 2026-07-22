@@ -98,7 +98,15 @@ export function VacacionesModal({ me, team, cards, onClose }: {
           <option value="">Sin reemplazante</option>
           {team.filter((u) => u.id !== owner).map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
         </select>
-        <textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2} placeholder="Notas (opcional)" className={inputCls + " resize-y"} />
+        {reemplazante ? (
+          <>
+            <label className="text-xs uppercase tracking-wide text-ink2">Novedades para quien me cubre (opcional)</label>
+            <textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2}
+              placeholder="Ej: el banco X quedó a medias, ojo con el proveedor Y…" className={inputCls + " resize-y"} />
+          </>
+        ) : (
+          <textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2} placeholder="Notas (opcional)" className={inputCls + " resize-y"} />
+        )}
         <button onClick={() => puede ? crear.mutate() : toast.error("Elegí persona y un rango de fechas válido")}
           disabled={crear.isPending}
           className="flex items-center justify-center gap-1.5 bg-accent text-[color:var(--accent-ink)] rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:opacity-60">

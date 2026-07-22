@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { rangoValido, estaDeVacaciones, ausentesEnFecha, vacacionesActivasYFuturas, esCobertura } from "./vacaciones";
+import { rangoValido, estaDeVacaciones, ausentesEnFecha, vacacionesActivasYFuturas, esCobertura, novedadesPara } from "./vacaciones";
 import type { Vacacion, Card, HistoryEntry } from "./types";
 
 function mk(p: Partial<Vacacion>): Vacacion {
@@ -64,6 +64,32 @@ describe("vacacionesActivasYFuturas", () => {
   });
   it("hasta == hoy sigue activa (borde inclusive)", () => {
     expect(vacacionesActivasYFuturas([mk({ id: "x", desde: "2026-07-01", hasta: "2026-07-17" })], "2026-07-17").map((v) => v.id)).toEqual(["x"]);
+  });
+});
+
+describe("novedadesPara", () => {
+  it("sin licencias → vacío", () => {
+    expect(novedadesPara([], "u2", "2026-07-15")).toEqual([]);
+  });
+  it("licencia vigente con novedades → la ve el reemplazante", () => {
+    const vacs = [mk({ id: "a", reemplazante: "u2", notas: "Ojo con el proveedor X", desde: "2026-07-10", hasta: "2026-07-20" })];
+    expect(novedadesPara(vacs, "u2", "2026-07-15").map((v) => v.id)).toEqual(["a"]);
+  });
+  it("licencia vencida → no aparece", () => {
+    const vacs = [mk({ id: "a", reemplazante: "u2", notas: "Algo", desde: "2026-06-01", hasta: "2026-06-10" })];
+    expect(novedadesPara(vacs, "u2", "2026-07-15")).toEqual([]);
+  });
+  it("licencia de otro reemplazante → no aparece", () => {
+    const vacs = [mk({ id: "a", reemplazante: "u3", notas: "Algo", desde: "2026-07-10", hasta: "2026-07-20" })];
+    expect(novedadesPara(vacs, "u2", "2026-07-15")).toEqual([]);
+  });
+  it("licencia sin novedades → no aparece", () => {
+    const vacs = [mk({ id: "a", reemplazante: "u2", notas: "", desde: "2026-07-10", hasta: "2026-07-20" })];
+    expect(novedadesPara(vacs, "u2", "2026-07-15")).toEqual([]);
+  });
+  it("notas solo con espacios → no aparece", () => {
+    const vacs = [mk({ id: "a", reemplazante: "u2", notas: "   ", desde: "2026-07-10", hasta: "2026-07-20" })];
+    expect(novedadesPara(vacs, "u2", "2026-07-15")).toEqual([]);
   });
 });
 

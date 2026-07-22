@@ -24,6 +24,16 @@ export function vacacionesActivasYFuturas(vacs: Vacacion[], hoyISO: string): Vac
   return vacs.filter((v) => v.hasta >= hoyISO).sort((a, b) => a.desde.localeCompare(b.desde));
 }
 
+// Novedades para quien cubre (spec 28 fase C, task 4): las licencias vigentes que tienen
+// a `reemplazanteId` como reemplazante y traen texto en `notas` (el campo ya existente de
+// la tabla `vacaciones`, visible a todo el equipo por su policy "ver vacaciones" — se
+// reutiliza como traspaso de contexto en vez de crear una nota ajena, que la RLS de
+// `notes` rechazaría por ser owner=auth.uid()).
+export function novedadesPara(vacs: Vacacion[], reemplazanteId: string, hoyISO: string): Vacacion[] {
+  return vacs.filter((v) =>
+    v.reemplazante === reemplazanteId && v.notas.trim() !== "" && v.desde <= hoyISO && hoyISO <= v.hasta);
+}
+
 // Cobertura activa (propuesta P9): una card fue reasignada por cobertura de vacaciones si su
 // última entrada de history de cobertura ("Cobertura por vacaciones: de X a Y (…)") no fue
 // revertida por una devolución posterior. `titular` = el nombre entre "de " y " a ".
