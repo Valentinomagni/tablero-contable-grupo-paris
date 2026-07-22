@@ -3,6 +3,22 @@
 // nueva arriba de todo y la versión se actualiza sola (ver docs/RELEASE.md).
 export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] = [
   {
+    version: "2.6.0",
+    fecha: "2026-07-22",
+    cambios: [
+      "Calendario fiscal: generá de una vez los vencimientos del mes (IVA, F931, IIBB, SICORE) con vista previa antes de confirmar.",
+      "Tareas operativas con meta: cargá cuántas van y mirá la barra de progreso.",
+      "Al pedir licencia podés dejar novedades para quien te cubre, y ver qué tareas quedan con vencimiento en ese período.",
+      "Reporte: comparativa de marcas y sucursales mes a mes.",
+      "Organigrama: cómo viene evolucionando cada persona, para acompañar a quien necesite apoyo.",
+      "Resumen: seguimiento de lo que delegaste y qué lleva días sin moverse.",
+      "Cierre: si al ritmo actual el mes no llega a cerrarse, te avisa con tiempo.",
+      "Reporte: detecta categorías que hace una sola persona, para formar un reemplazo antes de que haga falta.",
+      "El buscador (Ctrl+K) ahora encuentra tareas en todo el historial, no solo en lo que tenés a la vista.",
+      "Mover tarjetas y marcar notificaciones como leídas ahora responde al instante.",
+    ],
+  },
+  {
     version: "2.5.0",
     fecha: "2026-07-22",
     cambios: [
