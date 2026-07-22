@@ -3,13 +3,14 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { EmptyState } from "../../components/EmptyState";
 import { itemsDelDia, type MotivoDia } from "../../lib/midia";
+import { cierreDelDia } from "../../lib/cierre-dia";
 import { toARTDate } from "../../lib/metrics";
 import { cn } from "../../lib/ui";
 import { supabase } from "../../lib/supabase";
-import { useCardOccurrences } from "../../hooks/useOccurrences";
+import { useCardOccurrences, useOccurrences } from "../../hooks/useOccurrences";
 import { ArqueoResultDialog } from "../board/ArqueoResultDialog";
 import type { Card } from "../../lib/types";
-import { Sun, AlertTriangle, Clock, Flame, Check } from "lucide-react";
+import { Sun, AlertTriangle, Clock, Flame, Check, CheckCircle2, Circle } from "lucide-react";
 
 const CHIP: Record<MotivoDia, { lbl: string; cls: string; icon: typeof Clock }> = {
   vencida: { lbl: "Vencida", cls: "bg-danger-soft text-danger", icon: AlertTriangle },
@@ -102,6 +103,34 @@ export function MiDia({ ownerId, cards, onOpenCard }: {
   // Cards de control (arqueo): defensivo — sin migración 23, requiere_resultado undefined → [].
   const controles = misCards.filter((c) => c.requiere_resultado);
 
+  // Cierre del día (spec 28, task 2): repaso de fin de jornada, no un control.
+  // DEFENSIVA: useOccurrences ya devuelve [] ante cualquier error de la tabla.
+  const [yHoy, mHoy] = hoyISO.split("-").map(Number);
+  const { data: ocurrenciasMes = [] } = useOccurrences(yHoy, mHoy);
+  const ocurrenciasHoy = ocurrenciasMes.filter((o) => o.fecha === hoyISO);
+
+  const controlIds = new Set(controles.map((c) => c.id));
+  const ocurrenciasControlHoy = ocurrenciasHoy.filter((o) => controlIds.has(o.card_id));
+  const arqueoHoy = {
+    existe: ocurrenciasControlHoy.length > 0,
+    hecho: ocurrenciasControlHoy.length > 0 && ocurrenciasControlHoy.every((o) => o.done),
+  };
+
+  const vencenHoyCards = misCards.filter((c) => c.due_date === hoyISO);
+  const vencenHoy = {
+    total: vencenHoyCards.length,
+    cerradas: vencenHoyCards.filter((c) => c.status === "term").length,
+  };
+
+  const operativasCards = misCards.filter((c) => c.card_type === "operativa");
+  const operativasIds = new Set(operativasCards.map((c) => c.id));
+  const operativas = {
+    total: operativasCards.length,
+    conActividadHoy: ocurrenciasHoy.filter((o) => operativasIds.has(o.card_id) && o.done).length,
+  };
+
+  const cierre = cierreDelDia({ arqueoHoy, vencenHoy, operativas });
+
   return (
     <div className="px-4 sm:px-6 pt-4 pb-10 max-w-[720px] w-full mx-auto">
       <div className="flex items-center gap-2 mb-4">
@@ -135,6 +164,34 @@ export function MiDia({ ownerId, cards, onOpenCard }: {
             );
           })}
         </ul>
+      )}
+      {/* Cierre del día: repaso personal al final de la jornada, no un control de supervisión.
+          Un paso que no aplica no se muestra; si no aplica ninguno, no hay nada que cerrar. */}
+      {cierre.pasos.length > 0 && (
+        <div className="mt-6 bg-surface border border-line rounded-2xl overflow-hidden" style={{ boxShadow: "var(--shadow)" }}>
+          <div className="px-4 pt-3.5 pb-3 sm:px-5">
+            <h3 className="text-[13px] font-semibold tracking-tight text-ink">Cierre del día</h3>
+            <div className="mt-3 flex flex-col gap-3">
+              {cierre.pasos.map((p) => (
+                <div key={p.key} className="flex items-start gap-2.5">
+                  {p.estado === "ok"
+                    ? <CheckCircle2 size={18} className="text-done shrink-0" />
+                    : <Circle size={18} className="text-ink2 shrink-0" />}
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-semibold text-ink leading-tight">{p.lbl}</div>
+                    <div className="text-[12px] text-ink2 leading-snug mt-0.5">{p.detalle}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {cierre.listo && (
+            <div className="bg-accent-soft px-4 py-2.5 sm:px-5 flex items-center gap-2 border-t border-line">
+              <CheckCircle2 size={16} className="text-done shrink-0" />
+              <span className="text-[13px] font-semibold text-ink">Tu día está cerrado.</span>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
