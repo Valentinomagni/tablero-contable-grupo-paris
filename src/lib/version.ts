@@ -3,6 +3,19 @@
 // nueva arriba de todo y la versión se actualiza sola (ver docs/RELEASE.md).
 export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] = [
   {
+    version: "2.7.0",
+    fecha: "2026-07-22",
+    cambios: [
+      "Organigrama corregido: ahora se ve una sola estructura y la máxima autoridad aparece siempre, mires la marca que mires.",
+      "El buscador (Ctrl+K) encuentra a todas las personas de tu equipo, sin importar el rol.",
+      "Resumen: ahora podés filtrar por marca y sucursal, igual que en el reporte.",
+      "Etiquetas en las tareas: poné varias (por ejemplo la empresa) además de la categoría, y filtrá o buscá por ellas.",
+      "Empresas: cargá CUIT, cierre de balance y si reporta a fábrica, para priorizar el trabajo automáticamente.",
+      "Reporte: análisis de tareas operativas por persona y por tipo, para detectar qué consume más tiempo del esperado.",
+      "El tablón muestra solo los vencimientos de IVA y Libro IVA Digital, sin la información que no usábamos.",
+    ],
+  },
+  {
     version: "2.6.0",
     fecha: "2026-07-22",
     cambios: [
