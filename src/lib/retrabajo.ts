@@ -1,6 +1,6 @@
 // Índice de retrabajo (spec 28 Fase B, J1): cuántas veces se reabrió una tarea ya
-// dada por terminada. Señal de calidad del trabajo o de criterios poco claros — NO es
-// un ranking de culpables (ver encuadre en AnalisisMensual.tsx). Función PURA.
+// dada por terminada. Señal de criterios de "terminado" poco claros: sirve para revisar
+// el procedimiento y la capacitación (ver encuadre en AnalisisMensual.tsx). Función PURA.
 import type { Card, Profile, Status } from "./types";
 import { esVisible } from "./visibilidad";
 

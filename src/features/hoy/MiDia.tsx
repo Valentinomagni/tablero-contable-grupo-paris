@@ -94,8 +94,8 @@ function ArqueoHoyCard({ card, owner, hoyISO }: { card: Card; owner: string; hoy
 }
 
 // "Mi día" (propuesta P4): agenda personal priorizada para HOY del owner.
-export function MiDia({ ownerId, cards, onOpenCard }: {
-  ownerId: string; cards: Card[]; onOpenCard: (c: Card) => void;
+export function MiDia({ ownerId, meId, cards, onOpenCard }: {
+  ownerId: string; meId: string; cards: Card[]; onOpenCard: (c: Card) => void;
 }) {
   const hoyISO = toARTDate(new Date().toISOString());
   const misCards = cards.filter((c) => c.owner === ownerId);
@@ -116,7 +116,10 @@ export function MiDia({ ownerId, cards, onOpenCard }: {
     hecho: ocurrenciasControlHoy.length > 0 && ocurrenciasControlHoy.every((o) => o.done),
   };
 
-  const vencenHoyCards = misCards.filter((c) => c.due_date === hoyISO);
+  // Solo tareas normales: las operativas ya tienen su propio paso, y una card de control
+  // (requiere_resultado) nunca pasa a "term", así que el paso quedaría pendiente para siempre.
+  const vencenHoyCards = misCards.filter(
+    (c) => c.due_date === hoyISO && c.card_type !== "operativa" && c.requiere_resultado !== true);
   const vencenHoy = {
     total: vencenHoyCards.length,
     cerradas: vencenHoyCards.filter((c) => c.status === "term").length,
@@ -168,8 +171,10 @@ export function MiDia({ ownerId, cards, onOpenCard }: {
         </ul>
       )}
       {/* Cierre del día: repaso personal al final de la jornada, no un control de supervisión.
+          Por eso habla en segunda persona y SOLO se muestra cuando mirás tu propio día:
+          un gestor viendo el "Hoy" de otra persona no es el destinatario de estos copys.
           Un paso que no aplica no se muestra; si no aplica ninguno, no hay nada que cerrar. */}
-      {cierre.pasos.length > 0 && (
+      {ownerId === meId && cierre.pasos.length > 0 && (
         <div className="mt-6 bg-surface border border-line rounded-2xl overflow-hidden" style={{ boxShadow: "var(--shadow)" }}>
           <div className="px-4 pt-3.5 pb-3 sm:px-5">
             <h3 className="text-[13px] font-semibold tracking-tight text-ink">Cierre del día</h3>

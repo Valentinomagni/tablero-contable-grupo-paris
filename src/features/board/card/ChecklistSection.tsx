@@ -5,6 +5,7 @@ import { supabase } from "../../../lib/supabase";
 import { type Card, type HistoryEntry, type TaskOccurrence } from "../../../lib/types";
 import { useCardOccurrences } from "../../../hooks/useOccurrences";
 import { editarItem, borrarItem } from "../../../lib/checklist";
+import { textoDiferencia } from "../../../lib/arqueo";
 import { Pencil, Trash2 } from "lucide-react";
 import { ArqueoResultDialog } from "../ArqueoResultDialog";
 
@@ -69,7 +70,7 @@ export function ChecklistSection({ c, patch, hist }:
                   <span className={"flex-1 capitalize " + (o.done ? "line-through text-ink2" : "")}>{fechaCorta(o.fecha)}</span>
                   {o.done && o.resultado === "ok" && <span className="text-[11px] text-done">sin diferencias</span>}
                   {o.done && o.resultado === "dif" && (
-                    <span className="text-[11px] text-warn" title={o.dif_obs ?? undefined}>diferencia ${o.dif_importe ?? 0}</span>
+                    <span className="text-[11px] text-warn" title={o.dif_obs ?? undefined}>{textoDiferencia(o.dif_importe ?? null)}</span>
                   )}
                 </label>
                 {pendingOcc?.id === o.id && (

@@ -168,8 +168,8 @@ export function AnalisisMensual({ cards, team, segmento = null }: { cards: Card[
         <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-1">Retrabajo</h3>
         <p className="text-ink2 text-[12.5px] mb-3.5">
           Mide cuántas tareas terminadas se reabrieron, no quién las reabrió. Una tarea que se reabre
-          suele avisar que el criterio de "terminado" no quedó claro o que faltó una revisión, no que
-          alguien trabajó mal. Es una señal para mejorar el proceso, no un ranking de culpables.
+          suele avisar que el criterio de "terminado" no quedó claro o que faltó una revisión.
+          Sirve para revisar el procedimiento y la capacitación.
         </p>
         <div className="flex items-center gap-2 mb-3.5">
           {retrabajo.general.pct === null ? (
@@ -254,16 +254,18 @@ export function AnalisisMensual({ cards, team, segmento = null }: { cards: Card[
         </div>
       </div>
 
-      {/* Tendencia de diferencias de arqueo (Task 6, spec28 fase B). Encuadre no punitivo:
+      {/* Tendencia de diferencias de arqueo (Task 6, spec28 fase B). Encuadre en positivo:
           una diferencia recurrente casi siempre avisa de un procedimiento mal diseñado o de
-          una necesidad de capacitación, no de mala fe de una persona. */}
+          una necesidad de capacitación. Por eso el desglose por persona muestra en cuántos
+          meses hubo diferencias (señal de proceso) y NO el monto: el monto total ya está en
+          la serie mensual, y al lado de un nombre convierte la tabla en un ranking. */}
       {tendencia.serie.length > 0 && (
         <div className={card} style={cardSh}>
           <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-1">Diferencias de caja en el tiempo</h3>
           <p className="text-ink2 text-[12.5px] mb-3.5">
-            Muestra cómo evolucionan las diferencias de arqueo mes a mes y quién las repite en más
-            de un mes. Una diferencia que reaparece casi siempre indica un problema de proceso o
-            una necesidad de capacitación, no que alguien actúe de mala fe: no es un ranking de culpables.
+            Muestra cómo evolucionan las diferencias de arqueo mes a mes y en cuántos meses se
+            repiten. Una diferencia que reaparece casi siempre indica un problema de proceso.
+            Sirve para revisar el procedimiento y la capacitación.
           </p>
 
           <div className="flex items-end gap-2 h-[110px] mb-1 px-1">
@@ -285,9 +287,7 @@ export function AnalisisMensual({ cards, team, segmento = null }: { cards: Card[
                 <thead>
                   <tr className="text-ink2 text-[11.5px] uppercase tracking-wide text-left">
                     <th className="font-semibold py-1">Persona</th>
-                    <th className="font-semibold py-1 text-right tnum">Meses</th>
-                    <th className="font-semibold py-1 text-right tnum">Diferencias</th>
-                    <th className="font-semibold py-1 text-right tnum">Monto</th>
+                    <th className="font-semibold py-1 text-right tnum">Meses con diferencias</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -295,8 +295,6 @@ export function AnalisisMensual({ cards, team, segmento = null }: { cards: Card[
                     <tr key={r.id} className="border-t border-line">
                       <td className="py-2 truncate">{r.nombre}</td>
                       <td className="py-2 text-right tnum">{r.meses}</td>
-                      <td className="py-2 text-right tnum">{r.cantidad}</td>
-                      <td className="py-2 text-right tnum">{fmtMonto(r.total)}</td>
                     </tr>
                   ))}
                 </tbody>

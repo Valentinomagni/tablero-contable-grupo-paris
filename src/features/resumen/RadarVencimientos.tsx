@@ -24,9 +24,14 @@ export function RadarVencimientos({ avisos, cards, vacaciones, profiles, hoyISO 
   const items = radarVencimientos({ avisos, cards, vacaciones, profiles, hoyISO });
   if (items.length === 0) return null;
 
+  // Tope de 6 ítems con alerta, igual que el bloque de Alertas vecino: una lista larga
+  // deja de leerse y el radar se vuelve ruido. El resto se resume en una línea.
+  const TOPE = 6;
   const conAlerta = items.filter((it) => it.riesgo !== "ok");
   const ok = items.filter((it) => it.riesgo === "ok");
-  const visibles = mostrarOk ? items : conAlerta;
+  const conAlertaVisibles = conAlerta.slice(0, TOPE);
+  const restantes = conAlerta.length - conAlertaVisibles.length;
+  const visibles = mostrarOk ? [...conAlertaVisibles, ...ok] : conAlertaVisibles;
 
   return (
     <div className="bg-surface border border-line rounded-2xl px-5 py-4 mb-5" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
@@ -52,6 +57,10 @@ export function RadarVencimientos({ avisos, cards, vacaciones, profiles, hoyISO 
             </div>
           );
         })
+      )}
+
+      {restantes > 0 && (
+        <p className="text-xs text-ink2 pt-1.5 m-0">y {restantes} vencimiento{restantes === 1 ? "" : "s"} más con alguna señal</p>
       )}
 
       {ok.length > 0 && (

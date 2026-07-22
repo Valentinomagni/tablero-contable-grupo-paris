@@ -5,7 +5,7 @@ import { supabase } from "../../lib/supabase";
 import type { TaskOccurrence } from "../../lib/types";
 import { useCardOccurrences, useCardOccurrencesAll } from "../../hooks/useOccurrences";
 import { claveFecha } from "../../lib/calendario";
-import { statsArqueo, evolucionMensual } from "../../lib/arqueo";
+import { statsArqueo, evolucionMensual, textoDiferencia } from "../../lib/arqueo";
 import { cn } from "../../lib/ui";
 import { ArqueoResultDialog } from "./ArqueoResultDialog";
 
@@ -102,7 +102,7 @@ export function CumplimientoDiario({ cardId, owner, year, month, requiere = fals
           const esOk = done && o?.resultado === "ok";
           const esDif = done && o?.resultado === "dif";
           const pasadoSinHacer = !done && fecha < hoyISO;
-          const tituloDif = esDif ? ` · diferencia $${o?.dif_importe ?? 0}${o?.dif_obs ? " — " + o.dif_obs : ""}` : "";
+          const tituloDif = esDif ? ` · ${textoDiferencia(o?.dif_importe ?? null)}${o?.dif_obs ? " — " + o.dif_obs : ""}` : "";
           return (
             <button key={fecha} onClick={() => onDiaClick(fecha)} disabled={setOcc.isPending}
               title={fecha + (esDif ? tituloDif : done ? " · hecho" : pasadoSinHacer ? " · sin hacer" : " · pendiente")}

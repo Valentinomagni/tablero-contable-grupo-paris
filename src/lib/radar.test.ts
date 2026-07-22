@@ -34,11 +34,24 @@ const hoyISO = "2026-07-22";
 const profiles = [mkProfile({})];
 
 describe("radarVencimientos", () => {
-  it("vencimiento sin card abierta que apunte → riesgo, 'No encontramos una tarea vinculada'", () => {
+  it("vencimiento sin card abierta que apunte → atencion (señal débil), no riesgo", () => {
     const r = radarVencimientos({ avisos: [mkAviso({})], cards: [], vacaciones: [], profiles, hoyISO });
     expect(r).toHaveLength(1);
-    expect(r[0].riesgo).toBe("riesgo");
+    expect(r[0].riesgo).toBe("atencion");
     expect(r[0].motivo).toMatch(/No encontramos una tarea vinculada/);
+  });
+
+  it("responsable oculto → el aviso se descarta del radar", () => {
+    const aviso = mkAviso({ owner_id: "u9" });
+    const oculto = mkProfile({ id: "u9", name: "Fantasma", email: "f@x.com", oculto: true });
+    const r = radarVencimientos({ avisos: [aviso], cards: [], vacaciones: [], profiles: [...profiles, oculto], hoyISO });
+    expect(r).toEqual([]);
+  });
+
+  it("responsable fuera del equipo visible → el aviso se descarta del radar", () => {
+    const aviso = mkAviso({ owner_id: "otro-area" });
+    const r = radarVencimientos({ avisos: [aviso], cards: [], vacaciones: [], profiles, hoyISO });
+    expect(r).toEqual([]);
   });
 
   it("con card en proceso y 10 días → ok", () => {

@@ -1,5 +1,6 @@
 import type { Announcement, Card, Vacacion, Profile } from "./types";
 import { estaDeVacaciones } from "./vacaciones";
+import { esVisible } from "./visibilidad";
 
 // Radar predictivo de vencimientos fiscales (spec 28, Fase B, J3): para cada aviso de tipo
 // "vencimiento" dentro del horizonte, evalúa si hay riesgo de incumplirlo. Es una anticipación,
@@ -43,7 +44,12 @@ export function radarVencimientos(input: {
     const dias = Math.round((dueDate.getTime() - hoy.getTime()) / 86400000);
     if (dias < 0 || dias > diasHorizonte) continue;
 
+    // Alcance del radar: solo avisos de personas visibles para quien mira. Si el aviso tiene
+    // responsable pero ese perfil no está en la lista visible (usuario oculto, o alguien de
+    // otra área fuera del alcance del encargado), el aviso no es asunto de esta pantalla:
+    // se descarta en vez de quedar como "Riesgo" sin nombre para siempre.
     const responsable = aviso.owner_id ? profiles.find((p) => p.id === aviso.owner_id) ?? null : null;
+    if (aviso.owner_id && !(responsable && esVisible(responsable))) continue;
 
     if (!aviso.owner_id) {
       items.push({ aviso, riesgo: "riesgo", motivo: "Sin responsable asignado", responsable: null });
@@ -58,7 +64,10 @@ export function radarVencimientos(input: {
 
     const card = cardQueApunta(aviso, cards);
     if (!card) {
-      items.push({ aviso, riesgo: "riesgo", motivo: "No encontramos una tarea vinculada", responsable });
+      // "atencion", no "riesgo": el vínculo aviso↔card es una heurística (misma fecha y dueño),
+      // así que no encontrarla es la señal MÁS DÉBIL del radar. "riesgo" queda reservado para
+      // las señales verificables (sin responsable asignado, responsable de licencia).
+      items.push({ aviso, riesgo: "atencion", motivo: "No encontramos una tarea vinculada", responsable });
       continue;
     }
 

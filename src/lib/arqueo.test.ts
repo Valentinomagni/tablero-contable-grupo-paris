@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { statsArqueo, evolucionMensual, historialDiferencias, resumenDiferencias, importeConSigno, tendenciaDiferencias } from "./arqueo";
+import { statsArqueo, evolucionMensual, historialDiferencias, resumenDiferencias, importeConSigno, tendenciaDiferencias, textoDiferencia } from "./arqueo";
 import type { TaskOccurrence, Profile } from "./types";
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -96,7 +96,7 @@ describe("historialDiferencias / resumenDiferencias", () => {
     const h = historialDiferencias(occs, "u1", "2026-01-01");
     const r = resumenDiferencias(h);
     expect(r.cantidad).toBe(3);
-    expect(r.total).toBe(150);
+    expect(r.total).toBe(450); // magnitud: 100 + 300 + 50, no el neto (150)
     expect(r.faltantes).toBe(-150);
     expect(r.sobrantes).toBe(300);
   });
@@ -194,5 +194,21 @@ describe("tendenciaDiferencias", () => {
     ];
     const r = tendenciaDiferencias(occs, [perfil("u1", "Ana"), perfil("u2", "Beto")]);
     expect(r.reincidentes.map((x) => x.id)).toEqual(["u2", "u1"]);
+  });
+});
+
+describe("textoDiferencia", () => {
+  it("negativo → falta, en valor absoluto", () => {
+    expect(textoDiferencia(-500)).toBe("falta $500");
+  });
+  it("positivo → sobra", () => {
+    expect(textoDiferencia(500)).toBe("sobra $500");
+  });
+  it("cero o null → sin diferencia (no rompe)", () => {
+    expect(textoDiferencia(0)).toBe("sin diferencia");
+    expect(textoDiferencia(null)).toBe("sin diferencia");
+  });
+  it("nunca imprime el signo menos", () => {
+    expect(textoDiferencia(-1250)).not.toMatch(/-/);
   });
 });

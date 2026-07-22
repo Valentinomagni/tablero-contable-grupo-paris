@@ -44,14 +44,16 @@ export function MisArqueos({ cards, ownerId }: { cards: Card[]; ownerId: string 
         </div>
         <div className="bg-surface rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5" style={cardSh}>
           <span className="text-[11.5px] uppercase tracking-wide text-ink2">Total acumulado</span>
-          <b className="text-2xl font-bold tracking-tight tnum" style={{ color: resumen.total < 0 ? "var(--danger)" : resumen.total > 0 ? "var(--warn)" : undefined }}>
+          {/* Magnitud, no neto: faltantes y sobrantes no se cancelan entre sí. */}
+          <b className="text-2xl font-bold tracking-tight tnum" style={{ color: resumen.total > 0 ? "var(--warn)" : undefined }}>
             {fmtMonto(resumen.total)}
           </b>
         </div>
         <div className="bg-surface rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5" style={cardSh}>
           <span className="text-[11.5px] uppercase tracking-wide text-ink2">Faltantes / sobrantes</span>
           <span className="flex items-center gap-2 text-lg font-bold tracking-tight tnum">
-            <span className="text-danger">{fmtMonto(resumen.faltantes)}</span>
+            {/* En valor absoluto: la etiqueta ya dice cuál es cuál, el menos solo confunde. */}
+            <span className="text-danger">{fmtMonto(Math.abs(resumen.faltantes))}</span>
             <span className="text-ink2 font-normal">/</span>
             <span className="text-warn">{fmtMonto(resumen.sobrantes)}</span>
           </span>

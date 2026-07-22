@@ -216,7 +216,7 @@ export default function App() {
           : view === "__organigrama" ? <Organigrama team={equipoVisible} cards={cards} />
           : view === "__notas" ? <Notas me={me} />
           : view === "__misarqueos" ? <MisArqueos cards={cards} ownerId={me.id} />
-          : mode === "hoy" ? <MiDia ownerId={view} cards={cards} onOpenCard={setOpenCard} />
+          : mode === "hoy" ? <MiDia ownerId={view} meId={me.id} cards={cards} onOpenCard={setOpenCard} />
           : mode === "semana" ? <Semana cards={cards} ownerId={view} meName={me.name} onOpen={setOpenCard} />
           : mode === "obj" ? <Objetivos ownerId={view} ownerName={person?.name ?? me.name} />
           : mode === "mimes" ? <MiMes cards={cards} activity={activity} ownerId={view} onOpenCard={setOpenCard} />

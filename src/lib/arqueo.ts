@@ -44,6 +44,16 @@ export function importeConSigno(monto: number, tipo: "falta" | "sobra"): number 
   return tipo === "falta" ? (abs === 0 ? 0 : -abs) : abs;
 }
 
+// Texto de una diferencia de arqueo para la UI. El signo es semántica, no un número a mostrar:
+// "diferencia $-500" se lee mal y obliga a interpretar el menos. Negativo → falta plata,
+// positivo → sobra. null/0 → sin diferencia.
+export function textoDiferencia(importe: number | null): string {
+  const n = importe ?? 0;
+  if (n === 0) return "sin diferencia";
+  const abs = Math.abs(n).toLocaleString("es-AR");
+  return n < 0 ? `falta $${abs}` : `sobra $${abs}`;
+}
+
 export interface DiferenciaHistorial { fecha: string; importe: number; obs: string | null; }
 export interface ResumenDiferencias { cantidad: number; total: number; faltantes: number; sobrantes: number; }
 
@@ -57,11 +67,14 @@ export function historialDiferencias(occs: TaskOccurrence[], ownerId: string, de
     .sort((a, b) => (a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : 0));
 }
 
-// Resumen del historial: cantidad de diferencias, total neto, y el desglose por signo
-// (faltantes = suma de importes negativos, sobrantes = suma de importes positivos). 0 no cuenta.
+// Resumen del historial: cantidad de diferencias, total ACUMULADO EN MAGNITUD, y el desglose
+// por signo (faltantes = suma de importes negativos, sobrantes = suma de importes positivos).
+// total usa Math.abs a propósito (igual que analisis.ts y tendenciaDiferencias): un mes con
+// −$500 y +$500 no es un mes sin diferencias, son dos diferencias de $500 cada una; el neto
+// las cancelaría y escondería justamente lo que hay que revisar.
 export function resumenDiferencias(items: DiferenciaHistorial[]): ResumenDiferencias {
   const cantidad = items.length;
-  const total = items.reduce((s, i) => s + i.importe, 0);
+  const total = items.reduce((s, i) => s + Math.abs(i.importe), 0);
   const faltantes = items.filter((i) => i.importe < 0).reduce((s, i) => s + i.importe, 0);
   const sobrantes = items.filter((i) => i.importe > 0).reduce((s, i) => s + i.importe, 0);
   return { cantidad, total, faltantes, sobrantes };
