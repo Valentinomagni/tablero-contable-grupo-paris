@@ -11,7 +11,7 @@ import { agruparItemsPalette } from "../lib/commandPalette";
 // hicieran, todo lo que aporta el full-text (stemming, multi-palabra y sobre todo los
 // matches en la DESCRIPCIÓN, que no está ni en `t` ni en `sub`) se descartaría antes de
 // renderizar y la búsqueda global no serviría para nada.
-interface Item { g: string; t: string; sub?: string; icon?: React.ReactNode; av?: Profile; servidor?: boolean; run: () => void; }
+interface Item { g: string; t: string; sub?: string; buscar?: string; icon?: React.ReactNode; av?: Profile; servidor?: boolean; run: () => void; }
 
 export function CommandPalette({ me, team, cards, annos = [], onNavigate, onOpenCard, onClose, onDelegar }: {
   me: Profile; team: Profile[]; cards: Card[]; annos?: Announcement[];
@@ -55,6 +55,9 @@ export function CommandPalette({ me, team, cards, annos = [], onNavigate, onOpen
   cardsCombinadas.forEach((c) => all.push({
     g: "Tareas", t: c.title,
     sub: `${team.find((u) => u.id === c.owner)?.name ?? ""} · ${c.card_type === "operativa" ? "operativa" : COLS.find((x) => x[0] === c.status)?.[1]}`,
+    // Etiquetas (spec 28, fase D, Task 5): buscables aunque no se muestren en `sub` (que ya
+    // ocupa el dueño/estado) — así "Autocity" encuentra la tarea sin agregar ruido visual.
+    buscar: (c.etiquetas ?? []).join(" "),
     servidor: idsServidor.has(c.id),
     run: () => onOpenCard(c),
   }));
@@ -69,7 +72,8 @@ export function CommandPalette({ me, team, cards, annos = [], onNavigate, onOpen
   // idsDelServidor en lib/buscador.ts). El filtro de substring sólo aplica a lo que se
   // arma acá en el cliente (vistas, acciones, personas, avisos y cards en memoria).
   const filtrados = all.filter((i) => !needle || i.servidor
-    || i.t.toLowerCase().includes(needle) || (i.sub ?? "").toLowerCase().includes(needle));
+    || i.t.toLowerCase().includes(needle) || (i.sub ?? "").toLowerCase().includes(needle)
+    || (i.buscar ?? "").toLowerCase().includes(needle));
   // Sin texto de búsqueda (recién abierto / navegando la lista) un slice(12) plano sobre
   // `all` deja afuera grupos enteros: como "Personas" se arma con team.forEach() en orden
   // alfabético de rol ("empleado" < "encargado" < "jefe"), los primeros ~10 lugares ya los
