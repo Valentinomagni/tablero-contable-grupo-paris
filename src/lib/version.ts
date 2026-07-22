@@ -14,7 +14,7 @@ export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] 
       "Resumen: seguimiento de lo que delegaste y qué lleva días sin moverse.",
       "Cierre: si al ritmo actual el mes no llega a cerrarse, te avisa con tiempo.",
       "Reporte: detecta categorías que hace una sola persona, para formar un reemplazo antes de que haga falta.",
-      "El buscador (Ctrl+K) ahora encuentra tareas en todo el historial, no solo en lo que tenés a la vista.",
+      "El buscador (Ctrl+K) ahora busca en todas tus tareas, no solo en las que tenés a la vista.",
       "Mover tarjetas y marcar notificaciones como leídas ahora responde al instante.",
     ],
   },

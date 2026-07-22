@@ -29,20 +29,23 @@ function Sparkline({ curva }: { curva: PuntoCurva[] }) {
 }
 
 const TENDENCIA_ICON = { sube: TrendingUp, baja: TrendingDown, estable: Minus };
-const TENDENCIA_LBL = { sube: "En alza", baja: "Necesita apoyo", estable: "Estable" };
+// El sujeto de la etiqueta es el DATO (la curva), nunca la persona: "Viene bajando"
+// describe la serie; "Necesita apoyo" era un juicio sobre quien está al lado del avatar.
+const TENDENCIA_LBL = { sube: "Viene subiendo", baja: "Viene bajando", estable: "Estable" };
 
-// Curva de evolución (spec 28, Fase C, Task 6): acompaña, no califica — por eso el texto
-// habla de "apoyo" y no de "rendimiento", y la tendencia usa gris salvo la baja, que se
-// marca en tono de alerta suave para que salte a la vista de quien puede ayudar.
+// Curva de evolución (spec 28, Fase C, Task 6): acompaña, no califica. Por eso las tres
+// tendencias van en el MISMO gris (text-ink2), sin color de alerta: pintar la baja en
+// `warn` la convertía en un señalamiento sobre la persona, visible junto a su nombre y su
+// avatar. La interpretación (qué hacer con una curva que baja) queda en el tooltip.
 function Evolucion({ ownerId, archives }: { ownerId: string; archives: CardArchive[] }) {
   const curva = curvaPersona(archives, ownerId, 6);
   if (curva.length < 2) return null;
   const t = tendencia(curva);
   const Icon = TENDENCIA_ICON[t];
   return (
-    <div className="flex items-center gap-2 shrink-0" title="Evolución de cumplimiento — para acompañar, no para calificar">
+    <div className="flex items-center gap-2 shrink-0" title="Cumplimiento de los últimos meses. Es un dato para acompañar y ver si hace falta apoyo o redistribuir carga, no una calificación de la persona.">
       <Sparkline curva={curva} />
-      <span className={`flex items-center gap-1 text-[11px] ${t === "baja" ? "text-warn" : "text-ink2"}`}>
+      <span className="flex items-center gap-1 text-[11px] text-ink2">
         <Icon size={13} />
         {TENDENCIA_LBL[t]}
       </span>
@@ -106,9 +109,11 @@ function Seccion({ titulo, subtitulo, gente, cards, archives }: { titulo: string
 
 export function Organigrama({ team, cards }: { team: Profile[]; cards: Card[] }) {
   const org = useOrganizacion();
-  // La curva de evolución acompaña a quien está a cargo, no expone a los pares: `team` ya
-  // llega acotado por rol (jefe ve todo, encargado su equipo, empleado a sí mismo) y RLS
-  // en cards_archive limita igual la data cruda — ver decisión en task-6-report.md.
+  // OJO — `team` NO viene acotado por rol: App.tsx pasa personasVisibles(fullTeam), o sea
+  // el equipo completo. Lo único que hoy evita que un empleado vea la curva de sus pares es
+  // que el Organigrama no está en su navegación, más la RLS de cards_archive, que limita la
+  // data cruda que llega. Si alguna vez se abre esta vista a más roles, hay que filtrar el
+  // `team` acá explícitamente — no hay ninguna protección implícita en este componente.
   const archives = useArchiveEquipo().data ?? [];
   const grupos = porMarca(team);
   // Orden fijo de marcas (General primero); las demás quedan detrás alfabéticamente.

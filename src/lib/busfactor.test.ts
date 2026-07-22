@@ -116,3 +116,24 @@ describe("concentracion", () => {
     expect(r.map((x) => x.categoria)).toEqual(["Cat90", "Cat80"]);
   });
 });
+
+describe("concentracion — criterio unificado de métricas (visibilidad.archivesParaMetricas)", () => {
+  it("INCLUYE al centinela 'Sin asignar': una categoría huérfana ES riesgo de continuidad", () => {
+    const sinAsignar: Profile = { ...mkProfile("sin-asignar", "Sin asignar"), email: "sin-asignar@grupoparis.com" };
+    const archives = [
+      mkArchive("sin-asignar", "IVA", "normal", "2026-01", "k1"),
+      mkArchive("sin-asignar", "IVA", "normal", "2026-01", "k2"),
+      mkArchive("sin-asignar", "IVA", "normal", "2026-01", "k3"),
+      mkArchive("sin-asignar", "IVA", "normal", "2026-01", "k4"),
+    ];
+    const out = concentracion(archives, [sinAsignar]);
+    expect(out).toHaveLength(1);
+    expect(out[0].pct).toBe(100);
+  });
+
+  it("sigue excluyendo al usuario oculto", () => {
+    const oculto = mkProfile("fantasma", "Fantasma", true);
+    const archives = ["k1", "k2", "k3", "k4"].map((k) => mkArchive("fantasma", "IVA", "normal", "2026-01", k));
+    expect(concentracion(archives, [oculto])).toEqual([]);
+  });
+});

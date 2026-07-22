@@ -21,6 +21,24 @@ export const MIGRACION_ESQUEMA_NUEVO = 29;
 /** Columnas de `cards` que sólo existen con la migración 29 aplicada. */
 export const CAMPOS_NUEVOS_CARDS = ["proc_at", "tiempo_max_horas", "dato_control"] as const;
 
+/**
+ * Columnas de `cards` que la app realmente usa, para pedirlas EXPLÍCITAMENTE en vez de
+ * `select("*")`.
+ *
+ * MOTIVO: la migración 30 agrega `tsv` (tsvector generado) para el buscador full-text.
+ * Con `*`, ese tsvector viaja entero en CADA fetch de cards — y hay un refetch por cada
+ * evento realtime. Es un campo que la app nunca lee: sólo lo usa la base para indexar.
+ *
+ * Es exactamente el shape de `Card` (src/lib/types.ts): si se agrega un campo allá, va acá
+ * también, o llega `undefined` en runtime sin que TypeScript lo note.
+ */
+export const COLUMNAS_CARDS = [
+  "id", "owner", "title", "status", "description", "checklist", "comments", "history",
+  "done_at", "due_date", "recurring", "priority", "effort", "card_type", "deps",
+  "created_at", "recur_rule", "protected", "categoria", "reset_policy",
+  "requiere_resultado", "sucursal", "marca", "proc_at", "tiempo_max_horas", "dato_control",
+].join(",");
+
 /** Columnas de `profiles` que sólo existen con la migración 29 aplicada. */
 export const CAMPOS_NUEVOS_PROFILES = ["oculto", "last_seen"] as const;
 

@@ -5,7 +5,7 @@
 // estables sin importar cuándo se corran.
 import type { CardArchive, Profile } from "./types";
 import { marcaDe } from "./segmento";
-import { esVisible } from "./visibilidad";
+import { archivesParaMetricas } from "./visibilidad";
 
 export interface ComparativaMes {
   mes: string;
@@ -27,9 +27,12 @@ export function comparativaMensual(
   archives: CardArchive[], profiles: Profile[], meses: number,
 ): ComparativaMes[] {
   const byId = new Map(profiles.map((p) => [p.id, p]));
-  const visibles = new Set(profiles.filter((p) => esVisible(p)).map((p) => p.id));
 
-  const vivos = archives.filter((a) => visibles.has(a.owner) && a.card.card_type !== "operativa");
+  // Criterio único de métricas históricas (visibilidad.ts): fuera los ocultos, el centinela
+  // "Sin asignar" cuenta. Antes acá se usaba esVisible(), que además sacaba al centinela, y
+  // esta comparativa no coincidía con el cumplimiento histórico de analizarMes().
+  const vivos = archivesParaMetricas(archives, profiles)
+    .filter((a) => a.card.card_type !== "operativa");
   if (!vivos.length) return [];
 
   // Ventana de `meses`, anclada en el mes más reciente con datos (no en "hoy").

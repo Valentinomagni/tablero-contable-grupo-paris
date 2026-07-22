@@ -131,3 +131,26 @@ describe("comparativaMensual", () => {
     expect(r[0].porMarca["MarcaA"]).toBe(50);
   });
 });
+
+describe("comparativaMensual — criterio unificado de métricas (visibilidad.archivesParaMetricas)", () => {
+  it("INCLUYE al centinela 'Sin asignar' (antes esVisible lo sacaba y no coincidía con analizarMes)", () => {
+    const sinAsignar: Profile = { ...perfil("sin-asignar", "MarcaA"), email: "sin-asignar@grupoparis.com" };
+    const profiles = [perfil("u1", "MarcaA"), sinAsignar];
+    const archives = [
+      archivo("2026-06", "u1", { status: "term", marca: "MarcaA" }),
+      archivo("2026-06", "sin-asignar", { status: "pend", marca: "MarcaA" }),
+    ];
+    const out = comparativaMensual(archives, profiles, 6);
+    // 1 de 2 terminadas: la huérfana cuenta. Si se excluyera, daría 100%.
+    expect(out[0].porMarca["MarcaA"]).toBe(50);
+  });
+
+  it("sigue excluyendo al usuario oculto", () => {
+    const profiles = [perfil("u1", "MarcaA"), perfil("oculto1", "MarcaA", null, true)];
+    const archives = [
+      archivo("2026-06", "u1", { status: "term", marca: "MarcaA" }),
+      archivo("2026-06", "oculto1", { status: "pend", marca: "MarcaA" }),
+    ];
+    expect(comparativaMensual(archives, profiles, 6)[0].porMarca["MarcaA"]).toBe(100);
+  });
+});

@@ -16,3 +16,15 @@ export function combinarResultadosCards(enMemoria: Card[], delServidor: Card[]):
   const extra = delServidor.filter((c) => !ids.has(c.id));
   return [...enMemoria, ...extra];
 }
+
+// ids de las cards que el RPC full-text ya dio por buenas. Quien renderiza los resultados
+// debe SALTEAR su filtro de substring local para estas: la base ya las filtró, y con un
+// criterio más amplio (stemming, multi-palabra, y match en la descripción, que no se
+// muestra en la lista). Volver a filtrarlas por substring del título las descartaría.
+//
+// Ojo — se marcan TODAS las que devolvió el servidor, no sólo las "extra" que no estaban
+// en memoria: una card ya cargada localmente puede haber matcheado por su descripción, y
+// esa también se perdería si pasara por el filtro local.
+export function idsDelServidor(delServidor: Card[]): Set<string> {
+  return new Set(delServidor.map((c) => c.id));
+}

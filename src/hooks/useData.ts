@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import type { Card, Profile, Objective, ActivityLog, ResumenMensual } from "../lib/types";
 import type { DepInfo, RevDep } from "../lib/deps";
 import { CardSchema, validateRows } from "../lib/schemas";
+import { COLUMNAS_CARDS } from "../lib/esquema";
 import type { Organizacion } from "../lib/organizacion";
 import { parseOrganizacion, DEFAULT_ORG } from "../lib/organizacion";
 
@@ -273,8 +274,17 @@ export function useCards() {
   return useQuery({
     queryKey: ["cards"],
     queryFn: async (): Promise<Card[]> => {
-      const { data } = await supabase.from("cards").select("*").order("created_at");
-      return validateRows((data as Card[]) ?? [], CardSchema, "cards");
+      // Columnas explícitas (no `*`): evita arrastrar el tsvector `tsv` de la migración 30
+      // en cada refetch — y hay uno por cada evento realtime. Ver COLUMNAS_CARDS.
+      const { data, error } = await supabase.from("cards").select(COLUMNAS_CARDS).order("created_at");
+      // Fallback a `*` si la base todavía no tiene alguna de esas columnas (42703 /
+      // PGRST204 en una base sin migrar): pedir columnas explícitas hace fallar el select
+      // ENTERO, y quedarse sin tablero es peor que traer un tsvector de más.
+      if (error) {
+        const { data: todo } = await supabase.from("cards").select("*").order("created_at");
+        return validateRows((todo as Card[]) ?? [], CardSchema, "cards");
+      }
+      return validateRows((data as unknown as Card[]) ?? [], CardSchema, "cards");
     },
   });
 }

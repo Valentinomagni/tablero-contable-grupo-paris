@@ -3,9 +3,14 @@ import { LayoutDashboard, Pin, Settings, ClipboardList, Search, Users, Network, 
 import { Avatar } from "../lib/ui";
 import { COLS, type Card, type Profile, type Announcement } from "../lib/types";
 import { useBuscarCards } from "../hooks/useData";
-import { combinarResultadosCards } from "../lib/buscador";
+import { combinarResultadosCards, idsDelServidor } from "../lib/buscador";
 
-interface Item { g: string; t: string; sub?: string; icon?: React.ReactNode; av?: Profile; run: () => void; }
+// `servidor: true` marca los items que ya vinieron filtrados por el full-text de la base
+// (RPC buscar_cards). Esos NO vuelven a pasar por el filtro de substring local: si lo
+// hicieran, todo lo que aporta el full-text (stemming, multi-palabra y sobre todo los
+// matches en la DESCRIPCIÓN, que no está ni en `t` ni en `sub`) se descartaría antes de
+// renderizar y la búsqueda global no serviría para nada.
+interface Item { g: string; t: string; sub?: string; icon?: React.ReactNode; av?: Profile; servidor?: boolean; run: () => void; }
 
 export function CommandPalette({ me, team, cards, annos = [], onNavigate, onOpenCard, onClose, onDelegar }: {
   me: Profile; team: Profile[]; cards: Card[]; annos?: Announcement[];
@@ -26,6 +31,7 @@ export function CommandPalette({ me, team, cards, annos = [], onNavigate, onOpen
   // Se combinan sin duplicar por id; lo que ya estaba en memoria mantiene su orden para
   // que la lista no "salte" cuando llegan los resultados del servidor.
   const cardsCombinadas = combinarResultadosCards(cards, cardsServidor);
+  const idsServidor = idsDelServidor(cardsServidor);
 
   const all: Item[] = [];
   if (isJefe) {
@@ -45,6 +51,7 @@ export function CommandPalette({ me, team, cards, annos = [], onNavigate, onOpen
   cardsCombinadas.forEach((c) => all.push({
     g: "Tareas", t: c.title,
     sub: `${team.find((u) => u.id === c.owner)?.name ?? ""} · ${c.card_type === "operativa" ? "operativa" : COLS.find((x) => x[0] === c.status)?.[1]}`,
+    servidor: idsServidor.has(c.id),
     run: () => onOpenCard(c),
   }));
   // Búsqueda global: los avisos del tablón también son encontrables (Seiton)
@@ -54,7 +61,11 @@ export function CommandPalette({ me, team, cards, annos = [], onNavigate, onOpen
   }));
 
   const needle = q.trim().toLowerCase();
-  const items = all.filter((i) => !needle || i.t.toLowerCase().includes(needle) || (i.sub ?? "").toLowerCase().includes(needle)).slice(0, 12);
+  // `i.servidor` pasa de largo: esas cards ya las filtró el full-text de la base (ver
+  // idsDelServidor en lib/buscador.ts). El filtro de substring sólo aplica a lo que se
+  // arma acá en el cliente (vistas, acciones, personas, avisos y cards en memoria).
+  const items = all.filter((i) => !needle || i.servidor
+    || i.t.toLowerCase().includes(needle) || (i.sub ?? "").toLowerCase().includes(needle)).slice(0, 12);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

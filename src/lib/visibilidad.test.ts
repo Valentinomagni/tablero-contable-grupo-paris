@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { esVisible, personasVisibles, cardsVisibles } from "./visibilidad";
+import { esVisible, personasVisibles, cardsVisibles, archivesParaMetricas } from "./visibilidad";
 import type { Profile } from "./types";
 
 const p = (id: string, email: string, oculto?: boolean): Profile =>
@@ -56,5 +56,39 @@ describe("cardsVisibles", () => {
   it("sin perfiles ocultos, no filtra nada", () => {
     const cards = [c("c1", "u1"), c("c2", "u3")];
     expect(cardsVisibles(cards, [p("u1", "u1@grupoparis.com")]).map((x) => x.id)).toEqual(["c1", "c2"]);
+  });
+});
+
+describe("archivesParaMetricas (criterio único de métricas históricas)", () => {
+  const arch = (owner: string) => ({ id: `a-${owner}`, owner, mes: "2026-06" });
+  const perfiles = [
+    p("u1", "u1@grupoparis.com"),
+    p("fantasma", "admin@grupoparis.com", true),
+    p("sin-asignar", "sin-asignar@grupoparis.com"),
+  ];
+
+  it("excluye los archivos de un usuario oculto", () => {
+    const out = archivesParaMetricas([arch("u1"), arch("fantasma")], perfiles);
+    expect(out.map((a) => a.owner)).toEqual(["u1"]);
+  });
+
+  it("MANTIENE el centinela sin-asignar (a diferencia de esVisible)", () => {
+    // Es la incoherencia que este helper vino a cerrar: comparativaMensual y concentracion
+    // usaban esVisible, que se llevaba puesto al centinela, mientras que analizarMes no
+    // excluía a nadie — y el mismo mes daba dos porcentajes distintos.
+    const out = archivesParaMetricas([arch("u1"), arch("sin-asignar")], perfiles);
+    expect(out.map((a) => a.owner).sort()).toEqual(["sin-asignar", "u1"]);
+  });
+
+  it("coincide con el criterio de cardsVisibles sobre los mismos owners", () => {
+    const owners = ["u1", "fantasma", "sin-asignar"];
+    const porArchivo = archivesParaMetricas(owners.map(arch), perfiles).map((a) => a.owner);
+    const porCard = cardsVisibles(owners.map((owner) => ({ owner })), perfiles).map((c) => c.owner);
+    expect(porArchivo).toEqual(porCard);
+  });
+
+  it("sin perfiles ocultos no descarta nada", () => {
+    const out = archivesParaMetricas([arch("u1"), arch("u2")], [p("u1", "u1@x.com"), p("u2", "u2@x.com")]);
+    expect(out).toHaveLength(2);
   });
 });

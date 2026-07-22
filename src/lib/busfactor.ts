@@ -4,7 +4,7 @@
 // NO una evaluación de nadie. La acción sugerida es formar un backup / compartir el
 // conocimiento, no sacarle trabajo a quien concentra la categoría.
 import type { CardArchive, Profile } from "./types";
-import { esVisible } from "./visibilidad";
+import { archivesParaMetricas } from "./visibilidad";
 
 export interface Concentracion { categoria: string; personas: number; principal: string; pct: number }
 
@@ -14,7 +14,6 @@ const VOLUMEN_MINIMO = 4;
 
 export function concentracion(archives: CardArchive[], profiles: Profile[]): Concentracion[] {
   const byId = new Map(profiles.map((p) => [p.id, p]));
-  const visibles = new Set(profiles.filter((p) => esVisible(p)).map((p) => p.id));
 
   // IMPORTANTE — dedupe por card, exclusivo de este archivo:
   // cards_archive guarda un snapshot POR MES de cada card, así que una card que vivió N meses
@@ -28,8 +27,11 @@ export function concentracion(archives: CardArchive[], profiles: Profile[]): Con
     if (!prev || a.mes > prev.mes) ultimoPorCard.set(a.card.id, a);
   }
 
-  const vivos = [...ultimoPorCard.values()].filter(
-    (a) => visibles.has(a.owner) && a.card.card_type !== "operativa" && !!a.card.categoria,
+  // Criterio único de métricas históricas (visibilidad.ts): fuera los ocultos, el centinela
+  // "Sin asignar" cuenta — una categoría que quedó concentrada en tareas huérfanas es
+  // exactamente el riesgo de continuidad que esta función busca.
+  const vivos = archivesParaMetricas([...ultimoPorCard.values()], profiles).filter(
+    (a) => a.card.card_type !== "operativa" && !!a.card.categoria,
   );
 
   const porCategoria = new Map<string, Map<string, number>>();

@@ -179,6 +179,13 @@ O sea que el cliente se adapta solo. Falta un único comando del lado de la base
    valor viejo del RPC (`useTriggerNotificaciones` tiene `staleTime` de 5 min: esperá o
    recargá la pestaña), o (c) el RPC sigue en 404 (repetir la verificación del paso 2). Si
    no llega ninguna, revisar el paso 4.
+6. Prueba de humo — **tarea compartida** (no la saltees: es el caso que el paso 5 no cubre).
+   Delegá una tarea con prioridad alta a **tres** personas que tengan manager, y que una de
+   ellas la termine. Al terminar una hermana, el cliente sincroniza las otras con un update
+   directo, y esos updates entran al trigger con `pg_trigger_depth() = 1` — o sea que la
+   guarda de profundidad NO los frena. Debe llegar **una sola** notificación, no tres. Si
+   llegan tres, la base tiene la versión vieja de `cards_notificar_finalizacion()`: volvé a
+   correr `migracion-30-analitica.sql` (es idempotente y no apaga el trigger ya activado).
 
 **ADVERTENCIA — si activás el trigger ANTES de desplegar el código**, el cliente viejo
 sigue insertando su propia notificación y **cada finalización genera avisos duplicados**
@@ -340,6 +347,22 @@ al refresco periódico. Para habilitarlo falta un paso manual (checkbox del dash
 Sin este paso **no se rompe nada**: la campana sigue funcionando con el refresco de
 respaldo cada 5 minutos (antes era cada 60 segundos), solo que las notificaciones nuevas
 tardan un poco más en aparecer.
+
+### PENDIENTE — Web Push (avisos con la app cerrada)
+
+Lo de arriba es realtime **dentro de la app abierta**. Recibir avisos con la app **cerrada**
+(Web Push) **todavía no está implementado**. Queda anotado acá para que no se dé por hecho:
+
+- Requiere desplegar una **edge function** que firme y mande los push (VAPID), y eso exige
+  `supabase login` + `supabase functions deploy` desde una terminal con la CLI autenticada.
+  No se puede hacer desde el dashboard ni desde el repo solo.
+- Hay que generar y guardar las **claves VAPID** como secrets del proyecto, y persistir la
+  suscripción push de cada dispositivo.
+- **En iPhone/iOS sólo funciona con la PWA instalada** ("Agregar a pantalla de inicio"):
+  Safari no entrega Web Push a una pestaña común. Es decir que, aun terminado, no alcanza
+  con desplegarlo: cada persona con iPhone tiene que instalar la app.
+
+Mientras tanto, el equipo se entera por la campana al abrir el tablero.
 
 ## Notas de seguridad del rollout de login (#16)
 - El login acepta **usuario O email**. Desplegar antes de cargar usernames NO bloquea a nadie.

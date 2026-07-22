@@ -4,7 +4,7 @@
 import type { Card, Profile, TaskOccurrence, CardArchive } from "./types";
 import { dueInfo } from "./metrics";
 import { marcaDe } from "./segmento";
-import { esVisible } from "./visibilidad";
+import { esVisible, archivesParaMetricas } from "./visibilidad";
 
 export interface AnalisisMes {
   cumplimiento: number;                     // 0-100
@@ -95,8 +95,13 @@ export function analizarMes(
   const vencidas = norm.filter((c) => c.status !== "term").filter((c) => { const i = dueInfo(c); return i && i.days < 0; }).length;
 
   // 8 y 9. Histórico: cumplimiento por mes archivado.
+  // Mismo criterio que comparativaMensual() y concentracion(): fuera los ocultos, el
+  // centinela "Sin asignar" cuenta (ver archivesParaMetricas en visibilidad.ts). Sin esto,
+  // esta serie y la comparativa mostraban dos porcentajes distintos del mismo mes.
   const porMes = new Map<string, Card[]>();
-  for (const a of archives) (porMes.get(a.mes) ?? porMes.set(a.mes, []).get(a.mes)!).push(a.card);
+  for (const a of archivesParaMetricas(archives, profiles)) {
+    (porMes.get(a.mes) ?? porMes.set(a.mes, []).get(a.mes)!).push(a.card);
+  }
   const cumplPorMes = new Map<string, number>();
   for (const [mes, cs] of porMes) cumplPorMes.set(mes, cumplPct(cs));
 

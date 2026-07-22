@@ -103,6 +103,29 @@ begin
     return new;
   end if;
 
+  -- Tareas COMPARTIDAS: al terminar una, el cliente sincroniza cada hermana con un
+  -- update DIRECTO (Board.tsx / CardModal.tsx → siblingSyncPatches), no en cascada. Esos
+  -- updates entran con pg_trigger_depth() = 1, así que la guarda de arriba NO los frena:
+  -- una tarea delegada a 3 personas mandaría 3 avisos donde el cliente manda 1.
+  --
+  -- Cómo se distingue la hermana de la card sobre la que el usuario actuó: la marca
+  -- 'compartida:<linkId>' en `history` (SHARED_PREFIX en src/lib/shared.ts) identifica al
+  -- grupo, y sólo la card que el usuario tocó recibe además una entrada NUEVA de historial
+  -- ("Marcó terminada"); las hermanas se sincronizan con status/done_at nada más. Entonces:
+  -- card compartida + history sin cambios = sincronización de hermana → no se notifica.
+  -- (jsonb_typeof: si algún historial viejo no fuera un array, jsonb_array_elements
+  -- abortaría el UPDATE entero. Una notificación no puede romper una finalización.)
+  if new.history is not distinct from old.history
+     and jsonb_typeof(coalesce(new.history, '[]'::jsonb)) = 'array'
+     and exists (
+       select 1
+         from jsonb_array_elements(coalesce(new.history, '[]'::jsonb)) as e
+        where e->>'txt' like 'compartida:%'
+     )
+  then
+    return new;
+  end if;
+
   -- Sin actor identificado (cron / service role) no se notifica: espeja la
   -- guarda `&& meId` del cliente y evita que el reset mensual dispare avisos.
   if v_actor is null then

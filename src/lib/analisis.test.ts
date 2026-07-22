@@ -150,3 +150,30 @@ describe("analizarMes", () => {
     expect(r.deltaMesAnterior).toBe(100);
   });
 });
+
+describe("analizarMes — histórico con el criterio unificado (visibilidad.archivesParaMetricas)", () => {
+  it("excluye del histórico a los usuarios ocultos (antes no excluía a nadie)", () => {
+    const oculto: Profile = { ...p("fantasma"), email: "admin@grupoparis.com", oculto: true };
+    const profiles = [p("ana"), oculto];
+    const archives = [
+      arch("2026-06", c("h1", "ana", { status: "term" })),
+      arch("2026-06", c("h2", "fantasma", { status: "pend" })),
+    ];
+    const r = analizarMes([], profiles, [], archives, 2026, 7);
+    // Sólo cuenta la card de ana: 100%. Con el fantasma adentro daría 50%.
+    expect(r.promedioHistorico).toBe(100);
+    // 2026-06 es el mes previo a 2026-07: el delta usa esa misma serie ya filtrada
+    // (0% del mes en curso, sin cards, contra el 100% de junio).
+    expect(r.deltaMesAnterior).toBe(-100);
+  });
+
+  it("MANTIENE al centinela 'Sin asignar' en el histórico (huérfanas son trabajo real)", () => {
+    const sinAsignar: Profile = { ...p("sin-asignar"), email: "sin-asignar@grupoparis.com" };
+    const profiles = [p("ana"), sinAsignar];
+    const archives = [
+      arch("2026-06", c("h1", "ana", { status: "term" })),
+      arch("2026-06", c("h2", "sin-asignar", { status: "pend" })),
+    ];
+    expect(analizarMes([], profiles, [], archives, 2026, 7).promedioHistorico).toBe(50);
+  });
+});
