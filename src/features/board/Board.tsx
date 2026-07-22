@@ -108,8 +108,13 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
   const dependents = (id: string) => cards.filter((x) => (x.deps ?? []).includes(id) && x.status !== "term");
 
   const move = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: Status }) => {
-      const c = byId(id)!;
+    mutationFn: async ({ id, status, cardPrev }: { id: string; status: Status; cardPrev: Card }) => {
+      // La card SIEMPRE viene de las variables de la mutación (capturada en onDrop antes del
+      // optimismo), nunca del closure de `cards`: si la mutación se pausa por falta de red
+      // (networkMode "online" por defecto) y corre recién al reconectar, para entonces `cards`
+      // ya refleja el estado optimista y byId(id) devolvería el status NUEVO como si fuera el
+      // previo — pushUndo guardaría un no-op y done_at/proc_at se calcularían mal.
+      const c = cardPrev;
       const now = new Date().toISOString();
       const patch: Partial<Card> = { status };
       if (status === "term") patch.done_at = now;
@@ -156,8 +161,12 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
       qc.setQueryData<Card[]>(["cards"], (old) => old?.map((c) => (c.id === id ? { ...c, status } : c)) ?? old);
       return { previous };
     },
-    onError: (_err, _vars, ctx) => {
-      if (ctx?.previous) qc.setQueryData(["cards"], ctx.previous);
+    // Rollback como patch de la card fallida, no como reemplazo del snapshot completo: si dos
+    // drags se solapan y uno falla, restaurar todo el array pisaría el optimismo del otro
+    // (el invalidate de onSettled lo autosana, pero el flash es visible e innecesario).
+    onError: (_err, { id }, ctx) => {
+      const prevCard = ctx?.previous?.find((c) => c.id === id);
+      if (prevCard) qc.setQueryData<Card[]>(["cards"], (old) => old?.map((c) => (c.id === id ? { ...c, status: prevCard.status } : c)) ?? old);
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ["cards"] }),
   });
@@ -283,7 +292,7 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
         <div key={k}
           onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("ring-2", "ring-accent"); }}
           onDragLeave={(e) => e.currentTarget.classList.remove("ring-2", "ring-accent")}
-          onDrop={(e) => { e.currentTarget.classList.remove("ring-2", "ring-accent"); const id = e.dataTransfer.getData("text/plain"); if (id) move.mutate({ id, status: k }); }}
+          onDrop={(e) => { e.currentTarget.classList.remove("ring-2", "ring-accent"); const id = e.dataTransfer.getData("text/plain"); const cardPrev = id ? byId(id) : undefined; if (id && cardPrev) move.mutate({ id, status: k, cardPrev }); }}
           className="min-w-[290px] w-[290px] shrink-0 rounded-2xl p-3 border border-line/60" style={colBg}>
           <h2 className="text-xs uppercase tracking-wider text-ink2 mx-1.5 mt-1 mb-2.5 flex items-center gap-2 font-semibold">
             <i className={cn("w-2 h-2 rounded-full", DOT[k])} />{lbl}
@@ -306,7 +315,7 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
       {agruparModo !== "ninguno" && (
         <div className="flex flex-col gap-3 shrink-0">
           <Carriles cards={mine} modo={agruparModo} ownerId={ownerId} profiles={team} columnas={COLS}
-            renderCard={renderCard} onDropCard={(id, status) => move.mutate({ id, status })} />
+            renderCard={renderCard} onDropCard={(id, status) => { const cardPrev = byId(id); if (cardPrev) move.mutate({ id, status, cardPrev }); }} />
           {mine.length === 0 && <EmptyState title="Sin tareas acá." />}
           <button onClick={() => setCreando(true)}
             className="w-[290px] border border-dashed border-line rounded-lg py-2 text-[13px] text-ink2 hover:text-accent hover:border-accent transition">

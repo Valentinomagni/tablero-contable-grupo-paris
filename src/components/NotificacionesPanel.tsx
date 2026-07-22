@@ -44,8 +44,12 @@ export function NotificacionesBell({ onOpenCard }: { onOpenCard: (cardId: string
       qc.setQueryData<Notification[]>(["notifications"], (old) => old?.map((n) => (n.id === id ? { ...n, leida: true } : n)) ?? old);
       return { previous };
     },
-    onError: (_err, _id, ctx) => {
-      if (ctx?.previous) qc.setQueryData(["notifications"], ctx.previous);
+    // Rollback como patch de la notificación fallida, no como reemplazo del snapshot
+    // completo: si dos "marcar" se solapan, restaurar todo el array pisaría el optimismo
+    // de la otra (el invalidate de onSettled autosana, pero evita el flash innecesario).
+    onError: (_err, id, ctx) => {
+      const prev = ctx?.previous?.find((n) => n.id === id);
+      if (prev) qc.setQueryData<Notification[]>(["notifications"], (old) => old?.map((n) => (n.id === id ? { ...n, leida: prev.leida } : n)) ?? old);
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
