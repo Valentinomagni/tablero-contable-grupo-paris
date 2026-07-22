@@ -60,11 +60,11 @@ Después de aplicar `migracion-28-infraestructura.sql`:
    ```
 4. **(Opcional) Cron semanal del resumen**: Supabase → **Cron Jobs** (o Database → Cron) → New Cron Job:
    - Nombre: `resumen-semanal`
-   - Schedule: `0 12 * * 1` (todos los lunes a las 12:00 UTC)
+   - Schedule: `0 11 * * 1` (todos los lunes a las 11:00 UTC = 8:00 hora Argentina, UTC−3)
    - Comando: `select public.resumen_semanal();`
 
-   Esto publica un aviso en el tablón cada lunes con tareas cerradas, vencidas abiertas y arqueos
-   con diferencia de la semana. Es opcional: si no lo configurás, nada cambia.
+   Esto publica un aviso en el tablón cada lunes con tareas cerradas de la semana, vencidas abiertas y arqueos
+   con diferencia. Es opcional: si no lo configurás, nada cambia.
 
 ## Migración 29 — Esquema de preparación para producción (spec 28 fase A)
 
