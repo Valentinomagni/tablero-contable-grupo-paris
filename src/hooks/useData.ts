@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import type { Card, Profile, Objective, ActivityLog } from "../lib/types";
@@ -166,6 +166,40 @@ export function useTriggerNotificaciones() {
       const { data, error } = await supabase.rpc("trigger_notificaciones_activo");
       if (error) return null;
       return typeof data === "boolean" ? data : null;
+    },
+  });
+}
+
+// Búsqueda full-text sobre `cards` (spec 28 fase C, Task 13) vía RPC público.buscar_cards.
+// SECURITY INVOKER en el servidor: la RLS de `cards` sigue aplicando, cada quien ve lo suyo.
+//
+// Sólo se pega a la base con q.trim().length >= 3 (por debajo no vale la pena). El propio
+// hook debounce-a el disparo del RPC (300ms) para no mandar un request por cada tecla.
+//
+// Defensivo: si la RPC no está expuesta (migración 30 no corrida, PGRST202/42883) o falla
+// por cualquier otro motivo (red, RLS), se resuelve con data: [] y NO se propaga como error —
+// el CommandPalette debe seguir funcionando con el filtro en memoria de siempre (fallback
+// obligatorio, ver src/components/CommandPalette.tsx).
+export function useBuscarCards(q: string) {
+  const trimmed = q.trim();
+  const habilitada = trimmed.length >= 3;
+  const [debounced, setDebounced] = useState(trimmed);
+
+  useEffect(() => {
+    if (!habilitada) { setDebounced(""); return; }
+    const t = setTimeout(() => setDebounced(trimmed), 300);
+    return () => clearTimeout(t);
+  }, [trimmed, habilitada]);
+
+  return useQuery({
+    queryKey: ["buscar-cards", debounced],
+    enabled: debounced.length >= 3,
+    staleTime: 30_000,
+    retry: false,
+    queryFn: async (): Promise<Card[]> => {
+      const { data, error } = await supabase.rpc("buscar_cards", { q: debounced });
+      if (error) return [];
+      return (data as Card[]) ?? [];
     },
   });
 }

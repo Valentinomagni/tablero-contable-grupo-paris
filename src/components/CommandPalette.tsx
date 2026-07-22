@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import { LayoutDashboard, Pin, Settings, ClipboardList, Search, Users, Network, StickyNote } from "lucide-react";
 import { Avatar } from "../lib/ui";
 import { COLS, type Card, type Profile, type Announcement } from "../lib/types";
+import { useBuscarCards } from "../hooks/useData";
+import { combinarResultadosCards } from "../lib/buscador";
 
 interface Item { g: string; t: string; sub?: string; icon?: React.ReactNode; av?: Profile; run: () => void; }
 
@@ -12,6 +14,18 @@ export function CommandPalette({ me, team, cards, annos = [], onNavigate, onOpen
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
   const isJefe = me.role === "jefe";
+
+  // El tipeo no debe trabarse esperando al RPC ni al filtrado de la lista completa:
+  // se difiere el valor usado para buscar (React 19 useDeferredValue), mientras el input
+  // en sí sigue controlado por `q` sin retraso.
+  const qDiferido = useDeferredValue(q);
+  // Full-text sobre TODAS las cards visibles por RLS (no sólo las ya cargadas en memoria).
+  // Fallback obligatorio: si la RPC no existe o falla, useBuscarCards resuelve con []
+  // y acá seguimos con el filtro en memoria de siempre — la búsqueda nunca deja de andar.
+  const { data: cardsServidor = [] } = useBuscarCards(qDiferido);
+  // Se combinan sin duplicar por id; lo que ya estaba en memoria mantiene su orden para
+  // que la lista no "salte" cuando llegan los resultados del servidor.
+  const cardsCombinadas = combinarResultadosCards(cards, cardsServidor);
 
   const all: Item[] = [];
   if (isJefe) {
@@ -28,7 +42,7 @@ export function CommandPalette({ me, team, cards, annos = [], onNavigate, onOpen
   all.push({ g: "Vistas", t: "Mi tablero", icon: <ClipboardList size={16} />, run: () => onNavigate(me.id) });
   all.push({ g: "Acciones", t: "Nueva anotación", icon: <StickyNote size={16} />, run: () => onNavigate("__notas") });
   if (isJefe) team.forEach((u) => all.push({ g: "Personas", t: u.name, sub: u.role, av: u, run: () => onNavigate(u.id) }));
-  cards.forEach((c) => all.push({
+  cardsCombinadas.forEach((c) => all.push({
     g: "Tareas", t: c.title,
     sub: `${team.find((u) => u.id === c.owner)?.name ?? ""} · ${c.card_type === "operativa" ? "operativa" : COLS.find((x) => x[0] === c.status)?.[1]}`,
     run: () => onOpenCard(c),
