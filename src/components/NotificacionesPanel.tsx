@@ -15,6 +15,7 @@ const ICONO: Record<NotifTipo, React.ReactNode> = {
   avance: <TrendingUp size={15} />,
   sin_asignar: <UserX size={15} />,
   sistema: <Info size={15} />,
+  vencimiento_propio: <AlarmClock size={15} />,
 };
 
 // Campana del topbar (spec #8): badge con no leídas + panel dropdown.

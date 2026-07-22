@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Toaster, toast } from "sonner";
 import { deshacerUltimo } from "./lib/deshacer";
@@ -43,6 +43,9 @@ import type { Card, Profile, AppSettings } from "./lib/types";
 import { visiblesPara, cardsDeEquipo } from "./lib/jerarquia";
 import { personasVisibles, cardsVisibles } from "./lib/visibilidad";
 import { proximosVencimientos } from "./lib/vencimientos";
+import { avisosParaNotificar } from "./lib/notificaciones";
+import { toARTDate } from "./lib/metrics";
+import { supabase } from "./lib/supabase";
 import { cn } from "./lib/ui";
 
 type Mode = "hoy" | "board" | "semana" | "obj" | "mimes" | "hist";
@@ -76,6 +79,38 @@ export default function App() {
   useEffect(() => {
     if (me && getPref(PREF.version) !== APP_VERSION) setNovedades(true);
   }, [me]);
+
+  // E8 (spec 28 Fase B): notificación propia cuando un vencimiento del tablón es
+  // hoy o mañana. Se ejecuta una sola vez por sesión (notifiedRef), después de
+  // tener sesión y avisos cargados. Dedup real: se leen los ids de aviso ya
+  // notificados desde la tabla `notifications` (reutilizamos `card_id`, columna
+  // uuid sin FK real —ver migración 21— como referencia genérica al id del aviso,
+  // siguiendo el mismo patrón que ya usan DelegarModal/Board/Tablon para escribir
+  // notificaciones), así que recargar la página no duplica avisos.
+  // Defensivo: si la tabla no existe o falla la red, silencio total (no rompe el arranque).
+  const notifiedRef = useRef(false);
+  useEffect(() => {
+    if (!me || notifiedRef.current || annos.length === 0) return;
+    notifiedRef.current = true;
+    (async () => {
+      try {
+        const { data } = await supabase.from("notifications")
+          .select("card_id").eq("owner", me.id).eq("tipo", "vencimiento_propio");
+        const yaNotificados = ((data ?? []) as { card_id: string | null }[])
+          .map((n) => n.card_id).filter((id): id is string => !!id);
+        const hoyISO = toARTDate(new Date().toISOString());
+        const pendientes = avisosParaNotificar(annos, me.id, hoyISO, yaNotificados);
+        if (pendientes.length) {
+          const notifs = pendientes.map((a) => ({
+            owner: me.id, tipo: "vencimiento_propio" as const,
+            titulo: `Vence pronto: ${a.title}`, detalle: "",
+            card_id: a.id, leida: false,
+          }));
+          await supabase.from("notifications").insert(notifs);
+        }
+      } catch { /* defensivo: tabla ausente o red, silencio total */ }
+    })();
+  }, [me, annos]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

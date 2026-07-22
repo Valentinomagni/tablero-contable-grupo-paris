@@ -1,4 +1,4 @@
-import type { Card, NotifTipo, Role } from "./types";
+import type { Announcement, Card, NotifTipo, Role } from "./types";
 
 // Reglas puras de notificaciones (spec #8): deciden QUÉ notificar y a quién según rol
 // e impacto, SIN redundancia. La escritura en la tabla `notifications` es best-effort
@@ -65,6 +65,25 @@ export function notifsAlFinalizar(p: {
     detalle: `${p.actorName} terminó "${p.card.title}"${p.card.priority === "alta" ? " (prioridad alta)" : ""}`,
     card_id: p.card.id,
   }];
+}
+
+// E8: avisos propios (tablón) cuyo vencimiento es hoy o mañana (fecha calendario ART),
+// para autonotificar al dueño. `hoyISO` viene ya calculado por el caller (toARTDate).
+// Excluye: de otro dueño, archivados, sin due_date, fuera de la ventana hoy/mañana,
+// y los que ya generaron notificación (yaNotificados: ids de aviso ya referenciados).
+export function avisosParaNotificar(
+  annos: Announcement[], meId: string, hoyISO: string, yaNotificados: string[],
+): Announcement[] {
+  const manana = new Date(hoyISO + "T00:00:00Z");
+  manana.setUTCDate(manana.getUTCDate() + 1);
+  const mananaISO = manana.toISOString().slice(0, 10);
+  return annos.filter((a) =>
+    a.owner_id === meId &&
+    !a.archivado &&
+    !!a.due_date &&
+    (a.due_date === hoyISO || a.due_date === mananaISO) &&
+    !yaNotificados.includes(a.id),
+  );
 }
 
 // Tiempo relativo corto para el panel ("recién", "hace 15 min", "hace 3 h", "hace 2 días").
