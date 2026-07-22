@@ -15,6 +15,7 @@ import { filaDuplicada } from "../../lib/duplicar";
 import { useDepsInfo, useReverseDeps, useSettings, useMigraciones } from "../../hooks/useData";
 import { payloadCards } from "../../lib/esquema";
 import { nuevaCantidad } from "../../lib/operativas";
+import { TXT_REAPERTURA } from "../../lib/retrabajo";
 import { Adjuntos } from "./Adjuntos";
 import { MetaSection } from "./card/MetaSection";
 import { DepsSection } from "./card/DepsSection";
@@ -194,7 +195,7 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
             ? <button onClick={() => patch.mutate({ status: "term", done_at: new Date().toISOString(), history: hist("Marcó terminada") })}
                 className="inline-flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] font-semibold rounded-lg px-3.5 py-2 text-[13px]"><Check size={14} /> Marcar terminada</button>
             : locked ? <span className="inline-flex items-center gap-1.5 text-ink2 text-[13px]"><Lock size={13} /> Solo un jefe puede reabrir esta tarea</span>
-            : <button onClick={() => patch.mutate({ status: "proc", done_at: null, history: hist("Reabrió la tarea") })}
+            : <button onClick={() => patch.mutate({ status: "proc", done_at: null, history: hist(TXT_REAPERTURA) })}
                 className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Reabrir</button>}
           {!locked && (
             <button onClick={() => duplicar.mutate()} disabled={duplicar.isPending}

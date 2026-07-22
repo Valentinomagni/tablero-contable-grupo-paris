@@ -1,7 +1,8 @@
 import { EmptyState } from "../../components/EmptyState";
 import { useState } from "react";
 import { Download, ClipboardCopy, Inbox, AlarmClock, CheckCircle2, Activity, ArrowUp, ArrowDown, ShieldCheck, Users, AlertTriangle } from "lucide-react";
-import type { Card, Profile, ActivityLog } from "../../lib/types";
+import type { Card, Profile, ActivityLog, Announcement } from "../../lib/types";
+import { RadarVencimientos } from "./RadarVencimientos";
 import { dueInfo, fmtDateTime, wow, onTimeAdherence, type Wow } from "../../lib/metrics";
 import { alertasDeRiesgo } from "../../lib/alertas";
 import { isBlocked } from "../../lib/deps";
@@ -44,9 +45,10 @@ function Bars({ data, height = 110 }: { data: { lbl: string; v: number; title: s
   );
 }
 
-export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDelegar }: {
+export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDelegar, annos = [], esGestor = false }: {
   cards: Card[]; team: Profile[]; activity: ActivityLog[];
   onOpenCard: (c: Card) => void; onGoPerson: (id: string) => void; onDelegar?: () => void;
+  annos?: Announcement[]; esGestor?: boolean;
 }) {
   const now = Date.now(), day = 86400000, week = now - 7 * day;
   const { data: vacaciones = [] } = useVacaciones();
@@ -149,6 +151,10 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
             </div>
           ))}
         </div>
+      )}
+
+      {esGestor && (
+        <RadarVencimientos avisos={annos} cards={cards} vacaciones={vacaciones} profiles={team} hoyISO={hoyISO} />
       )}
 
       {arca.length > 0 && (

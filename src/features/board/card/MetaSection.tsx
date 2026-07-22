@@ -10,6 +10,7 @@ import { categoriasEnUso, mergeCategorias } from "../../../lib/categorias";
 import { Users, AlertTriangle } from "lucide-react";
 import { CumplimientoDiario } from "../CumplimientoDiario";
 import { estadoTiempo, registrarIncumplimiento } from "../../../lib/tiempos";
+import { textoTransicion } from "../../../lib/retrabajo";
 import { useTiemposMax } from "../../../hooks/useData";
 
 type PatchMut = UseMutationResult<void, Error, Partial<Card>, unknown>;
@@ -75,7 +76,7 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
                   patch.mutate({ status: "term", done_at: now, history: h });
                 } else {
                   // Sellar proc_at (spec 28, Task 4): igual criterio que Board.tsx (drag & drop).
-                  const p: Partial<Card> = { status: s, done_at: null, history: hist(s === "proc" ? "Pasó a En proceso" : "Volvió a Pendiente") };
+                  const p: Partial<Card> = { status: s, done_at: null, history: hist(textoTransicion(c.status, s, s === "proc" ? "Pasó a En proceso" : "Volvió a Pendiente")) };
                   if (s === "proc" && !c.proc_at) p.proc_at = now;
                   else if (s === "pend") p.proc_at = null;
                   patch.mutate(p);

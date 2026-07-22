@@ -38,3 +38,19 @@ export function useArqueoStats(cards: Card[], mesPrefix: string): ArqueoRow[] {
   });
   return computeArqueoStats(cards, occs, mesPrefix);
 }
+
+// TODAS las ocurrencias (sin filtro de mes) de las cards de control — para la tendencia
+// histórica de diferencias (Task 6, spec28 fase B). DEFENSIVO: ante cualquier error → [].
+export function useArqueoOccsAll(cards: Card[]): TaskOccurrence[] {
+  const ids = cardsDeControl(cards).map((c) => c.id);
+  const { data: occs = [] } = useQuery({
+    queryKey: ["arqueo", "all", ids],
+    enabled: ids.length > 0,
+    queryFn: async (): Promise<TaskOccurrence[]> => {
+      const { data, error } = await supabase.from("task_occurrences").select("*").in("card_id", ids);
+      if (error) return [];
+      return (data as TaskOccurrence[]) ?? [];
+    },
+  });
+  return occs;
+}

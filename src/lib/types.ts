@@ -53,7 +53,7 @@ export interface Vacacion {
   reemplazante: string | null; notas: string; created_by: string | null; created_at: string;
 }
 export interface Note { id: string; owner: string; title: string; body: string; archived: boolean; created_at: string; updated_at: string; }
-export type NotifTipo = "asignacion" | "delegacion" | "vencida" | "dep_liberada" | "avance" | "sin_asignar" | "sistema";
+export type NotifTipo = "asignacion" | "delegacion" | "vencida" | "dep_liberada" | "avance" | "sin_asignar" | "sistema" | "vencimiento_propio";
 export interface Notification {
   id: string; owner: string; tipo: NotifTipo; titulo: string; detalle: string;
   card_id: string | null; leida: boolean; created_at: string;

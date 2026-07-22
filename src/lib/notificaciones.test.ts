@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { tieneImpacto, esRelevante, notifsAlDelegar, notifsAlFinalizar, tiempoRelativo } from "./notificaciones";
+import { tieneImpacto, esRelevante, notifsAlDelegar, notifsAlFinalizar, tiempoRelativo, avisosParaNotificar } from "./notificaciones";
+import type { Announcement } from "./types";
 
 describe("tieneImpacto", () => {
   it("prioridad alta o con vencimiento → impacto", () => {
@@ -73,6 +74,42 @@ describe("notifsAlFinalizar", () => {
   it("sin manager, o el manager es quien finaliza → nada (no auto-notificarse)", () => {
     expect(notifsAlFinalizar({ card, actorId: "emp", actorName: "V", managerId: null })).toEqual([]);
     expect(notifsAlFinalizar({ card, actorId: "boss", actorName: "B", managerId: "boss" })).toEqual([]);
+  });
+});
+
+describe("avisosParaNotificar (E8: aviso propio, vence hoy o mañana)", () => {
+  const hoyISO = "2026-07-21";
+  const base: Announcement = {
+    id: "a1", kind: "vencimiento", title: "IVA", detail: "",
+    due_date: hoyISO, created_by: "otro", created_at: "2026-07-01T00:00:00Z",
+    owner_id: "yo", visible_to: [],
+  };
+  it("aviso de otro dueño → no", () => {
+    const a = { ...base, owner_id: "otra-persona" };
+    expect(avisosParaNotificar([a], "yo", hoyISO, [])).toEqual([]);
+  });
+  it("vence pasado mañana → no", () => {
+    const a = { ...base, due_date: "2026-07-23" };
+    expect(avisosParaNotificar([a], "yo", hoyISO, [])).toEqual([]);
+  });
+  it("vence hoy → sí", () => {
+    const a = { ...base, due_date: hoyISO };
+    expect(avisosParaNotificar([a], "yo", hoyISO, [])).toEqual([a]);
+  });
+  it("vence mañana → sí", () => {
+    const a = { ...base, due_date: "2026-07-22" };
+    expect(avisosParaNotificar([a], "yo", hoyISO, [])).toEqual([a]);
+  });
+  it("ya notificado → no", () => {
+    expect(avisosParaNotificar([base], "yo", hoyISO, ["a1"])).toEqual([]);
+  });
+  it("archivado → no", () => {
+    const a = { ...base, archivado: true };
+    expect(avisosParaNotificar([a], "yo", hoyISO, [])).toEqual([]);
+  });
+  it("owner_id null → no", () => {
+    const a = { ...base, owner_id: null };
+    expect(avisosParaNotificar([a], "yo", hoyISO, [])).toEqual([]);
   });
 });
 
