@@ -10,6 +10,7 @@ import { utilizacionEquipo } from "../../lib/ociosidad";
 import { useArqueoStats } from "../../hooks/useArqueo";
 import { filtrarPorSegmento } from "../../lib/segmento";
 import { AnalisisMensual } from "./AnalisisMensual";
+import { Comparador } from "./Comparador";
 
 // Semáforo del cumplimiento de arqueo (SOLO sobre el número, marca monocroma).
 const colorArqueo = (pct: number) => (pct >= 98 ? "var(--done)" : pct >= 95 ? "var(--warn)" : "var(--danger)");
@@ -215,6 +216,8 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
       )}
 
       <AnalisisMensual cards={cards} team={teamSeg} segmento={marcaFiltro ? `${marcaFiltro}${sucursalFiltro ? ` · ${sucursalFiltro}` : ""}` : null} />
+
+      <Comparador team={team} />
     </div>
   );
 }
