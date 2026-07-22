@@ -97,6 +97,12 @@ declare
   v_manager    uuid;
   v_actor_name text;
 begin
+  -- Solo la actualización directa del usuario notifica: las cards espejo que
+  -- sincroniza trg_sync_compartidas (depth 2) no generan avisos propios.
+  if pg_trigger_depth() > 1 then
+    return new;
+  end if;
+
   -- Sin actor identificado (cron / service role) no se notifica: espeja la
   -- guarda `&& meId` del cliente y evita que el reset mensual dispare avisos.
   if v_actor is null then
@@ -104,7 +110,10 @@ begin
   end if;
 
   -- tieneImpacto(): prioridad alta O con vencimiento. Lo demás es ruido.
-  if not (new.priority = 'alta' or new.due_date is not null) then
+  -- (lógica bivaluada explícita: con priority/due_date NULL, la versión
+  -- anterior `not (priority = 'alta' or due_date is not null)` evaluaba a
+  -- NULL y notificaba, mientras que tieneImpacto() en TS devuelve false.)
+  if new.due_date is null and coalesce(new.priority, '') <> 'alta' then
     return new;
   end if;
 
@@ -170,8 +179,11 @@ begin
       execute function public.cards_notificar_finalizacion()
   $ddl$;
 
-  if v_estado is distinct from 'O' then
-    -- No existía antes, o existía desactivado → queda DESACTIVADO.
+  if v_estado is null or v_estado = 'D' then
+    -- No existía antes, o existía desactivado ('D') → queda DESACTIVADO.
+    -- Cualquier otro estado previo ('O' = enabled, 'A' = enable always,
+    -- 'R' = enable replica) se preserva habilitado: un re-run no debe
+    -- apagar en silencio un trigger que alguien activó explícitamente.
     execute 'alter table public.cards disable trigger cards_notificar_finalizacion';
   end if;
 end $$;
@@ -226,6 +238,7 @@ as $$
    limit 200;
 $$;
 grant execute on function public.buscar_cards(text) to authenticated;
+revoke execute on function public.buscar_cards(text) from public, anon;
 
 
 -- ------------------------------------------------------------
@@ -277,6 +290,7 @@ as $$
    order by v.mes desc, v.marca;
 $$;
 grant execute on function public.resumen_mensual(text) to authenticated;
+revoke execute on function public.resumen_mensual(text) from public, anon;
 
 -- Primer refresh (NO concurrently: la vista puede no haberse poblado nunca,
 -- y `concurrently` falla sobre una matview que todavía no fue refrescada).

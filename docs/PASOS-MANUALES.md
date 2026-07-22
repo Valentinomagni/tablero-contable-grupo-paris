@@ -116,6 +116,12 @@ Después de aplicar `migracion-29-produccion.sql`:
 Correr `migracion-30-analitica.sql` completo en Supabase → SQL Editor. Es idempotente
 (se puede correr las veces que haga falta, en cualquier orden respecto de la 26/27/28/29).
 
+### AVISO — lock de tabla al agregar la columna generada `tsv`
+
+La migración reescribe la tabla `cards` (lock exclusivo) al agregar la columna generada
+`tsv`. Con el volumen actual es instantáneo, pero conviene correrla en un momento de baja
+actividad.
+
 ### AVISO IMPORTANTE — el trigger de notificaciones nace DESACTIVADO
 
 La migración crea el trigger `cards_notificar_finalizacion` sobre `public.cards`, que
