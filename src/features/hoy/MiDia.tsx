@@ -124,9 +124,11 @@ export function MiDia({ ownerId, cards, onOpenCard }: {
 
   const operativasCards = misCards.filter((c) => c.card_type === "operativa");
   const operativasIds = new Set(operativasCards.map((c) => c.id));
+  // Solo cuento operativas que tienen ocurrencia para hoy (mismo patrón que arqueoHoy).
+  const ocurrenciasOperativasHoy = ocurrenciasHoy.filter((o) => operativasIds.has(o.card_id));
   const operativas = {
-    total: operativasCards.length,
-    conActividadHoy: ocurrenciasHoy.filter((o) => operativasIds.has(o.card_id) && o.done).length,
+    total: ocurrenciasOperativasHoy.length,
+    conActividadHoy: ocurrenciasOperativasHoy.filter((o) => o.done).length,
   };
 
   const cierre = cierreDelDia({ arqueoHoy, vencenHoy, operativas });
