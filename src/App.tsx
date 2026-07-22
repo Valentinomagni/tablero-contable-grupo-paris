@@ -206,7 +206,7 @@ export default function App() {
           )}
         </> : undefined}>
         <Suspense fallback={<div className="px-6 py-8 text-ink2 text-sm">Cargando…</div>}>
-        {view === "__resumen" ? <Resumen cards={scopedCards} team={equipoVisible} activity={activity} onOpenCard={setOpenCard} onGoPerson={(id) => { setViewing(id); setMode("board"); }} onDelegar={esGestor ? () => setDelegar(true) : undefined} />
+        {view === "__resumen" ? <Resumen cards={scopedCards} team={equipoVisible} activity={activity} onOpenCard={setOpenCard} onGoPerson={(id) => { setViewing(id); setMode("board"); }} onDelegar={esGestor ? () => setDelegar(true) : undefined} annos={annos} esGestor={esGestor} />
           : view === "__reporte" ? <Reporte cards={scopedCards} team={equipoVisible} activity={activity} />
           : view === "__tablon" ? <Tablon me={me} team={equipoVisible} onGoCalendario={() => setViewing("__calendario")} />
           : view === "__admin" ? <Admin team={fullTeam} cards={cards} me={me} meName={me.name} onOpenUser={setOpenUser} />
