@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { TrendingUp, TrendingDown, AlertTriangle, Minus, FileSpreadsheet } from "lucide-react";
-import type { Card, Profile } from "../../lib/types";
+import type { Card, Profile, ActivityLog } from "../../lib/types";
 import { analizarMes } from "../../lib/analisis";
 import { indiceRetrabajo } from "../../lib/retrabajo";
 import { tendenciaDiferencias } from "../../lib/arqueo";
 import { concentracion } from "../../lib/busfactor";
+import { analiticaOperativas } from "../../lib/analitica-operativas";
 import { armarLibroAnalisis, descargarExcel } from "../../lib/excel";
 import { Gauge } from "../../components/charts";
 import { useOccurrences } from "../../hooks/useOccurrences";
@@ -22,7 +23,7 @@ const colorPct = (pct: number) => (pct >= 80 ? "var(--done)" : pct >= 50 ? "var(
 // Análisis ejecutivo de cierre del mes en curso (spec items 8 y 9). Recibe las cards YA
 // segmentadas y la dotación del segmento desde el Reporte; trae por su cuenta las ocurrencias
 // del mes y los archivos históricos del equipo. Imprimible (sin no-print).
-export function AnalisisMensual({ cards, team, segmento = null }: { cards: Card[]; team: Profile[]; segmento?: string | null }) {
+export function AnalisisMensual({ cards, team, activity = [], segmento = null }: { cards: Card[]; team: Profile[]; activity?: ActivityLog[]; segmento?: string | null }) {
   const now = new Date();
   const year = now.getFullYear(), month = now.getMonth() + 1;
   const occs = useOccurrences(year, month).data ?? [];
@@ -32,6 +33,9 @@ export function AnalisisMensual({ cards, team, segmento = null }: { cards: Card[
   const occsArqueoTodas = useArqueoOccsAll(cards);
   const tendencia = tendenciaDiferencias(occsArqueoTodas, team);
   const busFactor = concentracion(archives, team);
+  const desdeISO = `${year}-${String(month).padStart(2, "0")}-01`;
+  const hastaISO = new Date(year, month, 0).toISOString().slice(0, 10);
+  const operativas = analiticaOperativas(cards, activity, team, desdeISO, hastaISO);
   const mesLbl = now.toLocaleDateString("es-AR", { month: "long", year: "numeric" });
   const [exportando, setExportando] = useState(false);
 
@@ -337,6 +341,98 @@ export function AnalisisMensual({ cards, team, segmento = null }: { cards: Card[
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Analítica de tareas operativas (Task 9, spec 28 Fase D). Encuadre: sirve para
+          detectar tareas que consumen tiempo excesivo y oportunidades de mejora del
+          PROCESO — no para comparar personas. Por eso el cruce empleado x tipo se muestra
+          agrupado por tipo de tarea (el eje que importa acá), sin ordenarlo como ranking
+          de personas. "Tipo de tarea" = título de la card operativa (una categoría
+          agrupa varias tareas distintas y ocultaría justo la que consume tiempo de más). */}
+      {(operativas.porEmpleado.length > 0 || operativas.porTipo.length > 0) && (
+        <div className={card} style={cardSh}>
+          <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-1">Tareas operativas</h3>
+          <p className="text-ink2 text-[12.5px] mb-3.5">
+            Cantidad ejecutada y, cuando hay dato, tiempo estimado por tarea. El objetivo es ver si
+            algún tipo de tarea consume una cantidad de tiempo excesiva para mejorar el proceso, no
+            evaluar a quién la ejecuta.
+          </p>
+
+          <span className="text-[11.5px] text-ink2 uppercase tracking-wide">Por empleado</span>
+          {operativas.porEmpleado.length ? (
+            <table className="w-full text-sm mt-1.5 mb-3.5">
+              <thead>
+                <tr className="text-ink2 text-[11.5px] uppercase tracking-wide text-left">
+                  <th className="font-semibold py-1">Persona</th>
+                  <th className="font-semibold py-1 text-right tnum">Cantidad ejecutada</th>
+                  <th className="font-semibold py-1 text-right tnum">Tiempo (estimado)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {operativas.porEmpleado.map((p) => (
+                  <tr key={p.id} className="border-t border-line">
+                    <td className="py-2 truncate">{p.nombre}</td>
+                    <td className="py-2 text-right tnum">{p.cantidadEjecutada}</td>
+                    <td className="py-2 text-right tnum text-ink2">
+                      {p.minutosPromedio === null ? "sin datos de tiempo" : `~${p.minutosPromedio} min prom. (n=${p.muestraTiempo})`}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : <p className="text-ink2 text-sm mb-3.5">Sin actividad operativa en el período.</p>}
+
+          <span className="text-[11.5px] text-ink2 uppercase tracking-wide">Por tipo de tarea</span>
+          {operativas.porTipo.length ? (
+            <table className="w-full text-sm mt-1.5 mb-3.5">
+              <thead>
+                <tr className="text-ink2 text-[11.5px] uppercase tracking-wide text-left">
+                  <th className="font-semibold py-1">Tarea</th>
+                  <th className="font-semibold py-1 text-right tnum">Frecuencia</th>
+                  <th className="font-semibold py-1 text-right tnum">Duración prom.</th>
+                  <th className="font-semibold py-1 text-right tnum">% del total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {operativas.porTipo.map((t) => (
+                  <tr key={t.titulo} className="border-t border-line">
+                    <td className="py-2 truncate">{t.titulo}</td>
+                    <td className="py-2 text-right tnum">{t.frecuencia}</td>
+                    <td className="py-2 text-right tnum text-ink2">
+                      {t.minutosPromedio === null ? "sin datos de tiempo" : `~${t.minutosPromedio} min (n=${t.muestraTiempo})`}
+                    </td>
+                    <td className="py-2 text-right tnum">{t.pctDelTotal}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : <p className="text-ink2 text-sm mb-3.5">Sin tipos de tarea registrados en el período.</p>}
+
+          {operativas.cargaCruzada.length > 0 && (
+            <>
+              <span className="text-[11.5px] text-ink2 uppercase tracking-wide">Carga operativa por tarea (no es un ranking de personas)</span>
+              <div className="mt-1.5 flex flex-col gap-3">
+                {operativas.porTipo.map((t) => {
+                  const filas = operativas.cargaCruzada.filter((c) => c.titulo === t.titulo);
+                  if (!filas.length) return null;
+                  return (
+                    <div key={t.titulo}>
+                      <span className="text-[12.5px] font-semibold">{t.titulo}</span>
+                      <ul className="text-sm mt-1 flex flex-col gap-1">
+                        {filas.map((f) => (
+                          <li key={f.empleadoId} className="flex justify-between gap-2 text-ink2">
+                            <span className="truncate">{f.empleadoNombre}</span>
+                            <span className="tnum shrink-0">{f.cantidad}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
