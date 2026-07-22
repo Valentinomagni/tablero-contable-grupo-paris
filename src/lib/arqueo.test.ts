@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { statsArqueo, evolucionMensual, historialDiferencias, resumenDiferencias, importeConSigno } from "./arqueo";
-import type { TaskOccurrence } from "./types";
+import { statsArqueo, evolucionMensual, historialDiferencias, resumenDiferencias, importeConSigno, tendenciaDiferencias } from "./arqueo";
+import type { TaskOccurrence, Profile } from "./types";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 // Genera `nOk` ocurrencias 'ok' + `nDif` 'dif' + `nPend` sin done, todas del mes dado.
@@ -130,5 +130,69 @@ describe("importeConSigno", () => {
   it("cero es cero en cualquier caso", () => {
     expect(importeConSigno(0, "falta")).toBe(0);
     expect(importeConSigno(0, "sobra")).toBe(0);
+  });
+});
+
+describe("tendenciaDiferencias", () => {
+  const perfil = (id: string, name: string, oculto = false): Profile => ({
+    id, name, role: "empleado", email: `${id}@x.com`, username: null, puesto: "x", ficha: "1",
+    manager_id: null, marca: null, oculto,
+  });
+  const dif = (id: string, owner: string, fecha: string, importe: number): TaskOccurrence => ({
+    id, card_id: "c1", owner, fecha, done: true, done_at: "x", resultado: "dif", dif_importe: importe,
+  });
+
+  it("sin ocurrencias → serie vacía y sin reincidentes", () => {
+    const r = tendenciaDiferencias([], [perfil("u1", "Ana")]);
+    expect(r).toEqual({ serie: [], reincidentes: [] });
+  });
+
+  it("una persona con diferencias en 1 solo mes → NO es reincidente", () => {
+    const occs = [dif("1", "u1", "2026-07-01", -100), dif("2", "u1", "2026-07-05", 50)];
+    const r = tendenciaDiferencias(occs, [perfil("u1", "Ana")]);
+    expect(r.reincidentes).toEqual([]);
+    expect(r.serie.find((s) => s.mes === "2026-07")).toEqual({ mes: "2026-07", cantidad: 2, total: 150 });
+  });
+
+  it("en 3 meses distintos → sí es reincidente, con meses: 3", () => {
+    const occs = [
+      dif("1", "u1", "2026-05-10", -100),
+      dif("2", "u1", "2026-06-10", 200),
+      dif("3", "u1", "2026-07-10", -50),
+    ];
+    const r = tendenciaDiferencias(occs, [perfil("u1", "Ana")]);
+    expect(r.reincidentes).toEqual([{ id: "u1", nombre: "Ana", meses: 3, cantidad: 3, total: 350 }]);
+  });
+
+  it("la serie respeta mesesAtras y viene ordenada ascendente por mes", () => {
+    const occs = [
+      dif("1", "u1", "2026-01-05", -10),
+      dif("2", "u1", "2026-07-05", -20),
+    ];
+    const r = tendenciaDiferencias(occs, [perfil("u1", "Ana")], 3);
+    expect(r.serie.map((s) => s.mes)).toEqual(["2026-05", "2026-06", "2026-07"]);
+    expect(r.serie[2]).toEqual({ mes: "2026-07", cantidad: 1, total: 20 });
+    expect(r.serie[0]).toEqual({ mes: "2026-05", cantidad: 0, total: 0 });
+  });
+
+  it("el usuario oculto no aparece ni en la serie ni en reincidentes", () => {
+    const occs = [
+      dif("1", "oculto1", "2026-05-10", -100),
+      dif("2", "oculto1", "2026-06-10", -100),
+      dif("3", "u1", "2026-07-10", -30),
+    ];
+    const r = tendenciaDiferencias(occs, [perfil("u1", "Ana"), perfil("oculto1", "Fantasma", true)]);
+    expect(r.reincidentes).toEqual([]);
+    expect(r.serie.find((s) => s.mes === "2026-05")).toEqual({ mes: "2026-05", cantidad: 0, total: 0 });
+    expect(r.serie.find((s) => s.mes === "2026-07")).toEqual({ mes: "2026-07", cantidad: 1, total: 30 });
+  });
+
+  it("ordena reincidentes por meses desc y luego por total desc", () => {
+    const occs = [
+      dif("1", "u1", "2026-05-01", -10), dif("2", "u1", "2026-06-01", -10),
+      dif("3", "u2", "2026-05-01", -500), dif("4", "u2", "2026-06-01", -500), dif("5", "u2", "2026-07-01", -500),
+    ];
+    const r = tendenciaDiferencias(occs, [perfil("u1", "Ana"), perfil("u2", "Beto")]);
+    expect(r.reincidentes.map((x) => x.id)).toEqual(["u2", "u1"]);
   });
 });

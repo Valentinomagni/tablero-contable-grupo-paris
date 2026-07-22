@@ -1,4 +1,5 @@
-import type { TaskOccurrence } from "./types";
+import type { TaskOccurrence, Profile } from "./types";
+import { esVisible } from "./visibilidad";
 
 // Seguimiento de Arqueo de Caja (spec24 item 9). Sobre las ocurrencias (task_occurrences)
 // de una card de control, calcula el cumplimiento del mes: cuántas se hicieron sin diferencias
@@ -80,4 +81,67 @@ export function evolucionMensual(
     cur = mesAnterior(cur);
   }
   return meses.map((mes) => ({ mes, pctOk: statsArqueo(occs, mes).pctOk }));
+}
+
+export interface TendenciaDiferencias {
+  serie: { mes: string; cantidad: number; total: number }[];
+  reincidentes: { id: string; nombre: string; meses: number; cantidad: number; total: number }[];
+}
+
+// Tendencia y reincidencia de diferencias de arqueo (Task 6, spec28 fase B). Sirve para
+// detectar un problema de proceso o una necesidad de capacitación, NO para señalar personas:
+// una diferencia recurrente casi siempre indica un procedimiento mal diseñado.
+// La ventana de mesesAtras se ancla en el mes más reciente con diferencias visibles
+// (no en "hoy") para que la función sea pura y determinística. Usa Math.abs para el monto
+// (si no, faltantes y sobrantes se cancelarían entre sí, igual que en analisis.ts).
+export function tendenciaDiferencias(
+  occs: TaskOccurrence[],
+  profiles: Profile[],
+  mesesAtras = 6,
+): TendenciaDiferencias {
+  const byId = new Map(profiles.map((p) => [p.id, p]));
+  const esOwnerVisible = (ownerId: string) => {
+    const p = byId.get(ownerId);
+    return p ? esVisible(p) : false;
+  };
+
+  const difs = (occs ?? []).filter((o) => o.resultado === "dif" && esOwnerVisible(o.owner));
+  if (difs.length === 0) return { serie: [], reincidentes: [] };
+
+  const mesDe = (o: TaskOccurrence) => o.fecha.slice(0, 7);
+  const anchor = difs.reduce((max, o) => (mesDe(o) > max ? mesDe(o) : max), mesDe(difs[0]));
+
+  const meses: string[] = [];
+  let cur = anchor;
+  for (let i = 0; i < mesesAtras; i++) {
+    meses.unshift(cur);
+    cur = mesAnterior(cur);
+  }
+  const mesSet = new Set(meses);
+  const enVentana = difs.filter((o) => mesSet.has(mesDe(o)));
+
+  const serie = meses.map((mes) => {
+    const delMes = enVentana.filter((o) => mesDe(o) === mes);
+    return {
+      mes,
+      cantidad: delMes.length,
+      total: delMes.reduce((s, o) => s + Math.abs(o.dif_importe ?? 0), 0),
+    };
+  });
+
+  const porOwner = new Map<string, { meses: Set<string>; cantidad: number; total: number }>();
+  for (const o of enVentana) {
+    const acc = porOwner.get(o.owner) ?? { meses: new Set<string>(), cantidad: 0, total: 0 };
+    acc.meses.add(mesDe(o));
+    acc.cantidad++;
+    acc.total += Math.abs(o.dif_importe ?? 0);
+    porOwner.set(o.owner, acc);
+  }
+
+  const reincidentes = [...porOwner.entries()]
+    .filter(([, v]) => v.meses.size >= 2)
+    .map(([id, v]) => ({ id, nombre: byId.get(id)?.name ?? id, meses: v.meses.size, cantidad: v.cantidad, total: v.total }))
+    .sort((a, b) => b.meses - a.meses || b.total - a.total);
+
+  return { serie, reincidentes };
 }

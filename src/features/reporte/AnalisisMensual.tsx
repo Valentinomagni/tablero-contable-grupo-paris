@@ -3,10 +3,12 @@ import { TrendingUp, TrendingDown, AlertTriangle, Minus, FileSpreadsheet } from 
 import type { Card, Profile } from "../../lib/types";
 import { analizarMes } from "../../lib/analisis";
 import { indiceRetrabajo } from "../../lib/retrabajo";
+import { tendenciaDiferencias } from "../../lib/arqueo";
 import { armarLibroAnalisis, descargarExcel } from "../../lib/excel";
 import { Gauge } from "../../components/charts";
 import { useOccurrences } from "../../hooks/useOccurrences";
 import { useArchiveEquipo } from "../../hooks/useArchive";
+import { useArqueoOccsAll } from "../../hooks/useArqueo";
 import { toast } from "sonner";
 
 const cardSh = { boxShadow: "var(--ring),var(--shadow)" };
@@ -26,6 +28,8 @@ export function AnalisisMensual({ cards, team, segmento = null }: { cards: Card[
   const archives = useArchiveEquipo().data ?? [];
   const a = analizarMes(cards, team, occs, archives, year, month);
   const retrabajo = indiceRetrabajo(cards, team);
+  const occsArqueoTodas = useArqueoOccsAll(cards);
+  const tendencia = tendenciaDiferencias(occsArqueoTodas, team);
   const mesLbl = now.toLocaleDateString("es-AR", { month: "long", year: "numeric" });
   const [exportando, setExportando] = useState(false);
 
@@ -249,6 +253,58 @@ export function AnalisisMensual({ cards, team, segmento = null }: { cards: Card[
           ) : <p className="text-ink2 text-sm">Carga balanceada (mediana {a.distribucion.medianaAbiertas} abiertas por persona).</p>}
         </div>
       </div>
+
+      {/* Tendencia de diferencias de arqueo (Task 6, spec28 fase B). Encuadre no punitivo:
+          una diferencia recurrente casi siempre avisa de un procedimiento mal diseñado o de
+          una necesidad de capacitación, no de mala fe de una persona. */}
+      {tendencia.serie.length > 0 && (
+        <div className={card} style={cardSh}>
+          <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-1">Diferencias de caja en el tiempo</h3>
+          <p className="text-ink2 text-[12.5px] mb-3.5">
+            Muestra cómo evolucionan las diferencias de arqueo mes a mes y quién las repite en más
+            de un mes. Una diferencia que reaparece casi siempre indica un problema de proceso o
+            una necesidad de capacitación, no que alguien actúe de mala fe: no es un ranking de culpables.
+          </p>
+
+          <div className="flex items-end gap-2 h-[110px] mb-1 px-1">
+            {(() => {
+              const max = Math.max(1, ...tendencia.serie.map((s) => s.cantidad));
+              return tendencia.serie.map((s) => (
+                <div key={s.mes} className="flex-1 flex flex-col items-center justify-end gap-1.5 h-full" title={`${s.mes}: ${s.cantidad} diferencia(s), ${fmtMonto(s.total)}`}>
+                  <div className="w-full rounded-t-[4px] bg-ink2" style={{ height: `${(s.cantidad / max) * 90}px`, minHeight: s.cantidad > 0 ? 3 : 0, opacity: s.cantidad > 0 ? 1 : 0.15 }} />
+                  <span className="text-[10.5px] text-ink2 tnum">{s.mes.slice(5)}</span>
+                </div>
+              ));
+            })()}
+          </div>
+
+          {tendencia.reincidentes.length > 0 && (
+            <div className="mt-3.5">
+              <span className="text-[11.5px] text-ink2 uppercase tracking-wide">Diferencias en más de un mes</span>
+              <table className="w-full text-sm mt-1.5">
+                <thead>
+                  <tr className="text-ink2 text-[11.5px] uppercase tracking-wide text-left">
+                    <th className="font-semibold py-1">Persona</th>
+                    <th className="font-semibold py-1 text-right tnum">Meses</th>
+                    <th className="font-semibold py-1 text-right tnum">Diferencias</th>
+                    <th className="font-semibold py-1 text-right tnum">Monto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tendencia.reincidentes.map((r) => (
+                    <tr key={r.id} className="border-t border-line">
+                      <td className="py-2 truncate">{r.nombre}</td>
+                      <td className="py-2 text-right tnum">{r.meses}</td>
+                      <td className="py-2 text-right tnum">{r.cantidad}</td>
+                      <td className="py-2 text-right tnum">{fmtMonto(r.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
