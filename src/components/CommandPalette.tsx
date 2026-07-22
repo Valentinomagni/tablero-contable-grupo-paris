@@ -4,6 +4,7 @@ import { Avatar } from "../lib/ui";
 import { COLS, type Card, type Profile, type Announcement } from "../lib/types";
 import { useBuscarCards } from "../hooks/useData";
 import { combinarResultadosCards, idsDelServidor } from "../lib/buscador";
+import { agruparItemsPalette } from "../lib/commandPalette";
 
 // `servidor: true` marca los items que ya vinieron filtrados por el full-text de la base
 // (RPC buscar_cards). Esos NO vuelven a pasar por el filtro de substring local: si lo
@@ -73,17 +74,14 @@ export function CommandPalette({ me, team, cards, annos = [], onNavigate, onOpen
   // `all` deja afuera grupos enteros: como "Personas" se arma con team.forEach() en orden
   // alfabético de rol ("empleado" < "encargado" < "jefe"), los primeros ~10 lugares ya los
   // ocupan las Vistas/Acciones fijas y sólo entran los primeros empleados — los encargados
-  // (y cualquiera más abajo en la lista) nunca aparecen aunque estén en `team`. Por eso, sin
-  // needle, se previsualiza por grupo (todos los roles entran) en vez de cortar la lista
-  // entera de una; al tipear, el filtro de arriba ya angosta por coincidencia y el cupo
-  // por grupo deja de importar.
-  const items = needle ? filtrados.slice(0, 12) : (() => {
-    const porGrupo = new Map<string, Item[]>();
-    for (const i of filtrados) { const arr = porGrupo.get(i.g) ?? []; arr.push(i); porGrupo.set(i.g, arr); }
-    const previa: Item[] = [];
-    for (const arr of porGrupo.values()) previa.push(...arr.slice(0, 5));
-    return previa.slice(0, 16);
-  })();
+  // (y cualquiera más abajo en la lista) nunca aparecen aunque estén en `team`. Un cupo fijo
+  // por grupo (incluso "5 por grupo") tiene el mismo problema en cuanto el equipo supera
+  // ese número de empleados: sigue siendo posible que ningún encargado entre en el preview.
+  // Por eso "Personas" NUNCA se capa acá (agruparItemsPalette la deja completa; la lista
+  // ya tiene su propio scroll) — sumar gente al equipo no puede esconder a nadie. El resto
+  // de los grupos sí mantiene un cupo razonable porque no crecen con el equipo. Al tipear,
+  // el filtro de arriba ya angosta por coincidencia y el cupo por grupo deja de importar.
+  const items = needle ? filtrados.slice(0, 12) : agruparItemsPalette(filtrados);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
