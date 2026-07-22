@@ -3,6 +3,21 @@
 // nueva arriba de todo y la versión se actualiza sola (ver docs/RELEASE.md).
 export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] = [
   {
+    version: "2.5.0",
+    fecha: "2026-07-22",
+    cambios: [
+      "Mis arqueos: mirá tu historial de diferencias de caja del mes, con el detalle de qué faltó y qué sobró.",
+      "Al registrar una diferencia ahora elegís si falta o sobra plata, así el número queda bien cargado.",
+      "Cierre del día: un repaso al final de tu jornada para no dejarte nada abierto.",
+      "Si un vencimiento tuyo es hoy o mañana, te llega un aviso.",
+      "Reporte: nuevo indicador de retrabajo, para detectar tareas que se reabren seguido.",
+      "Reporte: cómo evolucionan las diferencias de caja mes a mes.",
+      "Resumen: radar de vencimientos, que avisa cuáles podrían no llegar a tiempo.",
+      "La campana de notificaciones ahora se actualiza al instante.",
+      "La app carga más rápido: pesa un 20% menos al abrirla.",
+    ],
+  },
+  {
     version: "2.4.0",
     fecha: "2026-07-21",
     cambios: [
