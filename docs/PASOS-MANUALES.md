@@ -286,6 +286,69 @@ refresh (potencialmente meses viejo). Nadie se entera de que está desactualizad
 comparando contra `cards_archive` a mano. Por eso el cron no es opcional en la práctica:
 sin él, la vista es un dato mudo que envejece en silencio.
 
+## Migración 31 — Etiquetas, empresas y pausas (spec 28 fase D)
+
+Correr `migracion-31-etiquetas-empresas.sql` completo en Supabase → SQL Editor. Es
+idempotente (se puede correr las veces que haga falta, en cualquier orden respecto de la
+26/27/28/29/30).
+
+Habilita:
+- `cards.etiquetas`: etiquetas contextuales múltiples por tarea, independientes de
+  `categoria` (que sigue siendo una sola categoría por card).
+- Tabla `public.empresas`: catálogo de empresas del grupo (cualquier autenticado lee;
+  solo el jefe crea/edita/borra).
+- Tabla `public.card_pausas`: registro de pausas del cronómetro por card. Se crea ahora
+  aunque el cronómetro esté condicionado a la aprobación del ICR — la tabla vacía no
+  molesta y evita una migración extra después.
+
+### Verificaciones
+
+1. La migración quedó registrada:
+   ```sql
+   select id, nombre, applied_at from public.schema_migrations where id = 31;
+   ```
+2. La columna `etiquetas` existe y su índice GIN también:
+   ```sql
+   select column_name, data_type from information_schema.columns
+     where table_name = 'cards' and column_name = 'etiquetas';
+   select indexname from pg_indexes
+     where tablename = 'cards' and indexname = 'cards_etiquetas_gin';
+   ```
+3. La columna full-text generada `tsv` (migración 30) sigue intacta — agregar
+   `etiquetas` no la toca:
+   ```sql
+   select column_name, is_generated from information_schema.columns
+     where table_name = 'cards' and column_name = 'tsv';
+   ```
+   Debe seguir devolviendo 1 fila con `is_generated = 'ALWAYS'`.
+4. Tabla `empresas` existe y sus policies también:
+   ```sql
+   select count(*) from public.empresas;
+   select policyname, cmd from pg_policies where tablename = 'empresas';
+   ```
+   Deben aparecer `empresas_select`, `empresas_insert`, `empresas_update`,
+   `empresas_delete`.
+5. Tabla `card_pausas` existe, con su índice por `card_id` y sus policies:
+   ```sql
+   select count(*) from public.card_pausas;
+   select indexname from pg_indexes
+     where tablename = 'card_pausas' and indexname = 'card_pausas_card_id_idx';
+   select policyname, cmd from pg_policies where tablename = 'card_pausas';
+   ```
+6. RLS de `empresas`: logueado como no-jefe, un INSERT/UPDATE/DELETE debe fallar por
+   policy; el SELECT debe funcionar igual. Logueado como jefe, las cuatro operaciones
+   deben andar.
+7. RLS de `card_pausas`: logueado como empleado, solo debe ver sus propias pausas (o
+   las de su equipo si es encargado, o todas si es jefe); solo puede insertar/editar/
+   borrar las propias.
+
+**Nota sobre el índice de búsqueda de texto (mejora futura)**: `etiquetas` NO se sumó al
+`tsv` de la migración 30. `to_tsvector` sobre un `text[]` requiere concatenarlo primero
+(`array_to_string`), lo que implicaría recrear la columna generada (drop + create). Hoy
+alcanza con filtrar por etiqueta en la consulta (`etiquetas && array[...]`) sin pasar por
+el buscador full-text; si más adelante se pide "buscar por etiqueta" desde el mismo
+cuadro de búsqueda, ahí sí conviene esa migración aparte.
+
 ## GitHub Actions (#2) — opcional
 El archivo del workflow está en `docs/ci-workflow.yml.txt`. Tu token no tiene scope `workflow`,
 así que no se pudo pushear. Para activarlo: GitHub → repo → pestaña **Actions** → New workflow →

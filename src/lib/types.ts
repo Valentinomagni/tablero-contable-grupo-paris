@@ -27,8 +27,14 @@ export interface Card {
   proc_at?: string | null; // cuándo pasó a "en proceso" (migración 29)
   tiempo_max_horas?: number | null; // SLA en horas (migración 29)
   dato_control?: string | null; // dato de control libre (migración 29)
+  etiquetas?: string[]; // etiquetas contextuales múltiples, independientes de categoria (migración 31)
 }
 export interface CardArchive { id: string; owner: string; mes: string; card: Card; archived_at: string; }
+export interface Empresa {
+  id: string; nombre: string; cuit: string | null; cierre_balance: string | null;
+  reporta_fabrica: boolean; prioridad: number; created_at: string;
+}
+export interface CardPausa { id: string; card_id: string; owner: string | null; desde: string; hasta: string | null; }
 /**
  * Fila de la vista materializada `mv_resumen_mensual` (migración 30), tal como la
  * devuelve el RPC `public.resumen_mensual(p_mes)` — que es la ÚNICA vía de lectura:

@@ -37,6 +37,7 @@ export const COLUMNAS_CARDS = [
   "done_at", "due_date", "recurring", "priority", "effort", "card_type", "deps",
   "created_at", "recur_rule", "protected", "categoria", "reset_policy",
   "requiere_resultado", "sucursal", "marca", "proc_at", "tiempo_max_horas", "dato_control",
+  "etiquetas",
 ].join(",");
 
 /** Columnas de `profiles` que sólo existen con la migración 29 aplicada. */
