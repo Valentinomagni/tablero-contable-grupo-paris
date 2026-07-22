@@ -55,10 +55,26 @@ export function archivesParaMetricas<A extends { owner: string }>(
   archives: A[],
   profiles: Pick<Profile, "id" | "email" | "oculto">[],
 ): A[] {
-  const conocidos = new Map(profiles.map((p) => [p.id, p]));
-  return archives.filter((a) => {
-    const p = conocidos.get(a.owner);
+  return enAlcanceDeMetricas(archives, profiles);
+}
+
+/**
+ * El criterio de arriba, generalizado a CUALQUIER colección con `owner` (cards,
+ * ActivityLog, archivos). Es el mismo filtro POSITIVO descripto en el comentario de
+ * `archivesParaMetricas`: cuenta si el owner está en la lista ya acotada `profiles` y no
+ * es oculto, o si es el centinela "Sin asignar". Existe para que ninguna métrica nueva
+ * vuelva a escribir el criterio por su cuenta (el bug del administrador fantasma en
+ * analitica-operativas.ts: usaba el filtro negativo `cardsVisibles` sobre una lista ya
+ * acotada, donde el fantasma nunca aparece y por lo tanto nunca se excluía).
+ */
+export function enAlcanceDeMetricas<T extends { owner: string }>(
+  items: T[],
+  profiles: Pick<Profile, "id" | "email" | "oculto">[],
+): T[] {
+  const conocidos = new Map((profiles ?? []).map((p) => [p.id, p]));
+  return (items ?? []).filter((it) => {
+    const p = conocidos.get(it.owner);
     if (p) return p.oculto !== true;
-    return esSinAsignar({ id: a.owner, email: "" });
+    return esSinAsignar({ id: it.owner, email: "" });
   });
 }

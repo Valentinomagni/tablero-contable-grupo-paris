@@ -292,6 +292,18 @@ Correr `migracion-31-etiquetas-empresas.sql` completo en Supabase → SQL Editor
 idempotente (se puede correr las veces que haga falta, en cualquier orden respecto de la
 26/27/28/29/30).
 
+**No es opcional a largo plazo: mientras no se corra, la app funciona pero más lenta.** El fetch
+de cards pide las columnas explícitas (`COLUMNAS_CARDS` en `src/lib/esquema.ts`) para no arrastrar
+el tsvector `tsv` de la migración 30. Sin la 31 la columna `etiquetas` no existe, ese select falla
+entero con 42703/PGRST204 y `useCards` cae al fallback `select("*")`: **dos consultas por cada
+refetch de cards, y hay un refetch por cada evento realtime** (cualquier movimiento de tarjeta de
+cualquier usuario), trayendo además el tsvector completo que la app nunca lee. O sea: correr la 31
+no sólo habilita etiquetas y empresas — también devuelve la app a su rendimiento normal.
+
+Mientras tanto, la UI de etiquetas queda oculta a propósito (editor en la tarjeta y filtro del
+tablero muestran "Se habilita tras la migración 31"): sin la columna, guardar una etiqueta no
+persiste nada y sólo dejaría una línea falsa en el historial de la tarea.
+
 Habilita:
 - `cards.etiquetas`: etiquetas contextuales múltiples por tarea, independientes de
   `categoria` (que sigue siendo una sola categoría por card).

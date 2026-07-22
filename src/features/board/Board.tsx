@@ -14,7 +14,7 @@ import { etiquetasEnUso, pasaFiltroEtiquetas } from "../../lib/etiquetas";
 import { type ModoAgrupar } from "../../lib/agrupar";
 import { getPref, setPref, PREF } from "../../lib/prefs";
 import { useOrganizacion, useTiemposMax, useMigraciones, useTriggerNotificaciones } from "../../hooks/useData";
-import { payloadCards } from "../../lib/esquema";
+import { payloadCards, tieneEtiquetas } from "../../lib/esquema";
 import { estadoTiempo, registrarIncumplimiento } from "../../lib/tiempos";
 import { textoTransicion } from "../../lib/retrabajo";
 import { filtrarPorSegmento } from "../../lib/segmento";
@@ -110,7 +110,9 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
   const visibles = cardsSeg.filter((c) => c.owner === ownerId && matches(c));
   const catsUsadas = categoriasEnUso(visibles);
   const hayMezcla = catsUsadas.length > 0 && visibles.some((c) => !c.categoria);
-  const etsUsadas = etiquetasEnUso(visibles);
+  // Sin la migración 31 no hay columna `etiquetas`: ninguna card puede tenerlas y el
+  // filtro no debe ofrecerse (review MEDIA 1 — mismo gate que el editor en MetaSection).
+  const etsUsadas = tieneEtiquetas(migracionesAplicadas) ? etiquetasEnUso(visibles) : [];
   const pasaCat = (c: Card) => pasaFiltroCategoria(c, catFiltro) && pasaFiltroEtiquetas(c, etFiltro);
   const mine = visibles.filter((c) => c.card_type !== "operativa" && pasaCat(c));
   const opers = visibles.filter((c) => c.card_type === "operativa" && pasaCat(c));

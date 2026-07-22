@@ -12,7 +12,8 @@ import { Users, AlertTriangle, X } from "lucide-react";
 import { CumplimientoDiario } from "../CumplimientoDiario";
 import { estadoTiempo, registrarIncumplimiento } from "../../../lib/tiempos";
 import { textoTransicion } from "../../../lib/retrabajo";
-import { useTiemposMax } from "../../../hooks/useData";
+import { useTiemposMax, useMigraciones } from "../../../hooks/useData";
+import { tieneEtiquetas } from "../../../lib/esquema";
 
 type PatchMut = UseMutationResult<void, Error, Partial<Card>, unknown>;
 
@@ -22,6 +23,13 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
   { c: Card; cards: Card[]; team: Profile[]; settings: AppSettings; patch: PatchMut; hist: (txt: string) => HistoryEntry[]; locked: boolean }) {
   const qc = useQueryClient();
   const tiemposConfig = useTiemposMax();
+  // Etiquetas (spec 28, fase D — review MEDIA 1): sin la migración 31 la columna
+  // `cards.etiquetas` no existe, `payloadCards()` descarta el campo y el guardado NO
+  // persiste nada — pero el `history` sí viaja, así que quedaría escrito "Agregó la
+  // etiqueta X" para una etiqueta que nunca se guardó. Falla en silencio y encima miente.
+  // Por eso el bloque entero se degrada igual que Empresas: aviso en vez de input.
+  const { data: migracionesAplicadas } = useMigraciones();
+  const etiquetasHabilitadas = tieneEtiquetas(migracionesAplicadas);
   const est = estadoTiempo(c, tiemposConfig, new Date().toISOString());
   const [recurTipo, setRecurTipo] = useState<RecurRule["tipo"] | "">(c.recur_rule?.tipo ?? "");
   const [recurDias, setRecurDias] = useState<number[]>(c.recur_rule?.dias ?? []);
@@ -166,7 +174,10 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
             distintas de la categoría (tipo de trabajo). Múltiples por tarea. */}
         <div className="flex items-center gap-1.5 flex-wrap text-sm mb-2">
           <span className="text-ink2 text-[13px]">Etiquetas</span>
-          {(c.etiquetas ?? []).map((et) => (
+          {!etiquetasHabilitadas && (
+            <span className="text-ink2 text-[12px]">Se habilita tras la migración 31.</span>
+          )}
+          {etiquetasHabilitadas && (c.etiquetas ?? []).map((et) => (
             <span key={et} className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-full px-2.5 py-0.5 text-[12px] font-medium">
               {et}
               {!locked && (
@@ -178,7 +189,7 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
               )}
             </span>
           ))}
-          {!locked && (
+          {etiquetasHabilitadas && !locked && (
             <>
               <input list="etiquetas-card" value={nuevaEtiqueta} placeholder="+ etiqueta"
                 onChange={(e) => setNuevaEtiqueta(e.target.value)}

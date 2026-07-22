@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { esVisible, personasVisibles, cardsVisibles, archivesParaMetricas } from "./visibilidad";
+import { esVisible, personasVisibles, cardsVisibles, archivesParaMetricas, enAlcanceDeMetricas } from "./visibilidad";
 import type { Profile } from "./types";
 
 const p = (id: string, email: string, oculto?: boolean): Profile =>
@@ -114,5 +114,31 @@ describe("archivesParaMetricas (criterio único de métricas históricas)", () =
       const out = archivesParaMetricas([arch("u1"), arch("desconocido-uuid")], perfilesVisibles);
       expect(out.map((a) => a.owner)).toEqual(["u1"]);
     });
+  });
+});
+
+// El helper genérico detrás de archivesParaMetricas, extraído para que cualquier métrica
+// sobre cards/ActivityLog use el MISMO criterio (review Fase D, MEDIA 2).
+describe("enAlcanceDeMetricas", () => {
+  const perfilesVisibles = [p("u1", "u1@grupoparis.com")]; // lista ya acotada, sin el fantasma
+
+  it("excluye al oculto que NO está en la lista acotada (filtro positivo)", () => {
+    const out = enAlcanceDeMetricas([{ owner: "u1", qty: 1 }, { owner: "fantasma", qty: 99 }], perfilesVisibles);
+    expect(out.map((x) => x.owner)).toEqual(["u1"]);
+  });
+
+  it("excluye al oculto que SÍ está en la lista", () => {
+    const out = enAlcanceDeMetricas([{ owner: "u1" }, { owner: "u2" }], [p("u1", "a@x.com"), p("u2", "b@x.com", true)]);
+    expect(out.map((x) => x.owner)).toEqual(["u1"]);
+  });
+
+  it("deja pasar el centinela 'Sin asignar'", () => {
+    const sentinelId = "00000000-0000-0000-0000-000000000000";
+    const out = enAlcanceDeMetricas([{ owner: sentinelId }], perfilesVisibles);
+    expect(out).toHaveLength(1);
+  });
+
+  it("tolera entradas nulas", () => {
+    expect(enAlcanceDeMetricas([], [])).toEqual([]);
   });
 });

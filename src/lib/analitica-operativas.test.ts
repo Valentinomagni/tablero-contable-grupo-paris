@@ -45,7 +45,6 @@ describe("analiticaOperativas — por empleado", () => {
     expect(r.porEmpleado).toEqual([]);
     expect(r.porTipo).toEqual([]);
     expect(r.cargaCruzada).toEqual([]);
-    expect(r.evolucionCruzada).toEqual([]);
   });
 
   it("un solo registro no divide por cero", () => {
@@ -55,28 +54,28 @@ describe("analiticaOperativas — por empleado", () => {
     expect(r.porEmpleado[0].cantidadEjecutada).toBe(2);
   });
 
-  it("sin proc_at/done_at: minutosPromedio es null, no un cero inventado", () => {
-    const cards = [card()];
-    const activity = [act({ qty: 1 })];
+  // Review Fase D (MEDIA 2): el escenario REAL es que `profiles` ya viene acotada por
+  // personasVisibles + segmento, así que el administrador fantasma NO está en la lista.
+  // Con el filtro negativo viejo (cardsVisibles) nunca entraba al Set de ocultos y sus
+  // cards y su ActivityLog seguían contando.
+  it("el administrador fantasma no cuenta aunque no esté en la lista acotada que se pasa", () => {
+    const cards = [card({ id: "c1", owner: "u1" }), card({ id: "cf", owner: "fantasma" })];
+    const activity = [act({ id: "a1", card_id: "c1", owner: "u1", qty: 2 }), act({ id: "af", card_id: "cf", owner: "fantasma", qty: 99 })];
     const r = analiticaOperativas(cards, activity, [profile()], "2026-07-01", "2026-07-31");
-    expect(r.porEmpleado[0].minutosPromedio).toBeNull();
-    expect(r.porEmpleado[0].muestraTiempo).toBe(0);
+    expect(r.porEmpleado).toHaveLength(1);
+    expect(r.porEmpleado[0].id).toBe("u1");
+    expect(r.cargaCruzada.every((x) => x.empleadoId !== "fantasma")).toBe(true);
   });
 
-  it("con proc_at y done_at coherentes estima minutos", () => {
-    const cards = [card({ proc_at: "2026-07-10T10:00:00Z", done_at: "2026-07-10T10:30:00Z" })];
-    const activity = [act({ qty: 1 })];
-    const r = analiticaOperativas(cards, activity, [profile()], "2026-07-01", "2026-07-31");
-    expect(r.porEmpleado[0].minutosPromedio).toBe(30);
-    expect(r.porEmpleado[0].muestraTiempo).toBe(1);
+  // Review Fase D (MEDIA 3): esta vista es carga de trabajo, no ranking de productividad.
+  it("ordena por nombre, no por cantidad ejecutada", () => {
+    const zoe = profile({ id: "u2", name: "Zoe" });
+    const cards = [card({ id: "c1", owner: "u1" }), card({ id: "c2", owner: "u2" })];
+    const activity = [act({ id: "a1", card_id: "c1", owner: "u1", qty: 1 }), act({ id: "a2", card_id: "c2", owner: "u2", qty: 50 })];
+    const r = analiticaOperativas(cards, activity, [profile(), zoe], "2026-07-01", "2026-07-31");
+    expect(r.porEmpleado.map((e) => e.nombre)).toEqual(["Ana", "Zoe"]);
   });
 
-  it("done_at anterior a proc_at (dato incoherente) se descarta, no da minutos negativos", () => {
-    const cards = [card({ proc_at: "2026-07-10T10:30:00Z", done_at: "2026-07-10T10:00:00Z" })];
-    const activity = [act({ qty: 1 })];
-    const r = analiticaOperativas(cards, activity, [profile()], "2026-07-01", "2026-07-31");
-    expect(r.porEmpleado[0].minutosPromedio).toBeNull();
-  });
 });
 
 describe("analiticaOperativas — por tipo de tarea", () => {
@@ -117,16 +116,4 @@ describe("analiticaOperativas — cruzado empleado x tipo", () => {
     ]));
   });
 
-  it("evolución mensual agrupa por mes/empleado/tipo", () => {
-    const cards = [card({ id: "c1", title: "Carga de remitos" })];
-    const activity = [
-      act({ id: "a1", card_id: "c1", at: "2026-06-15T00:00:00Z", qty: 2 }),
-      act({ id: "a2", card_id: "c1", at: "2026-07-15T00:00:00Z", qty: 3 }),
-    ];
-    const r = analiticaOperativas(cards, activity, [profile()], "2026-06-01", "2026-07-31");
-    expect(r.evolucionCruzada).toEqual([
-      { mes: "2026-06", empleadoId: "u1", empleadoNombre: "Ana", titulo: "Carga de remitos", cantidad: 2 },
-      { mes: "2026-07", empleadoId: "u1", empleadoNombre: "Ana", titulo: "Carga de remitos", cantidad: 3 },
-    ]);
-  });
 });

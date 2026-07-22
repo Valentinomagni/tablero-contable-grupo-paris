@@ -280,10 +280,21 @@ Por eso rechazo explícitamente cualquier cosa que genere alertas recurrentes qu
 - **Costo**: $0.
 - **Esfuerzo**: una migración de pocas líneas, pero **requiere pensar el diseño**: quitar el grant a
   `anon` rompe el login por usuario, porque cuando alguien escribe su username todavía no tiene
-  sesión. Alternativas: (a) rate-limit por IP vía Edge Function que haga de proxy; (b) que el RPC no
-  devuelva el email sino que dispare directamente el `signInWithPassword` del lado del servidor;
-  (c) aceptar el riesgo y sólo devolver el email si la contraseña también coincide.
-- **Recomendación: IMPLEMENTAR — este mes**, opción (c) o (b). Nota: si se descarta, dejarlo
+  sesión. Alternativas: (a) rate-limit por IP vía Edge Function que haga de proxy; (b) una Edge
+  Function que reciba username + contraseña, resuelva el email del lado del servidor, haga ella
+  misma el `signInWithPassword` contra Supabase Auth y devuelva la sesión — el email nunca sale
+  hacia el cliente; (c) devolver el email sólo si la contraseña también coincide.
+- **Recomendación: IMPLEMENTAR — este mes, opción (b).** Es la única que cierra la enumeración de
+  verdad: el email deja de ser un dato que el cliente puede pedir, y la verificación de credenciales
+  la sigue haciendo Supabase Auth. La (a) sólo encarece la enumeración, no la impide.
+- **(c) DESCARTADA.** Suena a la más barata y es la más cara: para "devolver el email sólo si la
+  contraseña coincide" hay que verificar la contraseña dentro de un RPC `security definer`,
+  o sea reimplementar contra `auth.users` con pgcrypto la comparación de hashes que hoy hace
+  Supabase Auth — por fuera de Auth, que es exactamente lo que el diseño original evitó. Además
+  obliga a pasarle la contraseña en claro a una función propia (queda en los logs de Postgres ante
+  cualquier `log_statement` o error), y esa función pasa a ser código de autenticación casero que
+  hay que mantener y auditar. Se pierde bloqueo por intentos, MFA y rotación de política de Auth.
+  Nota: si se descarta también (b), dejarlo
   documentado como riesgo aceptado, no olvidado. **Esto NO se resuelve con ninguna herramienta**;
   es un cambio de diseño de 20 líneas. Ejemplo de por qué el relevamiento vale más que el catálogo.
 
@@ -473,7 +484,10 @@ a medio andar.
 6. **`rls-smoke.mjs` como job de CI** con cuentas de prueba en secrets. Convierte en garantía
    permanente un trabajo ya pagado.
 7. **`public/_headers`** con las cabeceras que no pueden romper nada, y CSP en `Report-Only`.
-8. **Rediseñar `email_por_usuario`** para que no filtre emails a `anon`.
+8. **Rediseñar `email_por_usuario`** para que no filtre emails a `anon`: opción (b) de §3.4 — una
+   Edge Function que hace el `signInWithPassword` del lado del servidor y nunca devuelve el email.
+   NO la opción (c) (devolver el email si la contraseña coincide): obliga a verificar credenciales
+   dentro de un RPC `security definer` con pgcrypto, por fuera de Supabase Auth.
 9. **Alertas de seguridad de Dependabot** (solo `security-updates`, sin bumps de versión) y
    `npm audit` en CI con `xlsx` en allowlist — o sin `npm audit`, si no se puede evitar el rojo permanente.
 
