@@ -103,6 +103,7 @@ export function VacacionesModal({ me, team, cards, onClose }: {
             <label className="text-xs uppercase tracking-wide text-ink2">Novedades para quien me cubre (opcional)</label>
             <textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2}
               placeholder="Ej: el banco X quedó a medias, ojo con el proveedor Y…" className={inputCls + " resize-y"} />
+            <p className="text-ink2 text-xs m-0">Visible para todo el equipo, no solo para tu reemplazante.</p>
           </>
         ) : (
           <textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2} placeholder="Notas (opcional)" className={inputCls + " resize-y"} />
