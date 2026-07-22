@@ -91,4 +91,28 @@ describe("archivesParaMetricas (criterio único de métricas históricas)", () =
     const out = archivesParaMetricas([arch("u1"), arch("u2")], [p("u1", "u1@x.com"), p("u2", "u2@x.com")]);
     expect(out).toHaveLength(2);
   });
+
+  // Cableado real: los consumidores (equipoVisible, teamSeg) reciben perfiles YA sin el
+  // oculto — personasVisibles() lo sacó antes. El fantasma nunca aparece en esa lista.
+  describe("con la lista de perfiles ya acotada (sin el oculto adentro, como llega en la app)", () => {
+    const perfilesVisibles = [p("u1", "u1@grupoparis.com")]; // sin "fantasma", sin "sin-asignar"
+
+    it("los archivos del fantasma quedan excluidos aunque no esté en la lista", () => {
+      const out = archivesParaMetricas([arch("u1"), arch("fantasma")], perfilesVisibles);
+      expect(out.map((a) => a.owner)).toEqual(["u1"]);
+    });
+
+    it("el centinela 'sin-asignar' cuenta aunque no esté en la lista de perfiles visibles", () => {
+      // El centinela real se identifica por SIN_ASIGNAR_ID (uuid de ceros), no por un id
+      // legible — esSinAsignar() es quien reconoce ese uuid, no una coincidencia de texto.
+      const sentinelId = "00000000-0000-0000-0000-000000000000";
+      const out = archivesParaMetricas([arch("u1"), arch(sentinelId)], perfilesVisibles);
+      expect(out.map((a) => a.owner).sort()).toEqual([sentinelId, "u1"]);
+    });
+
+    it("un owner desconocido (ni en la lista ni centinela) queda excluido", () => {
+      const out = archivesParaMetricas([arch("u1"), arch("desconocido-uuid")], perfilesVisibles);
+      expect(out.map((a) => a.owner)).toEqual(["u1"]);
+    });
+  });
 });
