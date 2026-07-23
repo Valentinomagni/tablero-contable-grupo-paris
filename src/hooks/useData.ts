@@ -312,6 +312,23 @@ export function useConsultasNuevas(isJefe: boolean) {
   });
 }
 
+// Instancias de estado por período mensual (migración 32, propuesta de períodos Fase 0).
+// Mismo patrón defensivo que useConsultas/useEmpresas: si la tabla todavía no existe
+// (migración 32 sin correr, 42P01/PGRST205) o falla por cualquier motivo, devuelve []
+// SIN romper nada — la Fase 1 cae al fallback (leer `cards`) y la app funciona como hoy.
+// RLS ya filtra: propio, encargado del dueño o jefe.
+export function useCardPeriodos() {
+  return useQuery({
+    queryKey: ["card_periodos"],
+    queryFn: async (): Promise<import("../lib/types").CardPeriodo[]> => {
+      const { data, error } = await supabase.from("card_periodos").select("*");
+      if (error) return [];
+      return (data as import("../lib/types").CardPeriodo[]) ?? [];
+    },
+    retry: false,
+  });
+}
+
 export function useCards() {
   const qc = useQueryClient();
   useEffect(() => {
