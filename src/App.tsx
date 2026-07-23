@@ -16,6 +16,7 @@ import { NotificacionesBell } from "./components/NotificacionesPanel";
 import { APP_VERSION } from "./lib/version";
 import { Login } from "./components/Login";
 import { Shell } from "./components/Shell";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Board } from "./features/board/Board";
 import { CardModal } from "./features/board/CardModal";
 import { DelegarModal } from "./features/board/DelegarModal";
@@ -205,6 +206,7 @@ export default function App() {
             </button>
           )}
         </> : undefined}>
+        <ErrorBoundary key={view}>
         <Suspense fallback={<div className="px-6 py-8 text-ink2 text-sm">Cargando…</div>}>
         {view === "__resumen" ? <Resumen cards={scopedCards} team={equipoVisible} activity={activity} onOpenCard={setOpenCard} onGoPerson={(id) => { setViewing(id); setMode("board"); }} onDelegar={esGestor ? () => setDelegar(true) : undefined} annos={annos} esGestor={esGestor} />
           : view === "__reporte" ? <Reporte cards={scopedCards} team={equipoVisible} activity={activity} />
@@ -224,6 +226,7 @@ export default function App() {
           : cardsLoading ? <BoardSkeleton />
           : <Board cards={cards} activity={activity} ownerId={view} meId={me.id} meName={me.name} meRole={me.role} team={equipoVisible} query={query} onOpen={setOpenCard} />}
         </Suspense>
+        </ErrorBoundary>
       </Shell>
       {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} cards={cards} team={equipoVisible} activity={activity} isJefe={!!isJefe} onClose={() => setOpenCard(null)} meId={me.id} meName={me.name} />}
       {openUser && <UserModal user={fullTeam.find((t) => t.id === openUser.id) ?? openUser} meId={me.id} team={fullTeam} cards={cards} activity={activity} onClose={() => setOpenUser(null)} />}

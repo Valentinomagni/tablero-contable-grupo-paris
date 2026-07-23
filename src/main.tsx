@@ -5,6 +5,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import "./index.css";
 import App from "./App.tsx";
 import { migrarPrefs } from "./lib/prefs";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 // Migra las preferencias viejas de localStorage a las claves namespaced (una sola vez).
 migrarPrefs();
@@ -20,10 +21,12 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-      {/* Devtools de React Query: solo en dev, tree-shake total en build de prod */}
-      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <App />
+        {/* Devtools de React Query: solo en dev, tree-shake total en build de prod */}
+        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+      </QueryClientProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );
