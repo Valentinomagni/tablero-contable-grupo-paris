@@ -12,6 +12,9 @@ export const PREF = {
   // con los de "prioridad" (una categoría "Alta" colisionaría con la prioridad "Alta"),
   // ni entre personas (cada owner ve sus propios colapsados).
   carrilesColapsados: (modo: string, ownerId: string) => NS + "carriles-colapsados:" + modo + ":" + ownerId,
+  // Orden y agrupación POR COLUMNA (spec 28-correcciones, item 7). Namespaced por owner:
+  // cómo ordeno MI tablero no tiene por qué aplicarse al de otra persona que yo mire.
+  vistasColumna: (ownerId: string) => NS + "vistas-columna:" + ownerId,
 } as const;
 
 export function getPref(k: string): string | null {

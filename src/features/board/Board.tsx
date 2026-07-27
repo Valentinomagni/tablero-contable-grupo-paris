@@ -1,5 +1,5 @@
 import { EmptyState } from "../../components/EmptyState";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import { COLS, type Card, type Status, type ActivityLog, type Profile, type CardPeriodo } from "../../lib/types";
@@ -23,6 +23,8 @@ import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Us
 import { esCobertura } from "../../lib/vacaciones";
 import { NuevaTareaModal } from "./NuevaTareaModal";
 import { Carriles } from "./Carriles";
+import { MenuColumna } from "./MenuColumna";
+import { vistaDeColumna, parseVistas, type VistaColumna, type VistasPorColumna } from "../../lib/columna-vista";
 
 const DOT: Record<string, string> = { pend: "bg-naranja", proc: "bg-s1", term: "bg-done" };
 
@@ -116,6 +118,17 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
     return (v && MODOS_AGRUPAR.includes(v as ModoAgrupar)) ? (v as ModoAgrupar) : "ninguno";
   });
   const setAgruparModo = (v: ModoAgrupar) => { setAgruparModoState(v); setPref(PREF.agruparModo, v); };
+  // Orden y agrupación POR COLUMNA, independientes entre sí (spec 28-correcciones, item 7).
+  // Se relee cuando cambia el owner: cada tablero guarda sus propias preferencias.
+  const [vistas, setVistas] = useState<VistasPorColumna>(() => parseVistas(getPref(PREF.vistasColumna(ownerId))));
+  useEffect(() => { setVistas(parseVistas(getPref(PREF.vistasColumna(ownerId)))); }, [ownerId]);
+  const setVistaCol = (k: Status, v: VistaColumna) => {
+    setVistas((prev) => {
+      const next = { ...prev, [k]: v };
+      setPref(PREF.vistasColumna(ownerId), JSON.stringify(next));
+      return next;
+    });
+  };
   const visibles = cardsSeg.filter((c) => c.owner === ownerId && matches(c));
   const catsUsadas = categoriasEnUso(visibles);
   const hayMezcla = catsUsadas.length > 0 && visibles.some((c) => !c.categoria);
@@ -363,7 +376,12 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
       </div>
     <div className="flex gap-5 items-start px-6 pb-10 overflow-x-auto flex-1">
       {/* Modo "ninguno": tres columnas planas, exactamente como siempre (ruta por defecto). */}
-      {agruparModo === "ninguno" && COLS.map(([k, lbl]) => (
+      {agruparModo === "ninguno" && COLS.map(([k, lbl]) => {
+        const deLaColumna = mine.filter((c) => c.status === k);
+        // Orden y agrupación PROPIOS de esta columna (item 7). Con la vista por defecto
+        // devuelve un único bloque sin cabecera → idéntico al tablero de siempre.
+        const bloques = vistaDeColumna(deLaColumna, vistas[k], { profiles: team });
+        return (
         <div key={k}
           onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("ring-2", "ring-accent"); }}
           onDragLeave={(e) => e.currentTarget.classList.remove("ring-2", "ring-accent")}
@@ -371,10 +389,21 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
           className="min-w-[290px] w-[290px] shrink-0 rounded-2xl p-3 border border-line/60" style={colBg}>
           <h2 className="text-xs uppercase tracking-wider text-ink2 mx-1.5 mt-1 mb-2.5 flex items-center gap-2 font-semibold">
             <i className={cn("w-2 h-2 rounded-full", DOT[k])} />{lbl}
-            <span className="ml-auto bg-chip rounded-full px-2 py-0.5 tnum">{mine.filter((c) => c.status === k).length}</span>
+            <span className="ml-auto bg-chip rounded-full px-2 py-0.5 tnum">{deLaColumna.length}</span>
+            <MenuColumna vista={vistas[k]} etiqueta={lbl} onCambiar={(v) => setVistaCol(k, v)} />
           </h2>
-          {mine.filter((c) => c.status === k).map(renderCard)}
-          {mine.filter((c) => c.status === k).length === 0 && <div className="mb-2"><EmptyState title="Sin tareas acá." /></div>}
+          {bloques.map((b) => (
+            <div key={b.grupo || "__todo"}>
+              {b.grupo && (
+                <div className="mx-1.5 mt-1 mb-1.5 text-[11px] font-semibold text-ink2 flex items-center gap-2">
+                  <span className="truncate">{b.grupo}</span>
+                  <span className="bg-chip rounded-full px-1.5 py-0.5 tnum text-[10px]">{b.cards.length}</span>
+                </div>
+              )}
+              {b.cards.map(renderCard)}
+            </div>
+          ))}
+          {deLaColumna.length === 0 && <div className="mb-2"><EmptyState title="Sin tareas acá." /></div>}
           {/* Pendiente abre el flujo formal (spec 21 item 2); "En proceso" conserva el atajo inline. */}
           {k === "pend" && (
             <button onClick={() => setCreando(true)}
@@ -383,7 +412,8 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
           )}
           {k === "proc" && addInline(k, "Título y Enter…")}
         </div>
-      ))}
+        );
+      })}
 
       {/* Agrupado: carriles horizontales por grupo que atraviesan las tres columnas
           de estado. La card cambia de columna sin salir de su carril. */}
