@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { periodoVigente, mergeCardPeriodo, cardsDelPeriodo, periodosDisponibles, periodoLabel } from "./periodo-instancias";
+import { periodoVigente, mesSiguiente, instanciaEnBlanco, mergeCardPeriodo, cardsDelPeriodo, periodosDisponibles, periodoLabel } from "./periodo-instancias";
 import type { Card, CardPeriodo } from "./types";
 
 function card(over: Partial<Card> = {}): Card {
@@ -74,9 +74,12 @@ describe("cardsDelPeriodo", () => {
     const res = cardsDelPeriodo([card({ id: "c1" })], [cp({ card_id: "c1" })], "2026-07");
     expect(res[0].status).toBe("term");
   });
-  it("sin fila para esa card → fallback a la card", () => {
-    const res = cardsDelPeriodo([card({ id: "c1" })], [], "2026-07");
+  it("sin fila para esa card (mes futuro) → instancia EN BLANCO", () => {
+    const term = card({ id: "c1", status: "term", done_at: "x", checklist: [{ txt: "a", done: true, done_at: "x" }] });
+    const res = cardsDelPeriodo([term], [], "2026-08", "2026-07");
     expect(res[0].status).toBe("pend");
+    expect(res[0].done_at).toBeNull();
+    expect(res[0].checklist[0].done).toBe(false);
   });
   it("ignora filas de OTRO período", () => {
     const res = cardsDelPeriodo([card({ id: "c1" })], [cp({ card_id: "c1", periodo: "2026-06" })], "2026-07");
@@ -116,6 +119,48 @@ describe("periodosDisponibles", () => {
   it("descarta períodos con formato inválido", () => {
     const ps = [cp({ periodo: "basura" }), cp({ periodo: "2026-05" })];
     expect(periodosDisponibles(ps, "2026-07-23T15:00:00Z")).toEqual(["2026-07", "2026-05"]);
+  });
+  it("incluirFuturo agrega el mes siguiente aunque no tenga datos", () => {
+    expect(periodosDisponibles([], "2026-07-23T15:00:00Z", true)).toEqual(["2026-08", "2026-07"]);
+  });
+  it("sin incluirFuturo (default) NO ofrece el mes que viene", () => {
+    expect(periodosDisponibles([], "2026-07-23T15:00:00Z", false)).toEqual(["2026-07"]);
+  });
+});
+
+describe("mesSiguiente", () => {
+  it("suma un mes", () => {
+    expect(mesSiguiente("2026-07")).toBe("2026-08");
+  });
+  it("cruza el año en diciembre", () => {
+    expect(mesSiguiente("2026-12")).toBe("2027-01");
+  });
+  it("formato inválido → devuelve tal cual", () => {
+    expect(mesSiguiente("basura")).toBe("basura");
+  });
+});
+
+describe("instanciaEnBlanco", () => {
+  it("arranca en 'pend', destilda el checklist y limpia estado", () => {
+    const b = instanciaEnBlanco(card({ status: "term", done_at: "x", proc_at: "y",
+      checklist: [{ txt: "a", done: true, done_at: "z" }], comments: [{ who: "u", when: "t", txt: "hola" }] }));
+    expect(b.status).toBe("pend");
+    expect(b.done_at).toBeNull();
+    expect(b.proc_at).toBeNull();
+    expect(b.checklist).toEqual([{ txt: "a", done: false, done_at: null }]);
+    expect(b.comments).toEqual([]);
+    expect(b.history).toEqual([]);
+  });
+  it("conserva la DEFINICIÓN (title, deps, categoria, etiquetas)", () => {
+    const b = instanciaEnBlanco(card({ title: "IVA", deps: ["x"], categoria: "impuestos", etiquetas: ["Peugeot"] }));
+    expect(b.title).toBe("IVA");
+    expect(b.deps).toEqual(["x"]);
+    expect(b.categoria).toBe("impuestos");
+    expect(b.etiquetas).toEqual(["Peugeot"]);
+  });
+  it("reset_policy 'mantener' → arrastra el estado actual sin limpiar", () => {
+    const c = card({ status: "term", reset_policy: "mantener" });
+    expect(instanciaEnBlanco(c)).toBe(c);
   });
 });
 

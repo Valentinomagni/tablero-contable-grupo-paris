@@ -7,7 +7,8 @@ import { ClipboardList, Target, TrendingUp, UserRound, CalendarDays, Users, Arch
 import { useAuth } from "./hooks/useAuth";
 import { usePresencia } from "./hooks/usePresencia";
 import { useTheme } from "./hooks/useTheme";
-import { useTeam, useCards, useActivity, useAnnouncements, useSettings, useConsultasNuevas, useCardPeriodos } from "./hooks/useData";
+import { useTeam, useCards, useActivity, useAnnouncements, useSettings, useConsultasNuevas, useCardPeriodos, useMigraciones } from "./hooks/useData";
+import { tienePeriodos } from "./lib/esquema";
 import { contarNuevas } from "./lib/consultas";
 import { AccountModal } from "./components/AccountModal";
 import { NovedadesModal } from "./components/NovedadesModal";
@@ -65,6 +66,7 @@ export default function App() {
   const { data: cards = [], isLoading: cardsLoading } = useCards();
   const { data: activity = [] } = useActivity();
   const { data: periodos = [] } = useCardPeriodos();
+  const { data: migracionesAplicadas } = useMigraciones();
   const hoyISO = new Date().toISOString();
   const [periodoSel, setPeriodoSel] = useState<string>(() => periodoVigente(hoyISO));
   const [viewing, setViewing] = useState<string>("");
@@ -165,7 +167,11 @@ export default function App() {
   // Fase 2: el mes VIGENTE lee/escribe en `cards` como siempre; los meses NO vigentes leen
   // y escriben su estado en `card_periodos`, independientes. `cardsVista` es la lista que ve
   // el Board del período elegido (cruda si es el vigente, mergeada si no).
-  const opcionesPeriodo = periodosDisponibles(periodos, hoyISO);
+  // El mes que viene solo se ofrece si la migración 32 está aplicada: si no, escribir en
+  // ese mes caería sobre `cards` (escribeEnPeriodo() da false sin la 32) y pisaría el mes
+  // actual. Con la 32 aplicada, el selector deja navegar a agosto aunque esté vacío.
+  const puedePeriodos = tienePeriodos(migracionesAplicadas);
+  const opcionesPeriodo = periodosDisponibles(periodos, hoyISO, puedePeriodos);
   const vigente = periodoVigente(hoyISO);
   const cardsVista = cardsDelPeriodo(cards, periodos, periodoSel, vigente);
 
