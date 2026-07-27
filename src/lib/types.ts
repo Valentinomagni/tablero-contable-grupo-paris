@@ -9,7 +9,7 @@ export interface TaskOccurrence {
   // Resultado de control (migración 23, arqueo de caja): 'ok' sin diferencias, 'dif' con diferencias
   resultado?: "ok" | "dif" | null; dif_importe?: number | null; dif_obs?: string | null;
 }
-interface Comment { who: string; when: string; txt: string; }
+export interface Comment { who: string; when: string; txt: string; }
 export interface HistoryEntry { who: string; at: string; txt: string; }
 export interface Card {
   id: string; owner: string; title: string; status: Status; description: string;
@@ -28,6 +28,18 @@ export interface Card {
   tiempo_max_horas?: number | null; // SLA en horas (migración 29)
   dato_control?: string | null; // dato de control libre (migración 29)
   etiquetas?: string[]; // etiquetas contextuales múltiples, independientes de categoria (migración 31)
+}
+/**
+ * Estado de trabajo de una card en un período mensual (migración 32, propuesta de
+ * períodos Fase 0). Una fila por (card_id, periodo 'YYYY-MM'): junio y julio de la
+ * misma tarea son filas distintas y nunca se pisan. Los campos de DEFINICIÓN
+ * (title, owner, recur_rule, priority, effort, deps, categoria, etiquetas) viven en
+ * `cards`; acá vive sólo el ESTADO del mes. Ver src/lib/periodo-instancias.ts.
+ */
+export interface CardPeriodo {
+  id: string; card_id: string; owner: string; periodo: string; status: Status;
+  checklist: ChecklistItem[]; comments: Comment[]; history: HistoryEntry[];
+  done_at: string | null; proc_at: string | null; due_date: string | null; created_at: string;
 }
 export interface CardArchive { id: string; owner: string; mes: string; card: Card; archived_at: string; }
 export interface Empresa {

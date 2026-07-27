@@ -365,6 +365,62 @@ alcanza con filtrar por etiqueta en la consulta (`etiquetas && array[...]`) sin 
 el buscador full-text; si más adelante se pide "buscar por etiqueta" desde el mismo
 cuadro de búsqueda, ahí sí conviene esa migración aparte.
 
+## Migración 32 — card_periodos: estado por período mensual (propuesta de períodos, Fase 0)
+
+Correr `migracion-32-card-periodos.sql` completo en Supabase → SQL Editor. Es idempotente
+(se puede correr las veces que haga falta, en cualquier orden respecto de la 26–31).
+
+**Es Fase 0: no cambia NADA visible.** Sólo agrega la tabla `card_periodos` y la puebla con
+el estado del mes vigente de cada card no operativa. NO toca `cards`, NO jubila el reset de
+la migración 24 (eso es Fase 2). La app sigue funcionando exactamente igual: mientras la
+Fase 1 no esté desplegada, esta tabla queda ahí lista pero sin que ninguna vista la lea.
+Correrla antes de tiempo es inofensivo; no correrla tampoco rompe nada (el código nuevo es
+defensivo: sin la tabla, `useCardPeriodos()` devuelve `[]` y todo cae al fallback de leer
+`cards`).
+
+Habilita:
+- Tabla `public.card_periodos`: una fila por `(card_id, periodo 'YYYY-MM')` con el estado de
+  trabajo del mes (status/checklist/comments/history/done_at/proc_at/due_date). Junio y julio
+  de la misma tarea son filas distintas y nunca se pisan (garantizado por `unique(card_id,
+  periodo)`).
+- Backfill idempotente del mes vigente: por cada card no operativa se crea su `card_periodos`
+  del mes actual del servidor copiando el estado actual de la card. Doble corrida no duplica
+  (`on conflict do nothing`).
+
+### Verificaciones
+
+1. La migración quedó registrada:
+   ```sql
+   select id, nombre, applied_at from public.schema_migrations where id = 32;
+   ```
+2. La tabla existe y el backfill pobló el mes vigente (debe coincidir con la cantidad de
+   cards no operativas):
+   ```sql
+   select count(*) from public.card_periodos where periodo = to_char(now(),'YYYY-MM');
+   select count(*) from public.cards where card_type <> 'operativa';
+   ```
+3. El `unique(card_id, periodo)` y los checks existen:
+   ```sql
+   select conname from pg_constraint where conrelid = 'public.card_periodos'::regclass;
+   ```
+   Deben aparecer la unique de `(card_id, periodo)`, `card_periodos_periodo_check` y
+   `card_periodos_status_check`.
+4. Los índices existen:
+   ```sql
+   select indexname from pg_indexes where tablename = 'card_periodos';
+   ```
+   Deben aparecer `card_periodos_owner_periodo_idx` y `card_periodos_card_id_idx`.
+5. Las policies existen (calcadas de `task_occurrences` / `cierre_periodos`):
+   ```sql
+   select policyname, cmd from pg_policies where tablename = 'card_periodos';
+   ```
+   Deben aparecer `card_periodos_select`, `card_periodos_insert`, `card_periodos_update`,
+   `card_periodos_delete`.
+6. RLS: logueado como empleado, sólo debe ver sus propias filas (o las de su equipo si es
+   encargado, o todas si es jefe); sólo puede insertar/editar/borrar las propias.
+7. Idempotencia: correr la migración una segunda vez NO debe duplicar filas del mes vigente
+   (repetir la verificación 2, el conteo no cambia).
+
 ## GitHub Actions (#2) — opcional
 El archivo del workflow está en `docs/ci-workflow.yml.txt`. Tu token no tiene scope `workflow`,
 así que no se pudo pushear. Para activarlo: GitHub → repo → pestaña **Actions** → New workflow →
