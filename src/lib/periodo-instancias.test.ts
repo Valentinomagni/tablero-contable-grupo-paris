@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { periodoVigente, mergeCardPeriodo, cardsDelPeriodo, periodosDisponibles } from "./periodo-instancias";
+import { periodoVigente, mergeCardPeriodo, cardsDelPeriodo, periodosDisponibles, periodoLabel } from "./periodo-instancias";
 import type { Card, CardPeriodo } from "./types";
 
 function card(over: Partial<Card> = {}): Card {
@@ -106,5 +106,16 @@ describe("periodosDisponibles", () => {
   it("descarta períodos con formato inválido", () => {
     const ps = [cp({ periodo: "basura" }), cp({ periodo: "2026-05" })];
     expect(periodosDisponibles(ps, "2026-07-23T15:00:00Z")).toEqual(["2026-07", "2026-05"]);
+  });
+});
+
+describe("periodoLabel", () => {
+  it("formatea 'YYYY-MM' como 'Mes Año' capitalizado", () => {
+    expect(periodoLabel("2026-07")).toBe("Julio 2026");
+    expect(periodoLabel("2026-01")).toBe("Enero 2026");
+  });
+  it("formato inválido → devuelve el valor tal cual", () => {
+    expect(periodoLabel("basura")).toBe("basura");
+    expect(periodoLabel("")).toBe("");
   });
 });

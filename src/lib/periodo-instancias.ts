@@ -1,5 +1,6 @@
 import type { Card, CardPeriodo } from "./types";
 import { toARTDate } from "./metrics";
+import { mesLegible } from "./periodos";
 
 // Helpers PUROS de LECTURA para el modelo de períodos (propuesta de períodos, Fase 0 —
 // ver docs/PROPUESTA-PERIODOS.md). No hacen fetch: la Fase 1 los va a consumir con los
@@ -71,4 +72,16 @@ export function periodosDisponibles(periodos: CardPeriodo[], hoyISO: string): st
     }
   }
   return [...set].sort((a, b) => (a < b ? 1 : a > b ? -1 : 0));
+}
+
+/**
+ * Etiqueta legible de un período para el selector del tablero: "Julio 2026".
+ * Defensivo: si `periodo` no tiene forma 'YYYY-MM', devuelve el valor tal cual.
+ */
+export function periodoLabel(periodo: string): string {
+  const m = /^(\d{4})-(\d{2})$/.exec(periodo ?? "");
+  if (!m) return periodo ?? "";
+  const nombre = mesLegible(periodo);
+  if (!nombre) return periodo;
+  return `${nombre.charAt(0).toUpperCase()}${nombre.slice(1)} ${m[1]}`;
 }

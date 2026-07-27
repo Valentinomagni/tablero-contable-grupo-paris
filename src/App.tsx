@@ -7,7 +7,7 @@ import { ClipboardList, Target, TrendingUp, UserRound, CalendarDays, Users, Arch
 import { useAuth } from "./hooks/useAuth";
 import { usePresencia } from "./hooks/usePresencia";
 import { useTheme } from "./hooks/useTheme";
-import { useTeam, useCards, useActivity, useAnnouncements, useSettings, useConsultasNuevas } from "./hooks/useData";
+import { useTeam, useCards, useActivity, useAnnouncements, useSettings, useConsultasNuevas, useCardPeriodos } from "./hooks/useData";
 import { contarNuevas } from "./lib/consultas";
 import { AccountModal } from "./components/AccountModal";
 import { NovedadesModal } from "./components/NovedadesModal";
@@ -46,6 +46,7 @@ import { personasVisibles, cardsVisibles } from "./lib/visibilidad";
 import { proximosVencimientos } from "./lib/vencimientos";
 import { avisosParaNotificar } from "./lib/notificaciones";
 import { toARTDate } from "./lib/metrics";
+import { periodoVigente, periodosDisponibles, periodoLabel, cardsDelPeriodo } from "./lib/periodo-instancias";
 import { supabase } from "./lib/supabase";
 import { cn } from "./lib/ui";
 
@@ -63,6 +64,9 @@ export default function App() {
   const { data: team = [] } = useTeam(esGestor);
   const { data: cards = [], isLoading: cardsLoading } = useCards();
   const { data: activity = [] } = useActivity();
+  const { data: periodos = [] } = useCardPeriodos();
+  const hoyISO = new Date().toISOString();
+  const [periodoSel, setPeriodoSel] = useState<string>(() => periodoVigente(hoyISO));
   const [viewing, setViewing] = useState<string>("");
   const [mode, setMode] = useState<Mode>("board");
   const [openCard, setOpenCard] = useState<Card | null>(null);
@@ -157,6 +161,9 @@ export default function App() {
     : esGestor && person && person.id !== me.id ? `Tablero de ${person.name}` : "Mi tablero";
   const pendByOwner = (id: string) => cards.filter((c) => c.owner === id && c.status !== "term" && c.card_type !== "operativa").length;
   const isPersonView = !["__resumen", "__reporte", "__tablon", "__admin", "__bitacora", "__calendario", "__cierre", "__organigrama", "__notas", "__misarqueos"].includes(view);
+  // Fase 1 (propuesta de períodos): selector de mes solo en el tablero de una persona,
+  // modo LECTURA — cambia qué período se ve, no dónde se escribe (eso es Fase 2).
+  const opcionesPeriodo = periodosDisponibles(periodos, hoyISO);
 
   // badge del tablón: vencimientos próximos o publicaciones no vistas (por navegador)
   const vencProximos = proximosVencimientos(annos, new Date(), 5).length;
@@ -189,6 +196,18 @@ export default function App() {
           <SubTab m="obj" icon={<Target size={14} />} label="Objetivos" />
           <SubTab m="mimes" icon={<TrendingUp size={14} />} label={person && person.id !== me.id ? "Su mes" : "Mi mes"} />
           <SubTab m="hist" icon={<Archive size={14} />} label="Historial" />
+          {mode === "board" && opcionesPeriodo.length > 1 && (
+            <div className="flex items-center gap-1 border border-line bg-surface2 rounded-lg p-1" title="Período del tablero">
+              <span className="text-[12px] text-ink2 px-1.5">Período</span>
+              {opcionesPeriodo.map((p) => (
+                <button key={p} onClick={() => setPeriodoSel(p)}
+                  className={cn("rounded-md px-2.5 py-1 text-[12px] font-medium transition capitalize",
+                    p === periodoSel ? "bg-accent-soft text-accent font-semibold" : "text-ink2 hover:text-ink")}>
+                  {periodoLabel(p)}
+                </button>
+              ))}
+            </div>
+          )}
           {mode === "board" && (
             <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar tarea…"
               className="bg-surface2 border border-line rounded-lg px-3 py-1.5 text-[13px] w-[200px]" />
@@ -224,7 +243,7 @@ export default function App() {
           : mode === "mimes" ? <MiMes cards={cards} activity={activity} ownerId={view} onOpenCard={setOpenCard} />
           : mode === "hist" ? <HistorialMes ownerId={view} />
           : cardsLoading ? <BoardSkeleton />
-          : <Board cards={cards} activity={activity} ownerId={view} meId={me.id} meName={me.name} meRole={me.role} team={equipoVisible} query={query} onOpen={setOpenCard} />}
+          : <Board cards={cardsDelPeriodo(cards, periodos, periodoSel)} activity={activity} ownerId={view} meId={me.id} meName={me.name} meRole={me.role} team={equipoVisible} query={query} onOpen={setOpenCard} />}
         </Suspense>
         </ErrorBoundary>
       </Shell>
