@@ -14,6 +14,7 @@ import { esCobertura } from "../../lib/vacaciones";
 import { filaDuplicada } from "../../lib/duplicar";
 import { useDepsInfo, useReverseDeps, useSettings, useMigraciones, useTriggerNotificaciones } from "../../hooks/useData";
 import { payloadCards } from "../../lib/esquema";
+import { escribeEnPeriodo, filaPeriodo, soloDefinicion, CAMPOS_ESTADO } from "../../lib/periodo-escritura";
 import { nuevaCantidad, progresoCarga, extraerMetaCarga, conMetaCarga, descripcionSinMeta } from "../../lib/operativas";
 import { TXT_REAPERTURA } from "../../lib/retrabajo";
 import { Adjuntos } from "./Adjuntos";
@@ -22,8 +23,12 @@ import { DepsSection } from "./card/DepsSection";
 import { ChecklistSection } from "./card/ChecklistSection";
 import { ComentariosSection } from "./card/ComentariosSection";
 
-export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose, meId, meName = "—" }:
-  { card: Card; cards: Card[]; team: Profile[]; activity?: ActivityLog[]; isJefe: boolean; onClose: () => void; meId?: string; meName?: string }) {
+export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose, meId, meName = "—", periodo, vigente }:
+  { card: Card; cards: Card[]; team: Profile[]; activity?: ActivityLog[]; isJefe: boolean; onClose: () => void; meId?: string; meName?: string;
+    // Períodos (Fase 2): si el mes mirado no es el vigente y la migración 32 está aplicada,
+    // el ESTADO (status/checklist/comments/history/tiempos) se escribe en `card_periodos`;
+    // la DEFINICIÓN (título, prioridad, deps, ...) sigue en `cards` (es compartida entre meses).
+    periodo?: string; vigente?: string }) {
   const qc = useQueryClient();
   const [confirmDel, setConfirmDel] = useState(false);
   const [editTitle, setEditTitle] = useState(false);
@@ -85,6 +90,22 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
       // Esquema de la base (ALTA 1): sin la migración 29, mencionar proc_at / dato_control /
       // tiempo_max_horas hace fallar el update entero (PGRST204). Se filtran acá, en la
       // ÚNICA mutación de patch que usan MetaSection y el resto del modal.
+      // Mes NO vigente (Fase 2): la DEFINICIÓN (título, prioridad, deps, ...) sigue en
+      // `cards` porque es compartida entre meses; el ESTADO del mes va a `card_periodos`.
+      // No sincroniza hermanas ni notifica: eso es del flujo del mes en curso.
+      if (periodo !== undefined && vigente !== undefined && escribeEnPeriodo(migracionesAplicadas, periodo, vigente, c.card_type)) {
+        const def = soloDefinicion(p);
+        if (Object.keys(def).length) {
+          const { error: eDef } = await supabase.from("cards").update(payloadCards(def, migracionesAplicadas)).eq("id", c.id);
+          if (eDef) throw eDef;
+        }
+        if (CAMPOS_ESTADO.some((k) => k in p)) {
+          const fila = filaPeriodo(c, periodo, p);
+          const { error: eEst } = await supabase.from("card_periodos").upsert(fila, { onConflict: "card_id,periodo" });
+          if (eEst) throw eEst;
+        }
+        return;
+      }
       const body = payloadCards(p, migracionesAplicadas);
       pushUndo(c, body);
       const { error } = await supabase.from("cards").update(body).eq("id", c.id);
@@ -108,7 +129,10 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
         } catch { /* secundario: se ignora */ }
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["cards"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cards"] });
+      qc.invalidateQueries({ queryKey: ["card_periodos"] });
+    },
   });
 
   const hist = (txt: string) => [...(c.history ?? []), { who: meName, at: new Date().toISOString(), txt }];

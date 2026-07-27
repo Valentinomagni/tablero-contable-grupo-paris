@@ -44,9 +44,17 @@ export function mergeCardPeriodo(card: Card, cp: CardPeriodo | null): Card {
  * Board de un período: para cada card NO operativa, la mergea con su `card_periodos` de
  * ese período (o fallback a la card si no hay fila). Las cards operativas se devuelven
  * tal cual, sin tocar (no tienen instancia por período).
+ *
+ * ENFOQUE CONSERVADOR (Fase 2): si `vigente` coincide con `periodo`, se devuelven las
+ * cards CRUDAS sin mergear. El mes vigente sigue teniendo su fuente de verdad en `cards`
+ * (ahí escribe el flujo diario de siempre); sólo los meses NO vigentes leen su estado de
+ * `card_periodos`. Así el mes en curso nunca se muestra desde una copia que podría quedar
+ * desactualizada, y los meses adelantados se ven independientes. `vigente` es opcional
+ * para no romper llamadas viejas (sin él, mergea todos los períodos como antes).
  */
-export function cardsDelPeriodo(cards: Card[], periodos: CardPeriodo[], periodo: string): Card[] {
+export function cardsDelPeriodo(cards: Card[], periodos: CardPeriodo[], periodo: string, vigente?: string): Card[] {
   if (!Array.isArray(cards)) return [];
+  if (vigente !== undefined && periodo === vigente) return cards;
   const porCard = new Map<string, CardPeriodo>();
   if (Array.isArray(periodos)) {
     for (const p of periodos) {

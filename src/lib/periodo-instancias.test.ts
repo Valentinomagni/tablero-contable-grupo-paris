@@ -93,6 +93,16 @@ describe("cardsDelPeriodo", () => {
     const res = cardsDelPeriodo(cards, [], "2026-07");
     expect(res.map((c) => c.status)).toEqual(["pend", "pend"]);
   });
+  it("período VIGENTE → devuelve las cards CRUDAS sin mergear (fuente de verdad = cards)", () => {
+    const cards = [card({ id: "c1" })];
+    const res = cardsDelPeriodo(cards, [cp({ card_id: "c1", status: "term" })], "2026-07", "2026-07");
+    expect(res).toBe(cards);
+    expect(res[0].status).toBe("pend");
+  });
+  it("período NO vigente → sí mergea desde card_periodos", () => {
+    const res = cardsDelPeriodo([card({ id: "c1" })], [cp({ card_id: "c1", periodo: "2026-08", status: "term" })], "2026-08", "2026-07");
+    expect(res[0].status).toBe("term");
+  });
 });
 
 describe("periodosDisponibles", () => {

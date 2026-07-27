@@ -28,6 +28,14 @@ export const MIGRACION_ESQUEMA_NUEVO = 29;
  */
 export const MIGRACION_ETIQUETAS = 31;
 
+/**
+ * Migración que crea `card_periodos` (propuesta de períodos, Fase 0). Gate de la
+ * escritura por período (Fase 2): mientras no esté aplicada, `card_periodos` no existe
+ * y toda la lógica de períodos cae al comportamiento de siempre (escribir en `cards`).
+ * Se gatea aparte de las demás por el mismo motivo que MIGRACION_ETIQUETAS.
+ */
+export const MIGRACION_PERIODOS = 32;
+
 /** Columnas de `cards` que sólo existen con la migración 29 aplicada. */
 export const CAMPOS_NUEVOS_CARDS = ["proc_at", "tiempo_max_horas", "dato_control"] as const;
 
@@ -69,6 +77,11 @@ export function tieneEsquemaNuevo(aplicadas: number[] | null | undefined): boole
 /** ¿Está aplicada la migración 31 (`cards.etiquetas`)? Mismo criterio ante la duda: false. */
 export function tieneEtiquetas(aplicadas: number[] | null | undefined): boolean {
   return tieneMigracion(aplicadas, MIGRACION_ETIQUETAS);
+}
+
+/** ¿Está aplicada la migración 32 (`card_periodos`)? Mismo criterio ante la duda: false. */
+export function tienePeriodos(aplicadas: number[] | null | undefined): boolean {
+  return tieneMigracion(aplicadas, MIGRACION_PERIODOS);
 }
 
 /** Helper genérico: ¿la lista de migraciones aplicadas incluye `id`? */

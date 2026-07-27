@@ -2,7 +2,7 @@ import { EmptyState } from "../../components/EmptyState";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
-import { COLS, type Card, type Status, type ActivityLog, type Profile } from "../../lib/types";
+import { COLS, type Card, type Status, type ActivityLog, type Profile, type CardPeriodo } from "../../lib/types";
 import { notifsAlFinalizar, debeNotificarDesdeCliente } from "../../lib/notificaciones";
 import { dueInfo, fmtDateTime } from "../../lib/metrics";
 import { cn } from "../../lib/ui";
@@ -15,6 +15,7 @@ import { type ModoAgrupar } from "../../lib/agrupar";
 import { getPref, setPref, PREF } from "../../lib/prefs";
 import { useOrganizacion, useTiemposMax, useMigraciones, useTriggerNotificaciones } from "../../hooks/useData";
 import { payloadCards, tieneEtiquetas } from "../../lib/esquema";
+import { escribeEnPeriodo, filaPeriodo } from "../../lib/periodo-escritura";
 import { estadoTiempo, registrarIncumplimiento } from "../../lib/tiempos";
 import { textoTransicion } from "../../lib/retrabajo";
 import { filtrarPorSegmento } from "../../lib/segmento";
@@ -74,8 +75,12 @@ function CardItem({ c, blocked, waiting, esperaTitulos = [], onOpen }: { c: Card
   );
 }
 
-export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [], query = "", onOpen }: {
+export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [], query = "", onOpen, periodo, vigente }: {
   cards: Card[]; activity: ActivityLog[]; ownerId: string; meId?: string; meName: string; meRole?: string; team?: Profile[]; query?: string; onOpen: (c: Card) => void;
+  // Períodos (Fase 2): período que se está mirando y cuál es el vigente. Cuando difieren y
+  // la migración 32 está aplicada, el estado se escribe en `card_periodos` en vez de `cards`.
+  // Opcionales: sin ellos (o iguales) el Board escribe en `cards` como siempre.
+  periodo?: string; vigente?: string;
 }) {
   const qc = useQueryClient();
   const org = useOrganizacion();
@@ -86,6 +91,10 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
   // Task 11: con el trigger de la migración 30 activo, la notificación de finalización la
   // genera la base. Si el cliente además la insertara, el aviso saldría DUPLICADO.
   const { data: triggerNotifsActivo } = useTriggerNotificaciones();
+  // ¿Este movimiento debe escribir en `card_periodos` (mes NO vigente) en vez de `cards`?
+  const esEscrituraPeriodo = (cardType: Card["card_type"]) =>
+    periodo !== undefined && vigente !== undefined &&
+    escribeEnPeriodo(migracionesAplicadas, periodo, vigente, cardType);
   const q = query.trim().toLowerCase();
   const matches = (c: Card) => !q || c.title.toLowerCase().includes(q) || (c.description ?? "").toLowerCase().includes(q);
   // filtro por categoría (spec 21 item 11): null = todas; "" = sin categoría
@@ -141,6 +150,16 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
         const est = estadoTiempo({ ...c, ...patch }, tiemposConfig, now);
         hist = registrarIncumplimiento(hist, est, meName, now, patch.proc_at ?? c.proc_at ?? null);
       }
+      // Mes NO vigente (Fase 2): el estado va a `card_periodos`, independiente. No toca
+      // `cards`, ni sincroniza hermanas, ni notifica finalización — eso es del flujo del
+      // mes en curso. El upsert crea la fila del mes si es la primera vez (materializa el
+      // mes adelantado). No hay pushUndo: deshacer opera sobre `cards` (Fase 3 lo cubrirá).
+      if (esEscrituraPeriodo(c.card_type)) {
+        const fila = filaPeriodo({ ...c, ...patch, history: hist }, periodo!, { ...patch, history: hist });
+        const { error } = await supabase.from("card_periodos").upsert(fila, { onConflict: "card_id,periodo" });
+        if (error) throw error;
+        return;
+      }
       // Se calcula UNA vez y se usa para el update y para la pila de deshacer: si el
       // esquema es viejo, deshacer tampoco debe intentar reescribir proc_at.
       const body = payloadCards({ ...patch, history: hist }, migracionesAplicadas);
@@ -169,6 +188,26 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
     // invalidación de onSettled. Cancelamos antes de leer para que un refetch en
     // vuelo no pise el snapshot ni, después, el propio optimismo.
     onMutate: async ({ id, status }) => {
+      const cc = cards.find((x) => x.id === id);
+      // Mes NO vigente: optimismo sobre ["card_periodos"] (lo que alimenta el merge del
+      // board de ese mes), no sobre ["cards"] — así el mes vigente no parpadea.
+      if (cc && esEscrituraPeriodo(cc.card_type)) {
+        await qc.cancelQueries({ queryKey: ["card_periodos"] });
+        const previousPeriodos = qc.getQueryData<CardPeriodo[]>(["card_periodos"]);
+        qc.setQueryData<CardPeriodo[]>(["card_periodos"], (old) => {
+          const arr = old ? [...old] : [];
+          const i = arr.findIndex((p) => p.card_id === id && p.periodo === periodo);
+          if (i >= 0) { arr[i] = { ...arr[i], status }; return arr; }
+          arr.push({
+            id: `optim-${id}-${periodo}`, card_id: id, owner: cc.owner, periodo: periodo!, status,
+            checklist: cc.checklist ?? [], comments: cc.comments ?? [], history: cc.history ?? [],
+            done_at: cc.done_at ?? null, proc_at: cc.proc_at ?? null, due_date: cc.due_date ?? null,
+            created_at: new Date().toISOString(),
+          });
+          return arr;
+        });
+        return { previousPeriodos };
+      }
       await qc.cancelQueries({ queryKey: ["cards"] });
       const previous = qc.getQueryData<Card[]>(["cards"]);
       qc.setQueryData<Card[]>(["cards"], (old) => old?.map((c) => (c.id === id ? { ...c, status } : c)) ?? old);
@@ -178,10 +217,14 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
     // drags se solapan y uno falla, restaurar todo el array pisaría el optimismo del otro
     // (el invalidate de onSettled lo autosana, pero el flash es visible e innecesario).
     onError: (_err, { id }, ctx) => {
+      if (ctx?.previousPeriodos) { qc.setQueryData(["card_periodos"], ctx.previousPeriodos); return; }
       const prevCard = ctx?.previous?.find((c) => c.id === id);
       if (prevCard) qc.setQueryData<Card[]>(["cards"], (old) => old?.map((c) => (c.id === id ? { ...c, status: prevCard.status } : c)) ?? old);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ["cards"] }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["cards"] });
+      qc.invalidateQueries({ queryKey: ["card_periodos"] });
+    },
   });
 
   const add = useMutation({

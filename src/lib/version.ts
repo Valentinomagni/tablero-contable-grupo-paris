@@ -3,6 +3,15 @@
 // nueva arriba de todo y la versión se actualiza sola (ver docs/RELEASE.md).
 export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] = [
   {
+    version: "2.8.0",
+    fecha: "2026-07-27",
+    cambios: [
+      "Períodos: ahora podés adelantar trabajo del mes que viene y queda guardado aparte, sin pisar el mes en curso. Elegí el mes en el selector del tablero y cargá tus tareas de agosto desde julio.",
+      "Cada mes guarda su propio estado, checklist y avance de forma independiente: cerrar un mes no borra lo que adelantaste en el siguiente.",
+      "El mes en curso sigue funcionando exactamente igual que siempre; los cambios aplican a los meses adelantados.",
+    ],
+  },
+  {
     version: "2.7.0",
     fecha: "2026-07-22",
     cambios: [

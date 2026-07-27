@@ -161,9 +161,13 @@ export default function App() {
     : esGestor && person && person.id !== me.id ? `Tablero de ${person.name}` : "Mi tablero";
   const pendByOwner = (id: string) => cards.filter((c) => c.owner === id && c.status !== "term" && c.card_type !== "operativa").length;
   const isPersonView = !["__resumen", "__reporte", "__tablon", "__admin", "__bitacora", "__calendario", "__cierre", "__organigrama", "__notas", "__misarqueos"].includes(view);
-  // Fase 1 (propuesta de períodos): selector de mes solo en el tablero de una persona,
-  // modo LECTURA — cambia qué período se ve, no dónde se escribe (eso es Fase 2).
+  // Períodos (propuesta de períodos): selector de mes solo en el tablero de una persona.
+  // Fase 2: el mes VIGENTE lee/escribe en `cards` como siempre; los meses NO vigentes leen
+  // y escriben su estado en `card_periodos`, independientes. `cardsVista` es la lista que ve
+  // el Board del período elegido (cruda si es el vigente, mergeada si no).
   const opcionesPeriodo = periodosDisponibles(periodos, hoyISO);
+  const vigente = periodoVigente(hoyISO);
+  const cardsVista = cardsDelPeriodo(cards, periodos, periodoSel, vigente);
 
   // badge del tablón: vencimientos próximos o publicaciones no vistas (por navegador)
   const vencProximos = proximosVencimientos(annos, new Date(), 5).length;
@@ -243,11 +247,11 @@ export default function App() {
           : mode === "mimes" ? <MiMes cards={cards} activity={activity} ownerId={view} onOpenCard={setOpenCard} />
           : mode === "hist" ? <HistorialMes ownerId={view} />
           : cardsLoading ? <BoardSkeleton />
-          : <Board cards={cardsDelPeriodo(cards, periodos, periodoSel)} activity={activity} ownerId={view} meId={me.id} meName={me.name} meRole={me.role} team={equipoVisible} query={query} onOpen={setOpenCard} />}
+          : <Board cards={cardsVista} activity={activity} ownerId={view} meId={me.id} meName={me.name} meRole={me.role} team={equipoVisible} query={query} onOpen={setOpenCard} periodo={periodoSel} vigente={vigente} />}
         </Suspense>
         </ErrorBoundary>
       </Shell>
-      {openCard && <CardModal card={cards.find((c) => c.id === openCard.id) ?? openCard} cards={cards} team={equipoVisible} activity={activity} isJefe={!!isJefe} onClose={() => setOpenCard(null)} meId={me.id} meName={me.name} />}
+      {openCard && <CardModal card={cardsVista.find((c) => c.id === openCard.id) ?? cards.find((c) => c.id === openCard.id) ?? openCard} cards={cards} team={equipoVisible} activity={activity} isJefe={!!isJefe} onClose={() => setOpenCard(null)} meId={me.id} meName={me.name} periodo={periodoSel} vigente={vigente} />}
       {openUser && <UserModal user={fullTeam.find((t) => t.id === openUser.id) ?? openUser} meId={me.id} team={fullTeam} cards={cards} activity={activity} onClose={() => setOpenUser(null)} />}
       {account && <AccountModal name={me.name} email={me.email} onClose={() => setAccount(false)} />}
       {novedades && <NovedadesModal onClose={() => { setPref(PREF.version, APP_VERSION); setNovedades(false); }} />}
