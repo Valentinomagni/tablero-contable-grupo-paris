@@ -10,6 +10,7 @@ export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] 
       "Cada mes guarda su propio estado, checklist y avance de forma independiente: cerrar un mes no borra lo que adelantaste en el siguiente.",
       "El mes en curso sigue funcionando exactamente igual que siempre; los cambios aplican a los meses adelantados.",
       "Al entrar, ahora se abre directamente tu tablero. Antes aparecía una pantalla que podía verse vacía hasta que apretabas \"Mi tablero\".",
+      "Las consultas, sugerencias y errores que reporta el equipo ahora llegan a una cuenta de administración del sistema, aparte y reservada. El jefe ya no las ve: si alguien reporta un problema, va a quien lo puede resolver.",
     ],
   },
   {

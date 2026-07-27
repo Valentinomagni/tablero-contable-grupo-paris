@@ -36,6 +36,13 @@ export const MIGRACION_ETIQUETAS = 31;
  */
 export const MIGRACION_PERIODOS = 32;
 
+/**
+ * Migración que agrega `profiles.admin_sistema` (usuario fantasma aparte, spec
+ * 28-correcciones items 3 y 4). Gate propio: sin ella la columna no existe y
+ * mencionarla en un update de perfil haría fallar el guardado entero con 42703.
+ */
+export const MIGRACION_ADMIN_SISTEMA = 33;
+
 /** Columnas de `cards` que sólo existen con la migración 29 aplicada. */
 export const CAMPOS_NUEVOS_CARDS = ["proc_at", "tiempo_max_horas", "dato_control"] as const;
 
@@ -63,6 +70,9 @@ export const COLUMNAS_CARDS = [
 
 /** Columnas de `profiles` que sólo existen con la migración 29 aplicada. */
 export const CAMPOS_NUEVOS_PROFILES = ["oculto", "last_seen"] as const;
+
+/** Columnas de `profiles` que sólo existen con la migración 33 aplicada. */
+export const CAMPOS_ADMIN_SISTEMA_PROFILES = ["admin_sistema"] as const;
 
 /**
  * ¿La base tiene el esquema nuevo? `aplicadas` es lo que devuelve `useMigraciones()`:
@@ -124,7 +134,16 @@ export function payloadCards<T extends object>(payload: T, aplicadas: number[] |
   return payloadCompatible(sinViejos, aplicadas, CAMPOS_ETIQUETAS_CARDS, MIGRACION_ETIQUETAS);
 }
 
-/** Azúcar para `profiles` (oculto / last_seen). */
+/** ¿Está aplicada la migración 33 (`profiles.admin_sistema`)? Ante la duda: false. */
+export function tieneAdminSistema(aplicadas: number[] | null | undefined): boolean {
+  return tieneMigracion(aplicadas, MIGRACION_ADMIN_SISTEMA);
+}
+
+/**
+ * Azúcar para `profiles`: dos gates independientes — oculto/last_seen (migración 29)
+ * y admin_sistema (migración 33) — porque una base puede tener una sin la otra.
+ */
 export function payloadProfiles<T extends object>(payload: T, aplicadas: number[] | null | undefined): T {
-  return payloadCompatible(payload, aplicadas, CAMPOS_NUEVOS_PROFILES);
+  const sinViejos = payloadCompatible(payload, aplicadas, CAMPOS_NUEVOS_PROFILES);
+  return payloadCompatible(sinViejos, aplicadas, CAMPOS_ADMIN_SISTEMA_PROFILES, MIGRACION_ADMIN_SISTEMA);
 }

@@ -503,3 +503,58 @@ Mientras tanto, el equipo se entera por la campana al abrir el tablero.
 - El login acepta **usuario O email**. Desplegar antes de cargar usernames NO bloquea a nadie.
 - Recién cuando TODO el equipo tenga su username cargado y probado, se puede (a futuro) quitar
   el login por email. Eso es un cambio posterior, no está forzado ahora.
+
+---
+
+## Migración 33 — Administrador del sistema (usuario fantasma aparte)
+
+Spec 28-correcciones, items 3 y 4. Resuelve dos cosas:
+
+- El "usuario fantasma" deja de ser una **marca sobre el perfil de una persona real**
+  (interpretación equivocada de la Fase A) y pasa a ser un **usuario propio e
+  independiente**, que no es ningún empleado.
+- Las **consultas, sugerencias y errores** que reporta el equipo dejan de ir al **jefe**
+  y pasan a ese administrador. **El jefe ya no las ve** — es a propósito: si alguien
+  reporta un problema o una queja, el jefe no debería ser el destinatario.
+
+### Paso 1 — Crear la cuenta (panel de Supabase, antes del SQL)
+
+1. Supabase → **Authentication → Users → "Add user" → "Create new user"**.
+2. Email **dedicado**, que NO sea el de un empleado real. Por ejemplo:
+   `admin.sistema@grupoparis.local`
+3. Poné una contraseña y marcá **"Auto Confirm User"** si aparece la opción.
+
+Esa es la cuenta con la que se entra a leer las consultas.
+
+### Paso 2 — Correr el SQL
+
+1. Abrí `migracion-33-admin-sistema.sql` (raíz del repo).
+2. **Cambiá el email** en la línea marcada `<<<< EMAIL_DEL_FANTASMA` por el del paso 1.
+3. Supabase → SQL Editor → New query → pegar todo → **Run**.
+
+Si el email no coincide con ninguna cuenta, la migración **no falla**: avisa por consola
+(`AVISO: no existe ningún usuario de auth con el email ...`) y no cambia nada. Corregís el
+email y la volvés a correr — es idempotente.
+
+### Paso 3 — Verificar
+
+```sql
+-- quedó designado y oculto:
+select email, oculto, admin_sistema from public.profiles where admin_sistema;
+```
+
+Después, **entrando a la app con esa cuenta**, en Administración aparece la sección
+**"Consultas del equipo"** con todo lo que reportó el equipo. Entrando con cualquier otra
+cuenta (incluido el jefe) esa sección **no se muestra**.
+
+### Notas
+
+- El fantasma tiene `oculto = true`: **no aparece** en listados de personas, organigrama
+  ni métricas (usa el mismo mecanismo `esVisible` de la Fase A).
+- La app es **defensiva**: sin la migración 33 aplicada, la columna `admin_sistema` no
+  existe, nadie ve la bandeja y **no se rompe nada**. El lado seguro es ese: preferimos que
+  la bandeja no la vea nadie por un rato antes que dejársela al jefe, que es justo lo que
+  se quiso corregir.
+- El helper `es_admin_sistema()` es **SECURITY DEFINER**, igual que `es_jefe()` — nunca se
+  subconsulta `profiles` dentro de una policy de `profiles` (regla dura del proyecto que
+  evita el error 42P17 de recursión en RLS).

@@ -1,7 +1,11 @@
 export type Role = "jefe" | "encargado" | "empleado";
 export type Status = "pend" | "proc" | "term";
 
-export interface Profile { id: string; name: string; role: Role; email: string; username: string | null; puesto: string; ficha: string; manager_id: string | null; marca: string | null; sucursal?: string | null; oculto?: boolean; last_seen?: string | null; }
+export interface Profile { id: string; name: string; role: Role; email: string; username: string | null; puesto: string; ficha: string; manager_id: string | null; marca: string | null; sucursal?: string | null; oculto?: boolean; last_seen?: string | null;
+  // Administrador del sistema (migración 33): usuario fantasma APARTE — no es ningún
+  // empleado. Recibe las consultas/errores del equipo en lugar del jefe. Va siempre
+  // junto con oculto=true, así no aparece en listados ni métricas.
+  admin_sistema?: boolean; }
 export interface ChecklistItem { txt: string; done: boolean; done_at: string | null; }
 export interface RecurRule { tipo: "diaria" | "semanal" | "mensual"; dias?: number[]; diaMes?: number; }
 export interface TaskOccurrence {

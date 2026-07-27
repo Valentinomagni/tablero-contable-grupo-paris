@@ -10,6 +10,7 @@ import {
   payloadCompatible,
   payloadCards,
   payloadProfiles,
+  tieneAdminSistema,
 } from "./esquema";
 
 describe("tieneEsquemaNuevo", () => {
@@ -123,6 +124,34 @@ describe("payloadProfiles", () => {
 
   it("esquema desconocido: saca oculto y last_seen", () => {
     expect(payloadProfiles({ name: "Ana", oculto: false, last_seen: "x" }, null)).toEqual({ name: "Ana" });
+  });
+
+  // Migración 33 (admin_sistema) se gatea APARTE de la 29: una base puede tener una
+  // sin la otra, y mandar la columna sin que exista rompe el guardado entero (42703).
+  it("con la 29 pero sin la 33: manda oculto, saca admin_sistema", () => {
+    expect(payloadProfiles({ name: "Ana", oculto: true, admin_sistema: true }, [29]))
+      .toEqual({ name: "Ana", oculto: true });
+  });
+
+  it("con la 33 pero sin la 29: manda admin_sistema, saca oculto", () => {
+    expect(payloadProfiles({ name: "Ana", oculto: true, admin_sistema: true }, [33]))
+      .toEqual({ name: "Ana", admin_sistema: true });
+  });
+
+  it("con ambas: manda todo", () => {
+    const r = { name: "Ana", oculto: true, admin_sistema: true };
+    expect(payloadProfiles(r, [29, 33])).toEqual(r);
+  });
+});
+
+describe("tieneAdminSistema", () => {
+  it("true sólo con la migración 33 aplicada", () => {
+    expect(tieneAdminSistema([33])).toBe(true);
+    expect(tieneAdminSistema([29, 31, 32])).toBe(false);
+  });
+  it("ante la duda (null/undefined) → false", () => {
+    expect(tieneAdminSistema(null)).toBe(false);
+    expect(tieneAdminSistema(undefined)).toBe(false);
   });
 });
 

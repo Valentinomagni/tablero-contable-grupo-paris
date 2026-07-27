@@ -79,7 +79,14 @@ export default function App() {
   const [delegar, setDelegar] = useState(false);
   const [novedades, setNovedades] = useState(false);
   const [consultas, setConsultas] = useState(false);
-  const { data: consultasNuevas = [] } = useConsultasNuevas(!!isJefe);
+  // Bandeja de consultas: la recibe el ADMINISTRADOR DEL SISTEMA (usuario fantasma
+  // aparte, migración 33), no el jefe — spec 28-correcciones items 3 y 4. El servidor
+  // ya lo aplica vía RLS (es_admin_sistema); acá sólo se evita pedir filas que RLS
+  // devolvería vacías. Mientras la migración 33 no esté corrida, `admin_sistema` llega
+  // undefined y nadie ve la bandeja: es el lado seguro (mejor que la vea nadie a que
+  // la siga viendo el jefe, que es justamente lo que se quiso sacar).
+  const esAdminSistema = me?.admin_sistema === true;
+  const { data: consultasNuevas = [] } = useConsultasNuevas(esAdminSistema);
   const adminBadgeN = contarNuevas(consultasNuevas);
 
   // Aviso de nueva versión: se muestra una sola vez tras el login (spec #10).
@@ -199,7 +206,7 @@ export default function App() {
       <Shell me={me} team={equipoVisible} viewing={view} title={title} theme={theme}
         onCycleTheme={cycle} density={density} onCycleDensity={cycleDensity}
         onOpenAccount={() => setAccount(true)} onOpenNovedades={() => setNovedades(true)} onOpenConsultas={() => setConsultas(true)}
-        tablonBadge={tablonBadge} adminBadge={isJefe && adminBadgeN ? String(adminBadgeN) : undefined} boardName={settings?.board_name}
+        tablonBadge={tablonBadge} adminBadge={esAdminSistema && adminBadgeN ? String(adminBadgeN) : undefined} boardName={settings?.board_name}
         onNavigate={(v) => { setViewing(v); setMode("board"); setQuery(""); }} onSignOut={signOut} pendByOwner={pendByOwner}
         misArqueosVisible={misArqueosVisible}
         fullWidth={isPersonView && mode === "board"}

@@ -259,10 +259,17 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
       <p className="text-ink2 text-[13px] mt-0 mb-2.5">CUIT, cierre de balance y si reporta a fábrica: prioriza el trabajo automáticamente.</p>
       <Empresas />
 
+      {/* Las consultas las lee el ADMINISTRADOR DEL SISTEMA (usuario fantasma aparte,
+          migración 33), no el jefe — spec 28-correcciones items 3 y 4. El servidor ya lo
+          aplica por RLS (es_admin_sistema); esto evita mostrarle al jefe una bandeja que
+          le vendría vacía. Sin la migración 33, admin_sistema llega undefined y no se
+          muestra: lado seguro, porque lo que se quiso es sacársela al jefe. */}
+      {me.admin_sistema === true && <>
       <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Consultas del equipo</h2>
       <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
         <BandejaConsultas team={team} />
       </div>
+      </>}
 
       <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Crear usuario nuevo</h2>
       <div className="bg-surface border border-line rounded-xl p-4 mb-6 flex flex-wrap gap-2 items-center" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
