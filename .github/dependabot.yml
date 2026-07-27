@@ -1,0 +1,52 @@
+# Mantenimiento automático de dependencias (spec 28-correcciones, item 6).
+#
+# POR QUÉ: hasta ahora actualizar librerías era una tarea manual que nadie hacía, y las
+# versiones viejas acumulan agujeros de seguridad en silencio. Dependabot abre solos los
+# pull requests de actualización; el CI (lint + 799 tests + build + e2e) los valida antes
+# de que se puedan mezclar, así que una actualización que rompa algo se ve enseguida.
+#
+# CRITERIO — poco ruido, alta señal. El proyecto lo mantiene una sola persona:
+#  - Semanal (lunes), no diario: un lote por semana en vez de goteo constante.
+#  - AGRUPADO: un PR por grupo, no uno por librería. Sin esto serían ~20 PRs por semana.
+#  - Las actualizaciones MAYORES (las que pueden romper) van aparte y sin agrupar, para
+#    revisarlas de a una con calma.
+#  - Tope de PRs abiertos, para que la bandeja nunca se desborde.
+version: 2
+updates:
+  # ---- Librerías del proyecto (npm) ----
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/Argentina/Buenos_Aires"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    labels: ["dependencias"]
+    groups:
+      # Todo lo menor y los parches, junto, en UN solo PR por semana.
+      menores-y-parches:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    ignore:
+      # Las mayores NO se agrupan: cada una puede traer cambios que rompen, así que
+      # Dependabot las abre por separado y se revisan una por una.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # ---- Acciones del propio pipeline de CI ----
+  # Las actions viejas dejan de recibir parches de seguridad y a veces las deprecan de
+  # golpe (pasó con node16): esto las mantiene al día sin que haya que acordarse.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(ci)"
+    labels: ["ci"]
+    groups:
+      acciones:
+        patterns: ["*"]

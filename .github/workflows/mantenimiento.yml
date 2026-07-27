@@ -1,0 +1,55 @@
+# Mantenimiento automático (spec 28-correcciones, item 6).
+#
+# Corre solo, todos los lunes, y en cada PR. Hace las revisiones que antes había que
+# acordarse de hacer a mano:
+#   1. Vulnerabilidades conocidas en las librerías (npm audit).
+#   2. Código y dependencias que quedaron sin uso (knip).
+#
+# NO BLOQUEA el trabajo a propósito: ninguno de los dos pasos hace fallar el pipeline.
+# Son informes, no barreras. La calidad la garantiza el CI de main.yml (lint + tests +
+# build + e2e), que sí bloquea. Si un chequeo informativo pudiera frenar un deploy, la
+# reacción natural sería desactivarlo — y ahí se pierde la señal por completo.
+#
+# El resultado se lee en la pestaña Actions de GitHub, en el resumen de cada corrida.
+name: Mantenimiento
+
+on:
+  schedule:
+    # Lunes 12:00 UTC = 09:00 en Argentina.
+    - cron: "0 12 * * 1"
+  pull_request:
+  workflow_dispatch:   # botón para correrlo a mano cuando haga falta
+
+permissions:
+  contents: read
+
+jobs:
+  auditoria:
+    name: Seguridad y código sin uso
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # `|| true`: npm audit devuelve código de error cuando encuentra algo, y acá el
+      # objetivo es INFORMAR, no frenar. Se reporta de moderada para arriba: por debajo
+      # de eso es casi todo ruido de dependencias de desarrollo.
+      - name: Vulnerabilidades conocidas
+        run: |
+          echo "## Seguridad de dependencias" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          npm audit --audit-level=moderate 2>&1 | tail -40 >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      # knip ya está configurado en el proyecto (script `deadcode`). Detecta archivos,
+      # exports y dependencias que quedaron colgados después de un refactor.
+      - name: Código y dependencias sin uso
+        run: |
+          echo "## Código sin uso" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          npm run deadcode 2>&1 | tail -40 >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
