@@ -135,7 +135,12 @@ export default function App() {
   if (loading) return <div className="min-h-screen grid place-items-center text-ink2">Cargando…</div>;
   if (!me) return <Login onSignIn={signIn} />;
 
-  const view = viewing || (esGestor ? "__resumen" : me.id);
+  // Al entrar, TODOS aterrizan en su propio tablero (spec 28-correcciones, item 5).
+  // Antes, un jefe/encargado caía en "__resumen": si los datos todavía no habían llegado
+  // esa pantalla se veía vacía y había que apretar "Mi tablero" para ver algo — se leía
+  // como que la app no había cargado. El tablero propio es lo que siempre tiene contenido
+  // y es lo primero que uno quiere ver. El Resumen sigue a un clic, en la barra lateral.
+  const view = viewing || me.id;
   // Alcance por rol: jefe ve todos; encargado ve su equipo (visiblesPara); empleado solo a sí mismo.
   // Ojo: si el Plan 02 aún no cargó manager_id, equipoDe devuelve [] y el encargado se ve solo a sí mismo (OK, no crashea).
   const fullTeam = esGestor ? visiblesPara(me, team) : [me];

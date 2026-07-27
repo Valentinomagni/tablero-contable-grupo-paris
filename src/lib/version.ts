@@ -9,6 +9,7 @@ export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] 
       "Períodos: ahora podés adelantar trabajo del mes que viene y queda guardado aparte, sin pisar el mes en curso. Elegí el mes en el selector del tablero y cargá tus tareas de agosto desde julio.",
       "Cada mes guarda su propio estado, checklist y avance de forma independiente: cerrar un mes no borra lo que adelantaste en el siguiente.",
       "El mes en curso sigue funcionando exactamente igual que siempre; los cambios aplican a los meses adelantados.",
+      "Al entrar, ahora se abre directamente tu tablero. Antes aparecía una pantalla que podía verse vacía hasta que apretabas \"Mi tablero\".",
     ],
   },
   {
