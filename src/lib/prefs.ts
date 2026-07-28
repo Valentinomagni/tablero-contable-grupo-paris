@@ -15,6 +15,10 @@ export const PREF = {
   // Orden y agrupación POR COLUMNA (spec 28-correcciones, item 7). Namespaced por owner:
   // cómo ordeno MI tablero no tiene por qué aplicarse al de otra persona que yo mire.
   vistasColumna: (ownerId: string) => NS + "vistas-columna:" + ownerId,
+  // Tareas por las que la persona ya dijo "ahora no" (P1, confirmación de estancada).
+  // Namespaced por owner: el snooze es una decisión personal sobre MIS tareas, y sólo
+  // vive en este navegador — no es un dato que deba viajar ni que nadie más deba ver.
+  estancadasPospuestas: (ownerId: string) => NS + "estancadas-pospuestas:" + ownerId,
 } as const;
 
 export function getPref(k: string): string | null {

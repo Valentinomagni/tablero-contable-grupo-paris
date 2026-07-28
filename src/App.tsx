@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Toaster, toast } from "sonner";
 import { deshacerUltimo } from "./lib/deshacer";
 import { PREF, getPref, setPref } from "./lib/prefs";
-import { ClipboardList, Target, TrendingUp, UserRound, CalendarDays, Users, Archive, Sun } from "lucide-react";
+import { ClipboardList, Target, TrendingUp, UserRound, CalendarDays, Users, Archive, Sun, Lock } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { usePresencia } from "./hooks/usePresencia";
 import { useTheme } from "./hooks/useTheme";
@@ -49,6 +49,8 @@ import { proximosVencimientos } from "./lib/vencimientos";
 import { avisosParaNotificar } from "./lib/notificaciones";
 import { toARTDate } from "./lib/metrics";
 import { periodoVigente, periodosDisponibles, periodoLabel, cardsDelPeriodo } from "./lib/periodo-instancias";
+import { periodoCerrado, periodosCerradosDe } from "./lib/periodo-cierre";
+import { usePeriodos } from "./hooks/usePeriodos";
 import { supabase } from "./lib/supabase";
 import { cn } from "./lib/ui";
 
@@ -186,6 +188,12 @@ export default function App() {
   // actual. Con la 32 aplicada, el selector deja navegar a agosto aunque esté vacío.
   const puedePeriodos = tienePeriodos(migracionesAplicadas);
   const opcionesPeriodo = periodosDisponibles(periodos, hoyISO, puedePeriodos);
+  // Períodos Fase 3: un mes cerrado pasa a ser de SÓLO LECTURA. Hasta ahora el cierre era
+  // una marca declarativa que no congelaba nada. Se evalúa sobre la persona cuyo tablero se
+  // está mirando (`view`), no sobre quien mira: el cierre es por persona y por mes.
+  const { data: cierres = [] } = usePeriodos();
+  const periodoEstaCerrado = periodoCerrado(cierres, view, periodoSel);
+  const cerradosDelTablero = periodosCerradosDe(cierres, view);
   const vigente = periodoVigente(hoyISO);
   const cardsVista = cardsDelPeriodo(cards, periodos, periodoSel, vigente);
 
@@ -223,13 +231,18 @@ export default function App() {
           {mode === "board" && opcionesPeriodo.length > 1 && (
             <div className="flex items-center gap-1 border border-line bg-surface2 rounded-lg p-1" title="Período del tablero">
               <span className="text-[12px] text-ink2 px-1.5">Período</span>
-              {opcionesPeriodo.map((p) => (
-                <button key={p} onClick={() => setPeriodoSel(p)}
-                  className={cn("rounded-md px-2.5 py-1 text-[12px] font-medium transition capitalize",
-                    p === periodoSel ? "bg-accent-soft text-accent font-semibold" : "text-ink2 hover:text-ink")}>
-                  {periodoLabel(p)}
-                </button>
-              ))}
+              {opcionesPeriodo.map((p) => {
+                // Candado en los meses ya cerrados: se pueden mirar, no editar (Fase 3).
+                const cerrado = cerradosDelTablero.includes(p);
+                return (
+                  <button key={p} onClick={() => setPeriodoSel(p)}
+                    title={cerrado ? "Mes cerrado — se puede consultar, no editar" : undefined}
+                    className={cn("rounded-md px-2.5 py-1 text-[12px] font-medium transition capitalize inline-flex items-center gap-1",
+                      p === periodoSel ? "bg-accent-soft text-accent font-semibold" : "text-ink2 hover:text-ink")}>
+                    {cerrado && <Lock size={11} />}{periodoLabel(p)}
+                  </button>
+                );
+              })}
             </div>
           )}
           {mode === "board" && (
@@ -268,7 +281,7 @@ export default function App() {
           : mode === "mimes" ? <MiMes cards={cards} activity={activity} ownerId={view} onOpenCard={setOpenCard} />
           : mode === "hist" ? <HistorialMes ownerId={view} />
           : cardsLoading ? <BoardSkeleton />
-          : <Board cards={cardsVista} activity={activity} ownerId={view} meId={me.id} meName={me.name} meRole={me.role} team={equipoVisible} query={query} onOpen={setOpenCard} periodo={periodoSel} vigente={vigente} />}
+          : <Board cards={cardsVista} activity={activity} ownerId={view} meId={me.id} meName={me.name} meRole={me.role} team={equipoVisible} query={query} onOpen={setOpenCard} periodo={periodoSel} vigente={vigente} cerrado={periodoEstaCerrado} />}
         </Suspense>
         </ErrorBoundary>
       </Shell>

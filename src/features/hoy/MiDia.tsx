@@ -11,6 +11,9 @@ import { supabase } from "../../lib/supabase";
 import { useCardOccurrences, useOccurrences } from "../../hooks/useOccurrences";
 import { useVacaciones } from "../../hooks/useVacaciones";
 import { ArqueoResultDialog } from "../board/ArqueoResultDialog";
+import { EstancadaPrompt } from "../board/EstancadaPrompt";
+import { tareaParaPreguntar } from "../../lib/estancadas";
+import { PREF, getPref, setPref } from "../../lib/prefs";
 import type { Card, Profile } from "../../lib/types";
 import { Sun, AlertTriangle, Clock, Flame, Check, CheckCircle2, Circle, Plane } from "lucide-react";
 
@@ -144,6 +147,22 @@ export function MiDia({ ownerId, meId, cards, team, onOpenCard }: {
 
   const cierre = cierreDelDia({ arqueoHoy, vencenHoy, operativas });
 
+  // P1 — confirmación de tarea estancada. SÓLO en la vista propia (ownerId === meId): la
+  // misma pregunta mirando el día de otra persona deja de ser una ayuda y pasa a ser control.
+  // Las pospuestas viven en localStorage namespaced por owner (decisión personal, no dato).
+  const claveSnooze = PREF.estancadasPospuestas(meId);
+  const [pospuestas, setPospuestas] = useState<string[]>(() => {
+    try { const v = JSON.parse(getPref(claveSnooze) ?? "[]"); return Array.isArray(v) ? v : []; }
+    catch { return []; }
+  });
+  const posponer = (id: string) => {
+    const next = [...pospuestas, id];
+    setPospuestas(next);
+    setPref(claveSnooze, JSON.stringify(next));
+  };
+  // UNA sola tarea, la más estancada: preguntar por varias garantiza que se ignoren todas.
+  const estancada = ownerId === meId ? tareaParaPreguntar(misCards, hoyISO, pospuestas) : null;
+
   return (
     <div className="px-4 sm:px-6 pt-4 pb-10 max-w-[720px] w-full mx-auto">
       <div className="flex items-center gap-2 mb-4">
@@ -167,6 +186,10 @@ export function MiDia({ ownerId, meId, cards, team, onOpenCard }: {
             ))}
           </div>
         </div>
+      )}
+      {estancada && (
+        <EstancadaPrompt card={estancada.card} diasSinMover={estancada.diasSinMover}
+          quien={nombreDe(meId)} onAbrir={onOpenCard} onPosponer={posponer} />
       )}
       {controles.map((c) => (
         <ArqueoHoyCard key={c.id} card={c} owner={ownerId} hoyISO={hoyISO} />

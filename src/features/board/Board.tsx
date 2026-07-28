@@ -77,12 +77,14 @@ function CardItem({ c, blocked, waiting, esperaTitulos = [], onOpen }: { c: Card
   );
 }
 
-export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [], query = "", onOpen, periodo, vigente }: {
+export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [], query = "", onOpen, periodo, vigente, cerrado = false }: {
   cards: Card[]; activity: ActivityLog[]; ownerId: string; meId?: string; meName: string; meRole?: string; team?: Profile[]; query?: string; onOpen: (c: Card) => void;
   // Períodos (Fase 2): período que se está mirando y cuál es el vigente. Cuando difieren y
   // la migración 32 está aplicada, el estado se escribe en `card_periodos` en vez de `cards`.
   // Opcionales: sin ellos (o iguales) el Board escribe en `cards` como siempre.
   periodo?: string; vigente?: string;
+  // Fase 3: el mes está cerrado → sólo lectura. Se puede consultar, no editar.
+  cerrado?: boolean;
 }) {
   const qc = useQueryClient();
   const org = useOrganizacion();
@@ -149,6 +151,9 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
       // (networkMode "online" por defecto) y corre recién al reconectar, para entonces `cards`
       // ya refleja el estado optimista y byId(id) devolvería el status NUEVO como si fuera el
       // previo — pushUndo guardaría un no-op y done_at/proc_at se calcularían mal.
+      // Mes cerrado = sólo lectura (Fase 3). El corte va acá, en la mutación, y no sólo en
+      // la UI: es lo único que cubre el drag & drop, los atajos y cualquier camino futuro.
+      if (cerrado) throw new Error("Este mes está cerrado. Para modificarlo, reabrilo desde Cierre.");
       const c = cardPrev;
       const now = new Date().toISOString();
       const patch: Partial<Card> = { status };
@@ -372,6 +377,14 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
           </>
         )}
       </div>
+    {/* Mes cerrado: se avisa POR QUÉ no se puede editar y CÓMO revertirlo. Un tablero que no
+        responde sin explicar por qué se lee como que la app está rota. */}
+    {cerrado && (
+      <div className="mx-6 mb-3 flex items-center gap-2 rounded-lg border border-line bg-surface2 px-3.5 py-2.5 text-[13px] text-ink2">
+        <Lock size={14} className="shrink-0" />
+        <span>Este mes está cerrado: se puede consultar, no editar. Para modificarlo, reabrilo desde <b className="text-ink font-semibold">Cierre</b>.</span>
+      </div>
+    )}
     <div className="flex gap-5 items-start px-6 pb-10 overflow-x-auto flex-1">
       {/* Modo "ninguno": tres columnas planas, exactamente como siempre (ruta por defecto). */}
       {agruparModo === "ninguno" && COLS.map(([k, lbl]) => {
