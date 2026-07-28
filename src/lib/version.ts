@@ -16,6 +16,9 @@ export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] 
       "Nuevo: Director. El estado del área en una sola pantalla — riesgos, dependencias, calendario, continuidad y planificación, cada uno con su semáforo. Para jefes y encargados.",
       "Reporte: nuevo \"Flujo de trabajo en el mes\". Muestra día por día cuándo se concentra el trabajo de cada persona, para poder repartir mejor la carga.",
       "Reporte: se distingue el trabajo que estaba previsto del que entró como urgencia. Cuando las urgencias mandan, el problema es de planificación, no de quien la ejecuta.",
+      "Director: \"Qué conviene hacer\" propone acciones concretas a partir de lo que pasa en el equipo — y si el registro no es confiable, en vez de arriesgar conclusiones sugiere corregirlo primero.",
+      "Director: \"Si nadie hace nada\" muestra qué vence mañana, en 3 y en 7 días, con las categorías principales.",
+      "Director: \"Confianza del dato\" indica qué tan representativo es lo registrado. Un valor bajo invalida las métricas de ese conjunto, no a la persona.",
     ],
   },
   {

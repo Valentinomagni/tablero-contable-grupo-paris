@@ -13,13 +13,29 @@ import { diasHasta, proximosVencimientos } from "../../lib/vencimientos";
 import { previsibilidad } from "../../lib/previsibilidad";
 import { concentracion as concentracionPorCategoria } from "../../lib/busfactor";
 import { useArchiveEquipo } from "../../hooks/useArchive";
+import { useSnapshots } from "../../hooks/useData";
 import { panelesDirector, type EntradaDirector, type Semaforo } from "../../lib/director";
+import { icr } from "../../lib/icr";
+import { exposicion } from "../../lib/exposicion";
+import { saludOperativa } from "../../lib/salud-operativa";
+import { flujoMensual } from "../../lib/flujo-mensual";
+import { recomendaciones, type Prioridad } from "../../lib/recomendaciones";
 
 const COLOR: Record<Semaforo, string> = {
   ok: "var(--done)",
   atencion: "var(--warn)",
   riesgo: "var(--danger)",
 };
+
+// El punto de prioridad de una recomendación: rojo/ámbar son estado, gris es "sin urgencia".
+const COLOR_PRIORIDAD: Record<Prioridad, string> = {
+  alta: "var(--danger)",
+  media: "var(--warn)",
+  baja: "var(--ink2)",
+};
+
+const CARD = "bg-surface border border-line rounded-2xl px-5 py-4";
+const SOMBRA = { boxShadow: "var(--ring-sh),var(--shadow)" };
 
 export function Director({ cards, team, annos }: { cards: Card[]; team: Profile[]; annos: Announcement[] }) {
   const now = new Date();
@@ -51,6 +67,24 @@ export function Director({ cards, team, annos }: { cards: Card[]; team: Profile[
   const entrada: EntradaDirector = { vencidas, bloqueadas, venceEnDias, concentracion, pctPlanificado };
   const paneles = panelesDirector(entrada);
 
+  // ---- Confianza del dato, exposición y recomendaciones ----
+  const hoyISO = now.toISOString();
+  const snaps = useSnapshots(true).data ?? [];
+  const calidad = icr(norm, hoyISO);
+  const exposiciones = exposicion(norm, hoyISO);
+  const salud = saludOperativa(norm, hoyISO);
+  // El motor recibe TODAS las señales juntas, incluida la calidad del dato: si el registro no
+  // es representativo, se calla y sólo sugiere corregirlo (ver src/lib/recomendaciones.ts).
+  const sugerencias = recomendaciones({
+    icr: calidad,
+    exposiciones,
+    salud,
+    concentraciones: concentracionPorCategoria(archives, team),
+    previsibilidad: previsibilidad(norm, mes),
+    flujo: flujoMensual(snaps, mes),
+    nombrePorId: Object.fromEntries(team.map((u) => [u.id, u.name])),
+  });
+
   return (
     <div className="px-6 py-4 w-full max-w-[960px]">
       <p className="text-[13px] text-ink2 mb-4 mt-0">
@@ -70,6 +104,71 @@ export function Director({ cards, team, annos }: { cards: Card[]; team: Profile[
             <span className="block text-[12.5px] text-ink2">{p.detalle}</span>
           </div>
         ))}
+      </div>
+
+      {/* ---- Recomendaciones: lo primero accionable, por eso va arriba de todo lo demás ---- */}
+      <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mt-7 mb-2.5">Qué conviene hacer</h2>
+      <div className={CARD} style={SOMBRA}>
+        {sugerencias.length === 0 ? (
+          <span className="text-[13px] text-ink2">Sin recomendaciones: no se detectaron situaciones que requieran acción.</span>
+        ) : (
+          <ul className="list-none m-0 p-0 flex flex-col gap-3.5">
+            {sugerencias.map((s) => (
+              <li key={s.id} className="flex gap-2.5 items-start">
+                <span aria-hidden className="w-2 h-2 rounded-full shrink-0 mt-[6px]"
+                  style={{ background: COLOR_PRIORIDAD[s.prioridad] }} />
+                <span className="min-w-0">
+                  <span className="block text-[13.5px] leading-snug">{s.texto}</span>
+                  <span className="block text-[12px] text-ink2 mt-0.5">{s.motivo}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="grid gap-4 mt-7 [grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
+        {/* ---- Si nadie hace nada ---- */}
+        <div>
+          <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Si nadie hace nada</h2>
+          <div className={CARD} style={SOMBRA}>
+            <div className="flex flex-col gap-3">
+              {exposiciones.map((e) => (
+                <div key={e.horizonte} className="flex items-baseline gap-3">
+                  <span className="text-[12.5px] text-ink2 w-[86px] shrink-0">{e.titulo}</span>
+                  <b className="text-[17px] tnum tracking-[-0.01em] w-[34px] shrink-0">{e.total}</b>
+                  <span className="text-[12px] text-ink2 min-w-0 truncate">
+                    {e.porCategoria.length === 0
+                      ? "sin vencimientos"
+                      : e.porCategoria.slice(0, 3).map((c) => `${c.categoria} (${c.n})`).join(" · ")}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="text-[12px] text-ink2 mt-3 mb-0">Tareas abiertas que vencen dentro de cada plazo, incluidas las ya vencidas.</p>
+          </div>
+        </div>
+
+        {/* ---- Confianza del dato (ICR) ---- */}
+        <div>
+          <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Confianza del dato</h2>
+          <div className={CARD} style={SOMBRA}>
+            {calidad.suficiente ? (
+              <>
+                <b className="block text-[26px] tnum tracking-[-0.02em] leading-none">{calidad.puntaje}<span className="text-[15px] text-ink2 font-normal">/100</span></b>
+                <span className="block text-[12px] text-ink2 mt-1">Sobre {calidad.muestra} tareas cerradas en 30 días.</span>
+              </>
+            ) : (
+              <>
+                <b className="block text-[17px] tracking-[-0.01em]">Muestra insuficiente</b>
+                <span className="block text-[12px] text-ink2 mt-1">Sólo {calidad.muestra} tareas cerradas en 30 días: hacen falta más para poder medir.</span>
+              </>
+            )}
+            {/* La regla de lectura va SIEMPRE visible, no escondida en un tooltip: es lo que
+                evita que este número se lea como una nota de desempeño. */}
+            <p className="text-[12px] text-ink2 mt-3 mb-0 pt-3 border-t border-line">{calidad.lectura}</p>
+          </div>
+        </div>
       </div>
     </div>
   );
