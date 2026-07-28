@@ -11,6 +11,9 @@ import {
   payloadCards,
   payloadProfiles,
   tieneAdminSistema,
+  tieneChecklistDiario,
+  payloadOccurrences,
+  CAMPOS_CHECKLIST_OCCURRENCES,
 } from "./esquema";
 
 describe("tieneEsquemaNuevo", () => {
@@ -165,5 +168,27 @@ describe("payloadCompatible", () => {
   it("las listas de campos cubren las columnas de la migración 29", () => {
     expect([...CAMPOS_NUEVOS_CARDS]).toEqual(["proc_at", "tiempo_max_horas", "dato_control"]);
     expect([...CAMPOS_NUEVOS_PROFILES]).toEqual(["oculto", "last_seen"]);
+  });
+});
+
+describe("tieneChecklistDiario / payloadOccurrences (migración 34)", () => {
+  it("true sólo con la migración 34 aplicada", () => {
+    expect(tieneChecklistDiario([34])).toBe(true);
+    expect(tieneChecklistDiario([29, 31, 32, 33])).toBe(false);
+  });
+  it("ante la duda (null/undefined) → false: la app se comporta como antes", () => {
+    expect(tieneChecklistDiario(null)).toBe(false);
+    expect(tieneChecklistDiario(undefined)).toBe(false);
+  });
+  it("sin la 34: checklist y obs NO viajan, pero el marcado del día sigue igual", () => {
+    const patch = { done: true, done_at: "2026-07-28T10:00:00Z", checklist: [], obs: "algo" };
+    expect(payloadOccurrences(patch, [29, 33])).toEqual({ done: true, done_at: "2026-07-28T10:00:00Z" });
+  });
+  it("con la 34: el payload va intacto", () => {
+    const patch = { done: true, checklist: [{ txt: "a", done: false, done_at: null }], obs: null };
+    expect(payloadOccurrences(patch, [34])).toEqual(patch);
+  });
+  it("la lista de campos cubre las columnas de la migración 34", () => {
+    expect([...CAMPOS_CHECKLIST_OCCURRENCES]).toEqual(["checklist", "obs"]);
   });
 });

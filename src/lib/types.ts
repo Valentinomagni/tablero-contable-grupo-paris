@@ -12,6 +12,11 @@ export interface TaskOccurrence {
   id: string; card_id: string; owner: string; fecha: string; done: boolean; done_at: string | null;
   // Resultado de control (migración 23, arqueo de caja): 'ok' sin diferencias, 'dif' con diferencias
   resultado?: "ok" | "dif" | null; dif_importe?: number | null; dif_obs?: string | null;
+  // Detalle DEL DÍA (migración 34, queja #2): cada fecha tiene su propio checklist y su
+  // observación. Antes había uno solo en la card, compartido por todas las fechas, y al
+  // reiniciarse la recurrencia se perdía lo tildado ayer. Opcionales: sin la migración 34
+  // aplicada las columnas no existen y llegan `undefined`.
+  checklist?: ChecklistItem[]; obs?: string | null;
 }
 export interface Comment { who: string; when: string; txt: string; }
 export interface HistoryEntry { who: string; at: string; txt: string; }

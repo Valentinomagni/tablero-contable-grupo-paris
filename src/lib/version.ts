@@ -19,6 +19,10 @@ export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] 
       "Director: \"Qué conviene hacer\" propone acciones concretas a partir de lo que pasa en el equipo — y si el registro no es confiable, en vez de arriesgar conclusiones sugiere corregirlo primero.",
       "Director: \"Si nadie hace nada\" muestra qué vence mañana, en 3 y en 7 días, con las categorías principales.",
       "Director: \"Confianza del dato\" indica qué tan representativo es lo registrado. Un valor bajo invalida las métricas de ese conjunto, no a la persona.",
+      "En \"Mi día\", si una tarea tuya lleva varios días sin moverse, aparece un aviso discreto para confirmar si seguís con ella, marcarla terminada o posponerlo. Solo lo ves vos.",
+      "Cerrar un mes ahora lo deja de solo lectura, con candado en el selector. Se puede consultar pero no editar; para modificarlo, se reabre desde Cierre.",
+      "Organigrama: junto a la evolución de cada persona se indica si sus resultados son parejos o dispares entre meses.",
+      "Los indicadores muestran un sello de confiabilidad del dato que los sustenta, para saber de cuáles conviene fiarse.",
     ],
   },
   {

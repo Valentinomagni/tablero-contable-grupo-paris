@@ -558,3 +558,50 @@ cuenta (incluido el jefe) esa sección **no se muestra**.
 - El helper `es_admin_sistema()` es **SECURITY DEFINER**, igual que `es_jefe()` — nunca se
   subconsulta `profiles` dentro de una policy de `profiles` (regla dura del proyecto que
   evita el error 42P17 de recursión en RLS).
+
+---
+
+## Migración 34 — Checklist diario que no se borra
+
+Spec 28-correcciones, item 2 (**queja original #2**). Hasta acá, una tarea recurrente
+**diaria** tenía **un solo checklist**, compartido por todas las fechas: cuando la tarea se
+reiniciaba, se perdía lo que se había tildado el día anterior.
+
+`task_occurrences` ya guarda **una fila por (tarea, fecha)** y ya es inmutable, así que el
+detalle del día pasa a vivir ahí: cada fecha tiene **su propio checklist y su propia
+observación**.
+
+### Paso 1 — Correr el SQL
+
+1. Abrí `migracion-34-checklist-diario.sql` (raíz del repo).
+2. Supabase → SQL Editor → New query → pegar todo → **Run**.
+
+No pide reemplazar nada. Es **idempotente**: se puede correr las veces que haga falta.
+
+### Paso 2 — Verificar
+
+```sql
+-- las dos columnas nuevas existen:
+select column_name, data_type
+  from information_schema.columns
+ where table_schema = 'public' and table_name = 'task_occurrences'
+   and column_name in ('checklist', 'obs');
+
+-- el detalle de cada día queda separado:
+select fecha, done, checklist, obs from public.task_occurrences order by fecha desc limit 5;
+```
+
+En la app: abrí una tarea **recurrente diaria** → abajo aparece **"Checklist del día"**, con
+flechas para moverse entre los días del mes. Lo que tildes en un día no cambia lo de otro.
+
+### Notas
+
+- **No toca nada existente**: sólo agrega dos columnas con default. El `done` y el
+  `resultado` del arqueo siguen exactamente igual, y la grilla de **Cumplimiento diario**
+  sigue siendo la que marca el día como hecho — el checklist del día es sólo el detalle.
+- La app es **defensiva**: sin la migración 34 aplicada, el bloque "Checklist del día" **no
+  se muestra** y esas columnas **no viajan** en ningún update (gate `tieneChecklistDiario` /
+  `payloadOccurrences` en `src/lib/esquema.ts`). Sin el gate, PostgREST rechazaría el update
+  entero con 42703 y se rompería el marcado de días, que hoy funciona.
+- El checklist de la tarjeta sigue sirviendo de **plantilla**: en un día vacío hay un botón
+  para copiar sus ítems a esa fecha.

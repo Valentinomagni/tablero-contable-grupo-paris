@@ -43,6 +43,17 @@ export const MIGRACION_PERIODOS = 32;
  */
 export const MIGRACION_ADMIN_SISTEMA = 33;
 
+/**
+ * Migración que agrega `task_occurrences.checklist` y `.obs` (checklist por día, spec
+ * 28-correcciones item 2). Gate propio: sin ella esas columnas no existen y mencionarlas
+ * en el update de una ocurrencia haría fallar ENTERO el marcado del día con 42703 —
+ * o sea, se rompería la grilla de cumplimiento, que hoy funciona.
+ */
+export const MIGRACION_CHECKLIST_DIARIO = 34;
+
+/** Columnas de `task_occurrences` que sólo existen con la migración 34 aplicada. */
+export const CAMPOS_CHECKLIST_OCCURRENCES = ["checklist", "obs"] as const;
+
 /** Columnas de `cards` que sólo existen con la migración 29 aplicada. */
 export const CAMPOS_NUEVOS_CARDS = ["proc_at", "tiempo_max_horas", "dato_control"] as const;
 
@@ -132,6 +143,22 @@ export function payloadCompatible<T extends object>(
 export function payloadCards<T extends object>(payload: T, aplicadas: number[] | null | undefined): T {
   const sinViejos = payloadCompatible(payload, aplicadas, CAMPOS_NUEVOS_CARDS, MIGRACION_ESQUEMA_NUEVO);
   return payloadCompatible(sinViejos, aplicadas, CAMPOS_ETIQUETAS_CARDS, MIGRACION_ETIQUETAS);
+}
+
+/**
+ * ¿Está aplicada la migración 34 (`task_occurrences.checklist` / `.obs`)? Ante la duda:
+ * false → la UI del checklist por día no se muestra y todo se comporta como hoy.
+ */
+export function tieneChecklistDiario(aplicadas: number[] | null | undefined): boolean {
+  return tieneMigracion(aplicadas, MIGRACION_CHECKLIST_DIARIO);
+}
+
+/**
+ * Azúcar para `task_occurrences`: un solo gate, el de la migración 34. Sin ella,
+ * `checklist` y `obs` NO viajan en el payload y el update del día sigue andando igual.
+ */
+export function payloadOccurrences<T extends object>(payload: T, aplicadas: number[] | null | undefined): T {
+  return payloadCompatible(payload, aplicadas, CAMPOS_CHECKLIST_OCCURRENCES, MIGRACION_CHECKLIST_DIARIO);
 }
 
 /** ¿Está aplicada la migración 33 (`profiles.admin_sistema`)? Ante la duda: false. */

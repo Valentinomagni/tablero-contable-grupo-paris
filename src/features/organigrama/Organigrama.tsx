@@ -8,6 +8,7 @@ import { useArchiveEquipo } from "../../hooks/useArchive";
 import { MarcaIcon } from "../../components/MarcaIcon";
 import { enLinea, textoUltimaConexion } from "../../lib/presencia";
 import { curvaPersona, tendencia, type PuntoCurva } from "../../lib/evolucion";
+import { estabilidad } from "../../lib/estabilidad";
 
 const cardSh = { boxShadow: "var(--ring-sh),var(--shadow)" };
 const ROLE_LBL: Record<Profile["role"], string> = { jefe: "Jefe", encargado: "Encargado", empleado: "Empleado" };
@@ -43,12 +44,22 @@ function Evolucion({ ownerId, archives }: { ownerId: string; archives: CardArchi
   if (curva.length < 2) return null;
   const t = tendencia(curva);
   const Icon = TENDENCIA_ICON[t];
+  // Estabilidad sobre la MISMA serie que la curva: la tendencia dice hacia dónde va, esto
+  // dice qué tan parejo es el camino. 95-94-96 y 100-30-98 tienen tendencia parecida y
+  // significan cosas muy distintas. Con menos de 3 meses la lib devuelve "sin-datos" y no
+  // se muestra nada — no hace falta manejar ese caso acá.
+  const est = estabilidad(curva.map((p) => p.cumplimiento));
   return (
     <div className="flex items-center gap-2 shrink-0" title="Cumplimiento de los últimos meses. Es un dato para acompañar y ver si hace falta apoyo o redistribuir carga, no una calificación de la persona.">
       <Sparkline curva={curva} />
-      <span className="flex items-center gap-1 text-[11px] text-ink2">
-        <Icon size={13} />
-        {TENDENCIA_LBL[t]}
+      <span className="flex flex-col leading-tight">
+        <span className="flex items-center gap-1 text-[11px] text-ink2">
+          <Icon size={13} />
+          {TENDENCIA_LBL[t]}
+        </span>
+        {est.nivel !== "sin-datos" && (
+          <span className="text-[10.5px] text-ink2">{est.texto}</span>
+        )}
       </span>
     </div>
   );
