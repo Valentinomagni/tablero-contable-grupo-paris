@@ -14,7 +14,7 @@ import { esCobertura } from "../../lib/vacaciones";
 import { filaDuplicada } from "../../lib/duplicar";
 import { useDepsInfo, useReverseDeps, useSettings, useMigraciones, useTriggerNotificaciones } from "../../hooks/useData";
 import { payloadCards } from "../../lib/esquema";
-import { escribeEnPeriodo, filaPeriodo, soloDefinicion, CAMPOS_ESTADO } from "../../lib/periodo-escritura";
+import { escribeEnPeriodo, filaPeriodo, guardarPeriodo, soloDefinicion, CAMPOS_ESTADO } from "../../lib/periodo-escritura";
 import { nuevaCantidad, progresoCarga, extraerMetaCarga, conMetaCarga, descripcionSinMeta } from "../../lib/operativas";
 import { TXT_REAPERTURA } from "../../lib/retrabajo";
 import { Adjuntos } from "./Adjuntos";
@@ -100,9 +100,7 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
           if (eDef) throw eDef;
         }
         if (CAMPOS_ESTADO.some((k) => k in p)) {
-          const fila = filaPeriodo(c, periodo, p);
-          const { error: eEst } = await supabase.from("card_periodos").upsert(fila, { onConflict: "card_id,periodo" });
-          if (eEst) throw eEst;
+          await guardarPeriodo(filaPeriodo(c, periodo, p));
         }
         return;
       }

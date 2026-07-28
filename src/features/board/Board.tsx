@@ -15,7 +15,7 @@ import { type ModoAgrupar } from "../../lib/agrupar";
 import { getPref, setPref, PREF } from "../../lib/prefs";
 import { useOrganizacion, useTiemposMax, useMigraciones, useTriggerNotificaciones } from "../../hooks/useData";
 import { payloadCards, tieneEtiquetas } from "../../lib/esquema";
-import { escribeEnPeriodo, filaPeriodo } from "../../lib/periodo-escritura";
+import { escribeEnPeriodo, filaPeriodo, guardarPeriodo } from "../../lib/periodo-escritura";
 import { estadoTiempo, registrarIncumplimiento } from "../../lib/tiempos";
 import { textoTransicion } from "../../lib/retrabajo";
 import { filtrarPorSegmento } from "../../lib/segmento";
@@ -168,9 +168,7 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
       // mes en curso. El upsert crea la fila del mes si es la primera vez (materializa el
       // mes adelantado). No hay pushUndo: deshacer opera sobre `cards` (Fase 3 lo cubrirá).
       if (esEscrituraPeriodo(c.card_type)) {
-        const fila = filaPeriodo({ ...c, ...patch, history: hist }, periodo!, { ...patch, history: hist });
-        const { error } = await supabase.from("card_periodos").upsert(fila, { onConflict: "card_id,periodo" });
-        if (error) throw error;
+        await guardarPeriodo(filaPeriodo({ ...c, ...patch, history: hist }, periodo!, { ...patch, history: hist }));
         return;
       }
       // Se calcula UNA vez y se usa para el update y para la pila de deshacer: si el

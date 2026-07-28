@@ -5,6 +5,7 @@ import type { Card, Profile, Objective, ActivityLog, ResumenMensual, Empresa } f
 import type { DepInfo, RevDep } from "../lib/deps";
 import { CardSchema, validateRows } from "../lib/schemas";
 import { COLUMNAS_CARDS } from "../lib/esquema";
+import { guardarPeriodo } from "../lib/periodo-escritura";
 import type { Organizacion } from "../lib/organizacion";
 import { parseOrganizacion, DEFAULT_ORG } from "../lib/organizacion";
 
@@ -338,10 +339,10 @@ export function useCardPeriodos() {
 export function useEscribirPeriodo() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (fila: import("../lib/periodo-escritura").FilaPeriodo) => {
-      const { error } = await supabase.from("card_periodos").upsert(fila, { onConflict: "card_id,periodo" });
-      if (error) throw error;
-    },
+    // La escritura en sí vive en `guardarPeriodo` (src/lib/periodo-escritura.ts), que es el
+    // único lugar del proyecto que toca `card_periodos`. Acá sólo se le agrega el optimismo
+    // de react-query.
+    mutationFn: (fila: import("../lib/periodo-escritura").FilaPeriodo) => guardarPeriodo(fila),
     onMutate: async (fila) => {
       await qc.cancelQueries({ queryKey: ["card_periodos"] });
       const previous = qc.getQueryData<import("../lib/types").CardPeriodo[]>(["card_periodos"]);

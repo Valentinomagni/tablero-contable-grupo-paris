@@ -1,5 +1,6 @@
 import type { Card, ChecklistItem, Comment, HistoryEntry, Status } from "./types";
 import { tienePeriodos } from "./esquema";
+import { supabase } from "./supabase";
 
 // Helpers PUROS de ESCRITURA para el modelo de períodos (propuesta de períodos, Fase 2 —
 // ver docs/PROPUESTA-PERIODOS.md). Deciden A DÓNDE va cada parte de un patch y arman la
@@ -77,4 +78,20 @@ export function filaPeriodo(card: Card, periodo: string, patch: Partial<Card>): 
     proc_at: p.proc_at !== undefined ? p.proc_at : card.proc_at ?? null,
     due_date: p.due_date !== undefined ? p.due_date : card.due_date,
   };
+}
+
+/**
+ * ÚNICO lugar donde se escribe una fila de `card_periodos`.
+ *
+ * POR QUÉ EXISTE (5S, Seiton): antes esta misma consulta estaba escrita TRES veces — en el
+ * hook `useEscribirPeriodo`, en `Board.move` y en `CardModal.patch` —, y la del hook ni
+ * siquiera se usaba. Con tres copias, cambiar la forma de guardar un período obligaba a
+ * acordarse de tocar dos archivos, y la que quedara sin actualizar fallaba en silencio.
+ *
+ * El `onConflict` es lo que hace que la operación sea idempotente: si la fila del mes no
+ * existía la crea (materializa el mes adelantado), y si existía la actualiza.
+ */
+export async function guardarPeriodo(fila: FilaPeriodo): Promise<void> {
+  const { error } = await supabase.from("card_periodos").upsert(fila, { onConflict: "card_id,periodo" });
+  if (error) throw error;
 }
