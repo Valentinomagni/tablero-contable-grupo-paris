@@ -2,9 +2,7 @@ import type { Profile } from "../../lib/types";
 import { flujoMensual, nivelCarga, TEXTO_PERFIL } from "../../lib/flujo-mensual";
 import { useSnapshots } from "../../hooks/useData";
 import { EmptyState } from "../../components/EmptyState";
-
-const cardSh = { boxShadow: "var(--ring),var(--shadow)" };
-const card = "bg-surface rounded-2xl p-[18px]";
+import { Panel } from "../../components/Panel";
 
 // ESCALA DE GRISES a propósito: el mapa de calor comunica INTENSIDAD, no estado. En este
 // proyecto el color (verde/ámbar/rojo) está reservado para el semáforo; usarlo acá sugeriría
@@ -27,7 +25,7 @@ export function FlujoMensual({ team, mes }: { team: Profile[]; mes: string }) {
   const max = Math.max(0, ...filas.flatMap((f) => f.dias));
 
   return (
-    <div className={card} style={cardSh}>
+    <Panel>
       <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-1.5">Flujo de trabajo en el mes</h3>
       <p className="text-ink2 text-[13px] m-0 mb-3.5">Muestra cuándo se concentra el trabajo de cada persona, para repartir mejor la carga.</p>
 
@@ -66,7 +64,7 @@ export function FlujoMensual({ team, mes }: { team: Profile[]; mes: string }) {
           ))}
         </div>
       )}
-    </div>
+    </Panel>
   );
 }
 

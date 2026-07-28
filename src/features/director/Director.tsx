@@ -59,10 +59,15 @@ export function Director({ cards, team, annos }: { cards: Card[]; team: Profile[
   // `concentracion()` YA filtra por su cuenta (mínimo 4 cards de evidencia y ≥80% en una
   // persona), así que todo lo que devuelve ya es un riesgo: acá se cuenta y nada más. Volver a
   // filtrar sería duplicar el criterio en dos lugares y arriesgar que se desincronicen.
-  const concentracion = concentracionPorCategoria(archives, team).length;
-
+  // Se calculan UNA sola vez y se reusan. Antes se llamaba dos veces a cada una con los
+  // mismos argumentos (una para el panel, otra para el motor de recomendaciones): las dos
+  // recorren listas completas, así que era trabajo repetido además de ruido para leer.
   const mes = now.toISOString().slice(0, 7);
-  const pctPlanificado = previsibilidad(norm, mes).pctPlanificado;
+  const concentraciones = concentracionPorCategoria(archives, team);
+  const prevision = previsibilidad(norm, mes);
+
+  const concentracion = concentraciones.length;
+  const pctPlanificado = prevision.pctPlanificado;
 
   const entrada: EntradaDirector = { vencidas, bloqueadas, venceEnDias, concentracion, pctPlanificado };
   const paneles = panelesDirector(entrada);
@@ -79,8 +84,8 @@ export function Director({ cards, team, annos }: { cards: Card[]; team: Profile[
     icr: calidad,
     exposiciones,
     salud,
-    concentraciones: concentracionPorCategoria(archives, team),
-    previsibilidad: previsibilidad(norm, mes),
+    concentraciones,
+    previsibilidad: prevision,
     flujo: flujoMensual(snaps, mes),
     nombrePorId: Object.fromEntries(team.map((u) => [u.id, u.name])),
   });
