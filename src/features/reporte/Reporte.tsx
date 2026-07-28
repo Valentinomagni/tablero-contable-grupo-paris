@@ -11,6 +11,7 @@ import { useArqueoStats } from "../../hooks/useArqueo";
 import { filtrarPorSegmento } from "../../lib/segmento";
 import { AnalisisMensual } from "./AnalisisMensual";
 import { Comparador } from "./Comparador";
+import { FlujoMensual } from "./FlujoMensual";
 import { toast } from "sonner";
 import { documentoImpresion, type DatosReporte } from "../../lib/impresion";
 import { abrirImpresion } from "../../lib/impresion-dom";
@@ -263,6 +264,8 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
       )}
 
       <AnalisisMensual cards={cards} team={teamSeg} activity={activity} segmento={marcaFiltro ? `${marcaFiltro}${sucursalFiltro ? ` · ${sucursalFiltro}` : ""}` : null} />
+
+      <FlujoMensual team={teamSeg} mes={mesActualPrefix()} />
 
       <Comparador team={team} />
     </div>

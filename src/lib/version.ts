@@ -13,6 +13,9 @@ export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] 
       "Las consultas, sugerencias y errores que reporta el equipo ahora llegan a una cuenta de administración del sistema, aparte y reservada. El jefe ya no las ve: si alguien reporta un problema, va a quien lo puede resolver.",
       "Cada columna del tablero tiene ahora su propio menú para ordenar y agrupar, independiente de las otras. Por ejemplo: \"Pendiente\" por vencimiento y agrupada por categoría, y \"Terminado\" sin agrupar. Se guarda por tablero.",
       "Imprimir el Reporte en PDF ya no sale en blanco: ahora se abre una vista limpia, pensada para papel, con los indicadores y las tablas del período.",
+      "Nuevo: Director. El estado del área en una sola pantalla — riesgos, dependencias, calendario, continuidad y planificación, cada uno con su semáforo. Para jefes y encargados.",
+      "Reporte: nuevo \"Flujo de trabajo en el mes\". Muestra día por día cuándo se concentra el trabajo de cada persona, para poder repartir mejor la carga.",
+      "Reporte: se distingue el trabajo que estaba previsto del que entró como urgencia. Cuando las urgencias mandan, el problema es de planificación, no de quien la ejecuta.",
     ],
   },
   {
