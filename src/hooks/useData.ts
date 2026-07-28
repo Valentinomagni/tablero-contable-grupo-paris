@@ -5,7 +5,6 @@ import type { Card, Profile, Objective, ActivityLog, ResumenMensual, Empresa } f
 import type { DepInfo, RevDep } from "../lib/deps";
 import { CardSchema, validateRows } from "../lib/schemas";
 import { COLUMNAS_CARDS } from "../lib/esquema";
-import { guardarPeriodo } from "../lib/periodo-escritura";
 import type { Organizacion } from "../lib/organizacion";
 import { parseOrganizacion, DEFAULT_ORG } from "../lib/organizacion";
 
@@ -327,39 +326,6 @@ export function useCardPeriodos() {
       return (data as import("../lib/types").CardPeriodo[]) ?? [];
     },
     retry: false,
-  });
-}
-
-// Escritura del ESTADO de trabajo de un mes NO vigente en `card_periodos` (propuesta de
-// períodos, Fase 2). El upsert (onConflict card_id,periodo) crea la fila del mes si no
-// existía —materializa el mes adelantado— o la actualiza. Optimista sobre ["card_periodos"]
-// para que el tablero del mes elegido refleje el cambio al instante, igual que el board.
-// Sólo lo invocan Board.move / CardModal.patch cuando escribeEnPeriodo() da true; el mes
-// vigente sigue escribiendo en `cards` como siempre.
-export function useEscribirPeriodo() {
-  const qc = useQueryClient();
-  return useMutation({
-    // La escritura en sí vive en `guardarPeriodo` (src/lib/periodo-escritura.ts), que es el
-    // único lugar del proyecto que toca `card_periodos`. Acá sólo se le agrega el optimismo
-    // de react-query.
-    mutationFn: (fila: import("../lib/periodo-escritura").FilaPeriodo) => guardarPeriodo(fila),
-    onMutate: async (fila) => {
-      await qc.cancelQueries({ queryKey: ["card_periodos"] });
-      const previous = qc.getQueryData<import("../lib/types").CardPeriodo[]>(["card_periodos"]);
-      qc.setQueryData<import("../lib/types").CardPeriodo[]>(["card_periodos"], (old) => {
-        const arr = old ? [...old] : [];
-        const i = arr.findIndex((p) => p.card_id === fila.card_id && p.periodo === fila.periodo);
-        const base = i >= 0 ? arr[i] : { id: `optim-${fila.card_id}-${fila.periodo}`, created_at: new Date().toISOString() };
-        const row = { ...base, ...fila } as import("../lib/types").CardPeriodo;
-        if (i >= 0) arr[i] = row; else arr.push(row);
-        return arr;
-      });
-      return { previous };
-    },
-    onError: (_e, _fila, ctx) => {
-      if (ctx?.previous) qc.setQueryData(["card_periodos"], ctx.previous);
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: ["card_periodos"] }),
   });
 }
 
