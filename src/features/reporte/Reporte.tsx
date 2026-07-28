@@ -11,6 +11,9 @@ import { useArqueoStats } from "../../hooks/useArqueo";
 import { filtrarPorSegmento } from "../../lib/segmento";
 import { AnalisisMensual } from "./AnalisisMensual";
 import { Comparador } from "./Comparador";
+import { toast } from "sonner";
+import { documentoImpresion, type DatosReporte } from "../../lib/impresion";
+import { abrirImpresion } from "../../lib/impresion-dom";
 
 // Semáforo del cumplimiento de arqueo (SOLO sobre el número, marca monocroma).
 const colorArqueo = (pct: number) => (pct >= 98 ? "var(--done)" : pct >= 95 ? "var(--warn)" : "var(--danger)");
@@ -74,29 +77,73 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
   const card = "bg-surface rounded-2xl p-[18px]";
   const cardSh = { boxShadow: "var(--ring),var(--shadow)" };
 
+  // Vista de impresión DEDICADA (spec 28-correcciones, item 1). Ver src/lib/impresion.ts:
+  // se arma un documento propio y se imprime ESE, en vez de intentar imprimir la app
+  // escondiendo el armazón con `@media print` — que es lo que dejaba las hojas en blanco.
+  const fechaLarga = new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" });
+  const datosImpresion: DatosReporte = {
+    titulo: "Reporte ejecutivo — Equipo Contable",
+    subtitulo: `Grupo Paris${segLbl} · últimos 30 días`,
+    generado: fechaLarga,
+    kpis: [
+      { rotulo: "Salud del equipo", valor: `${salud}%`, detalle: saludTxt },
+      { rotulo: "Avance del período", valor: `${pctAvance}%`, detalle: `${term30.length}/${total} tareas` },
+      {
+        // `muestraChica` se respeta igual que en pantalla (Reporte.tsx, bloque Puntualidad):
+        // con 1 o 2 casos el porcentaje no significa nada y NO se publica. En el PDF importa
+        // todavía más: es el artefacto que circula fuera de contexto y sobrevive, así que es
+        // el peor lugar para imprimir un "0%" que el propio sistema decidió no mostrar.
+        rotulo: "Puntualidad",
+        valor: punt.pct === null ? "sin datos" : punt.muestraChica ? "pocos datos" : `${punt.pct}%`,
+        detalle: punt.pct === null ? undefined
+          : punt.muestraChica ? `n=${punt.n}, insuficiente para medir`
+          : `${punt.enFecha} de ${punt.n} con vencimiento`,
+      },
+      { rotulo: "Vencidas", valor: String(vencidas.length) },
+      { rotulo: "Bloqueadas", valor: String(bloqueadas.length) },
+      { rotulo: "Abiertas", valor: String(abiertas.length) },
+      { rotulo: "Cerradas (30 días)", valor: String(term30.length) },
+      { rotulo: "Actividad operativa", valor: String(actMes) },
+    ],
+    secciones: [
+      {
+        titulo: "Tareas por estado",
+        encabezados: ["Estado", "Cantidad"],
+        filas: estSegs.map((s) => ({ celdas: [s.label, String(s.val)] })),
+      },
+      {
+        // Mismo filtro que en pantalla (`rank.filter(r => r.ef > 0 || r.act > 0)`): sin él
+        // el PDF listaba a TODO el equipo con 0/0/0 —incluidas licencias e ingresos
+        // recientes— y las dos vistas del mismo ranking no coincidían. Si nadie tuvo
+        // actividad, la sección queda sin filas y sale el texto "Sin datos en este período".
+        titulo: "Ranking de productividad (esfuerzo cerrado, 30 días)",
+        encabezados: ["Persona", "Esfuerzo", "Tareas", "Actividad"],
+        filas: rank.filter((r) => r.ef > 0 || r.act > 0)
+          .map((r) => ({ celdas: [r.u.name, String(r.ef), String(r.n), String(r.act)] })),
+      },
+      {
+        titulo: "Carga abierta por persona",
+        encabezados: ["Persona", "Abiertas"],
+        filas: personaSegs.map((s) => ({ celdas: [s.label, String(s.val)] })),
+      },
+    ],
+  };
+  const imprimir = () => {
+    if (!abrirImpresion(documentoImpresion(datosImpresion))) {
+      toast.error("El navegador bloqueó la ventana. Permití las ventanas emergentes de este sitio y probá de nuevo.");
+    }
+  };
+
   return (
     <div className="px-6 py-4 w-full max-w-[940px] flex flex-col gap-4" id="reporte-print">
-      {/* Al imprimir/PDF: ocultamos sidebar/topbar/botones y mostramos un encabezado con la marca (P5) */}
-      <style>{`
-        .rep-print-header { display: none; }
-        @media print {
-          aside, .no-print, #reporte-print button { display: none !important; }
-          body { background: #fff !important; }
-          #reporte-print { max-width: 100% !important; padding: 0 !important; }
-          #reporte-print .rep-print-header { display: flex !important; }
-        }
-      `}</style>
-      <div className="rep-print-header items-center gap-3 pb-3 mb-1 border-b border-line">
-        <img src="/brand/isotipo-negro.svg" width={38} height={38} alt="Grupo Paris" />
-        <div className="leading-tight">
-          <b className="text-lg">Grupo Paris</b>
-          <div className="text-ink2 text-xs">Reporte ejecutivo — Equipo Contable{segLbl} · {new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" })}</div>
-        </div>
-      </div>
+      {/* El CSS de impresión que había acá se eliminó a propósito: intentaba imprimir esta
+          misma pantalla escondiendo el armazón de la app, y ese enfoque dejaba las hojas en
+          blanco. Ahora "Imprimir / PDF" genera un documento propio (src/lib/impresion.ts) y
+          lo imprime en una ventana nueva, sin nada del layout de la app que deshacer. */}
       <div className="flex justify-between items-end gap-4 flex-wrap">
         <div>
           <h1 className="text-[22px] font-bold tracking-tight m-0">Reporte ejecutivo — Equipo Contable</h1>
-          <p className="text-ink2 text-sm m-0">Generado {new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" })} · últimos 30 días</p>
+          <p className="text-ink2 text-sm m-0">Generado {fechaLarga} · últimos 30 días</p>
         </div>
         <div className="no-print flex items-center gap-2 flex-wrap">
           {org.marcas.length > 0 && (
@@ -113,7 +160,7 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
               {org.sucursales.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           )}
-          <button onClick={() => window.print()} className="flex items-center gap-2 border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]" style={cardSh}>
+          <button onClick={imprimir} className="flex items-center gap-2 border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]" style={cardSh}>
             <Download size={16} /> Imprimir / PDF
           </button>
         </div>

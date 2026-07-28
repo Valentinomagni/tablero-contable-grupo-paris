@@ -69,6 +69,12 @@ html,body,#root{height:100%}
   #root div.flex.min-h-screen { display: block !important; min-height: 0 !important; }
   #root aside { display: none !important; }
   #root main { display: block !important; height: auto !important; max-height: none !important; overflow: visible !important; }
+  /* `.no-print` marca controles que no tienen sentido en papel (botones, selects de filtro).
+     La regla vivía en un <style> local del Reporte que se borró al pasar a la vista de
+     impresión dedicada; sin ella, un Ctrl+P sobre la app imprimía los botones. El Reporte
+     ya no usa este camino (genera su propio documento), pero Ctrl+P sigue siendo válido en
+     el resto de las vistas y la clase se sigue usando ahí. */
+  .no-print { display: none !important; }
 }
 body{margin:0;background:var(--bg);color:var(--ink);
   font-family:"Inter","Segoe UI",system-ui,sans-serif;font-size:14.5px;line-height:1.5;

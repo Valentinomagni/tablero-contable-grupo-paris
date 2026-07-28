@@ -12,6 +12,7 @@ export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] 
       "Al entrar, ahora se abre directamente tu tablero. Antes aparecía una pantalla que podía verse vacía hasta que apretabas \"Mi tablero\".",
       "Las consultas, sugerencias y errores que reporta el equipo ahora llegan a una cuenta de administración del sistema, aparte y reservada. El jefe ya no las ve: si alguien reporta un problema, va a quien lo puede resolver.",
       "Cada columna del tablero tiene ahora su propio menú para ordenar y agrupar, independiente de las otras. Por ejemplo: \"Pendiente\" por vencimiento y agrupada por categoría, y \"Terminado\" sin agrupar. Se guarda por tablero.",
+      "Imprimir el Reporte en PDF ya no sale en blanco: ahora se abre una vista limpia, pensada para papel, con los indicadores y las tablas del período.",
     ],
   },
   {
