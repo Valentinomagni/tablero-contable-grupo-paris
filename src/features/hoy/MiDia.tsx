@@ -14,9 +14,14 @@ import { ArqueoResultDialog } from "../board/ArqueoResultDialog";
 import { EstancadaPrompt } from "../board/EstancadaPrompt";
 import { tareaParaPreguntar } from "../../lib/estancadas";
 import { tareaParaRetomar } from "../../lib/retomar";
+import { sePuedeCerrarRapido, patchCierreRapido, MOTIVO_NO_RAPIDO } from "../../lib/cierre-rapido";
+import { pushUndo } from "../../lib/undo";
+import { deshacerUltimo } from "../../lib/deshacer";
+import { payloadCards } from "../../lib/esquema";
+import { useMigraciones } from "../../hooks/useData";
 import { PREF, getPref, setPref } from "../../lib/prefs";
 import type { Card, Profile } from "../../lib/types";
-import { Sun, AlertTriangle, Clock, Flame, Check, CheckCircle2, Circle, Plane, RotateCcw } from "lucide-react";
+import { Sun, AlertTriangle, Clock, Flame, Check, CheckCircle2, Circle, Plane, RotateCcw, Lock } from "lucide-react";
 
 const CHIP: Record<MotivoDia, { lbl: string; cls: string; icon: typeof Clock }> = {
   vencida: { lbl: "Vencida", cls: "bg-danger-soft text-danger", icon: AlertTriangle },
@@ -105,6 +110,10 @@ export function MiDia({ ownerId, meId, cards, team, onOpenCard }: {
 }) {
   const hoyISO = toARTDate(new Date().toISOString());
   const misCards = cards.filter((c) => c.owner === ownerId);
+  const qcRef = useQueryClient();
+  // Sin la migración 29, `proc_at` no existe: payloadCards lo saca y el cierre rápido
+  // funciona igual (mismo gate que usa el tablero para el drag & drop).
+  const { data: migraciones } = useMigraciones();
 
   // Novedades de quienes cubro (spec 28 fase C, task 4): DEFENSIVA — useVacaciones ya
   // devuelve [] si la migración 23 no está aplicada. Solo se muestran en "mi" propio día.
@@ -167,6 +176,29 @@ export function MiDia({ ownerId, meId, cards, team, onOpenCard }: {
   // y que diga "venías con X" sería contarle a un tercero en qué andaba esa persona.
   const retomar = ownerId === meId ? tareaParaRetomar(misCards, meId, hoyISO) : null;
 
+  // P5 — cerrar de un toque desde la lista, sin abrir la tarea.
+  // Reusa `pushUndo` (la misma pila del Ctrl+Z del tablero), así el deshacer no es un
+  // mecanismo nuevo que mantener: el toast sólo dispara lo que ya existía.
+  const cerrarRapido = useMutation({
+    mutationFn: async (c: Card) => {
+      const patch = patchCierreRapido(c, nombreDe(meId), new Date().toISOString());
+      const body = payloadCards(patch, migraciones);
+      pushUndo(c, body);
+      const { error } = await supabase.from("cards").update(body).eq("id", c.id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, c) => {
+      qcRef.invalidateQueries({ queryKey: ["cards"] });
+      toast.success(`"${c.title}" terminada`, {
+        action: {
+          label: "Deshacer",
+          onClick: async () => { toast.message(await deshacerUltimo(qcRef)); },
+        },
+      });
+    },
+    onError: (e: Error) => toast.error("No se pudo cerrar: " + e.message),
+  });
+
   return (
     <div className="px-4 sm:px-6 pt-4 pb-10 max-w-[720px] w-full mx-auto">
       <div className="flex items-center gap-2 mb-4">
@@ -216,10 +248,13 @@ export function MiDia({ ownerId, meId, cards, team, onOpenCard }: {
           {items.map(({ card, motivo }) => {
             const chip = CHIP[motivo];
             const Icon = chip.icon;
+            // P5: el tilde cierra sin abrir. Sólo en la vista propia y sólo cuando la tarea
+            // lo admite — un control (arqueo), una protegida o una bloqueada siguen
+            // exigiendo abrirla, y en vez de un botón muerto se explica por qué.
             return (
-              <li key={card.id}>
+              <li key={card.id} className="flex items-stretch gap-2">
                 <button onClick={() => onOpenCard(card)}
-                  className="w-full text-left bg-surface rounded-xl px-3.5 py-3 border border-line/70 transition
+                  className="flex-1 min-w-0 text-left bg-surface rounded-xl px-3.5 py-3 border border-line/70 transition
                     hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-[var(--shadow-lg)] flex items-center gap-3"
                   style={{ boxShadow: "var(--shadow)" }}>
                   <span className="font-semibold text-[13.5px] tracking-tight leading-snug min-w-0 flex-1 break-words">{card.title}</span>
@@ -227,6 +262,22 @@ export function MiDia({ ownerId, meId, cards, team, onOpenCard }: {
                     <Icon size={11} /> {chip.lbl}
                   </span>
                 </button>
+                {ownerId === meId && (
+                  sePuedeCerrarRapido(card, misCards) ? (
+                    <button onClick={() => cerrarRapido.mutate(card)} disabled={cerrarRapido.isPending}
+                      title="Marcar terminada" aria-label={`Marcar terminada: ${card.title}`}
+                      className="shrink-0 w-11 rounded-xl border border-line/70 bg-surface text-ink2 transition
+                        hover:border-accent hover:text-accent disabled:opacity-50 flex items-center justify-center"
+                      style={{ boxShadow: "var(--shadow)" }}>
+                      <Check size={16} />
+                    </button>
+                  ) : (
+                    <span title={MOTIVO_NO_RAPIDO(card, misCards) ?? undefined}
+                      className="shrink-0 w-11 rounded-xl border border-dashed border-line/70 text-ink2/50 flex items-center justify-center">
+                      <Lock size={14} />
+                    </span>
+                  )
+                )}
               </li>
             );
           })}
