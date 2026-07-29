@@ -13,9 +13,10 @@ import { useVacaciones } from "../../hooks/useVacaciones";
 import { ArqueoResultDialog } from "../board/ArqueoResultDialog";
 import { EstancadaPrompt } from "../board/EstancadaPrompt";
 import { tareaParaPreguntar } from "../../lib/estancadas";
+import { tareaParaRetomar } from "../../lib/retomar";
 import { PREF, getPref, setPref } from "../../lib/prefs";
 import type { Card, Profile } from "../../lib/types";
-import { Sun, AlertTriangle, Clock, Flame, Check, CheckCircle2, Circle, Plane } from "lucide-react";
+import { Sun, AlertTriangle, Clock, Flame, Check, CheckCircle2, Circle, Plane, RotateCcw } from "lucide-react";
 
 const CHIP: Record<MotivoDia, { lbl: string; cls: string; icon: typeof Clock }> = {
   vencida: { lbl: "Vencida", cls: "bg-danger-soft text-danger", icon: AlertTriangle },
@@ -162,6 +163,9 @@ export function MiDia({ ownerId, meId, cards, team, onOpenCard }: {
   };
   // UNA sola tarea, la más estancada: preguntar por varias garantiza que se ignoren todas.
   const estancada = ownerId === meId ? tareaParaPreguntar(misCards, hoyISO, pospuestas) : null;
+  // P3 — retomar donde quedaste. También SÓLO en la vista propia: mirar el tablero de otro
+  // y que diga "venías con X" sería contarle a un tercero en qué andaba esa persona.
+  const retomar = ownerId === meId ? tareaParaRetomar(misCards, meId, hoyISO) : null;
 
   return (
     <div className="px-4 sm:px-6 pt-4 pb-10 max-w-[720px] w-full mx-auto">
@@ -186,6 +190,16 @@ export function MiDia({ ownerId, meId, cards, team, onOpenCard }: {
             ))}
           </div>
         </div>
+      )}
+      {/* P3 — "Retomar donde quedaste": una sola línea servicial contra el arranque frío.
+          Sin números, sin resumen, sin saludo. Si no hay nada claro, no se muestra nada:
+          el valor de esto está tanto en lo que dice como en cuándo se calla. */}
+      {retomar && (
+        <button onClick={() => onOpenCard(retomar)}
+          className="flex items-center gap-2 text-left rounded-xl border border-line bg-surface2 px-3.5 py-2.5 text-[13px] text-ink2 hover:border-accent transition">
+          <RotateCcw size={14} className="shrink-0" />
+          <span className="min-w-0">Venías con <b className="text-ink font-semibold">{retomar.title}</b></span>
+        </button>
       )}
       {estancada && (
         <EstancadaPrompt card={estancada.card} diasSinMover={estancada.diasSinMover}

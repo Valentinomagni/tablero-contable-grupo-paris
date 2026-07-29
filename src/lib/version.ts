@@ -23,6 +23,8 @@ export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] 
       "Cerrar un mes ahora lo deja de solo lectura, con candado en el selector. Se puede consultar pero no editar; para modificarlo, se reabre desde Cierre.",
       "Organigrama: junto a la evolución de cada persona se indica si sus resultados son parejos o dispares entre meses.",
       "Los indicadores muestran un sello de confiabilidad del dato que los sustenta, para saber de cuáles conviene fiarse.",
+      "En \"Mi día\" aparece una línea con la última tarea que venías trabajando, para retomar sin buscarla. Si no hay nada claro que retomar, no se muestra.",
+      "Las tareas recurrentes diarias ahora guardan el checklist y las observaciones de cada día por separado: lo que tildaste ayer ya no se pierde.",
     ],
   },
   {
