@@ -1,61 +1,97 @@
-# Estado del proyecto — al 22/07/2026
+# Estado del proyecto — al 28/07/2026
 
-Documento de situación pedido por el propietario. Separa lo que depende de mí (código)
-de lo que depende de él (decisiones y acciones externas). Honesto y sin adornos.
+Documento de situación. Separa lo que depende de mí (código) de lo que depende de vos
+(decisiones y acciones externas). Honesto y sin adornos.
 
 ---
 
 ## 1. Dónde estamos
 
-- **Tablero Contable v2.7.0**, en producción (Cloudflare), con **736 pruebas automáticas** verdes.
-- Migración a React completa; 31 migraciones de base de datos escritas.
-- Specs entregados: 24, 25, 26 y el spec 28 completo (fases A, B, C, D).
-- Repositorio en GitHub de la empresa, con CI (lint + tests + build en cada push).
+- **Tablero Contable v2.8.0**, con **987 pruebas automáticas** verdes, TypeScript sin
+  errores, lint sin errores y build OK.
+- 34 migraciones de base de datos escritas.
+- Repositorio en GitHub con CI (lint + tests + build + e2e en cada push) y **mantenimiento
+  automático** semanal (Dependabot + auditoría de seguridad y de código sin uso).
 
-## 2. Lo que YO di por hecho y en realidad está mal (lo más importante)
+## 2. ⚠️ Lo más importante: hay trabajo terminado que todavía NO ves
 
-Estas son correcciones, no funcionalidades nuevas. Las reconozco como fallas mías de
-interpretación o de verificación:
+Esto es lo único urgente del documento.
 
-| # | Qué dije | Qué pasa en realidad | Causa |
-|---|----------|----------------------|-------|
-| 1 | "PDF arreglado" (spec 26) | Sigue en blanco al imprimir/exportar | Lo verifiqué con una captura estática, no con una impresión real. El enfoque `@media print` es frágil. **Decisión tomada: rehacerlo con una vista de impresión dedicada.** |
-| 3 | "Usuario oculto listo" (Fase A) | Era una *marca* sobre un perfil existente (ej. Juan), no un usuario aparte | Interpreté de menos. Se quería un usuario propio e independiente del dueño. |
-| 7 | "Agrupación por carriles" (Fase A) | Agrupa TODO el tablero a la vez | Se quería control **por columna**, independiente. |
+### 2.1 Doce commits sin publicar
 
-## 3. Bugs nuevos reportados (verificados en el código)
+Están hechos, probados y commiteados **en esta máquina**, pero no subidos. Publicar
+requiere abrir GitHub Desktop en tu pantalla, y quedamos en que eso lo hago sólo cuando
+me avises.
 
-| # | Síntoma | Diagnóstico preliminar |
-|---|---------|------------------------|
-| 2 | Recurrencia diaria borra los checklist anteriores | El checklist vive en la card (uno solo); las ejecuciones diarias lo comparten. Falta historial por ejecución. Es parte del cambio de modelo de datos (ver punto 8). |
-| 4 | Las consultas van al jefe, no a un buzón de administración | La policy de `consultas` usa `es_jefe()`. Debe apuntar al usuario fantasma. |
-| 5 | Al entrar, pantalla vacía hasta apretar "Mi tablero" | A diagnosticar y reproducir; el estado inicial de la vista no carga el tablero directo. |
+### 2.2 Tres migraciones sin correr
 
-## 4. Funcionalidades pedidas todavía no hechas
+**`migraciones-pendientes.sql`** (raíz del repo) junta las tres en un solo archivo, listo
+para pegar una vez en Supabase → SQL Editor.
 
-| # | Qué | Tamaño |
-|---|-----|--------|
-| 6 | Automatizar el mantenimiento (dependencias, pipeline, análisis estático) | Medio — es configuración |
-| 7 | Menú de orden/agrupación por columna | Medio — rediseño de lo que hice |
-| 8 | Períodos de trabajo por empleado (varios meses abiertos, cada uno con sus datos sin pisarse) | **Grande — cambio de modelo de datos.** Va con diseño previo y tu OK. |
+| # | Qué habilita | Sin ella |
+|---|---|---|
+| 32 | Períodos | El selector de mes no muestra datos reales |
+| 33 | Administrador del sistema | No podés ver las consultas del equipo |
+| 34 | Checklist por día | Las recurrentes diarias siguen pisando el checklist |
 
-## 5. Pendiente MÍO (lo resuelvo yo, sin que hagas nada)
+**La 33 tiene un paso previo**: crear la cuenta en Supabase → Authentication → Users, y
+poner ese email en la línea marcada dentro del archivo. Está explicado arriba de todo.
 
-Todo lo de las secciones 2, 3 y 4 de este documento se implementa por código y lo deployo yo.
-El orden y el detalle están en el plan `docs/superpowers/plans/2026-07-22-28-correcciones.md`.
+**Nada de esto rompe si no lo corrés**: la app es defensiva y se comporta como hoy.
 
-## 6. Pendiente TUYO (solo lo que depende de credenciales o decisiones)
+## 3. Lo que se hizo y está esperando que lo veas
 
-Acordamos que las tareas de mantenimiento las automatizo; acá queda solo lo que NO puedo hacer yo:
+| Qué | Estado |
+|---|---|
+| PDF del Reporte (vista de impresión dedicada) | Hecho — **verificación visual tuya pendiente** |
+| Períodos: adelantar meses, cierre con candado, checklist diario | Hecho — necesita migraciones 32 y 34 |
+| Usuario fantasma + consultas fuera del jefe | Hecho — necesita migración 33 |
+| Pantalla vacía al entrar | Corregido |
+| Agrupar y ordenar por columna | Hecho |
+| Modo Director (5 señales + recomendaciones + confianza del dato) | Hecho |
+| Flujo mensual por persona y mapa de calor | Hecho |
+| Mi día: retomar, tarea estancada, cerrar de un toque, Tu semana | Hecho |
+| Mantenimiento automático (Dependabot + auditoría) | Hecho |
+| Instructivo del equipo (14 diapositivas) | Hecho |
 
-1. **Correr la migración 31** (Supabase → SQL Editor) — habilita etiquetas y empresas, y elimina un doble fetch de tareas que hoy ocurre en cada evento en tiempo real. Sin apuro, pero cuanto antes mejor para el rendimiento.
-2. **Activar el trigger de notificaciones** — con el orden estricto de `docs/PASOS-MANUALES.md` (reload de schema → verificar el RPC desde la app → recién ahí el `enable trigger`).
-3. **Rotación de credenciales** (clave de `jefe1`, PAT de GitHub) — **diferida por tu decisión** hasta salir de beta. Anotado, sin riesgo mientras sea beta cerrada.
-4. **Decisiones de producto abiertas**: ¿va el ICR (índice de calidad del registro) y mostrado cómo? ¿el cronómetro se descarta? (la propuesta lo desaconseja). Ver `docs/PROPUESTA-ICR.md`.
-5. **Sentry** (monitoreo de errores en producción): cuando quieras, creás el proyecto gratis y me pasás el DSN; el Error Boundary ya está preparado para enchufarlo. Ver `docs/SEGURIDAD.md`.
+## 4. Pendiente MÍO (código)
 
-## 7. Riesgos abiertos que quiero dejar por escrito
+1. **Migrar las 20 pantallas restantes al componente `Panel`.** Es cosmético y sin riesgo
+   funcional, pero requiere verificación visual — se hace por tandas cuando puedas mirar.
+2. **`mv_resumen_mensual`**: la vista materializada existe y **nadie la usa**. Le faltan
+   `sucursal` y `categoria` y el filtro de operativas para que las métricas den bien.
+   Arreglarla es una migración nueva; no la mezclé con lo demás.
+3. **Propuestas de adopción que quedan**: P6 (recordatorio contextual) y P10 (sincronizar
+   antes de la reunión). Diseñadas en `docs/PROPUESTAS-ADOPCION.md`.
 
-- **Verificación de la impresión**: no tengo forma perfecta de simular "Imprimir → PDF" de un navegador real. Por eso el nuevo enfoque (vista dedicada) es intrínsecamente más simple de validar, y te voy a pedir una confirmación visual tuya antes de darlo por cerrado.
-- **Deploy vs. caché**: si alguna corrección "no se ve" después de que la suba, puede ser la PWA vieja cacheada. La forma segura de forzar la última versión es cerrar y reabrir la app (o reinstalar la PWA). Lo tengo presente al verificar.
-- **Cambio de modelo de datos (períodos)**: es el cambio más grande del proyecto. Por eso va con diseño y tu aprobación antes de tocar la base — para no rehacer trabajo pesado.
+## 5. Pendiente TUYO
+
+1. **Correr `migraciones-pendientes.sql`** (ver punto 2.2). Es lo que desbloquea todo.
+2. **Avisarme para publicar** los 12 commits.
+3. **Verificación visual del PDF**: Reporte → Imprimir/PDF → confirmar que la vista previa
+   tiene contenido. Los tests garantizan que el documento se arma bien, **no** que el
+   navegador lo imprima bien — esa es exactamente la falla que tuve la vez pasada.
+4. **Decisiones abiertas**: ¿va el cronómetro? (desaconsejado en `docs/PROPUESTA-ICR.md`).
+   ¿Sentry para monitoreo de errores? (el Error Boundary ya está preparado).
+5. **Rotación de credenciales** — diferida por decisión tuya hasta salir de beta.
+
+## 6. Bloqueado, para que conste
+
+- **Sacar 6 dependencias que nadie usa** (`@base-ui/react`, `class-variance-authority`,
+  `clsx`, `shadcn`, `tailwind-merge`, `tw-animate-css`). Verificado que no las importa
+  nadie. **No hay npm en esta máquina**, así que no puedo regenerar el `package-lock.json`;
+  subir el `package.json` desincronizado rompería el CI. Retomable cuando haya npm.
+- **`card_pausas`**: tabla creada y vacía a propósito. Depende del cronómetro, que el
+  análisis del ICR desaconseja explícitamente.
+
+## 7. Riesgos abiertos
+
+- **Verificación visual acumulada**: hay bastante entregado que todavía no viste
+  funcionando. Los tests cubren la lógica, no la percepción. Cuanto antes corras las
+  migraciones y mires, menos se acumula.
+- **Deploy vs. caché**: si algo "no se ve" después de publicar, puede ser la PWA vieja
+  cacheada. Cerrar y reabrir la app fuerza la última versión.
+- **Adopción del equipo**: el modo de falla más probable de este proyecto no es técnico.
+  Si el equipo lo percibe como control, va a trabajar "para la foto" y todos los datos van
+  a ser mentira. Por eso el encuadre no punitivo está verificado por tests, y por eso hay
+  propuestas (P7 costo colectivo, P8 ranking) que están descartadas a propósito.

@@ -14,6 +14,8 @@ import { ArqueoResultDialog } from "../board/ArqueoResultDialog";
 import { EstancadaPrompt } from "../board/EstancadaPrompt";
 import { tareaParaPreguntar } from "../../lib/estancadas";
 import { tareaParaRetomar } from "../../lib/retomar";
+import { resumenDeSemana } from "../../lib/tu-semana";
+import { TuSemana } from "./TuSemana";
 import { sePuedeCerrarRapido, patchCierreRapido, MOTIVO_NO_RAPIDO } from "../../lib/cierre-rapido";
 import { pushUndo } from "../../lib/undo";
 import { deshacerUltimo } from "../../lib/deshacer";
@@ -175,6 +177,13 @@ export function MiDia({ ownerId, meId, cards, team, onOpenCard }: {
   // P3 — retomar donde quedaste. También SÓLO en la vista propia: mirar el tablero de otro
   // y que diga "venías con X" sería contarle a un tercero en qué andaba esa persona.
   const retomar = ownerId === meId ? tareaParaRetomar(misCards, meId, hoyISO) : null;
+  // P4 — "Tu semana". Espejo PERSONAL: igual que las dos anteriores, sólo en la vista propia.
+  // Mostrárselo a un jefe convertiría un espejo en una evaluación semanal automática, que es
+  // exactamente el modo de falla que el documento marca como caro y que suena barato al pedirlo.
+  // Hora de pared argentina SIN zona: "Tu semana" depende del día y la hora (viernes a la
+  // tarde), y leerlos de la zona del navegador daría el viernes equivocado desde afuera.
+  const ahoraART = new Date(Date.now() - 3 * 3600 * 1000).toISOString().slice(0, 19);
+  const semana = ownerId === meId ? resumenDeSemana(misCards, meId, ahoraART) : null;
 
   // P5 — cerrar de un toque desde la lista, sin abrir la tarea.
   // Reusa `pushUndo` (la misma pila del Ctrl+Z del tablero), así el deshacer no es un
@@ -223,6 +232,7 @@ export function MiDia({ ownerId, meId, cards, team, onOpenCard }: {
           </div>
         </div>
       )}
+      {semana && <TuSemana resumen={semana} ownerId={meId} />}
       {/* P3 — "Retomar donde quedaste": una sola línea servicial contra el arranque frío.
           Sin números, sin resumen, sin saludo. Si no hay nada claro, no se muestra nada:
           el valor de esto está tanto en lo que dice como en cuándo se calla. */}

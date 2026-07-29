@@ -69,6 +69,11 @@ export default function App() {
   const { data: cards = [], isLoading: cardsLoading } = useCards();
   const { data: activity = [] } = useActivity();
   const { data: periodos = [] } = useCardPeriodos();
+  // Acá arriba y no junto a su uso: más abajo hay dos `return` tempranos (cargando / sin
+  // sesión), y un hook después de ellos cambia la cantidad de hooks entre renders. React
+  // corta con "Rendered more hooks than during the previous render" — pantalla en blanco
+  // justo al terminar de cargar. Regla: TODOS los hooks antes del primer return.
+  const { data: cierres = [] } = usePeriodos();
   const { data: migracionesAplicadas } = useMigraciones();
   const hoyISO = new Date().toISOString();
   const [periodoSel, setPeriodoSel] = useState<string>(() => periodoVigente(hoyISO));
@@ -191,7 +196,6 @@ export default function App() {
   // Períodos Fase 3: un mes cerrado pasa a ser de SÓLO LECTURA. Hasta ahora el cierre era
   // una marca declarativa que no congelaba nada. Se evalúa sobre la persona cuyo tablero se
   // está mirando (`view`), no sobre quien mira: el cierre es por persona y por mes.
-  const { data: cierres = [] } = usePeriodos();
   const periodoEstaCerrado = periodoCerrado(cierres, view, periodoSel);
   const cerradosDelTablero = periodosCerradosDe(cierres, view);
   const vigente = periodoVigente(hoyISO);

@@ -19,6 +19,9 @@ export const PREF = {
   // Namespaced por owner: el snooze es una decisión personal sobre MIS tareas, y sólo
   // vive en este navegador — no es un dato que deba viajar ni que nadie más deba ver.
   estancadasPospuestas: (ownerId: string) => NS + "estancadas-pospuestas:" + ownerId,
+  // Semana cuyo resumen personal ya se cerró a mano (P4, "Tu semana"). Guarda el lunes de
+  // esa semana, así la semana siguiente vuelve a mostrarse sola sin tener que limpiar nada.
+  semanaVista: (ownerId: string) => NS + "semana-vista:" + ownerId,
 } as const;
 
 export function getPref(k: string): string | null {
