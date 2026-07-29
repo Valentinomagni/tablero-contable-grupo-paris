@@ -20,6 +20,7 @@ import { exposicion } from "../../lib/exposicion";
 import { saludOperativa } from "../../lib/salud-operativa";
 import { flujoMensual } from "../../lib/flujo-mensual";
 import { recomendaciones, type Prioridad } from "../../lib/recomendaciones";
+import { Panel } from "../../components/Panel";
 
 const COLOR: Record<Semaforo, string> = {
   ok: "var(--done)",
@@ -34,8 +35,6 @@ const COLOR_PRIORIDAD: Record<Prioridad, string> = {
   baja: "var(--ink2)",
 };
 
-const CARD = "bg-surface border border-line rounded-2xl px-5 py-4";
-const SOMBRA = { boxShadow: "var(--ring-sh),var(--shadow)" };
 
 export function Director({ cards, team, annos }: { cards: Card[]; team: Profile[]; annos: Announcement[] }) {
   const now = new Date();
@@ -98,8 +97,7 @@ export function Director({ cards, team, annos }: { cards: Card[]; team: Profile[
       </p>
       <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
         {paneles.map((p) => (
-          <div key={p.area} className="bg-surface border border-line rounded-2xl px-5 py-4"
-            style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
+          <Panel key={p.area} className="px-5 py-4">
             <div className="flex items-center gap-2 mb-2.5">
               <span aria-hidden className="w-2.5 h-2.5 rounded-full shrink-0"
                 style={{ background: COLOR[p.semaforo] }} />
@@ -107,13 +105,13 @@ export function Director({ cards, team, annos }: { cards: Card[]; team: Profile[
             </div>
             <b className="block text-[18px] leading-tight tracking-[-0.01em] mb-1.5">{p.titular}</b>
             <span className="block text-[12.5px] text-ink2">{p.detalle}</span>
-          </div>
+          </Panel>
         ))}
       </div>
 
       {/* ---- Recomendaciones: lo primero accionable, por eso va arriba de todo lo demás ---- */}
       <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mt-7 mb-2.5">Qué conviene hacer</h2>
-      <div className={CARD} style={SOMBRA}>
+      <Panel className="px-5 py-4">
         {sugerencias.length === 0 ? (
           <span className="text-[13px] text-ink2">Sin recomendaciones: no se detectaron situaciones que requieran acción.</span>
         ) : (
@@ -130,13 +128,13 @@ export function Director({ cards, team, annos }: { cards: Card[]; team: Profile[
             ))}
           </ul>
         )}
-      </div>
+      </Panel>
 
       <div className="grid gap-4 mt-7 [grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
         {/* ---- Si nadie hace nada ---- */}
         <div>
           <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Si nadie hace nada</h2>
-          <div className={CARD} style={SOMBRA}>
+          <Panel className="px-5 py-4">
             <div className="flex flex-col gap-3">
               {exposiciones.map((e) => (
                 <div key={e.horizonte} className="flex items-baseline gap-3">
@@ -151,13 +149,13 @@ export function Director({ cards, team, annos }: { cards: Card[]; team: Profile[
               ))}
             </div>
             <p className="text-[12px] text-ink2 mt-3 mb-0">Tareas abiertas que vencen dentro de cada plazo, incluidas las ya vencidas.</p>
-          </div>
+          </Panel>
         </div>
 
         {/* ---- Confianza del dato (ICR) ---- */}
         <div>
           <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Confianza del dato</h2>
-          <div className={CARD} style={SOMBRA}>
+          <Panel className="px-5 py-4">
             {calidad.suficiente ? (
               <>
                 <b className="block text-[26px] tnum tracking-[-0.02em] leading-none">{calidad.puntaje}<span className="text-[15px] text-ink2 font-normal">/100</span></b>
@@ -172,7 +170,7 @@ export function Director({ cards, team, annos }: { cards: Card[]; team: Profile[
             {/* La regla de lectura va SIEMPRE visible, no escondida en un tooltip: es lo que
                 evita que este número se lea como una nota de desempeño. */}
             <p className="text-[12px] text-ink2 mt-3 mb-0 pt-3 border-t border-line">{calidad.lectura}</p>
-          </div>
+          </Panel>
         </div>
       </div>
     </div>
