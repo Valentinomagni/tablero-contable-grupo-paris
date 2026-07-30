@@ -18,6 +18,7 @@ import { APP_VERSION } from "./lib/version";
 import { Login } from "./components/Login";
 import { Shell } from "./components/Shell";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { SkeletonVista } from "./components/Skeleton";
 import { Board } from "./features/board/Board";
 import { CardModal } from "./features/board/CardModal";
 import { DelegarModal } from "./features/board/DelegarModal";
@@ -147,7 +148,9 @@ export default function App() {
   }, [qcRef]);
 
 
-  if (loading) return <div className="min-h-screen grid place-items-center text-ink2">Cargando…</div>;
+  // Esqueleto y no un texto de espera: es la primerísima pantalla que ve cualquiera al abrir
+  // la app, y el hueco con forma evita el salto de layout cuando llegan los datos.
+  if (loading) return <div className="min-h-screen bg-bg"><SkeletonVista /></div>;
   if (!me) return <Login onSignIn={signIn} />;
 
   // Al entrar, TODOS aterrizan en su propio tablero (spec 28-correcciones, item 5).
@@ -267,7 +270,7 @@ export default function App() {
           )}
         </> : undefined}>
         <ErrorBoundary key={view}>
-        <Suspense fallback={<div className="px-6 py-8 text-ink2 text-sm">Cargando…</div>}>
+        <Suspense fallback={<SkeletonVista />}>
         {view === "__resumen" ? <Resumen cards={scopedCards} team={equipoVisible} activity={activity} onOpenCard={setOpenCard} onGoPerson={(id) => { setViewing(id); setMode("board"); }} onDelegar={esGestor ? () => setDelegar(true) : undefined} annos={annos} esGestor={esGestor} />
           : view === "__reporte" ? <Reporte cards={scopedCards} team={equipoVisible} activity={activity} />
           : view === "__tablon" ? <Tablon me={me} team={equipoVisible} onGoCalendario={() => setViewing("__calendario")} />
