@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
 import { Modal } from "./Modal";
+import { mensajeUsuario } from "../lib/fallas";
 
 export function AccountModal({ name, email, onClose }: { name: string; email: string; onClose: () => void }) {
   const [old, setOld] = useState("");
@@ -20,7 +21,7 @@ export function AccountModal({ name, email, onClose }: { name: string; email: st
     if (authErr) { setBusy(false); return setMsg({ ok: false, txt: "La contraseña actual es incorrecta." }); }
     const { error } = await supabase.auth.updateUser({ password: nu });
     setBusy(false);
-    if (error) return setMsg({ ok: false, txt: "No se pudo cambiar: " + error.message });
+    if (error) return setMsg({ ok: false, txt: mensajeUsuario(error, "cambiar la contraseña") });
     setMsg({ ok: true, txt: "Contraseña cambiada correctamente." });
     setOld(""); setNu(""); setNu2("");
   };

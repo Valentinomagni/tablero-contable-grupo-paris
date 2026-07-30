@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { supabase } from "../../lib/supabase";
 import type { Card } from "../../lib/types";
 import { HelpCircle } from "lucide-react";
+import { mensajeUsuario } from "../../lib/fallas";
 
 /**
  * P1 — el aviso de tarea estancada. Tarjeta discreta dentro de "Mi día":
@@ -34,7 +35,7 @@ export function EstancadaPrompt({ card, diasSinMover, quien, onAbrir, onPosponer
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["cards"] }); toast.success("Anotado, gracias."); },
-    onError: (e: Error) => toast.error("No se pudo registrar: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "registrar el motivo")),
   });
 
   // "Ya está terminada" → la cierra acá mismo. Es la salida que corrige el dato viejo,
@@ -48,7 +49,7 @@ export function EstancadaPrompt({ card, diasSinMover, quien, onAbrir, onPosponer
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["cards"] }); toast.success("Tarea cerrada."); },
-    onError: (e: Error) => toast.error("No se pudo cerrar: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "cerrar la tarea")),
   });
 
   const ocupado = seguir.isPending || terminar.isPending;

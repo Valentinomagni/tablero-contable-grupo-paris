@@ -18,6 +18,7 @@ import { puedeEditarAnuncio } from "../../lib/anuncios";
 import { useArca } from "../tablon/arca";
 import { aEventosVirtuales, type EventoVirtual } from "../../lib/arca-filtro";
 import { cn, Avatar } from "../../lib/ui";
+import { mensajeUsuario } from "../../lib/fallas";
 
 type Kind = Announcement["kind"];
 const KIND: Record<Kind, { label: string; chip: string; dot: string }> = {
@@ -90,7 +91,7 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["occurrences"] }),
-    onError: (e: Error) => toast.error("No se pudo actualizar: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "actualizar el cumplimiento")),
   });
 
   const irMes = (delta: number) => {
@@ -106,7 +107,7 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["announcements"] }); toast.success("Evento agregado al calendario"); setNTitulo(""); setNDetalle(""); setNCompartir([]); },
-    onError: (e: Error) => toast.error("No se pudo guardar: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "guardar el evento")),
   });
   const del = useMutation({
     mutationFn: async (id: string) => {
@@ -114,7 +115,7 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["announcements"] }); toast.success("Evento eliminado"); },
-    onError: (e: Error) => toast.error("No se pudo eliminar: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "eliminar el evento")),
   });
   // Fijar un vencimiento ARCA (evento virtual) como announcement permanente en el calendario.
   const fijarArca = useMutation({
@@ -124,7 +125,7 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["announcements"] }); toast.success("Vencimiento ARCA fijado en el calendario"); },
-    onError: (e: Error) => toast.error("No se pudo fijar: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "fijar el vencimiento")),
   });
 
   const eventosDelDia = diaSel ? (porDia[diaSel] ?? []) : [];

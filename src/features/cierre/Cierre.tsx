@@ -15,6 +15,7 @@ import { faltantesDePlantilla, filasParaInsertar } from "../../lib/plantilla";
 import { useArchiveEquipo } from "../../hooks/useArchive";
 import { usePeriodos, esTablaInexistente, useCerrarMes, useReabrirMes } from "../../hooks/usePeriodos";
 import { Avatar } from "../../lib/ui";
+import { mensajeUsuario } from "../../lib/fallas";
 
 const cardSh = { boxShadow: "var(--ring-sh),var(--shadow)" };
 
@@ -120,7 +121,7 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
         toast.success(`Cerraste tu ${mesLegible(mesNavegado)} de ${ym.year}.`);
       }
     } catch (e) {
-      toast.error("No se pudo actualizar el cierre: " + (e as Error).message);
+      toast.error(mensajeUsuario(e, "actualizar el cierre"));
     } finally {
       setConfirmando(false);
     }
@@ -132,7 +133,7 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
     setBusy(true);
     const { error } = await supabase.from("cards").insert(filasParaInsertar(faltan, ym.year, ym.month, meName));
     setBusy(false);
-    if (error) { toast.error("No se pudo generar: " + error.message); return; }
+    if (error) { toast.error(mensajeUsuario(error, "generar las tareas del cierre")); return; }
     qc.invalidateQueries({ queryKey: ["cards"] });
     toast.success(`${faltan.length} tarea(s) de cierre generadas`);
   }

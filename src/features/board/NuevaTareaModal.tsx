@@ -8,6 +8,7 @@ import { categoriasEnUso, mergeCategorias } from "../../lib/categorias";
 import { useSettings, useMigraciones } from "../../hooks/useData";
 import { payloadCards } from "../../lib/esquema";
 import type { Card } from "../../lib/types";
+import { mensajeUsuario } from "../../lib/fallas";
 
 // Flujo formal de alta (spec 21, item 2): las tareas nacen en Pendiente con sus
 // datos completos. Nunca ofrece "Marcar terminada" — eso es del ciclo de vida, no del alta.
@@ -44,7 +45,7 @@ export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { owne
       toast.success("Tarea creada");
       onClose();
     },
-    onError: (e: Error) => toast.error("No se pudo crear la tarea: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "crear la tarea")),
   });
 
   const puedeCrear = title.trim().length > 0 && !crear.isPending;

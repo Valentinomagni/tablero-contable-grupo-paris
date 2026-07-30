@@ -8,6 +8,7 @@ import { useConsultas } from "../../hooks/useData";
 import { esTablaInexistente } from "../../hooks/usePeriodos";
 import { validarConsulta } from "../../lib/consultas";
 import type { Consulta } from "../../lib/types";
+import { mensajeUsuario } from "../../lib/fallas";
 
 const TIPO_LBL: Record<Consulta["tipo"], string> = { consulta: "Consulta", sugerencia: "Sugerencia", error: "Error" };
 const ESTADO_LBL: Record<Consulta["estado"], string> = { nueva: "Enviada", leida: "Leída", archivada: "Archivada" };
@@ -30,7 +31,7 @@ export function ConsultasModal({ meId, onClose }: { meId: string; onClose: () =>
     setErr(null); setBusy(true);
     const { error } = await supabase.from("consultas").insert({ autor: meId, tipo, texto: texto.trim(), estado: "nueva" });
     setBusy(false);
-    if (error) { toast.error("No se pudo enviar: " + error.message); return; }
+    if (error) { toast.error(mensajeUsuario(error, "enviar la consulta")); return; }
     toast.success("Consulta enviada.");
     setTexto("");
     qc.invalidateQueries({ queryKey: ["consultas"] });

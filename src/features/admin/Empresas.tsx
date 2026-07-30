@@ -6,6 +6,7 @@ import { esTablaInexistente } from "../../hooks/usePeriodos";
 import { ordenarEmpresas } from "../../lib/empresas";
 import type { Empresa } from "../../lib/types";
 import { EmptyState } from "../../components/EmptyState";
+import { mensajeUsuario } from "../../lib/fallas";
 
 // Datos estratégicos de empresas (spec 28, Task 8): SOLO 4 campos (nombre, CUIT,
 // cierre de balance, reporta a fábrica, prioridad manual). A propósito NO hay
@@ -75,12 +76,12 @@ export function Empresas() {
     if (editId) {
       editar.mutate({ id: editId, ...payload }, {
         onSuccess: () => { toast.success("Empresa actualizada."); cancelar(); },
-        onError: (e: Error) => toast.error("No se pudo actualizar: " + e.message),
+        onError: (e: Error) => toast.error(mensajeUsuario(e, "actualizar la empresa")),
       });
     } else {
       crear.mutate(payload, {
         onSuccess: () => { toast.success("Empresa creada."); cancelar(); },
-        onError: (e: Error) => toast.error("No se pudo crear: " + e.message),
+        onError: (e: Error) => toast.error(mensajeUsuario(e, "crear la empresa")),
       });
     }
   }
@@ -89,7 +90,7 @@ export function Empresas() {
     if (!confirm(`¿Eliminar "${e.nombre}"?`)) return;
     borrar.mutate(e.id, {
       onSuccess: () => toast.success("Empresa eliminada."),
-      onError: (err: Error) => toast.error("No se pudo eliminar: " + err.message),
+      onError: (err: Error) => toast.error(mensajeUsuario(err, "eliminar la empresa")),
     });
   }
 

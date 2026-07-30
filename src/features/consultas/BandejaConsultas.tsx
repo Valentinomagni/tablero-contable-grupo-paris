@@ -9,6 +9,7 @@ import { esTablaInexistente } from "../../hooks/usePeriodos";
 // mismas, y cuando estaban duplicadas la misma consulta se llamaba distinto en cada lado.
 import { ordenarConsultas, TIPO_LBL, ESTADO_LBL } from "../../lib/consultas";
 import type { Consulta } from "../../lib/types";
+import { mensajeUsuario } from "../../lib/fallas";
 
 export function BandejaConsultas({ team }: { team: { id: string; name: string }[] }) {
   const qc = useQueryClient();
@@ -31,7 +32,7 @@ export function BandejaConsultas({ team }: { team: { id: string; name: string }[
 
   async function actualizar(id: string, patch: Partial<Consulta>) {
     const { error } = await supabase.from("consultas").update(patch).eq("id", id);
-    if (error) { toast.error("No se pudo actualizar: " + error.message); return; }
+    if (error) { toast.error(mensajeUsuario(error, "actualizar la consulta")); return; }
     qc.invalidateQueries({ queryKey: ["consultas"] });
     qc.invalidateQueries({ queryKey: ["consultas-nuevas"] });
   }

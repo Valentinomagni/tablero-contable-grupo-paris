@@ -8,6 +8,7 @@ import { filtrarOrdenar, notaATarea } from "../../lib/notas";
 import { useNotes } from "../../hooks/useNotes";
 import type { Note, Profile } from "../../lib/types";
 import { cn } from "../../lib/ui";
+import { mensajeUsuario } from "../../lib/fallas";
 
 const cardSh = { boxShadow: "var(--ring-sh),var(--shadow)" };
 
@@ -41,7 +42,7 @@ export function Notas({ me }: { me: Profile }) {
       return data as Note;
     },
     onSuccess: (nueva) => { refetch(); setSelId(nueva.id); },
-    onError: (e: unknown) => toast.error("No se pudo crear la nota: " + (e as Error).message),
+    onError: (e: unknown) => toast.error(mensajeUsuario(e, "crear la nota")),
   });
 
   const guardar = useMutation({
@@ -53,7 +54,7 @@ export function Notas({ me }: { me: Profile }) {
       if (error) throw error;
     },
     onSuccess: () => refetch(),
-    onError: (e: unknown) => toast.error("No se pudo guardar: " + (e as Error).message),
+    onError: (e: unknown) => toast.error(mensajeUsuario(e, "guardar la nota")),
   });
 
   const archivar = useMutation({
@@ -63,7 +64,7 @@ export function Notas({ me }: { me: Profile }) {
       if (error) throw error;
     },
     onSuccess: () => refetch(),
-    onError: (e: unknown) => toast.error("No se pudo archivar: " + (e as Error).message),
+    onError: (e: unknown) => toast.error(mensajeUsuario(e, "archivar la nota")),
   });
 
   const eliminar = useMutation({
@@ -72,7 +73,7 @@ export function Notas({ me }: { me: Profile }) {
       if (error) throw error;
     },
     onSuccess: () => { refetch(); setSelId(null); },
-    onError: (e: unknown) => toast.error("No se pudo eliminar: " + (e as Error).message),
+    onError: (e: unknown) => toast.error(mensajeUsuario(e, "eliminar la nota")),
   });
 
   const convertir = useMutation({
@@ -91,7 +92,7 @@ export function Notas({ me }: { me: Profile }) {
       refetch();
       toast.success("Creada en tu tablero");
     },
-    onError: (e: unknown) => toast.error("No se pudo convertir: " + (e as Error).message),
+    onError: (e: unknown) => toast.error(mensajeUsuario(e, "convertir la nota en tarea")),
   });
 
   const fecha = (iso: string) => new Date(iso).toLocaleDateString("es-AR", { day: "numeric", month: "short" });

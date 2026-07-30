@@ -9,6 +9,7 @@ import { useVacaciones } from "../../hooks/useVacaciones";
 import { rangoValido, vacacionesActivasYFuturas, impactoLicencia } from "../../lib/vacaciones";
 import { toARTDate } from "../../lib/metrics";
 import { Avatar } from "../../lib/ui";
+import { mensajeUsuario } from "../../lib/fallas";
 
 const fmt = (iso: string) => new Date(iso + "T12:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" });
 
@@ -51,7 +52,7 @@ export function VacacionesModal({ me, team, cards, onClose }: {
       toast.success("Vacaciones registradas");
       setOwner(""); setDesde(""); setHasta(""); setMotivo("Vacaciones"); setReemplazante(""); setNotas("");
     },
-    onError: (e) => toast.error("No se pudo guardar: " + (e as Error).message),
+    onError: (e) => toast.error(mensajeUsuario(e, "guardar la licencia")),
   });
 
   const eliminar = useMutation({
@@ -60,7 +61,7 @@ export function VacacionesModal({ me, team, cards, onClose }: {
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["vacaciones"] }); toast.success("Vacación eliminada"); },
-    onError: (e) => toast.error("No se pudo eliminar: " + (e as Error).message),
+    onError: (e) => toast.error(mensajeUsuario(e, "eliminar la licencia")),
   });
 
   // Cobertura: pasa una tarea abierta del ausente a su reemplazante, dejando historial.
@@ -75,7 +76,7 @@ export function VacacionesModal({ me, team, cards, onClose }: {
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["cards"] }); toast.success("Tarea reasignada al reemplazante"); },
-    onError: (e) => toast.error("No se pudo reasignar: " + (e as Error).message),
+    onError: (e) => toast.error(mensajeUsuario(e, "reasignar la tarea al reemplazante")),
   });
 
   const puede = !!owner && rangoValido(desde, hasta);

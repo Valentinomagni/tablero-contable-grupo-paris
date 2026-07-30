@@ -6,6 +6,7 @@ import type { Card } from "../../lib/types";
 import { semanaDe, tareasDelDia, poolSinPlan } from "../../lib/semana";
 import { pushUndo } from "../../lib/undo";
 import { cn } from "../../lib/ui";
+import { mensajeUsuario } from "../../lib/fallas";
 
 // Planificación semanal: arrastrar una tarea a un día = asignarle vencimiento ese día.
 export function Semana({ cards, ownerId, meName, onOpen }: {
@@ -25,7 +26,7 @@ export function Semana({ cards, ownerId, meName, onOpen }: {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["cards"] }),
-    onError: (e: Error) => toast.error("No se pudo planificar: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "planificar la semana")),
   });
 
   const drop = (e: React.DragEvent, date: string | null) => {

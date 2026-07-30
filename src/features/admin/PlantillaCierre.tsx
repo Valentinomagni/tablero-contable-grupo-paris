@@ -6,6 +6,7 @@ import { guardarPermissions } from "../../lib/settings-guardar";
 import type { Profile, AppSettings } from "../../lib/types";
 import { validarPlantilla, type TemplateItem } from "../../lib/plantilla";
 import { useSettings } from "../../hooks/useData";
+import { mensajeUsuario } from "../../lib/fallas";
 
 export function PlantillaCierre({ team }: { team: Profile[] }) {
   const qc = useQueryClient();
@@ -28,7 +29,7 @@ export function PlantillaCierre({ team }: { team: Profile[] }) {
       qc.invalidateQueries({ queryKey: ["settings"] });
       setDraft(null);
     } catch (e) {
-      toast.error((e as Error).message);
+      toast.error(mensajeUsuario(e, "guardar la plantilla de cierre"));
     }
   }
 

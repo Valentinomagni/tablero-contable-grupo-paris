@@ -8,6 +8,7 @@ import type { Card, Profile } from "../../lib/types";
 import { puedeReasignar } from "../../lib/jerarquia";
 import { personasVisibles } from "../../lib/visibilidad";
 import { Avatar } from "../../lib/ui";
+import { mensajeUsuario } from "../../lib/fallas";
 
 // Reasignar tareas abiertas de un miembro del equipo a otro (uso del Encargado, spec #9).
 // El alcance se valida con puedeReasignar (mismo helper testeado); RLS del Plan 02 lo respalda en el servidor.
@@ -37,7 +38,7 @@ export function ReasignarModal({ me, equipo, profiles, cards, onClose }: {
       toast.success(`${sel.length} tarea(s) reasignada(s) a ${nom(destino)}`);
       onClose();
     },
-    onError: (e) => toast.error("No se pudo reasignar: " + (e as Error).message),
+    onError: (e) => toast.error(mensajeUsuario(e, "reasignar las tareas")),
   });
 
   const inputCls = "bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-sm";

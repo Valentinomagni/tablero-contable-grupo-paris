@@ -22,6 +22,7 @@ import { MetaSection } from "./card/MetaSection";
 import { DepsSection } from "./card/DepsSection";
 import { ChecklistSection } from "./card/ChecklistSection";
 import { ComentariosSection } from "./card/ComentariosSection";
+import { mensajeUsuario } from "../../lib/fallas";
 
 export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose, meId, meName = "—", periodo, vigente }:
   { card: Card; cards: Card[]; team: Profile[]; activity?: ActivityLog[]; isJefe: boolean; onClose: () => void; meId?: string; meName?: string;
@@ -58,7 +59,7 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["cards"] }); toast.success("Tarea duplicada"); },
-    onError: (e: Error) => toast.error("No se pudo duplicar: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "duplicar la tarea")),
   });
 
   const del = useMutation({

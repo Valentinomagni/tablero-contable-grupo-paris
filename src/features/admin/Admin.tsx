@@ -21,6 +21,7 @@ import { estadoMigraciones } from "../../lib/migraciones";
 import { enLinea, textoUltimaConexion } from "../../lib/presencia";
 import { BandejaConsultas } from "../consultas/BandejaConsultas";
 import { Empresas } from "./Empresas";
+import { mensajeUsuario, clasificarFalla } from "../../lib/fallas";
 
 // chip de estado de migraciones (spec 27, T2): verde al día / ámbar faltan / gris desconocido
 function MigracionesChip() {
@@ -105,7 +106,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
       setPermMsg(okTxt);
       qc.invalidateQueries({ queryKey: ["settings"] });
     } catch (e) {
-      setPermMsg((e as Error).message);
+      setPermMsg(mensajeUsuario(e, "guardar los permisos"));
     }
     setTimeout(() => setPermMsg(""), 3000);
   }
@@ -116,7 +117,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
   // se lee con un hook propio y se guarda con upsert directo a la fila de esa key.
   async function saveTiemposMax(next: Record<string, number>, okTxt: string) {
     const { error } = await supabase.from("settings").upsert({ key: "tiempos_max", value: next }, { onConflict: "key" });
-    setTmMsg(error ? "No se pudo guardar: " + error.message : okTxt);
+    setTmMsg(error ? mensajeUsuario(error, "guardar los tiempos máximos") : okTxt);
     if (!error) qc.invalidateQueries({ queryKey: ["tiempos_max"] });
     setTimeout(() => setTmMsg(""), 3000);
   }
@@ -145,7 +146,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
     const filas = filasDePlantilla(pl, meName, new Date().toISOString(), porDefecto);
     const { error } = await supabase.from("cards").insert(filas);
     setPlGenBusy(null);
-    if (error) { toast.error("No se pudo generar: " + error.message); return; }
+    if (error) { toast.error(mensajeUsuario(error, "generar las tareas de la plantilla")); return; }
     qc.invalidateQueries({ queryKey: ["cards"] });
     toast.success(`${filas.length} tarea(s) generada(s) desde "${pl.nombre}"`);
   }
@@ -164,7 +165,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
       created_by: meName, owner_id: me.id, visible_to: [],
     })));
     setFiscalBusy(false);
-    if (error) { toast.error("No se pudo generar: " + error.message); return; }
+    if (error) { toast.error(mensajeUsuario(error, "generar los vencimientos fiscales")); return; }
     qc.invalidateQueries({ queryKey: ["announcements"] });
     toast.success(`${fiscalPreview.length} vencimiento(s) fiscal(es) generado(s)`);
     setFiscalPreview(null);
@@ -507,7 +508,17 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
               setArchBusy(true);
               const { data, error } = await supabase.rpc("archivar_mes", { p_mes: archMes });
               setArchBusy(false);
-              if (error) toast.error("No se pudo archivar: " + error.message + ". ¿Está aplicada la migración 22?");
+              // La pista de la migración 22 se conserva aparte y NO se delega en
+              // `clasificarFalla`: cuando falta la función, PostgREST responde PGRST202
+              // ("could not find the function ... in the schema cache"), que no cae en la
+              // rama de falta-migracion. Para quien administra, esa pista es lo único que
+              // desatasca. Si la falla sí quedó clasificada como migración, no se repite.
+              if (error) {
+                const online = navigator.onLine;
+                const base = mensajeUsuario(error, "archivar el mes", online);
+                const yaLoDice = clasificarFalla(error, online).tipo === "falta-migracion";
+                toast.error(yaLoDice ? base : base + " Si administrás el sistema, revisá que esté aplicada la migración 22.");
+              }
               else { toast.success(`Mes ${mesLabel(archMes)} archivado: ${data ?? 0} tareas.`); qc.invalidateQueries({ queryKey: ["archive"] }); }
             }}
             className="flex items-center gap-1.5 bg-accent text-white rounded-lg px-3.5 py-2 text-sm font-semibold disabled:opacity-60">

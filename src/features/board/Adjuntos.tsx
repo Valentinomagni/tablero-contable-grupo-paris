@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Paperclip, Trash2, FileText } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { nombreSeguro, validarAdjunto } from "../../lib/adjuntos";
+import { mensajeUsuario } from "../../lib/fallas";
 
 // Tamaño legible en KB/MB (sin dependencias externas).
 function tamanoLegible(bytes: number): string {
@@ -40,7 +41,7 @@ export function Adjuntos({ cardId, canEdit }: { cardId: string; canEdit: boolean
       if (error) throw error;
     },
     onSuccess: () => { invalidate(); toast.success("Adjunto subido"); },
-    onError: (e: Error) => toast.error("No se pudo subir: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "subir el archivo")),
   });
 
   const borrar = useMutation({
@@ -49,7 +50,7 @@ export function Adjuntos({ cardId, canEdit }: { cardId: string; canEdit: boolean
       if (error) throw error;
     },
     onSuccess: () => { invalidate(); setConfirmDel(null); toast.success("Adjunto eliminado"); },
-    onError: (e: Error) => toast.error("No se pudo eliminar: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "eliminar el archivo")),
   });
 
   const descargar = async (name: string) => {

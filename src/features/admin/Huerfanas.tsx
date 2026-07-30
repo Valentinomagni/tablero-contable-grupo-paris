@@ -6,6 +6,7 @@ import { ArrowRightLeft } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import type { Card, Profile } from "../../lib/types";
 import { personasVisibles } from "../../lib/visibilidad";
+import { mensajeUsuario } from "../../lib/fallas";
 
 // Tareas huérfanas: cards cuyo dueño ya no está en el equipo (centinela "Sin asignar"
 // tras eliminar un empleado, o cualquier dueño inexistente). Solo la ve el jefe, cuyo
@@ -27,7 +28,7 @@ export function Huerfanas({ team, cards }: { team: Profile[]; cards: Card[] }) {
       qc.invalidateQueries({ queryKey: ["cards"] });
       toast.success("Tarea reasignada.");
     },
-    onError: (e: Error) => toast.error("No se pudo reasignar: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "reasignar la tarea")),
   });
 
   const inputCls = "bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-sm";

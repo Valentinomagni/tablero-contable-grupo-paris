@@ -14,6 +14,7 @@ import { AnuncioEditForm } from "../../components/AnuncioEditForm";
 import { puedeEditarAnuncio, puedeEliminarAnuncio } from "../../lib/anuncios";
 import { activos, archivados } from "../../lib/tablon";
 import { cn, Avatar } from "../../lib/ui";
+import { mensajeUsuario } from "../../lib/fallas";
 
 function useMarkVisto() {
   useEffect(() => { setPref(PREF.tablon, new Date().toISOString()); }, []);
@@ -63,7 +64,7 @@ export function Tablon({ me, team = [], onGoCalendario }: { me?: Profile; team?:
       if (error) throw error;
     },
     onSuccess: (_d, v) => { qc.invalidateQueries({ queryKey: ["announcements"] }); toast.success(v.valor ? "Aviso archivado" : "Aviso restaurado"); },
-    onError: (e: Error) => toast.error("No se pudo actualizar: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "actualizar el aviso")),
   });
 
   // Eliminación definitiva — policy DELETE de la migración 27 (autor o jefe).
@@ -73,7 +74,7 @@ export function Tablon({ me, team = [], onGoCalendario }: { me?: Profile; team?:
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["announcements"] }); toast.success("Aviso eliminado definitivamente"); setConfirmDelId(null); },
-    onError: (e: Error) => toast.error("No se pudo eliminar: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "eliminar el aviso")),
   });
 
   const secciones: [Announcement["kind"], string, string][] = [
@@ -227,7 +228,7 @@ function PublicarForm({ me, team, onDone }: { me: Profile; team: Profile[]; onDo
       }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["announcements"] }); toast.success("Aviso publicado"); onDone(); },
-    onError: (e: Error) => toast.error("No se pudo publicar: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "publicar el aviso")),
   });
 
   const inputCls = "w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-sm";

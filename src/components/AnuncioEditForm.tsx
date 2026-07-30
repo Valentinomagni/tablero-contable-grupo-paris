@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "../lib/supabase";
 import type { Announcement } from "../lib/types";
+import { mensajeUsuario } from "../lib/fallas";
 
 // Edición inline de un aviso/evento publicado (spec 21, item 1).
 // Compartido por Calendario (modal de día) y Tablón. Defensivo: si la policy de
@@ -28,7 +29,7 @@ export function AnuncioEditForm({ a, onDone }: { a: Announcement; onDone: () => 
       toast.success("Evento actualizado");
       onDone();
     },
-    onError: (e: Error) => toast.error("No se pudo guardar: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "guardar el aviso")),
   });
 
   const inputCls = "w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-sm";

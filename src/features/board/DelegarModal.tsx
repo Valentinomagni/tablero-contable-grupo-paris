@@ -8,6 +8,7 @@ import type { Profile } from "../../lib/types";
 import { filasCompartida } from "../../lib/shared";
 import { notifsAlDelegar } from "../../lib/notificaciones";
 import { Avatar } from "../../lib/ui";
+import { mensajeUsuario } from "../../lib/fallas";
 
 // Delegar/compartir una tarea entre varias personas: se crea una tarjeta espejo por participante
 // (aparece en el board de cada uno y suma en las métricas de todos). Completarla sincroniza a todas.
@@ -44,7 +45,7 @@ export function DelegarModal({ team, meId, meName, onClose }: { team: Profile[];
       } catch { /* secundario: se ignora */ }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["cards"] }); toast.success("Tarea compartida creada"); onClose(); },
-    onError: (e) => toast.error("No se pudo crear: " + (e as Error).message),
+    onError: (e) => toast.error(mensajeUsuario(e, "crear la delegación")),
   });
 
   // Empleado sin compañeros visibles (RLS de profiles / jerarquía sin cargar): estado

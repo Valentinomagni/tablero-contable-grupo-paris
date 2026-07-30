@@ -3,6 +3,7 @@ import { Modal } from "../../components/Modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import type { Objective } from "../../lib/types";
+import { mensajeUsuario } from "../../lib/fallas";
 
 export function ObjModal({ obj, ownerId, ownerName, otherWeight, onClose }:
   { obj: Objective | null; ownerId: string; ownerName: string; otherWeight: number; onClose: () => void }) {
@@ -31,7 +32,7 @@ export function ObjModal({ obj, ownerId, ownerName, otherWeight, onClose }:
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["objectives"] }); onClose(); },
-    onError: (e: Error) => setMsg("No se pudo guardar: " + e.message),
+    onError: (e: Error) => setMsg(mensajeUsuario(e, "guardar el objetivo")),
   });
   const del = useMutation({
     mutationFn: async () => {
@@ -39,7 +40,7 @@ export function ObjModal({ obj, ownerId, ownerName, otherWeight, onClose }:
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["objectives"] }); onClose(); },
-    onError: (e: Error) => setMsg("No se pudo eliminar: " + e.message),
+    onError: (e: Error) => setMsg(mensajeUsuario(e, "eliminar el objetivo")),
   });
 
   const onSave = () => {
