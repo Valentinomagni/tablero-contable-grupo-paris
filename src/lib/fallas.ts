@@ -136,6 +136,30 @@ export function clasificarFalla(e: unknown, online: boolean): Falla {
   };
 }
 
+/**
+ * El texto que se le muestra a una persona cuando una acción falla.
+ *
+ * POR QUÉ EXISTE. El 30/07/2026 una empleada mandó la captura de este cartel:
+ *
+ *     No se pudo guardar la recurrencia: new row violates row-level security
+ *     policy for table "task_occurrences"
+ *
+ * Eso no le sirve a nadie: no dice qué pasó, no dice qué hacer, y encima asusta. La regla
+ * del proyecto es que un error nunca muestra el mensaje crudo de la base, y acá se estaba
+ * incumpliendo en 35 lugares.
+ *
+ * `accion` es lo que se estaba intentando, en infinitivo y en minúscula: "guardar la
+ * recurrencia", "archivar el mes". Se usa sólo cuando la falla es desconocida, porque en los
+ * casos conocidos la explicación de `clasificarFalla` ya es mejor que cualquier prefijo.
+ */
+export function mensajeUsuario(e: unknown, accion: string, online = true): string {
+  const falla = clasificarFalla(e, online);
+  if (falla.tipo !== "desconocida") return falla.explicacion;
+  // Falla sin clasificar: se dice qué se intentaba y se ofrece el canal para reportarlo. El
+  // detalle técnico NO va acá — va al portapapeles desde la pantalla de error, no en la cara.
+  return `No se pudo ${accion}. Probá de nuevo, y si sigue pasando avisá por Consultas desde tu perfil.`;
+}
+
 /** Texto corto y copiable para pegar en una consulta. Nunca vacío. */
 export function detalleTecnico(e: unknown): string {
   const partes: string[] = [];

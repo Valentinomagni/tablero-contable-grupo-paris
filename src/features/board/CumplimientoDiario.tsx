@@ -5,6 +5,7 @@ import { supabase } from "../../lib/supabase";
 import type { TaskOccurrence } from "../../lib/types";
 import { useCardOccurrences, useCardOccurrencesAll } from "../../hooks/useOccurrences";
 import { claveFecha } from "../../lib/calendario";
+import { mensajeUsuario } from "../../lib/fallas";
 import { statsArqueo, evolucionMensual, textoDiferencia } from "../../lib/arqueo";
 import { cn } from "../../lib/ui";
 import { ArqueoResultDialog } from "./ArqueoResultDialog";
@@ -59,7 +60,7 @@ export function CumplimientoDiario({ cardId, owner, year, month, requiere = fals
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["occurrences"] });
     },
-    onError: (e: Error) => toast.error("No se pudo actualizar: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "actualizar el cumplimiento del día")),
   });
 
   const onDiaClick = (fecha: string) => {

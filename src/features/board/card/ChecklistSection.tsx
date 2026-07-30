@@ -6,6 +6,7 @@ import { type Card, type ChecklistItem, type HistoryEntry, type TaskOccurrence }
 import { useCardOccurrences } from "../../../hooks/useOccurrences";
 import { useMigraciones } from "../../../hooks/useData";
 import { tieneChecklistDiario, payloadOccurrences } from "../../../lib/esquema";
+import { mensajeUsuario } from "../../../lib/fallas";
 import { claveFecha } from "../../../lib/calendario";
 import { editarItem, borrarItem } from "../../../lib/checklist";
 import { textoDiferencia } from "../../../lib/arqueo";
@@ -40,7 +41,7 @@ export function ChecklistSection({ c, patch, hist }:
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["occurrences"] }),
-    onError: (e: Error) => toast.error("No se pudo actualizar: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "actualizar el checklist")),
   });
   // Ocurrencia del checklist mensual pendiente de resultado de arqueo (card de control).
   const [pendingOcc, setPendingOcc] = useState<TaskOccurrence | null>(null);
@@ -187,7 +188,7 @@ function ChecklistDelDia({ c }: { c: Card }) {
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["occurrences"] }),
-    onError: (e: Error) => toast.error("No se pudo guardar el checklist del día: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "guardar el checklist del día")),
   });
 
   if (!habilitado) return null;

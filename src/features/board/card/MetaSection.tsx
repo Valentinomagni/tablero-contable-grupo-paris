@@ -5,6 +5,7 @@ import { supabase } from "../../../lib/supabase";
 import { COLS, type Card, type Profile, type HistoryEntry, type RecurRule, type AppSettings } from "../../../lib/types";
 import { ocurrenciasFaltantes, OCC_CONFLICT } from "../../../lib/recurrencia";
 import { fmtDateTime } from "../../../lib/metrics";
+import { mensajeUsuario } from "../../../lib/fallas";
 import { isShared, participantes } from "../../../lib/shared";
 import { categoriasEnUso, mergeCategorias } from "../../../lib/categorias";
 import { etiquetasEnUso, agregarEtiqueta } from "../../../lib/etiquetas";
@@ -67,7 +68,7 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
       qc.invalidateQueries({ queryKey: ["occurrences"] });
       toast.success("Recurrencia guardada");
     },
-    onError: (e: Error) => toast.error("No se pudo guardar la recurrencia: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "guardar la recurrencia")),
   });
 
   return (

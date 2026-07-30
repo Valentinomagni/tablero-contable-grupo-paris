@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { clasificarFalla, detalleTecnico } from "./fallas";
+import { clasificarFalla, detalleTecnico, mensajeUsuario } from "./fallas";
 
 describe("clasificarFalla — versión vieja tras publicar", () => {
   // El caso real: se publica una versión nueva, el navegador tiene el shell viejo en caché
@@ -94,6 +94,38 @@ describe("clasificarFalla — el resto", () => {
       const f = clasificarFalla(c, true);
       expect(f.titulo.trim()).not.toBe("");
       expect(f.explicacion.trim()).not.toBe("");
+    }
+  });
+});
+
+describe("mensajeUsuario — nunca el mensaje crudo de la base", () => {
+  // EL CASO REAL: el 30/07/2026 una empleada mandó la captura de este cartel al intentar
+  // guardar una recurrencia. No dice qué pasó, no dice qué hacer, y asusta.
+  it("el error de RLS que vio Celeste se traduce a lenguaje de usuario", () => {
+    const e = { code: "42501", message: 'new row violates row-level security policy for table "task_occurrences"' };
+    const msg = mensajeUsuario(e, "guardar la recurrencia");
+    // Se verifica el SIGNIFICADO, no la redacción exacta: un test atado a las palabras
+    // concretas se rompe con cada mejora de copy y termina desalentando mejorarlo.
+    expect(msg).not.toMatch(/row-level|policy|task_occurrences|violates/i);
+    expect(msg).toMatch(/no puede|no tenés/i);   // dice que la acción no está permitida
+    expect(msg).toMatch(/consultas/i);           // y ofrece el canal para reclamarlo
+  });
+
+  it("una falla desconocida dice qué se intentaba y ofrece el canal para reportarla", () => {
+    const msg = mensajeUsuario(new Error("Cannot read properties of undefined"), "guardar el checklist");
+    expect(msg).toContain("guardar el checklist");
+    expect(msg).toMatch(/consultas/i);
+    // Tampoco se filtra el detalle técnico: ése se copia desde la pantalla de error.
+    expect(msg).not.toMatch(/undefined|Cannot read/);
+  });
+
+  it("sin conexión lo dice, en vez de culpar a la acción", () => {
+    expect(mensajeUsuario(new TypeError("Failed to fetch"), "guardar", false)).toMatch(/conexión|internet/i);
+  });
+
+  it("nunca devuelve un texto vacío", () => {
+    for (const raro of [null, undefined, 0, "", {}]) {
+      expect(mensajeUsuario(raro, "hacer algo").trim().length).toBeGreaterThan(10);
     }
   });
 });

@@ -32,6 +32,11 @@
 --                          tildaste ayer.
 --    35 · SEGURIDAD      → cierra la escalada de privilegios que dejó abierta
 --                          la 33. Ver el aviso de arriba.
+--    36 · Encargados     → lo que reportó Celeste el 30/07: un encargado no
+--                          podía guardar la recurrencia de una tarea de su
+--                          equipo ("violates row-level security policy") ni ver
+--                          los registros de las operativas. Archivo suelto:
+--                          `migracion-36-encargados-equipo.sql`.
 --
 --  ⚠️  UN PASO PREVIO, SÓLO PARA LA 33
 --      Antes de correr esto, creá la cuenta de administración:

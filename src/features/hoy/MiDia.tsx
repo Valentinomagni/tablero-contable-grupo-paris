@@ -6,6 +6,7 @@ import { itemsDelDia, type MotivoDia } from "../../lib/midia";
 import { cierreDelDia } from "../../lib/cierre-dia";
 import { novedadesPara } from "../../lib/vacaciones";
 import { toARTDate } from "../../lib/metrics";
+import { mensajeUsuario } from "../../lib/fallas";
 import { cn } from "../../lib/ui";
 import { supabase } from "../../lib/supabase";
 import { useCardOccurrences, useOccurrences } from "../../hooks/useOccurrences";
@@ -65,7 +66,7 @@ function ArqueoHoyCard({ card, owner, hoyISO }: { card: Card; owner: string; hoy
       qc.invalidateQueries({ queryKey: ["occurrences"] });
       toast.success(extra.resultado === "ok" ? "Arqueo registrado sin diferencias." : "Arqueo registrado con diferencias.");
     },
-    onError: (e: Error) => toast.error("No se pudo registrar el arqueo: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "registrar el arqueo")),
   });
 
   // Sin ocurrencia hoy → no hay arqueo pendiente que mostrar.
@@ -205,7 +206,7 @@ export function MiDia({ ownerId, meId, cards, team, onOpenCard }: {
         },
       });
     },
-    onError: (e: Error) => toast.error("No se pudo cerrar: " + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "cerrar la tarea")),
   });
 
   return (
