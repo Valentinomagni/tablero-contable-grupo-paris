@@ -76,7 +76,7 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
   // Controles de caja (arqueo) — cumplimiento del mes actual por card de control (P1).
   const arqueo = useArqueoStats(cards, mesActualPrefix());
 
-  const cardSh = { boxShadow: "var(--ring),var(--shadow)" };
+  const cardSh = { boxShadow: "var(--ring-sh),var(--shadow)" };
 
   // Vista de impresión DEDICADA (spec 28-correcciones, item 1). Ver src/lib/impresion.ts:
   // se arma un documento propio y se imprime ESE, en vez de intentar imprimir la app

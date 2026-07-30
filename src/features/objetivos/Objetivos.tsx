@@ -24,7 +24,7 @@ export function Objetivos({ ownerId, ownerName }: { ownerId: string; ownerName: 
       {mine.map((o) => {
         const pct = kpiPct(o), cls = kpiClass(pct);
         return (
-          <div key={o.id} onClick={() => setEditing(o)} className="bg-surface border border-line rounded-xl px-4 py-3 mb-2.5 cursor-pointer" style={{ boxShadow: "var(--ring),var(--shadow)" }}>
+          <div key={o.id} onClick={() => setEditing(o)} className="bg-surface border border-line rounded-xl px-4 py-3 mb-2.5 cursor-pointer" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
             <div className="flex justify-between items-center gap-2.5">
               <b>{o.title}</b><span className="bg-chip rounded-full px-2.5 py-0.5 font-bold tnum shrink-0">{o.weight}%</span>
             </div>

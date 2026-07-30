@@ -48,6 +48,11 @@ export function MiMes({ cards, activity, ownerId, onOpenCard }: {
       </div>
 
       <h2 className="text-base font-bold tracking-[-0.01em] text-ink mb-2.5">Avance del mes</h2>
+      {/* panel-guard-ok: es la tarjeta canónica pero NO puede usar <Panel>. La barra de color
+          de la izquierda es `border-l-[3px]` más `border-done`/`border-warn`, que son
+          utilidades de COLOR de borde, no de un lado: el `border border-line` que agrega
+          Panel haría que ese color pinte los cuatro lados en vez de sólo la barra. Se
+          resuelve el día que Panel tenga una variante sin borde. */}
       <div className={`bg-surface rounded-2xl p-[18px] mb-6 border-l-[3px] ${alDia ? "border-done" : "border-warn"}`} style={cardSh}>
         <Bar label="Mes transcurrido" pct={pctMes} color="var(--ink2)" />
         <Bar label="Tareas cerradas" pct={pctAvance} color={alDia ? "var(--done)" : "var(--warn)"} />

@@ -452,7 +452,7 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
           const hoy = regs.filter((a) => new Date(a.at).toDateString() === hoyStr).reduce((s, a) => s + a.qty, 0);
           const sem = regs.filter((a) => Date.now() - new Date(a.at).getTime() < 7 * 86400000).reduce((s, a) => s + a.qty, 0);
           return (
-            <div key={c.id} onClick={() => onOpen(c)} className="bg-surface rounded-lg p-3 mb-2 cursor-pointer border border-transparent hover:border-accent/30 transition" style={{ boxShadow: "var(--ring),var(--shadow)" }}>
+            <div key={c.id} onClick={() => onOpen(c)} className="bg-surface rounded-lg p-3 mb-2 cursor-pointer border border-transparent hover:border-accent/30 transition" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
               <div className="font-semibold text-sm tracking-tight">{c.title}</div>
               <div className="flex gap-2 flex-wrap mt-1.5 text-xs text-ink2">
                 <span className="bg-chip rounded-md px-1.5 py-0.5 tnum">hoy: {hoy}</span>

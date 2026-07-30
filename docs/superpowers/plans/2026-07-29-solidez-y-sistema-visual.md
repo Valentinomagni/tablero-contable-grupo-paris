@@ -1542,10 +1542,15 @@ Expected: los tres en `EXIT: 0`.
 Crear `src/components/Panel.guard.test.ts`:
 
 ```ts
+/// <reference types="node" />
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
+// La primera línea no se puede borrar: `tsconfig.app.json` fija `"types": ["vite/client"]`,
+// así que sin ella `tsc` corta con TS2591 en el import de `node:fs`. Mismo motivo que en
+// `src/lib/tipografia.guard.test.ts`.
+//
 // GUARDIÁN. `Panel` ya existía y se usaba en 2 archivos mientras otros 16 tenían la misma
 // tarjeta copiada a mano. Así es como se deshace un sistema de diseño: nadie decide cambiarlo,
 // simplemente cada copia se va separando un poco. Ya había pasado con las sombras, que
@@ -2077,3 +2082,47 @@ en las 16 tarjetas copiadas y en un botón que ofrecía reintentar algo que no p
 - **`aria-label` en los 165 archivos.** Se hizo lo de mayor impacto (foco visible global,
   `aria-busy` en la carga). Una pasada completa de accesibilidad merece su propio plan y una
   herramienta que la mida, no un barrido a ojo.
+
+---
+
+## Hallazgo: Panel cubre el 40% de las superficies
+
+Al ejecutar las Tasks 7 y 8 se midió cuántas superficies de tarjeta hay realmente en `src/`.
+La premisa del plan —"~15 archivos tienen el mismo par de estilos copiado a mano"— no es lo
+que hay en el árbol.
+
+**Números** (contando instancias renderizadas, no líneas de código: varios archivos reusaban
+una const `card` en un solo lugar del texto pero la aplicaban en 5 o 9 tarjetas):
+
+- **41** instancias de superficie tipo tarjeta con `bg-surface` + `rounded-2xl`.
+- **18** son la tarjeta canónica (`bg-surface` + `p-[18px]`), la única que `Panel` reproduce
+  exactamente y de la que `Panel.test.tsx` prueba que la migración es visualmente neutra.
+- **17 migradas** a `Panel` en las Tasks 7 y 8. La 18.ª es `MiMes.tsx:51`, ver abajo.
+- **23** son otras 4 o 5 superficies, genuinamente distintas:
+
+| Padding | Instancias | Archivos |
+|---|---|---|
+| `p-4` (fichas de estadística, centradas) | 8 | `reporte/Reporte.tsx`, `reporte/AnalisisMensual.tsx`, `arqueo/MisArqueos.tsx` |
+| `px-5 py-4` | 6 | `resumen/Resumen.tsx`, `resumen/Delegaciones.tsx`, `resumen/RadarVencimientos.tsx`, `mimes/MiMes.tsx` |
+| sin padding (`overflow-hidden`, el padding lo ponen los hijos) | 6 | `calendario/Calendario.tsx`, `cierre/Cierre.tsx`, `hoy/MiDia.tsx`, `notas/Notas.tsx` |
+| `p-8` | 2 | `organigrama/Organigrama.tsx`, `components/Login.tsx` |
+| `p-5` | 1 | `cierre/Cierre.tsx` |
+
+**Recomendación: decidir las variantes mirando la pantalla, no el diff.** No se agregaron
+variantes nuevas a `Panel` a propósito. Forzar cualquiera de estas 23 dentro de `Panel` cambia
+el padding —y en las que no traen `border border-line`, agrega un borde— y eso es un cambio
+visual que no se puede verificar con tests. Las candidatas naturales son una variante de ficha
+de estadística (`p-4`, centrada) y una sin padding para los shells `overflow-hidden`, que
+juntas cubrirían 14 de las 23.
+
+**El caso `MiMes.tsx:51`** es la única tarjeta canónica que quedó sin migrar, y es la que pide
+una variante de `Panel` **sin borde**: tiene el padding correcto (`p-[18px]`) pero lleva
+`border-l-[3px]` con `border-done` o `border-warn` como acento de estado. `Panel` agrega
+`border border-line`, y `border-done` —que es una utilidad de color de borde, no de un solo
+lado— terminaría pintando los cuatro lados en verde o naranja en vez de sólo la barra
+izquierda. Es un cambio visual claro, así que se dejó como estaba.
+
+**Alcance del guardián.** Por todo esto `src/components/Panel.guard.test.ts` es angosto: cubre
+la tarjeta canónica y la sombra inválida, y declara en su comentario de cabecera que no cubre
+el resto. La alternativa era un chequeo amplio con ~15 excepciones, que aparenta una cobertura
+que no existe.

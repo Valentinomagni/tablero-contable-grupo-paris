@@ -4,8 +4,9 @@ import { useOccurrences } from "../../hooks/useOccurrences";
 import { cardsDeControl } from "../../hooks/useArqueo";
 import { historialDiferencias, resumenDiferencias } from "../../lib/arqueo";
 import { EmptyState } from "../../components/EmptyState";
+import { Panel } from "../../components/Panel";
 
-const cardSh = { boxShadow: "var(--ring),var(--shadow)" };
+const cardSh = { boxShadow: "var(--ring-sh),var(--shadow)" };
 const fmtMonto = (n: number) => n.toLocaleString("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
 
 // Historial personal de diferencias de caja (Task 1, spec28 fase B): para quien tenga
@@ -60,7 +61,7 @@ export function MisArqueos({ cards, ownerId }: { cards: Card[]; ownerId: string 
         </div>
       </div>
 
-      <div className="bg-surface rounded-2xl p-[18px]" style={cardSh}>
+      <Panel>
         <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-3.5">Historial de diferencias</h3>
         {historial.length ? (
           <table className="w-full text-sm border-collapse">
@@ -86,7 +87,7 @@ export function MisArqueos({ cards, ownerId }: { cards: Card[]; ownerId: string 
         ) : (
           <EmptyState icon={<Wallet size={22} />} title="Sin diferencias este mes" hint="Todos tus arqueos cerraron sin diferencias." />
         )}
-      </div>
+      </Panel>
     </div>
   );
 }

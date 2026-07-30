@@ -14,7 +14,7 @@ import { useArchiveEquipo } from "../../hooks/useArchive";
 import { useArqueoOccsAll } from "../../hooks/useArqueo";
 import { toast } from "sonner";
 
-const cardSh = { boxShadow: "var(--ring),var(--shadow)" };
+const cardSh = { boxShadow: "var(--ring-sh),var(--shadow)" };
 const fmtMonto = (n: number) => n.toLocaleString("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
 
 // Semáforo SOLO numérico (marca monocroma): el color queda en el número, no en el fondo.
