@@ -27,7 +27,7 @@ export function FlujoMensual({ team, mes }: { team: Profile[]; mes: string }) {
   return (
     <Panel>
       <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-1.5">Flujo de trabajo en el mes</h3>
-      <p className="text-ink2 text-[13px] m-0 mb-3.5">Muestra cuándo se concentra el trabajo de cada persona, para repartir mejor la carga.</p>
+      <p className="text-ink2 text-sm m-0 mb-3.5">Muestra cuándo se concentra el trabajo de cada persona, para repartir mejor la carga.</p>
 
       {filas.length === 0 ? (
         <EmptyState title="Todavía no hay actividad diaria registrada en este mes." />
@@ -38,7 +38,7 @@ export function FlujoMensual({ team, mes }: { team: Profile[]; mes: string }) {
             <span className="w-[150px] shrink-0" />
             <div className="flex-1 min-w-[180px] grid" style={{ gridTemplateColumns: "repeat(31, 1fr)" }}>
               {Array.from({ length: 31 }, (_, i) => (
-                <span key={i} className="text-[10px] text-ink2 tnum text-center leading-none">
+                <span key={i} className="text-2xs text-ink2 tnum text-center leading-none">
                   {MARCAS_DIA.includes(i + 1) ? i + 1 : ""}
                 </span>
               ))}
@@ -59,7 +59,7 @@ export function FlujoMensual({ team, mes }: { team: Profile[]; mes: string }) {
                   />
                 ))}
               </div>
-              <span className="w-[190px] shrink-0 text-right text-[12px] text-ink2">{TEXTO_PERFIL[f.perfil]}</span>
+              <span className="w-[190px] shrink-0 text-right text-xs text-ink2">{TEXTO_PERFIL[f.perfil]}</span>
             </div>
           ))}
         </div>

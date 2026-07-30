@@ -29,7 +29,7 @@ function VencBadge({ due }: { due: string }) {
     : days === 0 ? ["HOY", "bg-warn/15 text-warn"]
     : days <= 5 ? [`${lbl} · ${days} d`, "bg-warn/15 text-warn"]
     : [`${lbl} · ${days} d`, "bg-white/10 text-[#9aa0ab]"];
-  return <span className={`rounded-md px-2 py-0.5 text-[11px] font-semibold tnum shrink-0 ${cls}`}>{txt}</span>;
+  return <span className={`rounded-md px-2 py-0.5 text-2xs font-semibold tnum shrink-0 ${cls}`}>{txt}</span>;
 }
 
 export function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promise<{ message: string } | null> }) {
@@ -56,23 +56,23 @@ export function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promis
         {/* lockup oficial procesado desde logo.jpg (fondo removido) — fidelidad 1:1 */}
         <img src="/brand/lockup-blanco.svg" alt="Grupo Paris" className="w-[210px] h-auto" />
         <p className="text-[#9aa0ab] tracking-[3px] uppercase text-xs mt-2">Tablero Contable</p>
-        <p className="text-[#5c6270] text-[11px] tracking-[1.5px] uppercase mt-6 text-center leading-relaxed">
+        <p className="text-[#5c6270] text-2xs tracking-[1.5px] uppercase mt-6 text-center leading-relaxed">
           整理 Seiri · 整頓 Seiton · 清掃 Seiso<br />清潔 Seiketsu · 躾 Shitsuke
         </p>
-        <p className="text-[#5c6270] text-[11px] tracking-wide mt-1">Kaizen — mejora continua, todos los días</p>
+        <p className="text-[#5c6270] text-2xs tracking-wide mt-1">Kaizen — mejora continua, todos los días</p>
       </div>
 
       <form onSubmit={submit}
         className="bg-surface border border-line rounded-2xl p-8 w-full max-w-[390px] flex flex-col gap-3.5"
         style={{ boxShadow: "0 18px 50px rgba(9,20,40,.35)" }}>
         <h1 className="text-ink2 text-sm font-semibold m-0">Ingresá con tu usuario</h1>
-        {err && <div className="bg-danger/10 text-danger rounded-lg px-3 py-2.5 text-[13px]">{err}</div>}
-        <label className="text-[13px] text-ink2 flex flex-col gap-1.5">Usuario o email
+        {err && <div className="bg-danger/10 text-danger rounded-lg px-3 py-2.5 text-sm">{err}</div>}
+        <label className="text-sm text-ink2 flex flex-col gap-1.5">Usuario o email
           <input type="text" autoComplete="username" required value={identificador} onChange={(e) => setIdentificador(e.target.value)}
             placeholder="Ej: Vmagni o tu email"
             className="bg-surface2 border border-line rounded-lg text-ink text-sm px-2.5 py-2 outline-none focus:ring-2 focus:ring-accent" />
         </label>
-        <label className="text-[13px] text-ink2 flex flex-col gap-1.5">Contraseña
+        <label className="text-sm text-ink2 flex flex-col gap-1.5">Contraseña
           <input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)}
             className="bg-surface2 border border-line rounded-lg text-ink text-sm px-2.5 py-2 outline-none focus:ring-2 focus:ring-accent" />
         </label>
@@ -90,7 +90,7 @@ export function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promis
               <h2 className="text-[#9aa0ab] uppercase tracking-[2px] text-xs font-semibold mt-0 mb-3">Próximos vencimientos del equipo</h2>
               {vencs.map((v, i) => (
                 <div key={i} className="flex items-center justify-between gap-2 py-1.5 border-b border-white/5 last:border-0">
-                  <b className="text-white text-[13px] truncate">{v.title}</b>
+                  <b className="text-white text-sm truncate">{v.title}</b>
                   <VencBadge due={v.due_date} />
                 </div>
               ))}
@@ -100,7 +100,7 @@ export function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promis
             <>
               <h2 className="text-[#9aa0ab] uppercase tracking-[2px] text-xs font-semibold mt-5 mb-3">Agenda ARCA — {mes}</h2>
               <ArcaAgenda items={arca} />
-              <p className="text-[#9aa0ab] text-[11px] m-0">Fuente: arca.gob.ar · se actualiza sola</p>
+              <p className="text-[#9aa0ab] text-2xs m-0">Fuente: arca.gob.ar · se actualiza sola</p>
             </>
           )}
         </div>

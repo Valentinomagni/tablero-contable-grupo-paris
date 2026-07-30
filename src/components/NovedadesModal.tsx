@@ -16,7 +16,7 @@ export function NovedadesModal({ onClose }: { onClose: () => void }) {
         <span className="grid place-items-center w-8 h-8 rounded-lg bg-accent-soft text-accent"><Sparkles size={16} /></span>
         <h2 className="text-lg font-bold tracking-tight m-0">Novedades</h2>
       </div>
-      <p className="text-ink2 text-[13px] m-0 mb-3.5">Versión {APP_VERSION} · {fmtFecha(actual.fecha)}</p>
+      <p className="text-ink2 text-sm m-0 mb-3.5">Versión {APP_VERSION} · {fmtFecha(actual.fecha)}</p>
 
       <ul className="m-0 mb-4 pl-5 flex flex-col gap-1.5 text-sm list-disc">
         {actual.cambios.map((c, i) => <li key={i}>{c}</li>)}
@@ -24,12 +24,12 @@ export function NovedadesModal({ onClose }: { onClose: () => void }) {
 
       {resto.length > 0 && (
         <details className="mb-4">
-          <summary className="cursor-pointer text-[13px] text-ink2 select-none">Ver historial completo</summary>
+          <summary className="cursor-pointer text-sm text-ink2 select-none">Ver historial completo</summary>
           <div className="mt-2.5 flex flex-col gap-3">
             {resto.map((e) => (
               <div key={e.version}>
-                <p className="m-0 text-[13px] font-semibold">Versión {e.version} <span className="text-ink2 font-normal">· {fmtFecha(e.fecha)}</span></p>
-                <ul className="m-0 mt-1 pl-5 flex flex-col gap-1 text-[13px] list-disc">
+                <p className="m-0 text-sm font-semibold">Versión {e.version} <span className="text-ink2 font-normal">· {fmtFecha(e.fecha)}</span></p>
+                <ul className="m-0 mt-1 pl-5 flex flex-col gap-1 text-sm list-disc">
                   {e.cambios.map((c, i) => <li key={i}>{c}</li>)}
                 </ul>
               </div>

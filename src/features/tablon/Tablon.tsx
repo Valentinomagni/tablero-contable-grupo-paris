@@ -27,8 +27,8 @@ function dueBadge(due: string | null) {
 
 // Badge de prioridad (spec 24 item 1): urgente/importante visibles, normal sin badge.
 function prioridadBadge(p: Announcement["prioridad"]) {
-  if (p === "urgente") return <span className="bg-danger-soft text-danger rounded-md px-2 py-0.5 text-[11px] font-semibold">Urgente</span>;
-  if (p === "importante") return <span className="bg-warn-soft text-warn rounded-md px-2 py-0.5 text-[11px] font-semibold">Importante</span>;
+  if (p === "urgente") return <span className="bg-danger-soft text-danger rounded-md px-2 py-0.5 text-2xs font-semibold">Urgente</span>;
+  if (p === "importante") return <span className="bg-warn-soft text-warn rounded-md px-2 py-0.5 text-2xs font-semibold">Importante</span>;
   return null;
 }
 function bordePrioridad(p: Announcement["prioridad"]) {
@@ -82,7 +82,7 @@ export function Tablon({ me, team = [], onGoCalendario }: { me?: Profile; team?:
     <div className="px-6 py-4 w-full max-w-[900px]">
       <div className="flex justify-end mb-1">
         <button onClick={() => setPublicando((v) => !v)}
-          className="flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] border bg-surface2 border-line text-ink2 hover:text-accent transition">
+          className="flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm border bg-surface2 border-line text-ink2 hover:text-accent transition">
           <Plus size={14} /> Publicar aviso
         </button>
       </div>
@@ -93,15 +93,15 @@ export function Tablon({ me, team = [], onGoCalendario }: { me?: Profile; team?:
         return (
           <div key={kind}>
             <div className="flex items-center gap-3 mt-5 mb-2.5">
-              <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink m-0">{titulo}</h2>
+              <h2 className="text-base font-bold tracking-[-0.01em] text-ink m-0">{titulo}</h2>
               {kind === "vencimiento" && onGoCalendario && (
                 <button onClick={onGoCalendario}
-                  className="flex items-center gap-1 text-accent text-[12px] font-semibold hover:underline">
+                  className="flex items-center gap-1 text-accent text-xs font-semibold hover:underline">
                   <CalendarDays size={13} /> Ver en calendario
                 </button>
               )}
             </div>
-            {sub && <p className="text-ink2 text-[13px] -mt-1 mb-2.5">{sub}</p>}
+            {sub && <p className="text-ink2 text-sm -mt-1 mb-2.5">{sub}</p>}
             {items.length === 0 && <p className="text-ink2 text-sm">Nada publicado todavía.</p>}
             {items.map((a) => (
               <div key={a.id} className={cn("bg-surface border border-line rounded-xl px-4 py-3 mb-2", bordePrioridad(a.prioridad))} style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
@@ -114,7 +114,7 @@ export function Tablon({ me, team = [], onGoCalendario }: { me?: Profile; team?:
                       <span className="flex items-center gap-2">
                         {kind === "vencimiento" && dueBadge(a.due_date)}
                         {confirmDelId === a.id ? (
-                          <span className="flex items-center gap-1.5 text-[12.5px]">
+                          <span className="flex items-center gap-1.5 text-xs">
                             <span className="text-ink2">¿Eliminar definitivamente?</span>
                             <button onClick={() => eliminarAnuncio.mutate(a.id)} disabled={eliminarAnuncio.isPending}
                               className="rounded-lg px-2.5 py-1 bg-danger text-white font-semibold disabled:opacity-60">Eliminar</button>
@@ -136,7 +136,7 @@ export function Tablon({ me, team = [], onGoCalendario }: { me?: Profile; team?:
                       </span>
                     </div>
                     {a.detail && (kind === "proceso"
-                      ? <details className="my-1.5"><summary className="cursor-pointer text-accent text-[13px] font-semibold">Ver procedimiento</summary><p className="text-sm mt-1 whitespace-pre-line">{a.detail}</p></details>
+                      ? <details className="my-1.5"><summary className="cursor-pointer text-accent text-sm font-semibold">Ver procedimiento</summary><p className="text-sm mt-1 whitespace-pre-line">{a.detail}</p></details>
                       : <p className="text-sm my-1.5 whitespace-pre-line">{a.detail}</p>)}
                     <span className="text-ink2 text-xs">Publicado por {a.created_by} · {fmtDateTime(a.created_at)}</span>
                   </>
@@ -149,14 +149,14 @@ export function Tablon({ me, team = [], onGoCalendario }: { me?: Profile; team?:
 
       {guardados.length > 0 && (
         <details className="mt-6">
-          <summary className="cursor-pointer text-ink2 text-[13px] font-semibold">Archivados y vencidos ({guardados.length})</summary>
+          <summary className="cursor-pointer text-ink2 text-sm font-semibold">Archivados y vencidos ({guardados.length})</summary>
           <div className="mt-2.5">
             {guardados.map((a) => (
               <div key={a.id} className="bg-surface border border-line rounded-xl px-4 py-3 mb-2 opacity-80">
                 <div className="flex justify-between items-center gap-2.5 flex-wrap">
                   <span className="flex items-center gap-2 flex-wrap"><b>{a.title}</b>{prioridadBadge(a.prioridad)}</span>
                   {confirmDelId === a.id ? (
-                    <span className="flex items-center gap-1.5 text-[12.5px]">
+                    <span className="flex items-center gap-1.5 text-xs">
                       <span className="text-ink2">¿Eliminar definitivamente?</span>
                       <button onClick={() => eliminarAnuncio.mutate(a.id)} disabled={eliminarAnuncio.isPending}
                         className="rounded-lg px-2.5 py-1 bg-danger text-white font-semibold disabled:opacity-60">Eliminar</button>
@@ -166,7 +166,7 @@ export function Tablon({ me, team = [], onGoCalendario }: { me?: Profile; team?:
                   ) : me && puedeEditarAnuncio(a, me.id, isJefe) && (
                     <span className="flex items-center gap-1.5">
                       <button onClick={() => setArchivado.mutate({ id: a.id, valor: false })} title="Restaurar"
-                        className="flex items-center gap-1 border border-line bg-surface2 rounded-lg px-2.5 py-1 text-[12px] text-ink2 hover:text-accent shrink-0"><RotateCcw size={13} /> Restaurar</button>
+                        className="flex items-center gap-1 border border-line bg-surface2 rounded-lg px-2.5 py-1 text-xs text-ink2 hover:text-accent shrink-0"><RotateCcw size={13} /> Restaurar</button>
                       {puedeEliminarAnuncio(a, me.id, isJefe) && (
                         <button onClick={() => setConfirmDelId(a.id)} title="Eliminar definitivamente"
                           className="border border-line bg-surface2 rounded-lg p-1.5 text-ink2 hover:text-danger shrink-0"><Trash2 size={13} /></button>
@@ -183,8 +183,8 @@ export function Tablon({ me, team = [], onGoCalendario }: { me?: Profile; team?:
       )}
 
       {arca.length > 0 && <>
-        <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mt-5 mb-1">Agenda ARCA — {mes}</h2>
-        <p className="text-ink2 text-[13px] mb-2.5">Vencimientos oficiales por terminación de CUIT. Fuente: arca.gob.ar, se actualiza sola.</p>
+        <h2 className="text-base font-bold tracking-[-0.01em] text-ink mt-5 mb-1">Agenda ARCA — {mes}</h2>
+        <p className="text-ink2 text-sm mb-2.5">Vencimientos oficiales por terminación de CUIT. Fuente: arca.gob.ar, se actualiza sola.</p>
         <ArcaAgenda items={arca} />
       </>}
     </div>
@@ -226,7 +226,7 @@ function PublicarForm({ me, team, onDone }: { me: Profile; team: Profile[]; onDo
     onError: (e: Error) => toast.error("No se pudo publicar: " + e.message),
   });
 
-  const inputCls = "w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-[13px]";
+  const inputCls = "w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-sm";
   return (
     <div className="bg-surface border border-line rounded-xl px-4 py-3.5 mt-2 grid gap-2" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
       <input autoFocus value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Título del aviso" className={inputCls} />
@@ -242,7 +242,7 @@ function PublicarForm({ me, team, onDone }: { me: Profile; team: Profile[]; onDo
           <option value="urgente">Urgente</option>
         </select>
       </div>
-      <label className="flex items-center gap-1.5 text-ink2 text-[12px]">Vigente hasta (opcional)
+      <label className="flex items-center gap-1.5 text-ink2 text-xs">Vigente hasta (opcional)
         <input type="date" value={vigencia} onChange={(e) => setVigencia(e.target.value)} className={inputCls + " w-auto"} /></label>
       <textarea value={detalle} onChange={(e) => setDetalle(e.target.value)} rows={2} placeholder="Detalle opcional" className={inputCls + " resize-y"} />
       {companeros.length > 0 && (
@@ -253,7 +253,7 @@ function PublicarForm({ me, team, onDone }: { me: Profile; team: Profile[]; onDo
               const on = dest.includes(u.id);
               return (
                 <button key={u.id} type="button" onClick={() => toggle(u.id)}
-                  className={cn("flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] border text-left transition", on ? "border-accent bg-accent-soft" : "border-line bg-surface2")}>
+                  className={cn("flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm border text-left transition", on ? "border-accent bg-accent-soft" : "border-line bg-surface2")}>
                   <Avatar name={u.name} size={20} />
                   <span className="flex-1 truncate">{u.name}</span>
                   {on && <Check size={14} className="text-accent shrink-0" />}
@@ -266,9 +266,9 @@ function PublicarForm({ me, team, onDone }: { me: Profile; team: Profile[]; onDo
       <div className="flex gap-2">
         <button onClick={() => titulo.trim() ? publicar.mutate() : toast.error("Ponele un título al aviso")}
           disabled={publicar.isPending}
-          className="flex items-center gap-1.5 bg-accent text-white rounded-lg px-3.5 py-1.5 text-[13px] font-semibold disabled:opacity-60">
+          className="flex items-center gap-1.5 bg-accent text-white rounded-lg px-3.5 py-1.5 text-sm font-semibold disabled:opacity-60">
           <Plus size={14} /> {publicar.isPending ? "Publicando…" : "Publicar"}</button>
-        <button onClick={onDone} className="border border-line bg-surface2 rounded-lg px-3 py-1.5 text-[13px]">Cancelar</button>
+        <button onClick={onDone} className="border border-line bg-surface2 rounded-lg px-3 py-1.5 text-sm">Cancelar</button>
       </div>
     </div>
   );

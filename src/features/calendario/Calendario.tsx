@@ -123,8 +123,8 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
   const eventosDelDia = diaSel ? (porDia[diaSel] ?? []) : [];
   const arcaDelDia = diaSel ? (arcaPorDia[diaSel] ?? []) : [];
   const ausentesDelDia = diaSel ? ausentesEnFecha(vacaciones, diaSel) : [];
-  const inputCls = "w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-[13px]";
-  const btn = "flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3 py-1.5 text-[13px]";
+  const inputCls = "w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-sm";
+  const btn = "flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3 py-1.5 text-sm";
 
   return (
     <div className="px-6 py-4 w-full max-w-[1000px]">
@@ -132,7 +132,7 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
         <button onClick={() => irMes(-1)} className={btn} aria-label="Mes anterior"><ChevronLeft size={16} /></button>
         <button onClick={() => { setYear(hoy.getFullYear()); setMonth(hoy.getMonth() + 1); }} className={btn}>Hoy</button>
         <button onClick={() => irMes(1)} className={btn} aria-label="Mes siguiente"><ChevronRight size={16} /></button>
-        <h2 className="text-[19px] font-bold tracking-[-0.02em] capitalize ml-1">
+        <h2 className="text-xl font-bold tracking-[-0.02em] capitalize ml-1">
           {vista === "mes" ? `${MESES[month - 1]} ${year}` : year}
         </h2>
         <div className="ml-auto flex gap-1.5">
@@ -145,13 +145,13 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
       </div>
 
       {vista === "mes" && (
-        <p className="text-ink2 text-[13px] -mt-2 mb-3">Tocá un día para agregar vencimientos de impuestos, balances o reuniones.</p>
+        <p className="text-ink2 text-sm -mt-2 mb-3">Tocá un día para agregar vencimientos de impuestos, balances o reuniones.</p>
       )}
 
       {vista === "mes" ? (
         <div className="bg-surface border border-line rounded-2xl overflow-hidden" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
           <div className="grid grid-cols-7 border-b border-line">
-            {DIAS_SEMANA.map((d) => <div key={d} className="text-center text-[11px] uppercase tracking-wide text-ink2 font-semibold py-2">{d}</div>)}
+            {DIAS_SEMANA.map((d) => <div key={d} className="text-center text-2xs uppercase tracking-wide text-ink2 font-semibold py-2">{d}</div>)}
           </div>
           <div className="grid grid-cols-7">
             {grilla.map((c) => {
@@ -163,26 +163,26 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
                 <button key={c.date} onClick={() => abrirDia(c.date)}
                   className={cn("min-h-[92px] border-b border-r border-line/70 p-1.5 text-left align-top transition hover:bg-surface2/60 flex flex-col gap-1",
                     !c.delMes && "bg-surface2/30 text-ink2")}>
-                  <span className={cn("text-[12px] tnum w-6 h-6 grid place-items-center rounded-full self-start",
+                  <span className={cn("text-xs tnum w-6 h-6 grid place-items-center rounded-full self-start",
                     c.esHoy ? "bg-accent text-white font-bold" : c.delMes ? "" : "text-ink2/60")}>{c.dia}</span>
                   {evs.slice(0, 3).map((e) => (
-                    <span key={e.id} className={cn("text-[11px] rounded px-1.5 py-0.5 truncate font-medium", KIND[e.kind].chip)}>{e.title}</span>
+                    <span key={e.id} className={cn("text-2xs rounded px-1.5 py-0.5 truncate font-medium", KIND[e.kind].chip)}>{e.title}</span>
                   ))}
-                  {evs.length > 3 && <span className="text-[10.5px] text-ink2 px-1">+{evs.length - 3} más</span>}
+                  {evs.length > 3 && <span className="text-2xs text-ink2 px-1">+{evs.length - 3} más</span>}
                   {occ.slice(0, 2).map((o) => (
-                    <span key={o.id} className={cn("flex items-center gap-1 text-[11px] rounded px-1.5 py-0.5 truncate font-medium border border-line",
+                    <span key={o.id} className={cn("flex items-center gap-1 text-2xs rounded px-1.5 py-0.5 truncate font-medium border border-line",
                       o.done ? "bg-accent-soft text-done line-through" : "bg-surface2 text-ink2")}>
                       {o.done && <Check size={10} className="shrink-0" />}
                       <span className="truncate">{tituloDeCard[o.card_id] ?? "Tarea"}</span>
                     </span>
                   ))}
-                  {occ.length > 2 && <span className="text-[10.5px] text-ink2 px-1">+{occ.length - 2} tarea(s)</span>}
+                  {occ.length > 2 && <span className="text-2xs text-ink2 px-1">+{occ.length - 2} tarea(s)</span>}
                   {arcaEvs.slice(0, 2).map((e, i) => (
-                    <span key={"arca" + i} title={`ARCA · ${e.title}`} className="text-[11px] rounded px-1.5 py-0.5 truncate font-medium bg-chip text-ink2">ARCA · {e.title}</span>
+                    <span key={"arca" + i} title={`ARCA · ${e.title}`} className="text-2xs rounded px-1.5 py-0.5 truncate font-medium bg-chip text-ink2">ARCA · {e.title}</span>
                   ))}
-                  {arcaEvs.length > 2 && <span className="text-[10.5px] text-ink2 px-1">+{arcaEvs.length - 2} ARCA</span>}
+                  {arcaEvs.length > 2 && <span className="text-2xs text-ink2 px-1">+{arcaEvs.length - 2} ARCA</span>}
                   {ausentes.map((v) => (
-                    <span key={"vac" + v.id} title={`${primerNombre(v.owner)} ausente`} className="text-[11px] rounded px-1.5 py-0.5 truncate font-medium bg-chip text-ink2">{primerNombre(v.owner)} ausente</span>
+                    <span key={"vac" + v.id} title={`${primerNombre(v.owner)} ausente`} className="text-2xs rounded px-1.5 py-0.5 truncate font-medium bg-chip text-ink2">{primerNombre(v.owner)} ausente</span>
                   ))}
                 </button>
               );
@@ -198,7 +198,7 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
                 className="bg-surface border border-line rounded-xl p-3 text-left hover:border-accent/40 transition" style={{ boxShadow: "var(--ring-sh)" }}>
                 <div className="flex items-center justify-between mb-2">
                   <b className="capitalize text-sm">{nombre}</b>
-                  {conteoMeses[i] > 0 && <span className="bg-accent-soft text-accent rounded-full text-[11px] px-2 py-0.5 tnum font-semibold">{conteoMeses[i]}</span>}
+                  {conteoMeses[i] > 0 && <span className="bg-accent-soft text-accent rounded-full text-2xs px-2 py-0.5 tnum font-semibold">{conteoMeses[i]}</span>}
                 </div>
                 <div className="grid grid-cols-7 gap-y-0.5">
                   {g.map((c) => {
@@ -206,7 +206,7 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
                     const kind = evs[0]?.kind;
                     return (
                       <span key={c.date} className="grid place-items-center h-4">
-                        <span className={cn("text-[9px] tnum leading-none w-4 h-4 grid place-items-center rounded-full relative",
+                        <span className={cn("text-2xs tnum leading-none w-4 h-4 grid place-items-center rounded-full relative",
                           c.esHoy ? "bg-accent text-white" : c.delMes ? "text-ink2" : "text-ink2/30")}>
                           {c.dia}
                           {evs.length > 0 && <span className={cn("absolute -bottom-[1px] w-1 h-1 rounded-full", kind ? KIND[kind].dot : "bg-accent")} />}
@@ -234,11 +234,11 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
               </div>
             ) : (
               <div key={e.id} className="flex items-start gap-2 py-2 border-b border-line/60">
-                <span className={cn("text-[10.5px] rounded px-1.5 py-0.5 font-semibold shrink-0 mt-0.5", KIND[e.kind].chip)}>{KIND[e.kind].label}</span>
+                <span className={cn("text-2xs rounded px-1.5 py-0.5 font-semibold shrink-0 mt-0.5", KIND[e.kind].chip)}>{KIND[e.kind].label}</span>
                 <div className="flex-1 min-w-0">
                   <b className="text-sm">{e.title}</b>
-                  {e.detail && <p className="text-ink2 text-[13px] m-0 mt-0.5 whitespace-pre-line">{e.detail}</p>}
-                  <span className="text-ink2 text-[11px]">— {e.created_by}</span>
+                  {e.detail && <p className="text-ink2 text-sm m-0 mt-0.5 whitespace-pre-line">{e.detail}</p>}
+                  <span className="text-ink2 text-2xs">— {e.created_by}</span>
                 </div>
                 {puedeEditarAnuncio(e, me.id, isJefe) && (
                   <>
@@ -268,18 +268,18 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
               <h4 className="text-xs uppercase tracking-wide text-ink2 mb-2">Vencimientos ARCA (oficiales · solo lectura)</h4>
               {arcaDelDia.map((e, i) => (
                 <div key={"arca" + i} className="flex items-start gap-2 py-2 border-b border-line/60 last:border-0">
-                  <span className="text-[10.5px] rounded px-1.5 py-0.5 font-semibold shrink-0 mt-0.5 bg-chip text-ink2">ARCA</span>
+                  <span className="text-2xs rounded px-1.5 py-0.5 font-semibold shrink-0 mt-0.5 bg-chip text-ink2">ARCA</span>
                   <div className="flex-1 min-w-0">
                     <b className="text-sm">{e.title}</b>
-                    {e.detail && <p className="text-ink2 text-[13px] m-0 mt-0.5 whitespace-pre-line">{e.detail}</p>}
+                    {e.detail && <p className="text-ink2 text-sm m-0 mt-0.5 whitespace-pre-line">{e.detail}</p>}
                   </div>
                   <button onClick={() => fijarArca.mutate(e)} disabled={fijarArca.isPending} title="Fijar en el calendario"
-                    className="flex items-center gap-1 border border-line bg-surface2 rounded-lg px-2 py-1 text-[12px] text-ink2 hover:text-accent shrink-0 disabled:opacity-60">
+                    className="flex items-center gap-1 border border-line bg-surface2 rounded-lg px-2 py-1 text-xs text-ink2 hover:text-accent shrink-0 disabled:opacity-60">
                     <Pin size={13} /> Fijar
                   </button>
                 </div>
               ))}
-              <p className="text-ink2 text-[11px] mt-2 mb-0">Fuente: arca.gob.ar · se actualizan solos. "Fijar" los deja permanentes en el calendario del equipo.</p>
+              <p className="text-ink2 text-2xs mt-2 mb-0">Fuente: arca.gob.ar · se actualizan solos. "Fijar" los deja permanentes en el calendario del equipo.</p>
             </div>
           )}
 
@@ -291,10 +291,10 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
                 const replNom = v.reemplazante ? team.find((u) => u.id === v.reemplazante)?.name ?? null : null;
                 return (
                   <div key={v.id} className="flex items-start gap-2 py-2 border-b border-line/60 last:border-0">
-                    <span className="text-[10.5px] rounded px-1.5 py-0.5 font-semibold shrink-0 mt-0.5 bg-chip text-ink2">Ausente</span>
+                    <span className="text-2xs rounded px-1.5 py-0.5 font-semibold shrink-0 mt-0.5 bg-chip text-ink2">Ausente</span>
                     <div className="flex-1 min-w-0">
                       <b className="text-sm">{ausenteNom}</b>
-                      <p className="text-ink2 text-[12px] m-0 mt-0.5">
+                      <p className="text-ink2 text-xs m-0 mt-0.5">
                         {fechaLarga(v.desde)} – {fechaLarga(v.hasta)} · {v.motivo}
                         {replNom && <> · cubre {replNom}</>}
                       </p>
@@ -325,7 +325,7 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
                       const on = nCompartir.includes(u.id);
                       return (
                         <button key={u.id} type="button" onClick={() => toggleCompartir(u.id)}
-                          className={cn("flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] border text-left transition", on ? "border-accent bg-accent-soft" : "border-line bg-surface2")}>
+                          className={cn("flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm border text-left transition", on ? "border-accent bg-accent-soft" : "border-line bg-surface2")}>
                           <Avatar name={u.name} size={20} />
                           <span className="flex-1 truncate">{u.name}</span>
                           {on && <Check size={14} className="text-accent shrink-0" />}
@@ -337,11 +337,11 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
               )}
               <button onClick={() => nTitulo.trim() ? add.mutate() : toast.error("Ponele un título al evento")}
                 disabled={add.isPending}
-                className="flex items-center justify-center gap-1.5 bg-accent text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:opacity-60">
+                className="flex items-center justify-center gap-1.5 bg-accent text-white rounded-lg px-3.5 py-2 text-sm font-semibold disabled:opacity-60">
                 <Plus size={14} /> {add.isPending ? "Guardando…" : "Agregar al calendario"}</button>
             </div>
           </div>
-          <button onClick={() => setDiaSel(null)} className="w-full mt-3 border border-line bg-surface2 rounded-lg py-2 text-[13px]">Cerrar</button>
+          <button onClick={() => setDiaSel(null)} className="w-full mt-3 border border-line bg-surface2 rounded-lg py-2 text-sm">Cerrar</button>
         </Modal>
       )}
 

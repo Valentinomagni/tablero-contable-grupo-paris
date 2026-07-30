@@ -209,7 +209,7 @@ export default function App() {
 
   const SubTab = ({ m, icon, label }: { m: Mode; icon: React.ReactNode; label: string }) => (
     <button onClick={() => setMode(m)}
-      className={cn("flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] border transition",
+      className={cn("flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm border transition",
         mode === m ? "bg-accent-soft border-accent text-accent font-semibold" : "bg-surface2 border-line text-ink2")}>
       {icon} {label}
     </button>
@@ -234,14 +234,14 @@ export default function App() {
           <SubTab m="hist" icon={<Archive size={14} />} label="Historial" />
           {mode === "board" && opcionesPeriodo.length > 1 && (
             <div className="flex items-center gap-1 border border-line bg-surface2 rounded-lg p-1" title="Período del tablero">
-              <span className="text-[12px] text-ink2 px-1.5">Período</span>
+              <span className="text-xs text-ink2 px-1.5">Período</span>
               {opcionesPeriodo.map((p) => {
                 // Candado en los meses ya cerrados: se pueden mirar, no editar (Fase 3).
                 const cerrado = cerradosDelTablero.includes(p);
                 return (
                   <button key={p} onClick={() => setPeriodoSel(p)}
                     title={cerrado ? "Mes cerrado — se puede consultar, no editar" : undefined}
-                    className={cn("rounded-md px-2.5 py-1 text-[12px] font-medium transition capitalize inline-flex items-center gap-1",
+                    className={cn("rounded-md px-2.5 py-1 text-xs font-medium transition capitalize inline-flex items-center gap-1",
                       p === periodoSel ? "bg-accent-soft text-accent font-semibold" : "text-ink2 hover:text-ink")}>
                     {cerrado && <Lock size={11} />}{periodoLabel(p)}
                   </button>
@@ -251,17 +251,17 @@ export default function App() {
           )}
           {mode === "board" && (
             <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar tarea…"
-              className="bg-surface2 border border-line rounded-lg px-3 py-1.5 text-[13px] w-[200px]" />
+              className="bg-surface2 border border-line rounded-lg px-3 py-1.5 text-sm w-[200px]" />
           )}
           {view === me.id && (
             <button onClick={() => setDelegar(true)}
-              className="flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] border bg-surface2 border-line text-ink2 transition">
+              className="flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm border bg-surface2 border-line text-ink2 transition">
               <Users size={14} /> Delegar tarea
             </button>
           )}
           {esGestor && person && person.id !== me.id && (
             <button onClick={() => setOpenUser(person)}
-              className="flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] border bg-surface2 border-line text-ink2 transition">
+              className="flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm border bg-surface2 border-line text-ink2 transition">
               <UserRound size={14} /> Ficha
             </button>
           )}

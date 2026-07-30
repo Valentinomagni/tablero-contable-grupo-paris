@@ -50,46 +50,46 @@ export function ObjModal({ obj, ownerId, ownerName, otherWeight, onClose }:
     save.mutate();
   };
 
-  const inputCls = "w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-[13px]";
+  const inputCls = "w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-sm";
   return (
     <Modal onClose={onClose}>
         <h3 className="text-lg font-semibold m-0">{obj ? "Editar objetivo" : "Nuevo objetivo"}</h3>
         <div className="text-xs text-ink2 mb-3.5">De: {ownerName} · Los demás objetivos suman {otherWeight}%</div>
         <div className="grid gap-2.5">
-          <label className="text-[13px] text-ink2">Nombre del objetivo
+          <label className="text-sm text-ink2">Nombre del objetivo
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ej: Cerrar conciliaciones bancarias en fecha" className={inputCls} />
           </label>
-          <label className="text-[13px] text-ink2">Descripción
+          <label className="text-sm text-ink2">Descripción
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Qué se espera y cómo se mide" className={inputCls + " resize-y"} />
           </label>
-          <label className="text-[13px] text-ink2">Peso (%) — todos los objetivos deben sumar 100
+          <label className="text-sm text-ink2">Peso (%) — todos los objetivos deben sumar 100
             <input type="number" min={0} max={100} value={weight} onChange={(e) => setWeight(Number(e.target.value))} className={inputCls} />
           </label>
-          <label className="text-[13px] text-ink2">KPI (indicador)
+          <label className="text-sm text-ink2">KPI (indicador)
             <input value={kpiName} onChange={(e) => setKpiName(e.target.value)} placeholder="Ej: Conciliaciones en fecha" className={inputCls} />
           </label>
           <div className="flex gap-2">
-            <label className="text-[13px] text-ink2">Unidad
+            <label className="text-sm text-ink2">Unidad
               <input value={kpiUnit} onChange={(e) => setKpiUnit(e.target.value)} placeholder="%, u., días" className={inputCls + " w-[90px]"} />
             </label>
-            <label className="text-[13px] text-ink2">Meta
+            <label className="text-sm text-ink2">Meta
               <input type="number" value={kpiTarget} onChange={(e) => setKpiTarget(e.target.value)} className={inputCls + " w-[110px]"} />
             </label>
-            <label className="text-[13px] text-ink2">Valor actual
+            <label className="text-sm text-ink2">Valor actual
               <input type="number" value={kpiCurrent} onChange={(e) => setKpiCurrent(e.target.value)} className={inputCls + " w-[110px]"} />
             </label>
           </div>
-          <label className="text-[13px] text-ink2">Observaciones
+          <label className="text-sm text-ink2">Observaciones
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputCls + " resize-y"} />
           </label>
         </div>
         {msg && <p className="text-danger text-sm mt-3">{msg}</p>}
         <div className="flex gap-2 mt-4">
           <button onClick={onSave} disabled={save.isPending}
-            className="bg-accent text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:opacity-60">Guardar</button>
+            className="bg-accent text-white rounded-lg px-3.5 py-2 text-sm font-semibold disabled:opacity-60">Guardar</button>
           {obj && <button onClick={() => { if (confirm("¿Eliminar este objetivo?")) del.mutate(); }}
-            className="border border-danger text-danger rounded-lg px-3.5 py-2 text-[13px]">Eliminar</button>}
-          <button onClick={onClose} className="ml-auto border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Cerrar</button>
+            className="border border-danger text-danger rounded-lg px-3.5 py-2 text-sm">Eliminar</button>}
+          <button onClick={onClose} className="ml-auto border border-line bg-surface2 rounded-lg px-3.5 py-2 text-sm">Cerrar</button>
         </div>
     </Modal>
   );

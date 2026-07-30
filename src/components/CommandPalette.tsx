@@ -106,12 +106,12 @@ export function CommandPalette({ me, team, cards, annos = [], onNavigate, onOpen
         <div className="flex items-center gap-2 px-4 border-b border-line">
           <Search size={16} className="text-ink2" />
           <input autoFocus value={q} onChange={(e) => { setQ(e.target.value); setSel(0); }}
-            placeholder="Buscar tareas, personas, vistas…" className="w-full py-[15px] bg-transparent text-[15px] outline-none" />
+            placeholder="Buscar tareas, personas, vistas…" className="w-full py-[15px] bg-transparent text-base outline-none" />
         </div>
         <div className="max-h-[46vh] overflow-y-auto p-1.5">
           {items.length === 0 && <div className="text-ink2 text-sm px-3 py-4">Sin resultados</div>}
           {items.map((i, n) => {
-            const head = i.g !== lastG ? <div key={"h" + n} className="text-[10.5px] uppercase tracking-wide text-ink2 px-3 pt-2 pb-1">{i.g}</div> : null;
+            const head = i.g !== lastG ? <div key={"h" + n} className="text-2xs uppercase tracking-wide text-ink2 px-3 pt-2 pb-1">{i.g}</div> : null;
             lastG = i.g;
             return (
               <div key={n}>
@@ -126,7 +126,7 @@ export function CommandPalette({ me, team, cards, annos = [], onNavigate, onOpen
             );
           })}
         </div>
-        <div className="border-t border-line px-3.5 py-2 text-[11.5px] text-ink2 flex gap-3.5">
+        <div className="border-t border-line px-3.5 py-2 text-2xs text-ink2 flex gap-3.5">
           <span>↑↓ navegar</span><span>Enter abrir</span><span>Esc cerrar</span>
         </div>
       </div>

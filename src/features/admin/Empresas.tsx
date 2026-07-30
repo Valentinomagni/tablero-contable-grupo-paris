@@ -16,7 +16,7 @@ import { EmptyState } from "../../components/EmptyState";
 // Solo la ve el jefe (gate acá + RLS de la tabla `empresas`, que además refuerza
 // del lado del servidor que solo `es_jefe()` puede escribir).
 
-const inputCls = "bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-[13px]";
+const inputCls = "bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-sm";
 
 type Form = { nombre: string; cuit: string; cierre_balance: string; reporta_fabrica: boolean; prioridad: number };
 const FORM_VACIO: Form = { nombre: "", cuit: "", cierre_balance: "", reporta_fabrica: false, prioridad: 0 };
@@ -34,7 +34,7 @@ export function Empresas() {
 
   if (migracionPendiente) {
     return (
-      <div className="bg-surface border border-line rounded-xl p-4 mb-6 text-[13px] text-ink2" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
+      <div className="bg-surface border border-line rounded-xl p-4 mb-6 text-sm text-ink2" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
         Se habilita tras la migración 31.
       </div>
     );
@@ -42,7 +42,7 @@ export function Empresas() {
 
   if (empresasQuery.isError) {
     return (
-      <div className="bg-surface border border-line rounded-xl p-4 mb-6 text-[13px] text-danger" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
+      <div className="bg-surface border border-line rounded-xl p-4 mb-6 text-sm text-danger" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
         No se pudieron cargar las empresas.
       </div>
     );
@@ -104,15 +104,15 @@ export function Empresas() {
         <div className="flex flex-col gap-1.5 mb-3">
           {empresas.map((e) => (
             <div key={e.id} className="flex flex-wrap items-center gap-2 border-b border-line pb-2 last:border-0 last:pb-0">
-              <span className="flex-1 min-w-[140px] text-[13px] text-ink font-medium truncate">{e.nombre}</span>
-              <span className="text-ink2 text-[13px]">{e.cuit ?? "sin CUIT"}</span>
-              <span className="text-ink2 text-[13px]">{e.cierre_balance ? `cierre ${e.cierre_balance}` : "sin cierre"}</span>
+              <span className="flex-1 min-w-[140px] text-sm text-ink font-medium truncate">{e.nombre}</span>
+              <span className="text-ink2 text-sm">{e.cuit ?? "sin CUIT"}</span>
+              <span className="text-ink2 text-sm">{e.cierre_balance ? `cierre ${e.cierre_balance}` : "sin cierre"}</span>
               {e.reporta_fabrica && (
-                <span className="inline-flex items-center gap-1 bg-accent-soft text-done rounded-full px-2 py-0.5 text-[11px] font-medium">
+                <span className="inline-flex items-center gap-1 bg-accent-soft text-done rounded-full px-2 py-0.5 text-2xs font-medium">
                   <Factory size={11} /> Reporta a fábrica
                 </span>
               )}
-              <span className="text-ink2 text-[11px]">prioridad {e.prioridad}</span>
+              <span className="text-ink2 text-2xs">prioridad {e.prioridad}</span>
               <button onClick={() => abrirEdicion(e)} title="Editar" className="text-ink2 hover:text-ink"><Pencil size={14} /></button>
               <button onClick={() => eliminar(e)} title="Eliminar" className="text-ink2 hover:text-danger"><Trash2 size={14} /></button>
             </div>
@@ -122,7 +122,7 @@ export function Empresas() {
 
       {!formularioAbierto && (
         <button onClick={() => setNuevaAbierta(true)}
-          className="flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] rounded-lg px-3 py-1.5 text-[13px] font-semibold">
+          className="flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] rounded-lg px-3 py-1.5 text-sm font-semibold">
           <Plus size={14} /> Nueva empresa
         </button>
       )}
@@ -132,7 +132,7 @@ export function Empresas() {
           <input placeholder="nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className={inputCls + " w-[180px]"} />
           <input placeholder="CUIT" value={form.cuit} onChange={(e) => setForm({ ...form, cuit: e.target.value })} className={inputCls + " w-[140px]"} />
           <input type="date" placeholder="cierre de balance" value={form.cierre_balance} onChange={(e) => setForm({ ...form, cierre_balance: e.target.value })} className={inputCls} />
-          <label className="flex items-center gap-1.5 text-[13px] text-ink cursor-pointer">
+          <label className="flex items-center gap-1.5 text-sm text-ink cursor-pointer">
             <input type="checkbox" checked={form.reporta_fabrica} onChange={(e) => setForm({ ...form, reporta_fabrica: e.target.checked })} className="accent-accent w-4 h-4" />
             Reporta a fábrica
           </label>
@@ -141,10 +141,10 @@ export function Empresas() {
             <span className="text-ink2 text-xs">Prioridad 0–4. Las empresas que reportan a fábrica siempre quedan por encima de las que no.</span>
           </div>
           <button type="submit" disabled={busy || !form.nombre.trim()}
-            className="flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] rounded-lg px-3 py-1.5 text-[13px] font-semibold disabled:opacity-50">
+            className="flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] rounded-lg px-3 py-1.5 text-sm font-semibold disabled:opacity-50">
             {busy ? "Guardando…" : editId ? "Guardar cambios" : "Crear"}
           </button>
-          <button type="button" onClick={cancelar} className="text-ink2 text-[13px]">Cancelar</button>
+          <button type="button" onClick={cancelar} className="text-ink2 text-sm">Cancelar</button>
         </form>
       )}
     </div>

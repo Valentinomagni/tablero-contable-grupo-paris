@@ -41,34 +41,34 @@ export function MiMes({ cards, activity, ownerId, onOpenCard }: {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
         {([["Cerradas este mes", `${cerradasMes.length}/${totalMes}`], ["Esfuerzo cerrado", efCerrado], ["Esfuerzo por delante", efAbierto], ...(actMes ? [["Actividad op. del mes", actMes] as const] : [])] as const).map(([l, v]) => (
           <div key={l} className="bg-surface border border-line rounded-2xl px-5 py-4" style={cardSh}>
-            <span className="block text-[11px] text-ink2 uppercase tracking-[0.08em] font-semibold mb-1.5">{l}</span>
-            <b className="block text-[32px] leading-none font-bold tracking-[-0.02em] tnum">{v}</b>
+            <span className="block text-2xs text-ink2 uppercase tracking-[0.08em] font-semibold mb-1.5">{l}</span>
+            <b className="block text-4xl leading-none font-bold tracking-[-0.02em] tnum">{v}</b>
           </div>
         ))}
       </div>
 
-      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">Avance del mes</h2>
+      <h2 className="text-base font-bold tracking-[-0.01em] text-ink mb-2.5">Avance del mes</h2>
       <div className={`bg-surface rounded-2xl p-[18px] mb-6 border-l-[3px] ${alDia ? "border-done" : "border-warn"}`} style={cardSh}>
         <Bar label="Mes transcurrido" pct={pctMes} color="var(--ink2)" />
         <Bar label="Tareas cerradas" pct={pctAvance} color={alDia ? "var(--done)" : "var(--warn)"} />
         <p className="text-sm mt-1.5 mb-0">{alDia ? "Vas al día: cerraste más de lo que corrió el mes." : "El mes avanza más rápido que los cierres — mirá las sugeridas de abajo."}</p>
       </div>
 
-      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">¿Qué conviene hacer ahora?</h2>
+      <h2 className="text-base font-bold tracking-[-0.01em] text-ink mb-2.5">¿Qué conviene hacer ahora?</h2>
       {sugeridas.length === 0 ? <p className="text-ink2 text-sm">Sin tareas abiertas.</p>
         : sugeridas.map(({ c, r }) => (
           <div key={c.id} onClick={() => onOpenCard(c)} className="bg-surface border border-line rounded-lg px-3.5 py-2 mb-1.5 cursor-pointer text-sm" style={cardSh}>
             <b>{c.title}</b> <span className="text-ink2"> · {r.length ? r.join(" · ") : "sin urgencia — ordenala a tu criterio"}</span>
           </div>
         ))}
-      <p className="text-ink2 text-[13px] mt-2">Criterio del orden: vencidas → por vencer → que otros esperan → prioridad alta → rápidas.</p>
+      <p className="text-ink2 text-sm mt-2">Criterio del orden: vencidas → por vencer → que otros esperan → prioridad alta → rápidas.</p>
     </div>
   );
 }
 
 function Bar({ label, pct, color }: { label: string; pct: number; color: string }) {
   return (
-    <div className="flex items-center gap-3 mb-2.5 text-[13px]">
+    <div className="flex items-center gap-3 mb-2.5 text-sm">
       <span className="w-[130px] text-ink2 shrink-0">{label}</span>
       <div className="flex-1 h-2 bg-surface2 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} /></div>
       <b className="w-11 text-right tnum">{pct}%</b>

@@ -90,7 +90,7 @@ export function Adjuntos({ cardId, canEdit }: { cardId: string; canEdit: boolean
   return (
     <>
       <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Adjuntos</h4>
-      {archivos.length === 0 && <p className="text-ink2 text-[13px] m-0">Sin adjuntos.</p>}
+      {archivos.length === 0 && <p className="text-ink2 text-sm m-0">Sin adjuntos.</p>}
       {archivos.map((a) => (
         <div key={a.name} className="flex items-center gap-2 py-1 text-sm">
           <FileText size={14} className="text-ink2 shrink-0" />
@@ -117,7 +117,7 @@ export function Adjuntos({ cardId, canEdit }: { cardId: string; canEdit: boolean
         <div className="mt-2">
           <input ref={inputRef} type="file" className="hidden" onChange={onFileChange} />
           <button onClick={() => inputRef.current?.click()} disabled={subir.isPending}
-            className="inline-flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3 py-1.5 text-[13px] disabled:opacity-60">
+            className="inline-flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3 py-1.5 text-sm disabled:opacity-60">
             <Paperclip size={13} /> {subir.isPending ? "Subiendo…" : "Adjuntar archivo"}
           </button>
         </div>

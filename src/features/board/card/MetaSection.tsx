@@ -92,7 +92,7 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
                   patch.mutate(p);
                 }
               }}
-              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] disabled:opacity-60">
+              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-sm disabled:opacity-60">
               {COLS.map(([k, lbl]) => <option key={k} value={k}>{lbl}</option>)}
             </select>
           </label>
@@ -105,7 +105,7 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
           )}
         </div>
         {isShared(c) && (
-          <div className="flex items-center gap-2 bg-accent-soft text-accent rounded-lg px-3 py-2 text-[13px] mb-3.5">
+          <div className="flex items-center gap-2 bg-accent-soft text-accent rounded-lg px-3 py-2 text-sm mb-3.5">
             <Users size={14} className="shrink-0" />
             <span>Tarea compartida con <b>{participantes(c, cards, (id) => team.find((u) => u.id === id)?.name ?? "?").join(", ")}</b>. Al terminarla se marca para todos.</span>
           </div>
@@ -114,17 +114,17 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
         <div className="flex gap-4 flex-wrap items-center text-sm text-ink2 mb-2">
           <label className="flex items-center gap-1.5">Vence
             <input type="date" defaultValue={c.due_date ?? ""} onChange={(e) => patch.mutate({ due_date: e.target.value || null, history: hist(e.target.value ? "Puso vencimiento" : "Quitó vencimiento") })}
-              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px]" />
+              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-sm" />
           </label>
           <label className="flex items-center gap-1.5">Prioridad
             <select defaultValue={c.priority} onChange={(e) => patch.mutate({ priority: e.target.value as Card["priority"], history: hist("Cambió prioridad a " + e.target.value) })}
-              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px]">
+              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-sm">
               <option value="alta">Alta</option><option value="media">Media</option><option value="baja">Baja</option>
             </select>
           </label>
           <label className="flex items-center gap-1.5">Esfuerzo
             <select defaultValue={String(c.effort ?? 1)} onChange={(e) => patch.mutate({ effort: Number(e.target.value) as Card["effort"], history: hist("Cambió esfuerzo a " + e.target.value) })}
-              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px]">
+              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-sm">
               <option value="1">1 — Baja</option><option value="2">2 — Media</option><option value="3">3 — Alta</option><option value="5">5 — Muy alta</option>
             </select>
           </label>
@@ -136,7 +136,7 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
                 if ((n ?? null) === (c.tiempo_max_horas ?? null)) return;
                 patch.mutate({ tiempo_max_horas: n, history: hist(n != null ? "Puso tiempo máximo de " + n + "h" : "Quitó el tiempo máximo") });
               }}
-              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] w-24" />
+              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-sm w-24" />
           </label>
           {(() => {
             // Categorías en uso por el dueño de la tarea + las definidas por el Admin (spec 21 item 11).
@@ -151,7 +151,7 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
                       patch.mutate({ categoria: v || null, history: hist("Cambió categoría a " + (v || "ninguna")) });
                     }}
                     placeholder="Sin categoría"
-                    className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] w-36" />
+                    className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-sm w-36" />
                   <datalist id="cats-card">
                     {cats.map((cat) => <option key={cat} value={cat} />)}
                   </datalist>
@@ -163,7 +163,7 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
                       if (v === (c.dato_control ?? "")) return;
                       patch.mutate({ dato_control: v || null });
                     }}
-                    className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] w-36" />
+                    className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-sm w-36" />
                 </label>
               </>
             );
@@ -173,12 +173,12 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
         {/* Etiquetas (spec 28, fase D, Task 5): contexto (empresa/marca puntual/cliente),
             distintas de la categoría (tipo de trabajo). Múltiples por tarea. */}
         <div className="flex items-center gap-1.5 flex-wrap text-sm mb-2">
-          <span className="text-ink2 text-[13px]">Etiquetas</span>
+          <span className="text-ink2 text-sm">Etiquetas</span>
           {!etiquetasHabilitadas && (
-            <span className="text-ink2 text-[12px]">Se habilita tras la migración 31.</span>
+            <span className="text-ink2 text-xs">Se habilita tras la migración 31.</span>
           )}
           {etiquetasHabilitadas && (c.etiquetas ?? []).map((et) => (
-            <span key={et} className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-full px-2.5 py-0.5 text-[12px] font-medium">
+            <span key={et} className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-full px-2.5 py-0.5 text-xs font-medium">
               {et}
               {!locked && (
                 <button type="button" title={`Quitar etiqueta "${et}"`}
@@ -202,7 +202,7 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
                   }
                   setNuevaEtiqueta("");
                 }}
-                className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] w-32" />
+                className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-sm w-32" />
               <datalist id="etiquetas-card">
                 {etiquetasEnUso(cards).map((et) => <option key={et} value={et} />)}
               </datalist>
@@ -220,14 +220,14 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
           ] as const).map(([lbl, rule, setForm]) => (
             <button key={lbl} disabled={guardarRecur.isPending}
               onClick={() => { setForm(); guardarRecur.mutate(rule); }}
-              className="border border-line bg-surface2 rounded-full px-3 py-1 text-[12px] hover:border-accent disabled:opacity-60">
+              className="border border-line bg-surface2 rounded-full px-3 py-1 text-xs hover:border-accent disabled:opacity-60">
               {lbl}
             </button>
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <select value={recurTipo} onChange={(e) => setRecurTipo(e.target.value as RecurRule["tipo"] | "")}
-            className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px]">
+            className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-sm">
             <option value="">Sin recurrencia</option>
             <option value="diaria">Diaria</option>
             <option value="semanal">Semanal (días)</option>
@@ -240,7 +240,7 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
                 return (
                   <button key={lbl as string} type="button"
                     onClick={() => setRecurDias((ds) => on ? ds.filter((x) => x !== v) : [...ds, v as number])}
-                    className={"rounded-lg px-2 py-1 text-[12px] border " + (on ? "border-accent bg-accent-soft text-accent" : "border-line bg-surface2")}>{lbl}</button>
+                    className={"rounded-lg px-2 py-1 text-xs border " + (on ? "border-accent bg-accent-soft text-accent" : "border-line bg-surface2")}>{lbl}</button>
                 );
               })}
             </div>
@@ -249,23 +249,23 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
             <label className="flex items-center gap-1.5">Día
               <input type="number" min={1} max={31} value={recurDiaMes}
                 onChange={(e) => setRecurDiaMes(Math.min(31, Math.max(1, Number(e.target.value) || 1)))}
-                className="w-16 bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] tnum" />
+                className="w-16 bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-sm tnum" />
             </label>
           )}
           <button onClick={() => guardarRecur.mutate(buildRule())} disabled={guardarRecur.isPending}
-            className="border border-line bg-surface2 rounded-lg px-3 py-1 text-[13px] disabled:opacity-60">
+            className="border border-line bg-surface2 rounded-lg px-3 py-1 text-sm disabled:opacity-60">
             {guardarRecur.isPending ? "Guardando…" : "Guardar recurrencia"}</button>
         </div>
-        {recurTipo !== "" && <p className="text-ink2 text-[12px] mt-1">Genera las ocurrencias del mes en el calendario y en el cumplimiento diario.</p>}
+        {recurTipo !== "" && <p className="text-ink2 text-xs mt-1">Genera las ocurrencias del mes en el calendario y en el cumplimiento diario.</p>}
         {(c.recurring || c.recur_rule) && (
           <div className="flex flex-wrap items-center gap-2 text-sm mt-2">
-            <label className="flex items-center gap-1.5 text-ink2 text-[13px]">Ciclo de vida
+            <label className="flex items-center gap-1.5 text-ink2 text-sm">Ciclo de vida
               <select value={c.reset_policy ?? "mensual"}
                 onChange={(e) => {
                   const v = e.target.value as NonNullable<Card["reset_policy"]>;
                   patch.mutate({ reset_policy: v, history: hist("Cambió ciclo de vida a " + v) });
                 }}
-                className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px]">
+                className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-sm">
                 <option value="mensual">Reinicia cada mes</option>
                 <option value="mantener">Mantiene su estado</option>
                 <option value="manual">Reinicio manual</option>

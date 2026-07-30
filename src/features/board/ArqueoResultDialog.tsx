@@ -17,36 +17,36 @@ export function ArqueoResultDialog({ onResolve, onCancel }:
 
   return (
     <div className="border border-accent rounded-lg bg-surface2 p-3 mt-2 text-sm">
-      <p className="text-ink2 text-[13px] m-0 mb-2">¿Resultado del arqueo?</p>
+      <p className="text-ink2 text-sm m-0 mb-2">¿Resultado del arqueo?</p>
       {!conDif ? (
         <div className="flex flex-wrap gap-2">
           <button onClick={() => onResolve({ resultado: "ok" })}
-            className="bg-accent text-[color:var(--accent-ink)] font-semibold rounded-lg px-3 py-1.5 text-[13px]">Sin diferencias</button>
+            className="bg-accent text-[color:var(--accent-ink)] font-semibold rounded-lg px-3 py-1.5 text-sm">Sin diferencias</button>
           <button onClick={() => setConDif(true)}
-            className="border border-warn/50 text-warn rounded-lg px-3 py-1.5 text-[13px]">Con diferencias</button>
+            className="border border-warn/50 text-warn rounded-lg px-3 py-1.5 text-sm">Con diferencias</button>
           <button onClick={onCancel}
-            className="border border-line bg-surface2 rounded-lg px-3 py-1.5 text-[13px] text-ink2">Cancelar</button>
+            className="border border-line bg-surface2 rounded-lg px-3 py-1.5 text-sm text-ink2">Cancelar</button>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
           <div className="flex gap-2">
             <button type="button" onClick={() => setTipo("falta")}
-              className={`rounded-lg px-3 py-1.5 text-[13px] font-semibold border ${tipo === "falta" ? "bg-warn text-white border-warn" : "border-warn/50 text-warn"}`}>
+              className={`rounded-lg px-3 py-1.5 text-sm font-semibold border ${tipo === "falta" ? "bg-warn text-white border-warn" : "border-warn/50 text-warn"}`}>
               Falta
             </button>
             <button type="button" onClick={() => setTipo("sobra")}
-              className={`rounded-lg px-3 py-1.5 text-[13px] font-semibold border ${tipo === "sobra" ? "bg-accent text-[color:var(--accent-ink)] border-accent" : "border-line text-ink2"}`}>
+              className={`rounded-lg px-3 py-1.5 text-sm font-semibold border ${tipo === "sobra" ? "bg-accent text-[color:var(--accent-ink)] border-accent" : "border-line text-ink2"}`}>
               Sobra
             </button>
           </div>
-          <label className="flex items-center gap-2 text-[13px]">Importe
+          <label className="flex items-center gap-2 text-sm">Importe
             <input autoFocus type="number" step="0.01" min={0} value={importe} onChange={(e) => setImporte(e.target.value)}
               placeholder="0.00"
-              className="w-32 bg-surface border border-line rounded-lg px-2 py-1 text-ink text-[13px] tnum" />
+              className="w-32 bg-surface border border-line rounded-lg px-2 py-1 text-ink text-sm tnum" />
           </label>
           <p className="text-ink2 text-xs m-0">Cargá el importe en positivo; arriba indicás si falta o sobra.</p>
           <textarea value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Observaciones…"
-            className="w-full bg-surface border border-line rounded-lg px-2 py-1.5 text-ink text-[13px] min-h-[48px] resize-y" />
+            className="w-full bg-surface border border-line rounded-lg px-2 py-1.5 text-ink text-sm min-h-[48px] resize-y" />
           <div className="flex gap-2">
             <button disabled={!puedeConfirmar}
               onClick={() => onResolve({
@@ -54,9 +54,9 @@ export function ArqueoResultDialog({ onResolve, onCancel }:
                 dif_importe: importeNum === 0 ? 0 : importeConSigno(importeNum, tipo!),
                 dif_obs: obs.trim(),
               })}
-              className="bg-warn text-white font-semibold rounded-lg px-3 py-1.5 text-[13px] disabled:opacity-40 disabled:cursor-not-allowed">Registrar diferencia</button>
+              className="bg-warn text-white font-semibold rounded-lg px-3 py-1.5 text-sm disabled:opacity-40 disabled:cursor-not-allowed">Registrar diferencia</button>
             <button onClick={onCancel}
-              className="border border-line bg-surface2 rounded-lg px-3 py-1.5 text-[13px] text-ink2">Cancelar</button>
+              className="border border-line bg-surface2 rounded-lg px-3 py-1.5 text-sm text-ink2">Cancelar</button>
           </div>
         </div>
       )}

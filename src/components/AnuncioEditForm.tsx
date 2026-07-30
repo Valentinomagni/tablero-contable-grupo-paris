@@ -31,7 +31,7 @@ export function AnuncioEditForm({ a, onDone }: { a: Announcement; onDone: () => 
     onError: (e: Error) => toast.error("No se pudo guardar: " + e.message),
   });
 
-  const inputCls = "w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-[13px]";
+  const inputCls = "w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-sm";
   return (
     <div className="grid gap-2 flex-1 min-w-0 py-1">
       <input autoFocus value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Título" className={inputCls} />
@@ -49,7 +49,7 @@ export function AnuncioEditForm({ a, onDone }: { a: Announcement; onDone: () => 
           <option value="importante">Importante</option>
           <option value="urgente">Urgente</option>
         </select>
-        <label className="flex items-center gap-1.5 text-ink2 text-[12px]">Vigente hasta
+        <label className="flex items-center gap-1.5 text-ink2 text-xs">Vigente hasta
           <input type="date" value={vigencia} onChange={(e) => setVigencia(e.target.value)} className={inputCls + " w-auto"} /></label>
       </div>
       <textarea value={detalle} onChange={(e) => setDetalle(e.target.value)} rows={2}
@@ -57,9 +57,9 @@ export function AnuncioEditForm({ a, onDone }: { a: Announcement; onDone: () => 
       <div className="flex gap-2">
         <button onClick={() => titulo.trim() ? guardar.mutate() : toast.error("Ponele un título al evento")}
           disabled={guardar.isPending}
-          className="bg-accent text-white rounded-lg px-3.5 py-1.5 text-[13px] font-semibold disabled:opacity-60">
+          className="bg-accent text-white rounded-lg px-3.5 py-1.5 text-sm font-semibold disabled:opacity-60">
           {guardar.isPending ? "Guardando…" : "Guardar cambios"}</button>
-        <button onClick={onDone} className="border border-line bg-surface2 rounded-lg px-3 py-1.5 text-[13px]">Cancelar</button>
+        <button onClick={onDone} className="border border-line bg-surface2 rounded-lg px-3 py-1.5 text-sm">Cancelar</button>
       </div>
     </div>
   );

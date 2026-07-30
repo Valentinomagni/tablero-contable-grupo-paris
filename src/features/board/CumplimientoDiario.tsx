@@ -75,7 +75,7 @@ export function CumplimientoDiario({ cardId, owner, year, month, requiere = fals
     <div>
       {requiere && (
         <div className="border border-line rounded-lg bg-surface2 p-3 mb-3">
-          <div className="text-[13px] text-ink">
+          <div className="text-sm text-ink">
             Cumplimiento: <b className="tnum">{stats.pctOk}%</b> · <span className="tnum">{stats.ok}/{stats.total}</span> sin diferencias
             {stats.dif > 0 && <span className="text-warn"> · {stats.dif} con diferencias</span>}
           </div>
@@ -83,7 +83,7 @@ export function CumplimientoDiario({ cardId, owner, year, month, requiere = fals
             {evolucion.map((e) => (
               <div key={e.mes} className="flex-1 flex flex-col items-center justify-end gap-1" title={`${e.mes}: ${e.pctOk}%`}>
                 <div className="w-full rounded-t bg-ink/70" style={{ height: `${Math.max(2, Math.round(e.pctOk * 0.28))}px` }} />
-                <span className="text-[9px] text-ink2 tnum">{e.mes.slice(5)}</span>
+                <span className="text-2xs text-ink2 tnum">{e.mes.slice(5)}</span>
               </div>
             ))}
           </div>
@@ -91,7 +91,7 @@ export function CumplimientoDiario({ cardId, owner, year, month, requiere = fals
       )}
       <div className="flex items-center justify-between mb-2">
         <h4 className="text-xs uppercase tracking-wide text-ink2">Cumplimiento diario</h4>
-        <span className="text-[12px] text-ink2 tnum">{hechos}/{diasEnMes} días</span>
+        <span className="text-xs text-ink2 tnum">{hechos}/{diasEnMes} días</span>
       </div>
       <div className="grid grid-cols-7 gap-1">
         {Array.from({ length: diasEnMes }, (_, i) => {
@@ -106,7 +106,7 @@ export function CumplimientoDiario({ cardId, owner, year, month, requiere = fals
           return (
             <button key={fecha} onClick={() => onDiaClick(fecha)} disabled={setOcc.isPending}
               title={fecha + (esDif ? tituloDif : done ? " · hecho" : pasadoSinHacer ? " · sin hacer" : " · pendiente")}
-              className={cn("h-9 rounded-lg text-[12px] tnum border grid place-items-center transition",
+              className={cn("h-9 rounded-lg text-xs tnum border grid place-items-center transition",
                 esDif ? "bg-warn-soft text-warn border-warn/50 font-semibold"
                   : esOk ? "bg-accent text-white border-accent font-semibold"
                   : done ? "bg-accent text-white border-accent font-semibold"
@@ -123,7 +123,7 @@ export function CumplimientoDiario({ cardId, owner, year, month, requiere = fals
           onResolve={(r) => { setOcc.mutate({ fecha: pendiente, done: true, extra: r }); setPendiente(null); }}
           onCancel={() => setPendiente(null)} />
       )}
-      <p className="text-ink2 text-[12px] mt-2">
+      <p className="text-ink2 text-xs mt-2">
         {requiere ? "Tocá un día para registrar el arqueo (sin diferencias o con diferencias)." : "Tocá un día para registrar el cumplimiento (ej: arqueo de caja)."}
       </p>
     </div>

@@ -60,49 +60,49 @@ export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { owne
         <label className="block text-sm text-ink2 mb-3">Título
           <input autoFocus required value={title} onChange={(e) => setTitle(e.target.value)}
             placeholder="Ej: Conciliación bancaria de julio…"
-            className="mt-1 w-full bg-surface2 border border-line rounded-lg px-2.5 py-2 text-ink text-[13px] outline-none focus:border-accent" />
+            className="mt-1 w-full bg-surface2 border border-line rounded-lg px-2.5 py-2 text-ink text-sm outline-none focus:border-accent" />
         </label>
         <div className="flex gap-4 flex-wrap items-center text-sm text-ink2 mb-3">
           <label className="flex items-center gap-1.5">Vencimiento
             <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
-              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px]" />
+              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-sm" />
           </label>
           <label className="flex items-center gap-1.5">Prioridad
             <select value={priority} onChange={(e) => setPriority(e.target.value as Card["priority"])}
-              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px]">
+              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-sm">
               <option value="alta">Alta</option><option value="media">Media</option><option value="baja">Baja</option>
             </select>
           </label>
           <label className="flex items-center gap-1.5">Esfuerzo
             <select value={String(effort)} onChange={(e) => setEffort(Number(e.target.value) as Card["effort"])}
-              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px]">
+              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-sm">
               <option value="1">1 — Baja</option><option value="2">2 — Media</option><option value="3">3 — Alta</option><option value="5">5 — Muy alta</option>
             </select>
           </label>
           <label className="flex items-center gap-1.5">Categoría
             <input list="cats-nueva" value={categoria} onChange={(e) => setCategoria(e.target.value)}
               placeholder="Sin categoría"
-              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] w-36" />
+              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-sm w-36" />
             <datalist id="cats-nueva">
               {categorias.map((cat) => <option key={cat} value={cat} />)}
             </datalist>
           </label>
           <label className="flex items-center gap-1.5">Dato de control a adjuntar
             <input value={datoControl} onChange={(e) => setDatoControl(e.target.value)}
-              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] w-36" />
+              className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-sm w-36" />
           </label>
         </div>
         {masParecida && (
-          <div className="bg-warn-soft text-warn rounded-lg px-3 py-2 text-[13px] mb-3">
+          <div className="bg-warn-soft text-warn rounded-lg px-3 py-2 text-sm mb-3">
             Se detectó una tarea similar: «{masParecida.title}». Revisá antes de crear una duplicada.
           </div>
         )}
         <div className="flex gap-2 items-center pt-2">
           <button type="submit" disabled={!puedeCrear}
-            className="bg-accent text-[color:var(--accent-ink)] font-semibold rounded-lg px-3.5 py-2 text-[13px] disabled:opacity-60">
+            className="bg-accent text-[color:var(--accent-ink)] font-semibold rounded-lg px-3.5 py-2 text-sm disabled:opacity-60">
             {crear.isPending ? "Creando…" : masParecida ? "Crear igualmente" : "Crear tarea"}</button>
           <button type="button" onClick={onClose}
-            className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Cancelar</button>
+            className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-sm">Cancelar</button>
         </div>
       </form>
     </Modal>

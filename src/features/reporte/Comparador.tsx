@@ -24,9 +24,9 @@ function Heatmap({ titulo, filas, meses, datos }: {
   if (!filas.length) return null;
   return (
     <div>
-      <h4 className="text-[13px] font-semibold text-ink2 mb-2">{titulo}</h4>
+      <h4 className="text-sm font-semibold text-ink2 mb-2">{titulo}</h4>
       <div className="overflow-x-auto">
-        <table className="border-collapse text-[12px] w-full">
+        <table className="border-collapse text-xs w-full">
           <thead>
             <tr>
               <th className="text-left p-1.5 text-ink2 font-medium sticky left-0 bg-surface">{" "}</th>

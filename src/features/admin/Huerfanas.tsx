@@ -30,11 +30,11 @@ export function Huerfanas({ team, cards }: { team: Profile[]; cards: Card[] }) {
     onError: (e: Error) => toast.error("No se pudo reasignar: " + e.message),
   });
 
-  const inputCls = "bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-[13px]";
+  const inputCls = "bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-sm";
 
   return (
     <>
-      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-2.5">
+      <h2 className="text-base font-bold tracking-[-0.01em] text-ink mb-2.5">
         Tareas sin asignar{huerfanas.length > 0 ? ` (${huerfanas.length})` : ""}
       </h2>
       <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
@@ -46,13 +46,13 @@ export function Huerfanas({ team, cards }: { team: Profile[]; cards: Card[] }) {
               const destino = destinos[c.id] ?? "";
               return (
                 <div key={c.id} className="flex flex-wrap items-center gap-2 border-b border-line pb-2 last:border-0 last:pb-0">
-                  <span className="flex-1 min-w-[160px] text-[13px] text-ink truncate">{c.title}</span>
+                  <span className="flex-1 min-w-[160px] text-sm text-ink truncate">{c.title}</span>
                   <select value={destino} onChange={(e) => setDestinos((d) => ({ ...d, [c.id]: e.target.value }))} className={inputCls}>
                     <option value="">Reasignar a…</option>
                     {destinosPosibles.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
                   </select>
                   <button onClick={() => reasignar.mutate({ id: c.id, destino })} disabled={!destino || reasignar.isPending}
-                    className="flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] rounded-lg px-3 py-1.5 text-[13px] font-semibold disabled:opacity-50">
+                    className="flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] rounded-lg px-3 py-1.5 text-sm font-semibold disabled:opacity-50">
                     <ArrowRightLeft size={14} /> Reasignar
                   </button>
                 </div>

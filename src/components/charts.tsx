@@ -38,7 +38,7 @@ export function Legend({ segs }: { segs: Seg[] }) {
   return (
     <div className="flex flex-col gap-[7px] flex-1 min-w-[150px]">
       {segs.map((s, i) => (
-        <div key={i} className="flex items-center gap-2.5 text-[13.5px]">
+        <div key={i} className="flex items-center gap-2.5 text-sm">
           <i className="w-[11px] h-[11px] rounded-[3px] shrink-0" style={{ background: s.color }} />
           <span className="flex-1 truncate">{s.label}</span>
           <b className="tnum">{s.val}</b>

@@ -21,8 +21,8 @@ export function BandejaConsultas({ team }: { team: { id: string; name: string }[
   // Cualquier otro error (red, RLS) se reporta como error, no como función deshabilitada.
   if (isError) {
     return esTablaInexistente(error)
-      ? <p className="text-ink2 text-[13px]">Las consultas se habilitan tras la migración 29.</p>
-      : <p className="text-ink2 text-[13px]">No se pudieron cargar las consultas. Revisá tu conexión y probá de nuevo.</p>;
+      ? <p className="text-ink2 text-sm">Las consultas se habilitan tras la migración 29.</p>
+      : <p className="text-ink2 text-sm">No se pudieron cargar las consultas. Revisá tu conexión y probá de nuevo.</p>;
   }
 
   const ordenadas = ordenarConsultas(todas);
@@ -42,7 +42,7 @@ export function BandejaConsultas({ team }: { team: { id: string; name: string }[
     setRespondiendo(null); setBorrador("");
   }
 
-  const inputCls = "bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-[13px]";
+  const inputCls = "bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-sm";
 
   return (
     <div>
@@ -55,36 +55,36 @@ export function BandejaConsultas({ team }: { team: { id: string; name: string }[
         </select>
       </div>
       {visibles.length === 0 ? (
-        <p className="text-ink2 text-[13px] m-0">No hay consultas para este filtro.</p>
+        <p className="text-ink2 text-sm m-0">No hay consultas para este filtro.</p>
       ) : (
         <div className="grid gap-2">
           {visibles.map((c) => (
-            <div key={c.id} className="border border-line rounded-lg p-2.5 text-[13px] bg-surface">
+            <div key={c.id} className="border border-line rounded-lg p-2.5 text-sm bg-surface">
               <div className="flex items-center gap-2 mb-1">
                 <b>{nombreDe(c.autor)}</b>
                 <span className="text-ink2">· {TIPO_LBL[c.tipo]}</span>
-                <span className="text-ink2 text-[11px] ml-auto">{ESTADO_LBL[c.estado]}</span>
+                <span className="text-ink2 text-2xs ml-auto">{ESTADO_LBL[c.estado]}</span>
               </div>
               <p className="m-0 text-ink">{c.texto}</p>
               {c.respuesta && (
                 <div className="mt-2 pt-2 border-t border-line/60">
-                  <span className="text-ink2 text-[11px] uppercase tracking-wide">Respuesta</span>
+                  <span className="text-ink2 text-2xs uppercase tracking-wide">Respuesta</span>
                   <p className="m-0 mt-0.5">{c.respuesta}</p>
                 </div>
               )}
               <div className="flex items-center gap-2 mt-2">
                 {c.estado === "nueva" && (
                   <button onClick={() => actualizar(c.id, { estado: "leida" })}
-                    className="flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-2.5 py-1 text-[12px]">
+                    className="flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-2.5 py-1 text-xs">
                     <CheckCheck size={13} /> Marcar leída</button>
                 )}
                 {c.estado !== "archivada" && (
                   <button onClick={() => actualizar(c.id, { estado: "archivada" })}
-                    className="flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-2.5 py-1 text-[12px]">
+                    className="flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-2.5 py-1 text-xs">
                     <Archive size={13} /> Archivar</button>
                 )}
                 <button onClick={() => { setRespondiendo(respondiendo === c.id ? null : c.id); setBorrador(c.respuesta ?? ""); }}
-                  className="flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-2.5 py-1 text-[12px]">
+                  className="flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-2.5 py-1 text-xs">
                   <Reply size={13} /> Responder</button>
               </div>
               {respondiendo === c.id && (
@@ -92,7 +92,7 @@ export function BandejaConsultas({ team }: { team: { id: string; name: string }[
                   <textarea value={borrador} onChange={(e) => setBorrador(e.target.value)} rows={3}
                     placeholder="Escribí la respuesta…" className={inputCls + " resize-none"} />
                   <button onClick={() => responder(c.id)}
-                    className="bg-accent text-white rounded-lg px-3 py-1.5 text-[12px] font-semibold justify-self-start">
+                    className="bg-accent text-white rounded-lg px-3 py-1.5 text-xs font-semibold justify-self-start">
                     Guardar respuesta</button>
                 </div>
               )}

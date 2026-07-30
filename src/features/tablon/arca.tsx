@@ -38,13 +38,13 @@ export function ArcaAgenda({ items }: { items: ArcaItem[] }) {
         <details key={i} className="bg-surface border border-line rounded-xl mb-2 overflow-hidden" style={{ boxShadow: "var(--ring-sh)" }}>
           <summary className="flex items-center gap-3 px-3.5 py-2.5 cursor-pointer list-none hover:bg-surface2">
             <span className="w-[46px] rounded-[9px] overflow-hidden text-center shrink-0 border border-[#0b0b0d]">
-              <span className="block bg-[#0b0b0d] text-white text-[9px] tracking-widest py-[2.5px] font-bold">{x.dia.toUpperCase()}</span>
+              <span className="block bg-[#0b0b0d] text-white text-2xs tracking-widest py-[2.5px] font-bold">{x.dia.toUpperCase()}</span>
               <span className="block text-lg py-0.5 bg-white text-[#0b0b0d] tnum font-semibold">{x.num}</span>
             </span>
             <span className="flex-1 min-w-0"><b className="block text-sm">{x.titulo}</b><span className="block text-xs text-ink2 truncate">{x.sub}</span></span>
           </summary>
-          <table className="w-full text-[13px]"><tbody>
-            <tr><th className="text-left px-4 py-[7px] text-[11px] uppercase text-ink2 border-t border-line">Terminación de CUIT</th><th className="text-left px-4 py-[7px] text-[11px] uppercase text-ink2 border-t border-line">Fecha</th></tr>
+          <table className="w-full text-sm"><tbody>
+            <tr><th className="text-left px-4 py-[7px] text-2xs uppercase text-ink2 border-t border-line">Terminación de CUIT</th><th className="text-left px-4 py-[7px] text-2xs uppercase text-ink2 border-t border-line">Fecha</th></tr>
             {x.rows.map((r, j) => <tr key={j}><td className="px-4 py-[7px] border-t border-line tnum">{r.term}</td><td className="px-4 py-[7px] border-t border-line tnum">{r.fecha}</td></tr>)}
           </tbody></table>
         </details>

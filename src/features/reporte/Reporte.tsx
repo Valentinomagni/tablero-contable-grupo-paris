@@ -143,25 +143,25 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
           lo imprime en una ventana nueva, sin nada del layout de la app que deshacer. */}
       <div className="flex justify-between items-end gap-4 flex-wrap">
         <div>
-          <h1 className="text-[22px] font-bold tracking-tight m-0">Reporte ejecutivo — Equipo Contable</h1>
+          <h1 className="text-2xl font-bold tracking-tight m-0">Reporte ejecutivo — Equipo Contable</h1>
           <p className="text-ink2 text-sm m-0">Generado {fechaLarga} · últimos 30 días</p>
         </div>
         <div className="no-print flex items-center gap-2 flex-wrap">
           {org.marcas.length > 0 && (
             <select value={marcaFiltro ?? ""} onChange={(e) => { setMarcaFiltro(e.target.value || null); setSucursalFiltro(null); }}
-              className="border border-line bg-surface2 text-ink2 rounded-lg px-3 py-2 text-[13px] outline-none">
+              className="border border-line bg-surface2 text-ink2 rounded-lg px-3 py-2 text-sm outline-none">
               <option value="">Todas las marcas</option>
               {org.marcas.map((m) => <option key={m} value={m}>{m}</option>)}
             </select>
           )}
           {org.sucursales.length > 0 && (
             <select value={sucursalFiltro ?? ""} onChange={(e) => setSucursalFiltro(e.target.value || null)}
-              className="border border-line bg-surface2 text-ink2 rounded-lg px-3 py-2 text-[13px] outline-none">
+              className="border border-line bg-surface2 text-ink2 rounded-lg px-3 py-2 text-sm outline-none">
               <option value="">Todas las sucursales</option>
               {org.sucursales.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           )}
-          <button onClick={imprimir} className="flex items-center gap-2 border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]" style={cardSh}>
+          <button onClick={imprimir} className="flex items-center gap-2 border border-line bg-surface2 rounded-lg px-3.5 py-2 text-sm" style={cardSh}>
             <Download size={16} /> Imprimir / PDF
           </button>
         </div>
@@ -172,23 +172,23 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
           ["Avance del período", <Gauge key="g" pct={pctAvance} color="var(--s1)" />, <b key="b">{term30.length}/{total} tareas</b>]] as const)
           .map(([l, g, b], i) => (
             <div key={i} className="bg-surface rounded-2xl p-4 flex flex-col items-center gap-1.5" style={cardSh}>
-              <span className="text-[11.5px] uppercase tracking-wide text-ink2">{l}</span>{g}<span className="text-[15px] font-semibold">{b}</span>
+              <span className="text-2xs uppercase tracking-wide text-ink2">{l}</span>{g}<span className="text-base font-semibold">{b}</span>
             </div>
           ))}
         <div className="bg-surface rounded-2xl p-4 flex flex-col items-center gap-1.5" style={cardSh}>
-          <span className="text-[11.5px] uppercase tracking-wide text-ink2">Puntualidad</span>
+          <span className="text-2xs uppercase tracking-wide text-ink2">Puntualidad</span>
           {punt.pct === null ? (
             <>
               <Gauge pct={0} color="var(--s1)" />
-              <span className="text-[15px] font-semibold">sin datos</span>
+              <span className="text-base font-semibold">sin datos</span>
             </>
           ) : punt.muestraChica ? (
-            <span className="text-ink2 text-[13px] text-center">Pocos datos (n={punt.n}) para medir</span>
+            <span className="text-ink2 text-sm text-center">Pocos datos (n={punt.n}) para medir</span>
           ) : (
             <>
               <Gauge pct={punt.pct} color="var(--s1)" />
-              <span className="text-[15px] font-semibold">{punt.pct}%</span>
-              <span className="text-ink2 text-[11.5px] text-center">{punt.enFecha} de {punt.n} con vencimiento · {punt.sinFecha} sin fecha</span>
+              <span className="text-base font-semibold">{punt.pct}%</span>
+              <span className="text-ink2 text-2xs text-center">{punt.enFecha} de {punt.n} con vencimiento · {punt.sinFecha} sin fecha</span>
             </>
           )}
         </div>
@@ -202,7 +202,7 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
           .map(([l, v, b], i) => (
             <div key={i} className={`bg-surface rounded-[14px] px-4 py-3.5 border-l-[3px] ${b}`} style={cardSh}>
               <b className="block text-2xl font-bold tracking-tight tnum">{v}</b>
-              <span className="text-[11.5px] text-ink2 uppercase tracking-wide">{l}</span>
+              <span className="text-2xs text-ink2 uppercase tracking-wide">{l}</span>
             </div>
           ))}
       </div>
@@ -226,7 +226,7 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
             <span className="w-5 text-center font-bold text-ink2 tnum">{i + 1}</span><Avatar name={r.u.name} size={26} />
             <span className="w-[170px] shrink-0 truncate">{r.u.name} <span className="text-ink2 capitalize">{r.u.role}</span></span>
             <div className="flex-1 h-[9px] bg-surface2 rounded-full overflow-hidden min-w-[60px]"><div className="h-full rounded-full" style={{ width: `${Math.round((r.ef / maxEf) * 100)}%`, background: "linear-gradient(90deg,var(--s1),var(--accent))" }} /></div>
-            <span className="shrink-0 tnum font-semibold text-[13px]">{r.ef} pts <span className="text-ink2 font-normal">· {r.n} tareas{r.act ? ` · ${r.act} op.` : ""}</span></span>
+            <span className="shrink-0 tnum font-semibold text-sm">{r.ef} pts <span className="text-ink2 font-normal">· {r.n} tareas{r.act ? ` · ${r.act} op.` : ""}</span></span>
           </div>
         ))}
         {rank.every((r) => r.ef === 0 && r.act === 0) && <p className="text-ink2 text-sm">Sin actividad en el período.</p>}
@@ -239,11 +239,11 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
             <Avatar name={p.name} size={26} />
             <span className="w-[170px] shrink-0 truncate">{p.name}</span>
             <div className="flex-1 h-[9px] bg-surface2 rounded-full overflow-hidden min-w-[60px]"><div className="h-full rounded-full" style={{ width: `${Math.round(p.indice * 100)}%`, background: "var(--s1)" }} /></div>
-            <span className="shrink-0 tnum font-semibold text-[13px] w-[44px] text-right">{Math.round(p.indice * 100)}%</span>
-            <span className="shrink-0 text-ink2 text-[12px] w-[150px] text-right">{p.diasSinActividad} días sin actividad registrada</span>
+            <span className="shrink-0 tnum font-semibold text-sm w-[44px] text-right">{Math.round(p.indice * 100)}%</span>
+            <span className="shrink-0 text-ink2 text-xs w-[150px] text-right">{p.diasSinActividad} días sin actividad registrada</span>
           </div>
         )) : <p className="text-ink2 text-sm">Sin datos de utilización.</p>}
-        <p className="text-[11px] text-ink2 mt-3">Indicador de planificación de carga — no mide presencia ni productividad individual</p>
+        <p className="text-2xs text-ink2 mt-3">Indicador de planificación de carga — no mide presencia ni productividad individual</p>
       </div>
 
       {arqueo.length > 0 && (
@@ -255,8 +255,8 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
               <div key={c.id} className="flex items-center gap-3 py-2 text-sm border-t border-line first:border-0">
                 {owner && <Avatar name={owner.name} size={26} />}
                 <span className="flex-1 min-w-0 truncate">{c.title} <span className="text-ink2">· {owner?.name ?? "Sin responsable"}</span></span>
-                <span className="shrink-0 tnum font-semibold text-[15px] w-[64px] text-right" style={{ color: colorArqueo(stats.pctOk) }}>{stats.pctOk}%</span>
-                <span className="shrink-0 text-ink2 text-[12px] w-[140px] text-right">{stats.ok}/{stats.total} sin diferencias</span>
+                <span className="shrink-0 tnum font-semibold text-base w-[64px] text-right" style={{ color: colorArqueo(stats.pctOk) }}>{stats.pctOk}%</span>
+                <span className="shrink-0 text-ink2 text-xs w-[140px] text-right">{stats.ok}/{stats.total} sin diferencias</span>
               </div>
             );
           })}

@@ -67,15 +67,15 @@ export function ChecklistSection({ c, patch, hist }:
         {esRecurrente ? (c.recur_rule?.tipo === "diaria" ? <ChecklistDelDia c={c} /> : (
           <>
             <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Checklist del mes (ocurrencias)</h4>
-            {cardOccs.length === 0 && <p className="text-ink2 text-[13px] m-0">Guardá la recurrencia para generar las ocurrencias del mes.</p>}
+            {cardOccs.length === 0 && <p className="text-ink2 text-sm m-0">Guardá la recurrencia para generar las ocurrencias del mes.</p>}
             {cardOccs.map((o) => (
               <div key={o.id}>
                 <label className="flex items-center gap-2 py-1 text-sm cursor-pointer">
                   <input type="checkbox" checked={o.done} onChange={() => onOccCkClick(o)} className="accent-accent w-4 h-4 shrink-0" />
                   <span className={"flex-1 capitalize " + (o.done ? "line-through text-ink2" : "")}>{fechaCorta(o.fecha)}</span>
-                  {o.done && o.resultado === "ok" && <span className="text-[11px] text-done">sin diferencias</span>}
+                  {o.done && o.resultado === "ok" && <span className="text-2xs text-done">sin diferencias</span>}
                   {o.done && o.resultado === "dif" && (
-                    <span className="text-[11px] text-warn" title={o.dif_obs ?? undefined}>{textoDiferencia(o.dif_importe ?? null)}</span>
+                    <span className="text-2xs text-warn" title={o.dif_obs ?? undefined}>{textoDiferencia(o.dif_importe ?? null)}</span>
                   )}
                 </label>
                 {pendingOcc?.id === o.id && (
@@ -101,7 +101,7 @@ export function ChecklistSection({ c, patch, hist }:
                     <input autoFocus value={editTxt} onChange={(e) => setEditTxt(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditCk(null); }}
                       onBlur={saveEdit}
-                      className="flex-1 bg-surface2 border border-line rounded-lg px-2.5 py-1 text-ink text-[13px]" />
+                      className="flex-1 bg-surface2 border border-line rounded-lg px-2.5 py-1 text-ink text-sm" />
                   ) : (
                     <span className={"flex-1 " + (i.done ? "line-through text-ink2" : "")}>{i.txt}</span>
                   )}
@@ -114,9 +114,9 @@ export function ChecklistSection({ c, patch, hist }:
             })}
             <div className="flex gap-1.5 mt-1">
               <input value={newCk} onChange={(e) => setNewCk(e.target.value)} placeholder="Nuevo ítem…"
-                className="flex-1 bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-[13px]" />
+                className="flex-1 bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-sm" />
               <button onClick={() => { if (newCk.trim()) { patch.mutate({ checklist: [...c.checklist, { txt: newCk.trim(), done: false, done_at: null }] }); setNewCk(""); } }}
-                className="border border-line bg-surface2 rounded-lg px-3 text-[13px]">Agregar</button>
+                className="border border-line bg-surface2 rounded-lg px-3 text-sm">Agregar</button>
             </div>
           </>
         )}
@@ -201,7 +201,7 @@ function ChecklistDelDia({ c }: { c: Card }) {
             className="border border-line bg-surface2 rounded-lg px-1.5 py-1 disabled:opacity-40">
             <ChevronLeft size={12} />
           </button>
-          <span className="text-[12px] text-ink capitalize min-w-[9.5rem] text-center">{etiquetaFecha}</span>
+          <span className="text-xs text-ink capitalize min-w-[9.5rem] text-center">{etiquetaFecha}</span>
           <button title="Día siguiente" onClick={() => moverDia(1)} disabled={dia >= diasEnMes}
             className="border border-line bg-surface2 rounded-lg px-1.5 py-1 disabled:opacity-40">
             <ChevronRight size={12} />
@@ -210,7 +210,7 @@ function ChecklistDelDia({ c }: { c: Card }) {
       </div>
 
       {items.length === 0 && (
-        <p className="text-ink2 text-[13px] m-0 mb-1.5">
+        <p className="text-ink2 text-sm m-0 mb-1.5">
           Este día todavía no tiene ítems. Lo que tildes acá queda guardado para esta fecha y no
           se borra cuando la tarea se reinicia.
         </p>
@@ -228,9 +228,9 @@ function ChecklistDelDia({ c }: { c: Card }) {
       <div className="flex gap-1.5 mt-1">
         <input value={nuevo} onChange={(e) => setNuevo(e.target.value)} placeholder="Nuevo ítem del día…"
           onKeyDown={(e) => { if (e.key === "Enter" && nuevo.trim()) { guardar.mutate({ checklist: [...items, { txt: nuevo.trim(), done: false, done_at: null }] }); setNuevo(""); } }}
-          className="flex-1 bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-[13px]" />
+          className="flex-1 bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-sm" />
         <button onClick={() => { if (nuevo.trim()) { guardar.mutate({ checklist: [...items, { txt: nuevo.trim(), done: false, done_at: null }] }); setNuevo(""); } }}
-          className="border border-line bg-surface2 rounded-lg px-3 text-[13px]">Agregar</button>
+          className="border border-line bg-surface2 rounded-lg px-3 text-sm">Agregar</button>
       </div>
 
       {/* La card sigue funcionando de plantilla: sus ítems se copian al día en un click,
@@ -238,14 +238,14 @@ function ChecklistDelDia({ c }: { c: Card }) {
       {items.length === 0 && c.checklist.length > 0 && (
         <button
           onClick={() => guardar.mutate({ checklist: c.checklist.map((i) => ({ txt: i.txt, done: false, done_at: null })) })}
-          className="border border-line bg-surface2 rounded-lg px-3 py-1.5 text-[13px] mt-1.5">
+          className="border border-line bg-surface2 rounded-lg px-3 py-1.5 text-sm mt-1.5">
           Usar los ítems de la tarea como plantilla
         </button>
       )}
 
       <textarea defaultValue={occ?.obs ?? ""} key={fecha} placeholder="Observaciones del día…"
         onBlur={(e) => { const v = e.target.value.trim(); if (v !== (occ?.obs ?? "")) guardar.mutate({ obs: v || null }); }}
-        className="w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-[13px] mt-2 min-h-[3.5rem]" />
+        className="w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-sm mt-2 min-h-[3.5rem]" />
     </>
   );
 }

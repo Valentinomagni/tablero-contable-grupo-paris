@@ -53,12 +53,12 @@ export function DelegarModal({ team, meId, meName, onClose }: { team: Profile[];
   const sinDestinatarios = team.filter((u) => u.id !== meId).length === 0;
 
   const puede = title.trim().length > 0 && owners.length >= 1;
-  const inputCls = "bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-[13px]";
+  const inputCls = "bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-sm";
 
   return (
     <Modal onClose={onClose} maxWidth={520}>
       <h3 className="flex items-center gap-2 text-lg font-semibold m-0 mb-1"><Users size={18} /> Delegar / compartir tarea</h3>
-      <p className="text-ink2 text-[13px] mt-0 mb-4">
+      <p className="text-ink2 text-sm mt-0 mb-4">
         Se crea la misma tarea en el tablero de cada participante. Cuando alguien la termina, se marca
         para todos, y suma en las métricas de cada uno (autocontrol + control cruzado).
       </p>
@@ -69,7 +69,7 @@ export function DelegarModal({ team, meId, meName, onClose }: { team: Profile[];
 
       <label className="block text-xs uppercase tracking-wide text-ink2 mb-1.5">Participantes</label>
       {sinDestinatarios && (
-        <div className="border border-dashed border-line rounded-lg px-3 py-4 mb-4 text-[13px] text-ink2">
+        <div className="border border-dashed border-line rounded-lg px-3 py-4 mb-4 text-sm text-ink2">
           Todavía no ves compañeros para delegar. Pedile a tu encargado que te asigne compañeros
           de equipo y vas a poder compartir tareas con ellos desde acá.
         </div>
@@ -79,7 +79,7 @@ export function DelegarModal({ team, meId, meName, onClose }: { team: Profile[];
           const on = owners.includes(u.id);
           return (
             <button key={u.id} onClick={() => toggle(u.id)}
-              className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] border text-left transition ${on ? "border-accent bg-accent-soft" : "border-line bg-surface2"}`}>
+              className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm border text-left transition ${on ? "border-accent bg-accent-soft" : "border-line bg-surface2"}`}>
               <Avatar name={u.name} size={20} />
               <span className="flex-1 truncate">{u.name}</span>
               {on && <Check size={14} className="text-accent shrink-0" />}
@@ -102,9 +102,9 @@ export function DelegarModal({ team, meId, meName, onClose }: { team: Profile[];
       </div>
 
       <div className="flex gap-2 justify-end pt-3 border-t border-line">
-        <button onClick={onClose} className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Cancelar</button>
+        <button onClick={onClose} className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-sm">Cancelar</button>
         <button onClick={() => crear.mutate()} disabled={!puede || crear.isPending}
-          className="inline-flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] font-semibold rounded-lg px-3.5 py-2 text-[13px] disabled:opacity-50">
+          className="inline-flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] font-semibold rounded-lg px-3.5 py-2 text-sm disabled:opacity-50">
           <Users size={14} /> {crear.isPending ? "Creando…" : `Compartir con ${owners.length || ""}`}</button>
       </div>
     </Modal>

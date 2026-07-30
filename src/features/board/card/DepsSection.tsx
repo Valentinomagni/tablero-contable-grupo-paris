@@ -21,7 +21,7 @@ export function DepsSection({ c, cards, team, depMap, revDeps, nameOf, isJefe, p
           <>
             <h4 className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-ink2 mt-4 mb-2"><Link2 size={12} /> Depende de</h4>
             {isBlocked(c, cards, depMap) && (
-              <div className="bg-warn-soft text-warn rounded-lg px-3 py-2 text-[13px] mb-2">
+              <div className="bg-warn-soft text-warn rounded-lg px-3 py-2 text-sm mb-2">
                 Esta tarea está bloqueada: primero deben terminarse las tareas de las que depende.
               </div>
             )}
@@ -41,16 +41,16 @@ export function DepsSection({ c, cards, team, depMap, revDeps, nameOf, isJefe, p
                 </div>
               );
             })}
-            {depIds.length === 0 && <p className="text-ink2 text-[13px] m-0">Sin dependencias.</p>}
+            {depIds.length === 0 && <p className="text-ink2 text-sm m-0">Sin dependencias.</p>}
             {isJefe && (
               <div className="flex gap-1.5 mt-2">
                 <select value={depPerson} onChange={(e) => { setDepPerson(e.target.value); setDepTask(""); }}
-                  className="bg-surface2 border border-line rounded-lg px-2 py-1.5 text-[13px]">
+                  className="bg-surface2 border border-line rounded-lg px-2 py-1.5 text-sm">
                   <option value="">Persona…</option>
                   {team.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
                 </select>
                 <select value={depTask} onChange={(e) => setDepTask(e.target.value)} disabled={!depPerson}
-                  className="flex-1 bg-surface2 border border-line rounded-lg px-2 py-1.5 text-[13px] disabled:opacity-60">
+                  className="flex-1 bg-surface2 border border-line rounded-lg px-2 py-1.5 text-sm disabled:opacity-60">
                   <option value="">Tarea…</option>
                   {cards.filter((x) => x.owner === depPerson && x.id !== c.id && !depIds.includes(x.id))
                     .map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}
@@ -61,7 +61,7 @@ export function DepsSection({ c, cards, team, depMap, revDeps, nameOf, isJefe, p
                     patch.mutate({ deps: [...depIds, depTask], history: hist(`Vinculó dependencia: "${d?.title ?? "?"}"`) });
                     setDepTask("");
                   }}
-                  className="border border-line bg-surface2 rounded-lg px-3 text-[13px] disabled:opacity-60">Vincular</button>
+                  className="border border-line bg-surface2 rounded-lg px-3 text-sm disabled:opacity-60">Vincular</button>
               </div>
             )}
           </>

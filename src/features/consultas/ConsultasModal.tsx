@@ -37,7 +37,7 @@ export function ConsultasModal({ meId, onClose }: { meId: string; onClose: () =>
     qc.invalidateQueries({ queryKey: ["consultas-nuevas"] });
   }
 
-  const inputCls = "bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-[13px]";
+  const inputCls = "bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-sm";
 
   return (
     <Modal onClose={onClose} maxWidth={520}>
@@ -61,26 +61,26 @@ export function ConsultasModal({ meId, onClose }: { meId: string; onClose: () =>
               className={inputCls + " resize-none"} />
             {err && <p className="text-danger text-sm m-0">{err}</p>}
             <button onClick={enviar} disabled={busy}
-              className="bg-accent text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:opacity-60 justify-self-start">
+              className="bg-accent text-white rounded-lg px-3.5 py-2 text-sm font-semibold disabled:opacity-60 justify-self-start">
               {busy ? "Enviando…" : "Enviar"}
             </button>
           </div>
 
           <h4 className="text-xs uppercase tracking-wide text-ink2 mt-5 mb-2">Mis consultas</h4>
           {mias.length === 0 ? (
-            <p className="text-ink2 text-[13px] m-0">Todavía no enviaste ninguna.</p>
+            <p className="text-ink2 text-sm m-0">Todavía no enviaste ninguna.</p>
           ) : (
             <div className="grid gap-2">
               {mias.map((c) => (
-                <div key={c.id} className="border border-line rounded-lg p-2.5 text-[13px]">
+                <div key={c.id} className="border border-line rounded-lg p-2.5 text-sm">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-semibold">{TIPO_LBL[c.tipo]}</span>
-                    <span className="text-ink2 text-[11px] ml-auto">{ESTADO_LBL[c.estado]}</span>
+                    <span className="text-ink2 text-2xs ml-auto">{ESTADO_LBL[c.estado]}</span>
                   </div>
                   <p className="m-0 text-ink">{c.texto}</p>
                   {c.respuesta && (
                     <div className="mt-2 pt-2 border-t border-line/60">
-                      <span className="text-ink2 text-[11px] uppercase tracking-wide">Respuesta</span>
+                      <span className="text-ink2 text-2xs uppercase tracking-wide">Respuesta</span>
                       <p className="m-0 mt-0.5">{c.respuesta}</p>
                     </div>
                   )}

@@ -133,8 +133,8 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
 
   const StatChip = ({ label, value, tone }: { label: string; value: number; tone?: "danger" | "done" | "warn" }) => (
     <div className="bg-surface border border-line rounded-xl px-4 py-3 flex-1 min-w-[110px]" style={cardSh}>
-      <div className="text-[11px] text-ink2 uppercase tracking-[0.07em] font-semibold mb-1">{label}</div>
-      <b className="text-[26px] leading-none font-bold tnum tracking-[-0.02em]"
+      <div className="text-2xs text-ink2 uppercase tracking-[0.07em] font-semibold mb-1">{label}</div>
+      <b className="text-3xl leading-none font-bold tnum tracking-[-0.02em]"
         style={{ color: tone === "danger" ? "var(--danger)" : tone === "done" ? "var(--done)" : tone === "warn" ? "var(--warn)" : undefined }}>{value}</b>
     </div>
   );
@@ -149,18 +149,18 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
       {/* Navegación libre de meses: se puede trabajar y cerrar cualquier mes, no sólo el actual. */}
       <div className="flex items-center gap-2 mb-4">
         <button onClick={() => nav(-1)} className="border border-line bg-surface2 rounded-lg p-1.5" title="Mes anterior"><ChevronLeft size={16} /></button>
-        <h2 className="text-[16px] font-bold tracking-[-0.01em] capitalize min-w-[190px] text-center">{MESES[ym.month - 1]} de {ym.year}</h2>
+        <h2 className="text-lg font-bold tracking-[-0.01em] capitalize min-w-[190px] text-center">{MESES[ym.month - 1]} de {ym.year}</h2>
         <button onClick={() => nav(1)} className="border border-line bg-surface2 rounded-lg p-1.5" title="Mes siguiente"><ChevronRight size={16} /></button>
         {isJefe && template.length > 0 && (
           <button onClick={generar} disabled={busy}
-            className="flex items-center gap-1.5 ml-auto bg-accent text-[color:var(--accent-ink)] rounded-lg px-3.5 py-1.5 text-[13px] font-semibold disabled:opacity-50">
+            className="flex items-center gap-1.5 ml-auto bg-accent text-[color:var(--accent-ink)] rounded-lg px-3.5 py-1.5 text-sm font-semibold disabled:opacity-50">
             <CalendarPlus size={14} /> {busy ? "Generando…" : `Generar cierre de ${MESES[ym.month - 1]}`}</button>
         )}
       </div>
 
       {/* Aviso de meses abiertos: informativo, no una alarma. Trabajar en paralelo es válido. */}
       {misAbiertos.length > 1 && (
-        <div className="inline-flex items-center gap-2 bg-surface2 border border-line rounded-full px-3.5 py-1.5 mb-4 text-[12px] text-ink2">
+        <div className="inline-flex items-center gap-2 bg-surface2 border border-line rounded-full px-3.5 py-1.5 mb-4 text-xs text-ink2">
           <CalendarRange size={14} className="shrink-0" />
           <span>Tenés {misAbiertos.length} meses abiertos: {formatearMeses(misAbiertos)}</span>
         </div>
@@ -171,9 +171,9 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
           En meses pasados sólo se listan los pasos históricos (ver `pasosVisibles`). */}
       <div className="bg-surface border border-line rounded-2xl overflow-hidden mb-5" style={cardSh}>
         <div className="px-5 pt-4 pb-3">
-          <h3 className="text-[15px] font-bold tracking-[-0.01em]">Cierre del mes</h3>
+          <h3 className="text-base font-bold tracking-[-0.01em]">Cierre del mes</h3>
           {!esMesEnCurso && (
-            <p className="text-[12px] text-ink2 mt-1 leading-snug">
+            <p className="text-xs text-ink2 mt-1 leading-snug">
               En meses pasados solo mostramos el avance de las tareas del cierre: es el único dato histórico confiable.
             </p>
           )}
@@ -182,8 +182,8 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
               <div key={p.key} className="flex items-start gap-2.5">
                 <PasoIcon estado={p.estado} />
                 <div className="min-w-0">
-                  <div className="text-[13px] font-semibold text-ink leading-tight">{p.lbl}</div>
-                  <div className="text-[12px] text-ink2 leading-snug mt-0.5">{p.detalle}</div>
+                  <div className="text-sm font-semibold text-ink leading-tight">{p.lbl}</div>
+                  <div className="text-xs text-ink2 leading-snug mt-0.5">{p.detalle}</div>
                 </div>
               </div>
             ))}
@@ -192,7 +192,7 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
         {esMesEnCurso && semaforo.cerrado && (
           <div className="bg-accent-soft px-5 py-2.5 flex items-center gap-2 border-t border-line">
             <CheckCircle2 size={16} className="text-done shrink-0" />
-            <span className="text-[13px] font-semibold text-ink">Todo al día en el mes en curso</span>
+            <span className="text-sm font-semibold text-ink">Todo al día en el mes en curso</span>
           </div>
         )}
 
@@ -201,7 +201,7 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
         {proyeccion && !proyeccion.alcanza && proyeccion.diasNecesarios !== null && (
           <div className="px-5 py-2.5 flex items-center gap-2 border-t border-line">
             <AlarmClock size={16} className="text-warn shrink-0" />
-            <span className="text-[13px] font-semibold text-ink">
+            <span className="text-sm font-semibold text-ink">
               Al ritmo de los últimos días, faltarían {proyeccion.diasNecesarios} día(s) más de los que quedan en el mes.
             </span>
           </div>
@@ -211,39 +211,39 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
         {miCierre ? (
           <div className="bg-accent-soft px-5 py-3 flex flex-wrap items-center gap-3 border-t border-line">
             <Lock size={16} className="text-done shrink-0" />
-            <span className="text-[13px] font-semibold text-ink">Cerraste este mes el {fechaCorta(miCierre.cerrado_at)}</span>
+            <span className="text-sm font-semibold text-ink">Cerraste este mes el {fechaCorta(miCierre.cerrado_at)}</span>
             <button onClick={toggleCierre} disabled={reabrirMes.isPending}
-              className="ml-auto flex items-center gap-1.5 border border-line bg-surface rounded-lg px-3 py-1.5 text-[13px] font-semibold text-ink disabled:opacity-50">
+              className="ml-auto flex items-center gap-1.5 border border-line bg-surface rounded-lg px-3 py-1.5 text-sm font-semibold text-ink disabled:opacity-50">
               <LockOpen size={14} /> {reabrirMes.isPending ? "Reabriendo…" : "Reabrir"}
             </button>
           </div>
         ) : (
           <div className="px-5 py-3 border-t border-line">
             {migracionPendiente ? (
-              <button disabled className="flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3.5 py-1.5 text-[13px] font-semibold text-ink2 opacity-70">
+              <button disabled className="flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3.5 py-1.5 text-sm font-semibold text-ink2 opacity-70">
                 <Lock size={14} /> Se habilita tras la migración 29
               </button>
             ) : errorReal ? (
-              <button disabled className="flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3.5 py-1.5 text-[13px] font-semibold text-ink2 opacity-70">
+              <button disabled className="flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3.5 py-1.5 text-sm font-semibold text-ink2 opacity-70">
                 <Lock size={14} /> No se pudieron cargar los cierres. Reintentá en un momento.
               </button>
             ) : confirmando ? (
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-[13px] text-ink">
+                <span className="text-sm text-ink">
                   Vas a cerrar tu {mesLegible(mesNavegado)} {ym.year}. Podés reabrirlo si hace falta.
                 </span>
                 <div className="flex items-center gap-2 ml-auto">
                   <button onClick={() => setConfirmando(false)}
-                    className="border border-line bg-surface2 rounded-lg px-3 py-1.5 text-[13px] font-semibold text-ink2">Cancelar</button>
+                    className="border border-line bg-surface2 rounded-lg px-3 py-1.5 text-sm font-semibold text-ink2">Cancelar</button>
                   <button onClick={toggleCierre} disabled={cerrarMes.isPending}
-                    className="flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] rounded-lg px-3.5 py-1.5 text-[13px] font-semibold disabled:opacity-50">
+                    className="flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] rounded-lg px-3.5 py-1.5 text-sm font-semibold disabled:opacity-50">
                     <Lock size={14} /> {cerrarMes.isPending ? "Cerrando…" : "Confirmar cierre"}
                   </button>
                 </div>
               </div>
             ) : (
               <button onClick={() => setConfirmando(true)}
-                className="flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] rounded-lg px-3.5 py-1.5 text-[13px] font-semibold">
+                className="flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] rounded-lg px-3.5 py-1.5 text-sm font-semibold">
                 <Lock size={14} /> Cerrar mi mes
               </button>
             )}
@@ -255,8 +255,8 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
       {esGestor && team.length > 0 && (
         <div className="bg-surface border border-line rounded-2xl overflow-hidden mb-5" style={cardSh}>
           <div className="px-5 pt-4 pb-3 flex items-end justify-between gap-3">
-            <h3 className="text-[15px] font-bold tracking-[-0.01em]">Cierres del equipo</h3>
-            <span className="text-[13px] text-ink2">
+            <h3 className="text-base font-bold tracking-[-0.01em]">Cierres del equipo</h3>
+            <span className="text-sm text-ink2">
               <b className="text-ink tnum">{equipo.cerraron.length}</b> de <b className="text-ink tnum">{team.length}</b> cerraron ({equipo.pct}%)
             </span>
           </div>
@@ -266,13 +266,13 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
               return (
                 <div key={p.id} className="flex items-center gap-3 px-5 py-2.5 border-t border-line">
                   <Avatar name={p.name} size={24} />
-                  <span className="flex-1 min-w-0 truncate text-[13px] font-medium text-ink">{p.name}</span>
+                  <span className="flex-1 min-w-0 truncate text-sm font-medium text-ink">{p.name}</span>
                   {fila ? (
-                    <span className="flex items-center gap-1.5 text-[12px] text-ink2 shrink-0">
+                    <span className="flex items-center gap-1.5 text-xs text-ink2 shrink-0">
                       <CheckCircle2 size={14} className="text-done" /> Cerró el {fechaCorta(fila.cerrado_at)}
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1.5 text-[12px] text-ink2 shrink-0">
+                    <span className="flex items-center gap-1.5 text-xs text-ink2 shrink-0">
                       <Circle size={14} /> Sin cerrar
                     </span>
                   )}
@@ -295,10 +295,10 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
           <div className="bg-surface border border-line rounded-2xl p-5 mb-4" style={cardSh}>
             <div className="flex items-end justify-between mb-2">
               <div>
-                <span className="text-[13px] text-ink2">Avance del cierre</span>
-                <div className="text-[34px] font-bold leading-none tnum tracking-[-0.02em] mt-1">{stats.pct}%</div>
+                <span className="text-sm text-ink2">Avance del cierre</span>
+                <div className="text-4xl font-bold leading-none tnum tracking-[-0.02em] mt-1">{stats.pct}%</div>
               </div>
-              <div className="text-right text-[13px] text-ink2">
+              <div className="text-right text-sm text-ink2">
                 <div><b className="text-ink tnum">{stats.done}</b> de <b className="text-ink tnum">{stats.total}</b> tareas</div>
                 {stats.onTimePct !== null && <div>Adherencia (en fecha): <b style={{ color: stats.onTimePct >= 85 ? "var(--done)" : stats.onTimePct >= 60 ? "var(--warn)" : "var(--danger)" }}>{stats.onTimePct}%</b></div>}
               </div>
@@ -326,10 +326,10 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
                   className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-surface2 ${idx ? "border-t border-line" : ""}`}>
                   <Icon size={17} style={{ color: c.status === "term" ? "var(--done)" : "var(--ink2)" }} className="shrink-0" />
                   <span className={`flex-1 min-w-0 truncate ${c.status === "term" ? "line-through text-ink2" : "text-ink"} font-medium`}>{c.title}</span>
-                  {blocked && <span className="flex items-center gap-1 text-warn text-[11px] font-semibold shrink-0"><Link2 size={12} /> Bloqueada</span>}
-                  {late && <span className="flex items-center gap-1 bg-danger-soft text-danger rounded-md px-2 py-0.5 text-[11px] font-semibold shrink-0"><AlarmClock size={11} /> Venció {i!.lbl}</span>}
-                  {!late && i && c.status !== "term" && <span className="text-ink2 text-[12px] tnum shrink-0">vence {i.lbl}</span>}
-                  <span className="flex items-center gap-1.5 shrink-0 w-[130px] justify-end"><span className="text-ink2 text-[12px] truncate">{nom(c.owner)}</span><Avatar name={nom(c.owner)} size={22} /></span>
+                  {blocked && <span className="flex items-center gap-1 text-warn text-2xs font-semibold shrink-0"><Link2 size={12} /> Bloqueada</span>}
+                  {late && <span className="flex items-center gap-1 bg-danger-soft text-danger rounded-md px-2 py-0.5 text-2xs font-semibold shrink-0"><AlarmClock size={11} /> Venció {i!.lbl}</span>}
+                  {!late && i && c.status !== "term" && <span className="text-ink2 text-xs tnum shrink-0">vence {i.lbl}</span>}
+                  <span className="flex items-center gap-1.5 shrink-0 w-[130px] justify-end"><span className="text-ink2 text-xs truncate">{nom(c.owner)}</span><Avatar name={nom(c.owner)} size={22} /></span>
                 </div>
               );
             })}

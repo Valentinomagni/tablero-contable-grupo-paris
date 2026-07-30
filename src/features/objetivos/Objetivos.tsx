@@ -43,7 +43,7 @@ export function Objetivos({ ownerId, ownerName }: { ownerId: string; ownerName: 
         );
       })}
       <button onClick={() => setEditing("new")}
-        className="w-full border border-dashed border-line bg-surface2/50 rounded-xl px-4 py-2.5 text-[13px] text-ink2 hover:bg-surface2">
+        className="w-full border border-dashed border-line bg-surface2/50 rounded-xl px-4 py-2.5 text-sm text-ink2 hover:bg-surface2">
         + Añadir objetivo
       </button>
       {editing && (

@@ -33,24 +33,24 @@ export function MisArqueos({ cards, ownerId }: { cards: Card[]; ownerId: string 
   return (
     <div className="px-6 py-4 w-full max-w-[960px] flex flex-col gap-4">
       <div>
-        <h2 className="text-[18px] font-bold tracking-tight m-0">Mis arqueos</h2>
+        <h2 className="text-xl font-bold tracking-tight m-0">Mis arqueos</h2>
         <p className="text-ink2 text-sm m-0 capitalize">{now.toLocaleDateString("es-AR", { month: "long", year: "numeric" })}</p>
       </div>
 
       <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))" }}>
         <div className="bg-surface rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5" style={cardSh}>
-          <span className="text-[11.5px] uppercase tracking-wide text-ink2">Diferencias del mes</span>
+          <span className="text-2xs uppercase tracking-wide text-ink2">Diferencias del mes</span>
           <b className="text-2xl font-bold tracking-tight tnum">{resumen.cantidad}</b>
         </div>
         <div className="bg-surface rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5" style={cardSh}>
-          <span className="text-[11.5px] uppercase tracking-wide text-ink2">Total acumulado</span>
+          <span className="text-2xs uppercase tracking-wide text-ink2">Total acumulado</span>
           {/* Magnitud, no neto: faltantes y sobrantes no se cancelan entre sí. */}
           <b className="text-2xl font-bold tracking-tight tnum" style={{ color: resumen.total > 0 ? "var(--warn)" : undefined }}>
             {fmtMonto(resumen.total)}
           </b>
         </div>
         <div className="bg-surface rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5" style={cardSh}>
-          <span className="text-[11.5px] uppercase tracking-wide text-ink2">Faltantes / sobrantes</span>
+          <span className="text-2xs uppercase tracking-wide text-ink2">Faltantes / sobrantes</span>
           <span className="flex items-center gap-2 text-lg font-bold tracking-tight tnum">
             {/* En valor absoluto: la etiqueta ya dice cuál es cuál, el menos solo confunde. */}
             <span className="text-danger">{fmtMonto(Math.abs(resumen.faltantes))}</span>
@@ -63,7 +63,7 @@ export function MisArqueos({ cards, ownerId }: { cards: Card[]; ownerId: string 
       <div className="bg-surface rounded-2xl p-[18px]" style={cardSh}>
         <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-3.5">Historial de diferencias</h3>
         {historial.length ? (
-          <table className="w-full text-[13px] border-collapse">
+          <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="text-left text-ink2 border-b border-line">
                 <th className="font-semibold py-1">Fecha</th>

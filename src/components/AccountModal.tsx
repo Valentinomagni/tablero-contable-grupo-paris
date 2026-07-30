@@ -25,20 +25,20 @@ export function AccountModal({ name, email, onClose }: { name: string; email: st
     setOld(""); setNu(""); setNu2("");
   };
 
-  const inputCls = "w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-[13px]";
+  const inputCls = "w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-sm";
   return (
     <Modal onClose={onClose} maxWidth={440}>
         <h3 className="text-lg font-semibold m-0">Mi cuenta</h3>
         <div className="text-xs text-ink2 mb-3.5">{name} · correo de recuperación: {email}</div>
         <h4 className="text-xs uppercase tracking-wide text-ink2 mb-2">Cambiar contraseña</h4>
         <div className="grid gap-2.5">
-          <label className="text-[13px] text-ink2">Contraseña actual
+          <label className="text-sm text-ink2">Contraseña actual
             <input type="password" autoComplete="current-password" value={old} onChange={(e) => setOld(e.target.value)} className={inputCls} />
           </label>
-          <label className="text-[13px] text-ink2">Contraseña nueva
+          <label className="text-sm text-ink2">Contraseña nueva
             <input type="password" autoComplete="new-password" value={nu} onChange={(e) => setNu(e.target.value)} className={inputCls} />
           </label>
-          <label className="text-[13px] text-ink2">Repetir contraseña nueva
+          <label className="text-sm text-ink2">Repetir contraseña nueva
             <input type="password" autoComplete="new-password" value={nu2} onChange={(e) => setNu2(e.target.value)} className={inputCls} />
           </label>
           <p className="text-ink2 text-xs m-0">Mínimo 8 caracteres, con al menos una letra y un número.</p>
@@ -46,9 +46,9 @@ export function AccountModal({ name, email, onClose }: { name: string; email: st
         {msg && <p className={"text-sm mt-3 " + (msg.ok ? "text-done" : "text-danger")}>{msg.txt}</p>}
         <div className="flex gap-2 mt-4">
           <button onClick={save} disabled={busy}
-            className="bg-accent text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:opacity-60">
+            className="bg-accent text-white rounded-lg px-3.5 py-2 text-sm font-semibold disabled:opacity-60">
             {busy ? "Guardando…" : "Guardar contraseña"}</button>
-          <button onClick={onClose} className="ml-auto border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Cerrar</button>
+          <button onClick={onClose} className="ml-auto border border-line bg-surface2 rounded-lg px-3.5 py-2 text-sm">Cerrar</button>
         </div>
     </Modal>
   );

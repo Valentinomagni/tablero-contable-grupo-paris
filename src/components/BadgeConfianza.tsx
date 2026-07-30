@@ -15,7 +15,7 @@ export function BadgeConfianza({ confianza, className }: { confianza: Confianza;
     <span
       title={confianza.explicacion}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium whitespace-nowrap",
+        "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-2xs font-medium whitespace-nowrap",
         className,
       )}
       style={{ background: "var(--chip)", borderColor: "var(--line)", color: "var(--ink2)" }}

@@ -91,7 +91,7 @@ export function Director({ cards, team, annos }: { cards: Card[]; team: Profile[
 
   return (
     <div className="px-6 py-4 w-full max-w-[960px]">
-      <p className="text-[13px] text-ink2 mb-4 mt-0">
+      <p className="text-sm text-ink2 mb-4 mt-0">
         El estado del área en una pantalla. Cada panel resume una señal que ya se calcula en el
         sistema; el punto indica si conviene entrar a mirarla.
       </p>
@@ -101,10 +101,10 @@ export function Director({ cards, team, annos }: { cards: Card[]; team: Profile[
             <div className="flex items-center gap-2 mb-2.5">
               <span aria-hidden className="w-2.5 h-2.5 rounded-full shrink-0"
                 style={{ background: COLOR[p.semaforo] }} />
-              <span className="text-[11px] text-ink2 uppercase tracking-[0.08em] font-semibold">{p.area}</span>
+              <span className="text-2xs text-ink2 uppercase tracking-[0.08em] font-semibold">{p.area}</span>
             </div>
-            <b className="block text-[18px] leading-tight tracking-[-0.01em] mb-1.5">{p.titular}</b>
-            <span className="block text-[12.5px] text-ink2">{p.detalle}</span>
+            <b className="block text-xl leading-tight tracking-[-0.01em] mb-1.5">{p.titular}</b>
+            <span className="block text-xs text-ink2">{p.detalle}</span>
           </Panel>
         ))}
       </div>
@@ -113,7 +113,7 @@ export function Director({ cards, team, annos }: { cards: Card[]; team: Profile[
       <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mt-7 mb-2.5">Qué conviene hacer</h2>
       <Panel className="px-5 py-4">
         {sugerencias.length === 0 ? (
-          <span className="text-[13px] text-ink2">Sin recomendaciones: no se detectaron situaciones que requieran acción.</span>
+          <span className="text-sm text-ink2">Sin recomendaciones: no se detectaron situaciones que requieran acción.</span>
         ) : (
           <ul className="list-none m-0 p-0 flex flex-col gap-3.5">
             {sugerencias.map((s) => (
@@ -121,8 +121,8 @@ export function Director({ cards, team, annos }: { cards: Card[]; team: Profile[
                 <span aria-hidden className="w-2 h-2 rounded-full shrink-0 mt-[6px]"
                   style={{ background: COLOR_PRIORIDAD[s.prioridad] }} />
                 <span className="min-w-0">
-                  <span className="block text-[13.5px] leading-snug">{s.texto}</span>
-                  <span className="block text-[12px] text-ink2 mt-0.5">{s.motivo}</span>
+                  <span className="block text-sm leading-snug">{s.texto}</span>
+                  <span className="block text-xs text-ink2 mt-0.5">{s.motivo}</span>
                 </span>
               </li>
             ))}
@@ -138,9 +138,9 @@ export function Director({ cards, team, annos }: { cards: Card[]; team: Profile[
             <div className="flex flex-col gap-3">
               {exposiciones.map((e) => (
                 <div key={e.horizonte} className="flex items-baseline gap-3">
-                  <span className="text-[12.5px] text-ink2 w-[86px] shrink-0">{e.titulo}</span>
-                  <b className="text-[17px] tnum tracking-[-0.01em] w-[34px] shrink-0">{e.total}</b>
-                  <span className="text-[12px] text-ink2 min-w-0 truncate">
+                  <span className="text-xs text-ink2 w-[86px] shrink-0">{e.titulo}</span>
+                  <b className="text-lg tnum tracking-[-0.01em] w-[34px] shrink-0">{e.total}</b>
+                  <span className="text-xs text-ink2 min-w-0 truncate">
                     {e.porCategoria.length === 0
                       ? "sin vencimientos"
                       : e.porCategoria.slice(0, 3).map((c) => `${c.categoria} (${c.n})`).join(" · ")}
@@ -148,7 +148,7 @@ export function Director({ cards, team, annos }: { cards: Card[]; team: Profile[
                 </div>
               ))}
             </div>
-            <p className="text-[12px] text-ink2 mt-3 mb-0">Tareas abiertas que vencen dentro de cada plazo, incluidas las ya vencidas.</p>
+            <p className="text-xs text-ink2 mt-3 mb-0">Tareas abiertas que vencen dentro de cada plazo, incluidas las ya vencidas.</p>
           </Panel>
         </div>
 
@@ -158,18 +158,18 @@ export function Director({ cards, team, annos }: { cards: Card[]; team: Profile[
           <Panel className="px-5 py-4">
             {calidad.suficiente ? (
               <>
-                <b className="block text-[26px] tnum tracking-[-0.02em] leading-none">{calidad.puntaje}<span className="text-[15px] text-ink2 font-normal">/100</span></b>
-                <span className="block text-[12px] text-ink2 mt-1">Sobre {calidad.muestra} tareas cerradas en 30 días.</span>
+                <b className="block text-3xl tnum tracking-[-0.02em] leading-none">{calidad.puntaje}<span className="text-base text-ink2 font-normal">/100</span></b>
+                <span className="block text-xs text-ink2 mt-1">Sobre {calidad.muestra} tareas cerradas en 30 días.</span>
               </>
             ) : (
               <>
-                <b className="block text-[17px] tracking-[-0.01em]">Muestra insuficiente</b>
-                <span className="block text-[12px] text-ink2 mt-1">Sólo {calidad.muestra} tareas cerradas en 30 días: hacen falta más para poder medir.</span>
+                <b className="block text-lg tracking-[-0.01em]">Muestra insuficiente</b>
+                <span className="block text-xs text-ink2 mt-1">Sólo {calidad.muestra} tareas cerradas en 30 días: hacen falta más para poder medir.</span>
               </>
             )}
             {/* La regla de lectura va SIEMPRE visible, no escondida en un tooltip: es lo que
                 evita que este número se lea como una nota de desempeño. */}
-            <p className="text-[12px] text-ink2 mt-3 mb-0 pt-3 border-t border-line">{calidad.lectura}</p>
+            <p className="text-xs text-ink2 mt-3 mb-0 pt-3 border-t border-line">{calidad.lectura}</p>
           </Panel>
         </div>
       </div>

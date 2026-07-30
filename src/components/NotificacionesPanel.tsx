@@ -79,7 +79,7 @@ export function NotificacionesBell({ onOpenCard }: { onOpenCard: (cardId: string
         className="relative border border-line bg-surface2 rounded-lg px-2.5 py-1.5 hover:bg-surface transition-colors">
         <Bell size={16} />
         {unread > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 bg-naranja text-white rounded-full text-[10px] px-1.5 py-px font-bold tnum min-w-[17px] text-center">
+          <span className="absolute -top-1.5 -right-1.5 bg-naranja text-white rounded-full text-2xs px-1.5 py-px font-bold tnum min-w-[17px] text-center">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
@@ -88,17 +88,17 @@ export function NotificacionesBell({ onOpenCard }: { onOpenCard: (cardId: string
         <div className="absolute right-0 top-[calc(100%+8px)] w-[340px] max-w-[86vw] bg-surface border border-line rounded-[14px] overflow-hidden z-50"
           style={{ boxShadow: "var(--shadow-lg)" }}>
           <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-line">
-            <b className="text-[13px]">Notificaciones</b>
+            <b className="text-sm">Notificaciones</b>
             {unread > 0 && (
               <button onClick={() => marcarTodas.mutate()}
-                className="flex items-center gap-1 text-[11.5px] text-ink2 hover:text-ink transition-colors">
+                className="flex items-center gap-1 text-2xs text-ink2 hover:text-ink transition-colors">
                 <CheckCheck size={13} /> Marcar todas como leídas
               </button>
             )}
           </div>
           <div className="max-h-[46vh] overflow-y-auto">
             {notifs.length === 0 && (
-              <div className="px-3.5 py-6 text-center text-ink2 text-[13px]">Sin notificaciones por ahora.</div>
+              <div className="px-3.5 py-6 text-center text-ink2 text-sm">Sin notificaciones por ahora.</div>
             )}
             {notifs.map((n) => (
               <button key={n.id} onClick={() => clic(n)}
@@ -106,9 +106,9 @@ export function NotificacionesBell({ onOpenCard }: { onOpenCard: (cardId: string
                   !n.leida && "bg-accent-soft/50")}>
                 <span className={cn("mt-0.5 shrink-0", n.leida ? "text-ink2" : "text-accent")}>{ICONO[n.tipo] ?? ICONO.sistema}</span>
                 <span className="flex-1 min-w-0 leading-snug">
-                  <span className={cn("block text-[13px] truncate", !n.leida && "font-semibold")}>{n.titulo}</span>
-                  {n.detalle && <span className="block text-[12px] text-ink2 truncate">{n.detalle}</span>}
-                  <span className="block text-[11px] text-ink2 mt-0.5">{tiempoRelativo(n.created_at)}</span>
+                  <span className={cn("block text-sm truncate", !n.leida && "font-semibold")}>{n.titulo}</span>
+                  {n.detalle && <span className="block text-xs text-ink2 truncate">{n.detalle}</span>}
+                  <span className="block text-2xs text-ink2 mt-0.5">{tiempoRelativo(n.created_at)}</span>
                 </span>
                 {!n.leida && <span className="mt-1.5 w-2 h-2 rounded-full bg-naranja shrink-0" />}
               </button>

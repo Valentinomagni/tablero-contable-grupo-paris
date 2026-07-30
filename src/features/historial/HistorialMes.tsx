@@ -26,7 +26,7 @@ export function HistorialMes({ ownerId }: { ownerId: string }) {
       <div className="px-6 py-14 text-center text-ink2">
         <Archive size={28} className="mx-auto mb-3 opacity-60" />
         <p className="text-sm m-0">Todavía no hay meses archivados.</p>
-        <p className="text-[13px] m-0 mt-1">El jefe archiva el mes desde Administración.</p>
+        <p className="text-sm m-0 mt-1">El jefe archiva el mes desde Administración.</p>
       </div>
     );
   }
@@ -38,14 +38,14 @@ export function HistorialMes({ ownerId }: { ownerId: string }) {
       <div className="flex flex-wrap gap-1.5 mb-4">
         {meses.map((m) => (
           <button key={m} onClick={() => setMesSel(m)}
-            className={cn("rounded-full px-3.5 py-1.5 text-[13px] border capitalize transition",
+            className={cn("rounded-full px-3.5 py-1.5 text-sm border capitalize transition",
               m === mes ? "bg-accent-soft border-accent text-accent font-semibold" : "bg-surface2 border-line text-ink2")}>
             {mesLabel(m)}
           </button>
         ))}
       </div>
 
-      <p className="text-ink2 text-[12.5px] mb-3">
+      <p className="text-ink2 text-xs mb-3">
         Foto de <span className="capitalize">{mesLabel(mes)}</span> · {cards.length} {cards.length === 1 ? "tarea" : "tareas"} · solo lectura
       </p>
 
@@ -57,7 +57,7 @@ export function HistorialMes({ ownerId }: { ownerId: string }) {
               <span className={cn("w-2 h-2 rounded-full shrink-0", est.dot)} />
               <b className="text-sm">{c.title}</b>
               <span className="text-ink2 text-xs">{est.lbl}</span>
-              {c.categoria && <span className="bg-chip rounded-full px-2 py-0.5 text-[11.5px]">{c.categoria}</span>}
+              {c.categoria && <span className="bg-chip rounded-full px-2 py-0.5 text-2xs">{c.categoria}</span>}
               <span className="ml-auto text-ink2 text-xs tnum">
                 {c.due_date && <>vencía el {c.due_date}</>}
                 {c.due_date && c.done_at && " · "}
@@ -67,7 +67,7 @@ export function HistorialMes({ ownerId }: { ownerId: string }) {
             {c.checklist.length > 0 && (
               <div className="mt-2.5">
                 {c.checklist.map((i, n) => (
-                  <label key={n} className="flex items-center gap-2 py-0.5 text-[13px]">
+                  <label key={n} className="flex items-center gap-2 py-0.5 text-sm">
                     <input type="checkbox" checked={i.done} readOnly disabled className="accent-accent w-3.5 h-3.5 shrink-0" />
                     <span className={i.done ? "line-through text-ink2" : ""}>{i.txt}</span>
                   </label>
@@ -75,7 +75,7 @@ export function HistorialMes({ ownerId }: { ownerId: string }) {
               </div>
             )}
             {c.comments.length > 0 && (
-              <details className="mt-2 text-[13px]">
+              <details className="mt-2 text-sm">
                 <summary className="cursor-pointer text-ink2 flex items-center gap-1.5">
                   <MessageSquare size={12} /> Observaciones ({c.comments.length})
                 </summary>
@@ -90,7 +90,7 @@ export function HistorialMes({ ownerId }: { ownerId: string }) {
           </div>
         );
       })}
-      {cards.length === 0 && <p className="text-ink2 text-[13px]">No hay tareas archivadas en este mes para esta persona.</p>}
+      {cards.length === 0 && <p className="text-ink2 text-sm">No hay tareas archivadas en este mes para esta persona.</p>}
     </div>
   );
 }

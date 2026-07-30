@@ -35,7 +35,7 @@ export function RadarVencimientos({ avisos, cards, vacaciones, profiles, hoyISO 
 
   return (
     <div className="bg-surface border border-line rounded-2xl px-5 py-4 mb-5" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
-      <h2 className="text-[11px] text-ink2 uppercase tracking-[0.08em] font-semibold mb-2.5">Radar de vencimientos fiscales</h2>
+      <h2 className="text-2xs text-ink2 uppercase tracking-[0.08em] font-semibold mb-2.5">Radar de vencimientos fiscales</h2>
 
       {conAlerta.length === 0 ? (
         <p className="text-xs text-ink2 py-1.5">Sin alertas de vencimientos en los próximos 30 días.</p>
@@ -44,9 +44,9 @@ export function RadarVencimientos({ avisos, cards, vacaciones, profiles, hoyISO 
           const chip = CHIP[it.riesgo];
           return (
             <div key={it.aviso.id} className="flex items-start gap-2.5 py-1.5 border-b border-line last:border-0">
-              <span className={`shrink-0 text-[11px] font-semibold uppercase tracking-wide w-16 ${chip.cls}`}>{chip.lbl}</span>
+              <span className={`shrink-0 text-2xs font-semibold uppercase tracking-wide w-16 ${chip.cls}`}>{chip.lbl}</span>
               <span className="flex-1 min-w-0">
-                <b className="block text-[13px]">{it.aviso.title}</b>
+                <b className="block text-sm">{it.aviso.title}</b>
                 <span className="block text-xs text-ink2">{it.motivo}</span>
               </span>
               {it.responsable && (

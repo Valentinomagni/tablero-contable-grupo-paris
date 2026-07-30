@@ -63,10 +63,10 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
     <div className="flex flex-col gap-4">
       <div className="flex justify-between items-end gap-4 flex-wrap">
         <div>
-          <h2 className="text-[18px] font-bold tracking-tight m-0">Análisis del mes</h2>
+          <h2 className="text-xl font-bold tracking-tight m-0">Análisis del mes</h2>
           <p className="text-ink2 text-sm m-0 capitalize">{mesLbl}</p>
         </div>
-        <button onClick={exportarExcel} disabled={exportando} className="no-print flex items-center gap-2 border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px] disabled:opacity-50" style={cardSh}>
+        <button onClick={exportarExcel} disabled={exportando} className="no-print flex items-center gap-2 border border-line bg-surface2 rounded-lg px-3.5 py-2 text-sm disabled:opacity-50" style={cardSh}>
           <FileSpreadsheet size={16} /> Exportar Excel
         </button>
       </div>
@@ -74,11 +74,11 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
       {/* KPIs: cumplimiento + evolución + rendimiento promedio histórico */}
       <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))" }}>
         <div className="bg-surface rounded-2xl p-4 flex flex-col items-center gap-1.5" style={cardSh}>
-          <span className="text-[11.5px] uppercase tracking-wide text-ink2">Cumplimiento del mes</span>
+          <span className="text-2xs uppercase tracking-wide text-ink2">Cumplimiento del mes</span>
           <Gauge pct={a.cumplimiento} color="var(--s1)" />
         </div>
         <div className="bg-surface rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5" style={cardSh}>
-          <span className="text-[11.5px] uppercase tracking-wide text-ink2">Evolución vs. mes anterior</span>
+          <span className="text-2xs uppercase tracking-wide text-ink2">Evolución vs. mes anterior</span>
           {delta === null ? (
             <span className="text-ink2 text-sm text-center">Sin historial todavía</span>
           ) : (
@@ -88,13 +88,13 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
           )}
         </div>
         <div className="bg-surface rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5" style={cardSh}>
-          <span className="text-[11.5px] uppercase tracking-wide text-ink2">Rendimiento promedio</span>
+          <span className="text-2xs uppercase tracking-wide text-ink2">Rendimiento promedio</span>
           {a.promedioHistorico === null ? (
             <span className="text-ink2 text-sm text-center">Sin historial todavía</span>
           ) : (
             <>
               <b className="text-2xl font-bold tracking-tight tnum" style={{ color: colorPct(a.promedioHistorico) }}>{a.promedioHistorico}%</b>
-              <span className="text-ink2 text-[11.5px] text-center">
+              <span className="text-ink2 text-2xs text-center">
                 Este mes {a.cumplimiento}% · histórico {a.promedioHistorico}%
                 {" "}({a.cumplimiento - a.promedioHistorico >= 0 ? "+" : ""}{a.cumplimiento - a.promedioHistorico})
               </span>
@@ -111,7 +111,7 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
           .map(([l, v, b], i) => (
             <div key={i} className={`bg-surface rounded-[14px] px-4 py-3.5 border-l-[3px] ${b}`} style={cardSh}>
               <b className="block text-2xl font-bold tracking-tight tnum">{v}</b>
-              <span className="text-[11.5px] text-ink2 uppercase tracking-wide">{l}</span>
+              <span className="text-2xs text-ink2 uppercase tracking-wide">{l}</span>
             </div>
           ))}
       </div>
@@ -122,7 +122,7 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
         {a.porPersona.length ? (
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-ink2 text-[11.5px] uppercase tracking-wide text-left">
+              <tr className="text-ink2 text-2xs uppercase tracking-wide text-left">
                 <th className="font-semibold py-1">Persona</th>
                 <th className="font-semibold py-1 text-right tnum">Cerradas</th>
                 <th className="font-semibold py-1 text-right tnum">Vencidas</th>
@@ -172,7 +172,7 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
       {/* Retrabajo: reaperturas de tareas ya terminadas. Encuadre no punitivo (spec 28 Fase B). */}
       <div className={card} style={cardSh}>
         <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-1">Retrabajo</h3>
-        <p className="text-ink2 text-[12.5px] mb-3.5">
+        <p className="text-ink2 text-xs mb-3.5">
           Mide cuántas tareas terminadas se reabrieron, no quién las reabrió. Una tarea que se reabre
           suele avisar que el criterio de "terminado" no quedó claro o que faltó una revisión.
           Sirve para revisar el procedimiento y la capacitación.
@@ -185,7 +185,7 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
               <b className="text-2xl font-bold tracking-tight tnum" style={{ color: colorPct(100 - retrabajo.general.pct) }}>
                 {retrabajo.general.pct}%
               </b>
-              <span className="text-ink2 text-[12.5px]">
+              <span className="text-ink2 text-xs">
                 de reaperturas sobre terminadas (<span className="tnum">{retrabajo.general.reaperturas}</span> de <span className="tnum">{retrabajo.general.terminadas}</span>)
               </span>
             </>
@@ -194,7 +194,7 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
         {retrabajo.porPersona.length ? (
           <table className="w-full text-sm mb-3.5">
             <thead>
-              <tr className="text-ink2 text-[11.5px] uppercase tracking-wide text-left">
+              <tr className="text-ink2 text-2xs uppercase tracking-wide text-left">
                 <th className="font-semibold py-1">Persona</th>
                 <th className="font-semibold py-1 text-right tnum">Terminadas</th>
                 <th className="font-semibold py-1 text-right tnum">Reaperturas</th>
@@ -215,7 +215,7 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
         ) : <p className="text-ink2 text-sm mb-3.5">Sin personas en este segmento.</p>}
         {retrabajo.masReabiertas.length > 0 && (
           <div>
-            <span className="text-[11.5px] text-ink2 uppercase tracking-wide">Tareas más reabiertas</span>
+            <span className="text-2xs text-ink2 uppercase tracking-wide">Tareas más reabiertas</span>
             <ul className="text-sm mt-1.5 flex flex-col gap-1">
               {retrabajo.masReabiertas.map((m) => (
                 <li key={m.id} className="flex justify-between gap-2">
@@ -268,7 +268,7 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
       {tendencia.serie.length > 0 && (
         <div className={card} style={cardSh}>
           <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-1">Diferencias de caja en el tiempo</h3>
-          <p className="text-ink2 text-[12.5px] mb-3.5">
+          <p className="text-ink2 text-xs mb-3.5">
             Muestra cómo evolucionan las diferencias de arqueo mes a mes y en cuántos meses se
             repiten. Una diferencia que reaparece casi siempre indica un problema de proceso.
             Sirve para revisar el procedimiento y la capacitación.
@@ -280,7 +280,7 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
               return tendencia.serie.map((s) => (
                 <div key={s.mes} className="flex-1 flex flex-col items-center justify-end gap-1.5 h-full" title={`${s.mes}: ${s.cantidad} diferencia(s), ${fmtMonto(s.total)}`}>
                   <div className="w-full rounded-t-[4px] bg-ink2" style={{ height: `${(s.cantidad / max) * 90}px`, minHeight: s.cantidad > 0 ? 3 : 0, opacity: s.cantidad > 0 ? 1 : 0.15 }} />
-                  <span className="text-[10.5px] text-ink2 tnum">{s.mes.slice(5)}</span>
+                  <span className="text-2xs text-ink2 tnum">{s.mes.slice(5)}</span>
                 </div>
               ));
             })()}
@@ -288,10 +288,10 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
 
           {tendencia.reincidentes.length > 0 && (
             <div className="mt-3.5">
-              <span className="text-[11.5px] text-ink2 uppercase tracking-wide">Diferencias en más de un mes</span>
+              <span className="text-2xs text-ink2 uppercase tracking-wide">Diferencias en más de un mes</span>
               <table className="w-full text-sm mt-1.5">
                 <thead>
-                  <tr className="text-ink2 text-[11.5px] uppercase tracking-wide text-left">
+                  <tr className="text-ink2 text-2xs uppercase tracking-wide text-left">
                     <th className="font-semibold py-1">Persona</th>
                     <th className="font-semibold py-1 text-right tnum">Meses con diferencias</th>
                   </tr>
@@ -316,14 +316,14 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
       {busFactor.length > 0 && (
         <div className={card} style={cardSh}>
           <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-1">Concentración de conocimiento</h3>
-          <p className="text-ink2 text-[12.5px] mb-3.5">
+          <p className="text-ink2 text-xs mb-3.5">
             Categorías donde una sola persona concentra la mayor parte del trabajo histórico. No es
             una crítica: suele pasar justamente con la persona más confiable del equipo. Pero si se
             toma vacaciones, se enferma o se va, conviene tener a alguien más formado como backup.
           </p>
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-ink2 text-[11.5px] uppercase tracking-wide text-left">
+              <tr className="text-ink2 text-2xs uppercase tracking-wide text-left">
                 <th className="font-semibold py-1">Categoría</th>
                 <th className="font-semibold py-1">Quién la concentra</th>
                 <th className="font-semibold py-1 text-right tnum">%</th>
@@ -353,7 +353,7 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
       {(operativas.porEmpleado.length > 0 || operativas.porTipo.length > 0) && (
         <div className={card} style={cardSh}>
           <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-1">Tareas operativas</h3>
-          <p className="text-ink2 text-[12.5px] mb-3.5">
+          <p className="text-ink2 text-xs mb-3.5">
             Cantidad ejecutada por tarea. El objetivo es ver si algún tipo de tarea concentra
             demasiada carga para mejorar el proceso, no evaluar a quién la ejecuta.
             <br />
@@ -362,11 +362,11 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
             estuvo abierta la card, no el trabajo efectivo — puede incluir días de inactividad.
           </p>
 
-          <span className="text-[11.5px] text-ink2 uppercase tracking-wide">Por empleado</span>
+          <span className="text-2xs text-ink2 uppercase tracking-wide">Por empleado</span>
           {operativas.porEmpleado.length ? (
             <table className="w-full text-sm mt-1.5 mb-3.5">
               <thead>
-                <tr className="text-ink2 text-[11.5px] uppercase tracking-wide text-left">
+                <tr className="text-ink2 text-2xs uppercase tracking-wide text-left">
                   <th className="font-semibold py-1">Persona</th>
                   <th className="font-semibold py-1 text-right tnum">Cantidad ejecutada</th>
                 </tr>
@@ -382,11 +382,11 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
             </table>
           ) : <p className="text-ink2 text-sm mb-3.5">Sin actividad operativa en el período.</p>}
 
-          <span className="text-[11.5px] text-ink2 uppercase tracking-wide">Por tipo de tarea</span>
+          <span className="text-2xs text-ink2 uppercase tracking-wide">Por tipo de tarea</span>
           {operativas.porTipo.length ? (
             <table className="w-full text-sm mt-1.5 mb-3.5">
               <thead>
-                <tr className="text-ink2 text-[11.5px] uppercase tracking-wide text-left">
+                <tr className="text-ink2 text-2xs uppercase tracking-wide text-left">
                   <th className="font-semibold py-1">Tarea</th>
                   <th className="font-semibold py-1 text-right tnum">Frecuencia</th>
                   <th className="font-semibold py-1 text-right tnum">% del total</th>
@@ -406,14 +406,14 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
 
           {operativas.cargaCruzada.length > 0 && (
             <>
-              <span className="text-[11.5px] text-ink2 uppercase tracking-wide">Carga operativa por tarea (no es un ranking de personas)</span>
+              <span className="text-2xs text-ink2 uppercase tracking-wide">Carga operativa por tarea (no es un ranking de personas)</span>
               <div className="mt-1.5 flex flex-col gap-3">
                 {operativas.porTipo.map((t) => {
                   const filas = operativas.cargaCruzada.filter((c) => c.titulo === t.titulo);
                   if (!filas.length) return null;
                   return (
                     <div key={t.titulo}>
-                      <span className="text-[12.5px] font-semibold">{t.titulo}</span>
+                      <span className="text-xs font-semibold">{t.titulo}</span>
                       <ul className="text-sm mt-1 flex flex-col gap-1">
                         {filas.map((f) => (
                           <li key={f.empleadoId} className="flex justify-between gap-2 text-ink2">

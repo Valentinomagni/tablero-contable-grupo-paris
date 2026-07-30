@@ -110,7 +110,7 @@ export function Carriles({ cards, modo, ownerId, profiles, columnas, renderCard,
         return (
           <div key={carril.grupo} className="rounded-2xl border border-line/60 p-3" style={colBg}>
             <button onClick={() => toggle(carril.grupo)} title={cerrado ? "Expandir carril" : "Colapsar carril"}
-              className="w-full flex items-center gap-1.5 text-[13px] font-semibold px-1 py-1 hover:text-accent transition">
+              className="w-full flex items-center gap-1.5 text-sm font-semibold px-1 py-1 hover:text-accent transition">
               {cerrado ? <ChevronRight size={14} className="shrink-0" /> : <ChevronDown size={14} className="shrink-0" />}
               <span className="truncate tracking-tight">{carril.grupo}</span>
               <span className="bg-chip rounded-full px-2 py-0.5 text-xs text-ink2 tnum">{carril.total}</span>

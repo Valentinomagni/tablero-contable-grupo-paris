@@ -33,7 +33,7 @@ export function TuSemana({ resumen, ownerId }: { resumen: ResumenSemana; ownerId
           <X size={14} />
         </button>
       </div>
-      <p className="text-[13px] text-ink m-0 mb-2">
+      <p className="text-sm text-ink m-0 mb-2">
         Terminaste <b className="tnum">{resumen.total}</b>{" "}
         {resumen.total === 1 ? "tarea" : "tareas"}
         {resumen.enFecha > 0 && (
@@ -43,14 +43,14 @@ export function TuSemana({ resumen, ownerId }: { resumen: ResumenSemana; ownerId
       </p>
       <ul className="flex flex-col gap-1 list-none p-0 m-0">
         {resumen.titulos.map((t, i) => (
-          <li key={i} className="text-[13px] text-ink2 truncate">· {t}</li>
+          <li key={i} className="text-sm text-ink2 truncate">· {t}</li>
         ))}
       </ul>
       {restantes > 0 && (
-        <p className="text-[12px] text-ink2 m-0 mt-1.5">y {restantes} más.</p>
+        <p className="text-xs text-ink2 m-0 mt-1.5">y {restantes} más.</p>
       )}
       {resumen.racha >= 2 && (
-        <p className="text-[12px] text-ink2 m-0 mt-2 pt-2 border-t border-line">
+        <p className="text-xs text-ink2 m-0 mt-2 pt-2 border-t border-line">
           <b className="tnum text-ink">{resumen.racha}</b> semanas seguidas cerrando en fecha.
         </p>
       )}

@@ -85,15 +85,15 @@ function ArqueoHoyCard({ card, owner, hoyISO }: { card: Card; owner: string; hoy
       <div className="flex items-center gap-2 mb-1">
         <span className="text-xs uppercase tracking-wide text-ink2 font-semibold">Arqueo de hoy</span>
       </div>
-      <p className="font-semibold text-[14px] tracking-tight leading-snug m-0 mb-3 break-words">{card.title}</p>
+      <p className="font-semibold text-base tracking-tight leading-snug m-0 mb-3 break-words">{card.title}</p>
       {!dlg ? (
         <div className="flex flex-col sm:flex-row gap-2">
           <button onClick={() => setOcc.mutate({ resultado: "ok" })} disabled={setOcc.isPending}
-            className="min-h-[48px] w-full sm:flex-1 rounded-lg border border-accent/50 bg-accent-soft text-accent font-semibold text-[14px] px-4 disabled:opacity-50 transition hover:border-accent">
+            className="min-h-[48px] w-full sm:flex-1 rounded-lg border border-accent/50 bg-accent-soft text-accent font-semibold text-base px-4 disabled:opacity-50 transition hover:border-accent">
             Sin diferencias
           </button>
           <button onClick={() => setDlg(true)} disabled={setOcc.isPending}
-            className="min-h-[48px] w-full sm:flex-1 rounded-lg border border-warn/50 bg-warn-soft text-warn font-semibold text-[14px] px-4 disabled:opacity-50 transition hover:border-warn">
+            className="min-h-[48px] w-full sm:flex-1 rounded-lg border border-warn/50 bg-warn-soft text-warn font-semibold text-base px-4 disabled:opacity-50 transition hover:border-warn">
             Con diferencias
           </button>
         </div>
@@ -223,7 +223,7 @@ export function MiDia({ ownerId, meId, cards, team, onOpenCard }: {
           </div>
           <div className="flex flex-col gap-2">
             {novedades.map((v) => (
-              <div key={v.id} className="text-[13px]">
+              <div key={v.id} className="text-sm">
                 <b className="text-ink">{nombreDe(v.owner)}</b>
                 <span className="text-ink2"> · hasta {v.hasta}</span>
                 <p className="text-ink2 m-0 mt-0.5 whitespace-pre-line">{v.notas}</p>
@@ -238,7 +238,7 @@ export function MiDia({ ownerId, meId, cards, team, onOpenCard }: {
           el valor de esto está tanto en lo que dice como en cuándo se calla. */}
       {retomar && (
         <button onClick={() => onOpenCard(retomar)}
-          className="flex items-center gap-2 text-left rounded-xl border border-line bg-surface2 px-3.5 py-2.5 text-[13px] text-ink2 hover:border-accent transition">
+          className="flex items-center gap-2 text-left rounded-xl border border-line bg-surface2 px-3.5 py-2.5 text-sm text-ink2 hover:border-accent transition">
           <RotateCcw size={14} className="shrink-0" />
           <span className="min-w-0">Venías con <b className="text-ink font-semibold">{retomar.title}</b></span>
         </button>
@@ -267,7 +267,7 @@ export function MiDia({ ownerId, meId, cards, team, onOpenCard }: {
                   className="flex-1 min-w-0 text-left bg-surface rounded-xl px-3.5 py-3 border border-line/70 transition
                     hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-[var(--shadow-lg)] flex items-center gap-3"
                   style={{ boxShadow: "var(--shadow)" }}>
-                  <span className="font-semibold text-[13.5px] tracking-tight leading-snug min-w-0 flex-1 break-words">{card.title}</span>
+                  <span className="font-semibold text-sm tracking-tight leading-snug min-w-0 flex-1 break-words">{card.title}</span>
                   <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold whitespace-nowrap shrink-0", chip.cls)}>
                     <Icon size={11} /> {chip.lbl}
                   </span>
@@ -300,7 +300,7 @@ export function MiDia({ ownerId, meId, cards, team, onOpenCard }: {
       {ownerId === meId && cierre.pasos.length > 0 && (
         <div className="mt-6 bg-surface border border-line rounded-2xl overflow-hidden" style={{ boxShadow: "var(--shadow)" }}>
           <div className="px-4 pt-3.5 pb-3 sm:px-5">
-            <h3 className="text-[13px] font-semibold tracking-tight text-ink">Cierre del día</h3>
+            <h3 className="text-sm font-semibold tracking-tight text-ink">Cierre del día</h3>
             <div className="mt-3 flex flex-col gap-3">
               {cierre.pasos.map((p) => (
                 <div key={p.key} className="flex items-start gap-2.5">
@@ -308,8 +308,8 @@ export function MiDia({ ownerId, meId, cards, team, onOpenCard }: {
                     ? <CheckCircle2 size={18} className="text-done shrink-0" />
                     : <Circle size={18} className="text-ink2 shrink-0" />}
                   <div className="min-w-0">
-                    <div className="text-[13px] font-semibold text-ink leading-tight">{p.lbl}</div>
-                    <div className="text-[12px] text-ink2 leading-snug mt-0.5">{p.detalle}</div>
+                    <div className="text-sm font-semibold text-ink leading-tight">{p.lbl}</div>
+                    <div className="text-xs text-ink2 leading-snug mt-0.5">{p.detalle}</div>
                   </div>
                 </div>
               ))}
@@ -318,7 +318,7 @@ export function MiDia({ ownerId, meId, cards, team, onOpenCard }: {
           {cierre.listo && (
             <div className="bg-accent-soft px-4 py-2.5 sm:px-5 flex items-center gap-2 border-t border-line">
               <CheckCircle2 size={16} className="text-done shrink-0" />
-              <span className="text-[13px] font-semibold text-ink">Tu día está cerrado.</span>
+              <span className="text-sm font-semibold text-ink">Tu día está cerrado.</span>
             </div>
           )}
         </div>

@@ -40,7 +40,7 @@ export function MenuColumna({ vista, onCambiar, etiqueta }: {
 
   const Opcion = ({ activo, onClick, children }: { activo: boolean; onClick: () => void; children: React.ReactNode }) => (
     <button onClick={onClick}
-      className={cn("w-full text-left px-2.5 py-1.5 rounded-md text-[12.5px] flex items-center gap-2 transition",
+      className={cn("w-full text-left px-2.5 py-1.5 rounded-md text-xs flex items-center gap-2 transition",
         activo ? "bg-accent-soft text-accent font-semibold" : "text-ink2 hover:text-ink hover:bg-chip")}>
       <Check size={12} className={activo ? "opacity-100" : "opacity-0"} />
       {children}
@@ -61,14 +61,14 @@ export function MenuColumna({ vista, onCambiar, etiqueta }: {
       {abierto && (
         <div className="absolute right-0 top-7 z-30 w-[190px] bg-surface border border-line rounded-xl p-1.5"
           style={{ boxShadow: "var(--shadow-lg)" }}>
-          <div className="px-2.5 pt-1 pb-1 text-[10.5px] uppercase tracking-wider text-ink2 font-semibold">Ordenar</div>
+          <div className="px-2.5 pt-1 pb-1 text-2xs uppercase tracking-wider text-ink2 font-semibold">Ordenar</div>
           {ORDENES_COLUMNA.map((o: OrdenColumna) => (
             <Opcion key={o} activo={vista.orden === o} onClick={() => onCambiar({ ...vista, orden: o })}>
               {ETIQUETA_ORDEN[o]}
             </Opcion>
           ))}
           <div className="h-px bg-line my-1.5" />
-          <div className="px-2.5 pt-1 pb-1 text-[10.5px] uppercase tracking-wider text-ink2 font-semibold">Agrupar</div>
+          <div className="px-2.5 pt-1 pb-1 text-2xs uppercase tracking-wider text-ink2 font-semibold">Agrupar</div>
           {AGRUPACIONES.map((a) => (
             <Opcion key={a} activo={vista.agrupar === a} onClick={() => onCambiar({ ...vista, agrupar: a })}>
               {ETIQUETA_AGRUPAR[a]}

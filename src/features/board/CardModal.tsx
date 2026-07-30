@@ -193,7 +193,7 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
                 <label className="text-ink2 text-xs shrink-0">Meta de carga</label>
                 <input type="number" min={1} placeholder="opcional" defaultValue={meta ?? ""} key={meta ?? "sin-meta"}
                   onBlur={(e) => { if ((meta ?? "") !== (e.target.value === "" ? "" : Number(e.target.value))) saveMeta(e.target.value); }}
-                  className="w-20 bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-[13px] outline-none tnum" />
+                  className="w-20 bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-sm outline-none tnum" />
                 {meta !== null && <span className="text-ink2 text-xs tnum">{texto}</span>}
               </div>
               {meta !== null && (
@@ -202,7 +202,7 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
                   <div className="h-full bg-ink" style={{ width: `${pct}%` }} />
                 </div>
               )}
-              {regs.length === 0 && <p className="text-ink2 text-[13px] m-0">Sin registros todavía.</p>}
+              {regs.length === 0 && <p className="text-ink2 text-sm m-0">Sin registros todavía.</p>}
               {regs.map((a) => (
                 <div key={a.id} className="flex items-center gap-2 py-1 text-sm">
                   <button title="Restar" onClick={() => setRegQty.mutate({ id: a.id, qty: nuevaCantidad(a.qty, -1) })}
@@ -211,7 +211,7 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
                     <input autoFocus type="number" min={0} value={editRegQty} onChange={(e) => setEditRegQty(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") saveRegEdit(a.id); if (e.key === "Escape") setEditReg(null); }}
                       onBlur={() => saveRegEdit(a.id)}
-                      className="w-16 bg-surface2 border border-accent rounded-lg px-2 py-1 text-ink text-[13px] outline-none tnum" />
+                      className="w-16 bg-surface2 border border-accent rounded-lg px-2 py-1 text-ink text-sm outline-none tnum" />
                   ) : (
                     <button title="Corregir cantidad" onClick={() => { setEditReg(a.id); setEditRegQty(String(a.qty)); }}
                       className="tnum font-semibold min-w-[2rem] text-center">{a.qty}</button>
@@ -234,7 +234,7 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
         <ComentariosSection c={c} team={team} meId={meId} meName={meName} patch={patch} />
 
         {(c.history ?? []).length > 0 && (
-          <details className="mt-4 text-[13px]">
+          <details className="mt-4 text-sm">
             <summary className="cursor-pointer text-ink2 uppercase text-xs tracking-wide">Historial ({c.history.length})</summary>
             {[...c.history].reverse().map((h, n) => (
               <div key={n} className="pl-3 border-l-2 border-line ml-1 mt-1.5">{h.txt} <span className="text-ink2">— {h.who}, {fmtDateTime(h.at)}</span></div>
@@ -245,20 +245,20 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
         <div className="flex gap-2 mt-4.5 flex-wrap items-center pt-4">
           {c.status !== "term"
             ? <button onClick={() => patch.mutate({ status: "term", done_at: new Date().toISOString(), history: hist("Marcó terminada") })}
-                className="inline-flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] font-semibold rounded-lg px-3.5 py-2 text-[13px]"><Check size={14} /> Marcar terminada</button>
-            : locked ? <span className="inline-flex items-center gap-1.5 text-ink2 text-[13px]"><Lock size={13} /> Solo un jefe puede reabrir esta tarea</span>
+                className="inline-flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] font-semibold rounded-lg px-3.5 py-2 text-sm"><Check size={14} /> Marcar terminada</button>
+            : locked ? <span className="inline-flex items-center gap-1.5 text-ink2 text-sm"><Lock size={13} /> Solo un jefe puede reabrir esta tarea</span>
             : <button onClick={() => patch.mutate({ status: "proc", done_at: null, history: hist(TXT_REAPERTURA) })}
-                className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Reabrir</button>}
+                className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-sm">Reabrir</button>}
           {!locked && (
             <button onClick={() => duplicar.mutate()} disabled={duplicar.isPending}
-              className="inline-flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px] disabled:opacity-60">
+              className="inline-flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3.5 py-2 text-sm disabled:opacity-60">
               <Copy size={13} /> {duplicar.isPending ? "Duplicando…" : "Duplicar"}</button>
           )}
           {isJefe && (
             <button title={c.protected ? "Quitar protección" : "Proteger: solo un jefe podrá modificarla o eliminarla"}
               onClick={() => patch.mutate({ protected: !c.protected, history: hist(c.protected ? "Quitó protección" : "Protegió la tarea") })}
               disabled={patch.isPending}
-              className={"inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] border disabled:opacity-60 " +
+              className={"inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm border disabled:opacity-60 " +
                 (c.protected ? "border-accent bg-accent-soft text-accent font-semibold" : "border-line bg-surface2")}>
               {c.protected ? <ShieldCheck size={13} /> : <Shield size={13} />} Protegida</button>
           )}
@@ -266,7 +266,7 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
             <button title={c.requiere_resultado ? "Quitar control de caja" : "Al marcar cada día pedirá el resultado del arqueo (sin/con diferencias)"}
               onClick={() => patch.mutate({ requiere_resultado: !c.requiere_resultado, history: hist(c.requiere_resultado ? "Quitó control de caja" : "Marcó como control de caja (arqueo)") })}
               disabled={patch.isPending}
-              className={"inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] border disabled:opacity-60 " +
+              className={"inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm border disabled:opacity-60 " +
                 (c.requiere_resultado ? "border-accent bg-accent-soft text-accent font-semibold" : "border-line bg-surface2")}>
               <Coins size={13} /> Requiere resultado (control de caja)</button>
           )}
@@ -280,23 +280,23 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
                   { onSuccess: () => toast.success(`Devuelta a ${titular.name}`) });
               }}
               disabled={patch.isPending}
-              className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] border border-line bg-surface2 disabled:opacity-60">
+              className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm border border-line bg-surface2 disabled:opacity-60">
               <Plane size={13} /> Devolver al titular</button>
           )}
           {c.protected && !isJefe ? (
-            <span className="inline-flex items-center gap-1.5 text-ink2 text-[13px]"><Lock size={13} /> Tarea protegida por un jefe</span>
+            <span className="inline-flex items-center gap-1.5 text-ink2 text-sm"><Lock size={13} /> Tarea protegida por un jefe</span>
           ) : !locked && (confirmDel ? (
-            <span className="inline-flex items-center gap-1.5 text-[13px]">
+            <span className="inline-flex items-center gap-1.5 text-sm">
               <button onClick={() => del.mutate()} disabled={del.isPending}
                 className="bg-danger text-white rounded-lg px-3 py-2 font-semibold disabled:opacity-60">{del.isPending ? "Eliminando…" : "Eliminar definitivamente"}</button>
               <button onClick={() => setConfirmDel(false)} className="border border-line bg-surface2 rounded-lg px-3 py-2">Cancelar</button>
             </span>
           ) : (
             <button onClick={() => setConfirmDel(true)}
-              className="border border-danger/40 text-danger rounded-lg px-3.5 py-2 text-[13px]">Eliminar</button>
+              className="border border-danger/40 text-danger rounded-lg px-3.5 py-2 text-sm">Eliminar</button>
           ))}
-          <span className="ml-auto text-[11.5px] text-ink2">Los cambios se guardan automáticamente.</span>
-          <button onClick={onClose} className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Guardar y cerrar</button>
+          <span className="ml-auto text-2xs text-ink2">Los cambios se guardan automáticamente.</span>
+          <button onClick={onClose} className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-sm">Guardar y cerrar</button>
         </div>
     </Modal>
   );

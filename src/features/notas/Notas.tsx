@@ -102,15 +102,15 @@ export function Notas({ me }: { me: Profile }) {
       <div className="w-[320px] shrink-0 flex flex-col rounded-2xl bg-surface border border-line overflow-hidden" style={cardSh}>
         <div className="p-3 border-b border-line flex flex-col gap-2">
           <button onClick={() => crear.mutate()}
-            className="flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold bg-accent text-white hover:opacity-90 transition">
+            className="flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold bg-accent text-white hover:opacity-90 transition">
             <Plus size={15} /> Nueva nota
           </button>
           <div className="flex items-center gap-2 bg-surface2 border border-line rounded-lg px-2.5">
             <Search size={14} className="text-ink2" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar…"
-              className="w-full py-1.5 bg-transparent text-[13px] outline-none" />
+              className="w-full py-1.5 bg-transparent text-sm outline-none" />
           </div>
-          <div className="flex items-center gap-1.5 text-[11.5px]">
+          <div className="flex items-center gap-1.5 text-2xs">
             <button onClick={() => setOrden("modificado")}
               className={cn("rounded-md px-2 py-1 border transition", orden === "modificado" ? "bg-accent-soft border-accent text-accent" : "bg-surface2 border-line text-ink2")}>Modificadas</button>
             <button onClick={() => setOrden("creado")}
@@ -127,11 +127,11 @@ export function Notas({ me }: { me: Profile }) {
               className={cn("w-full text-left rounded-lg px-3 py-2.5 mb-1 transition border",
                 n.id === selId ? "bg-accent-soft border-accent" : "border-transparent hover:bg-surface2")}>
               <div className="flex items-center gap-1.5">
-                <span className="flex-1 truncate text-[13.5px] font-semibold text-ink">{n.title.trim() || "Sin título"}</span>
+                <span className="flex-1 truncate text-sm font-semibold text-ink">{n.title.trim() || "Sin título"}</span>
                 {n.archived && <Archive size={12} className="text-ink2 shrink-0" />}
-                <span className="text-[11px] text-ink2 tnum shrink-0">{fecha(orden === "creado" ? n.created_at : n.updated_at)}</span>
+                <span className="text-2xs text-ink2 tnum shrink-0">{fecha(orden === "creado" ? n.created_at : n.updated_at)}</span>
               </div>
-              <div className="text-[12px] text-ink2 truncate">{n.body.trim() || "…"}</div>
+              <div className="text-xs text-ink2 truncate">{n.body.trim() || "…"}</div>
             </button>
           ))}
         </div>
@@ -150,32 +150,32 @@ export function Notas({ me }: { me: Profile }) {
           <>
             <div className="flex items-center gap-2 p-3 border-b border-line">
               <button onClick={() => archivar.mutate(sel)}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] border bg-surface2 border-line text-ink2 hover:bg-surface transition">
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm border bg-surface2 border-line text-ink2 hover:bg-surface transition">
                 {sel.archived ? <><ArchiveRestore size={14} /> Desarchivar</> : <><Archive size={14} /> Archivar</>}
               </button>
               <button onClick={() => convertir.mutate(sel)}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] border bg-surface2 border-line text-ink2 hover:text-accent transition">
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm border bg-surface2 border-line text-ink2 hover:text-accent transition">
                 <ListPlus size={14} /> Convertir en tarea
               </button>
               <div className="flex-1" />
               {confirmDel ? (
-                <div className="flex items-center gap-1.5 text-[13px]">
+                <div className="flex items-center gap-1.5 text-sm">
                   <span className="text-ink2">¿Eliminar?</span>
                   <button onClick={() => eliminar.mutate(sel.id)} className="rounded-lg px-3 py-1.5 border border-red-500/40 text-red-500 hover:bg-red-500/10 transition">Sí, eliminar</button>
                   <button onClick={() => setConfirmDel(false)} className="rounded-lg px-3 py-1.5 border border-line bg-surface2 text-ink2">Cancelar</button>
                 </div>
               ) : (
                 <button onClick={() => setConfirmDel(true)}
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] border bg-surface2 border-line text-ink2 hover:text-red-500 transition">
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm border bg-surface2 border-line text-ink2 hover:text-red-500 transition">
                   <Trash2 size={14} /> Eliminar
                 </button>
               )}
             </div>
             <div className="flex-1 flex flex-col p-4 gap-3 min-h-0">
               <input value={title} onChange={(e) => setTitle(e.target.value)} onBlur={() => guardar.mutate()}
-                placeholder="Título" className="text-[19px] font-bold tracking-[-0.02em] bg-transparent outline-none text-ink" />
+                placeholder="Título" className="text-xl font-bold tracking-[-0.02em] bg-transparent outline-none text-ink" />
               <textarea value={body} onChange={(e) => setBody(e.target.value)} onBlur={() => guardar.mutate()}
-                placeholder="Escribí tu anotación…" className="flex-1 resize-none bg-transparent outline-none text-[14px] leading-relaxed text-ink" />
+                placeholder="Escribí tu anotación…" className="flex-1 resize-none bg-transparent outline-none text-base leading-relaxed text-ink" />
             </div>
           </>
         )}

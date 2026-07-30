@@ -23,6 +23,30 @@ export default {
       },
       borderRadius: { md: "8px", lg: "12px", xl: "16px" },
       fontFamily: { sans: ['"Inter"', "Segoe UI", "system-ui", "sans-serif"] },
+      // Escala tipográfica — 7 pasos, con su interlineado y su tracking.
+      // POR QUÉ: había 764 usos de tamaño repartidos en 13 valores distintos, 499 de ellos
+      // con píxeles a mano. Eso es lo que hace que una app se vea armada de a pedazos.
+      // Los tamaños grandes llevan tracking negativo porque Inter, a partir de ~16px, se ve
+      // suelta con el tracking por defecto: apretarla es lo que la hace ver editorial.
+      // Ojo: estos valores PISAN los de Tailwind (sm pasa de 14 a 13, lg de 18 a 16). Es
+      // deliberado, hacia una densidad de dashboard profesional.
+      fontSize: {
+        "2xs": ["11px", { lineHeight: "1.45" }],
+        xs: ["12px", { lineHeight: "1.45" }],
+        sm: ["13px", { lineHeight: "1.5" }],
+        base: ["14px", { lineHeight: "1.55" }],
+        lg: ["16px", { lineHeight: "1.4", letterSpacing: "-0.01em" }],
+        xl: ["19px", { lineHeight: "1.3", letterSpacing: "-0.015em" }],
+        "2xl": ["22px", { lineHeight: "1.25", letterSpacing: "-0.02em" }],
+        "3xl": ["26px", { lineHeight: "1.2", letterSpacing: "-0.02em" }],
+        "4xl": ["32px", { lineHeight: "1.1", letterSpacing: "-0.025em" }],
+      },
+      transitionTimingFunction: {
+        // Una sola curva para toda la app. Salidas rápidas y frenada suave: es lo que se
+        // percibe como "responde al toque" en vez de "tiene animaciones".
+        salida: "cubic-bezier(0.22, 1, 0.36, 1)",
+      },
+      transitionDuration: { rapido: "120ms", medio: "200ms" },
       boxShadow: { card: "var(--shadow)", lg: "var(--shadow-lg)" },
     },
   },

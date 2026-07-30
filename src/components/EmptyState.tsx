@@ -6,7 +6,7 @@ export function EmptyState({ icon, title, hint }: { icon?: ReactNode; title: str
     <div className="border border-dashed border-line rounded-xl px-4 py-8 text-center">
       {icon && <div className="mx-auto mb-2 text-ink2 w-fit">{icon}</div>}
       <p className="text-ink font-semibold text-sm m-0">{title}</p>
-      {hint && <p className="text-ink2 text-[13px] m-0 mt-1 max-w-[420px] mx-auto">{hint}</p>}
+      {hint && <p className="text-ink2 text-sm m-0 mt-1 max-w-[420px] mx-auto">{hint}</p>}
     </div>
   );
 }

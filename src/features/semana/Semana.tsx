@@ -41,11 +41,11 @@ export function Semana({ cards, ownerId, meName, onOpen }: {
 
   const Mini = ({ c }: { c: Card }) => (
     <div draggable onDragStart={(e) => e.dataTransfer.setData("text/plain", c.id)} onClick={() => onOpen(c)}
-      className="bg-surface border border-line/70 rounded-lg px-2.5 py-2 mb-1.5 cursor-pointer text-[12.5px] font-medium leading-snug transition hover:-translate-y-0.5 hover:border-accent/40"
+      className="bg-surface border border-line/70 rounded-lg px-2.5 py-2 mb-1.5 cursor-pointer text-xs font-medium leading-snug transition hover:-translate-y-0.5 hover:border-accent/40"
       style={{ boxShadow: "var(--shadow)" }}>
       {c.title}
-      {(c.effort ?? 1) > 1 && <span className="ml-1.5 text-[11px] text-ink2 tnum">{c.effort} pts</span>}
-      {c.priority === "alta" && <span className="ml-1.5 text-[11px] text-danger font-semibold">Alta</span>}
+      {(c.effort ?? 1) > 1 && <span className="ml-1.5 text-2xs text-ink2 tnum">{c.effort} pts</span>}
+      {c.priority === "alta" && <span className="ml-1.5 text-2xs text-danger font-semibold">Alta</span>}
     </div>
   );
 
@@ -60,11 +60,11 @@ export function Semana({ cards, ownerId, meName, onOpen }: {
           <div key={c.id}>
             <Mini c={c} />
             {c.due_date && c.due_date < dias[0].date && (
-              <p className="text-danger text-[11px] -mt-1 mb-1.5 mx-1">venció el {c.due_date.split("-").reverse().join("/")}</p>
+              <p className="text-danger text-2xs -mt-1 mb-1.5 mx-1">venció el {c.due_date.split("-").reverse().join("/")}</p>
             )}
           </div>
         ))}
-        {pool.length === 0 && <p className="text-ink2 text-[12.5px] px-1">Nada pendiente de planificar.</p>}
+        {pool.length === 0 && <p className="text-ink2 text-xs px-1">Nada pendiente de planificar.</p>}
       </div>
 
       {dias.map((d) => {
@@ -76,11 +76,11 @@ export function Semana({ cards, ownerId, meName, onOpen }: {
               d.esHoy ? "border-accent/50 bg-accent-soft/40" : "border-line/60 bg-surface2/30")}>
             <h2 className={cn("text-xs uppercase tracking-wider mx-1 mt-0.5 mb-2 font-semibold flex items-center gap-1.5",
               d.esHoy ? "text-accent" : "text-ink2")}>
-              {d.lbl}{d.esHoy && <span className="text-[10px] bg-accent text-white rounded-full px-1.5 py-px">HOY</span>}
+              {d.lbl}{d.esHoy && <span className="text-2xs bg-accent text-white rounded-full px-1.5 py-px">HOY</span>}
               {pts > 0 && <span className="ml-auto bg-chip text-ink2 rounded-full px-2 py-0.5 tnum">{pts} pts</span>}
             </h2>
             {del.map((c) => <Mini key={c.id} c={c} />)}
-            {del.length === 0 && <p className="text-ink2/60 text-[12px] px-1 mb-0">Libre</p>}
+            {del.length === 0 && <p className="text-ink2/60 text-xs px-1 mb-0">Libre</p>}
           </div>
         );
       })}

@@ -102,7 +102,7 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
     save.mutate();
   };
 
-  const inputCls = "w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-[13px]";
+  const inputCls = "w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-sm";
   const Stat = ({ v, label }: { v: string | number; label: string }) => (
     <div className="bg-surface2 border border-line rounded-xl px-3 py-2.5 text-center">
       <b className="block text-lg">{v}</b><span className="text-xs text-ink2">{label}</span>
@@ -115,49 +115,49 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
         <div className="text-xs text-ink2 mb-3.5">{u.username ? "@" + u.username : "sin usuario"} · rol: {u.role}</div>
 
         <div className="grid gap-2.5 mb-1">
-          <label className="text-[13px] text-ink2">Nombre
+          <label className="text-sm text-ink2">Nombre
             <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
           </label>
-          <label className="text-[13px] text-ink2">Usuario (para ingresar)
+          <label className="text-sm text-ink2">Usuario (para ingresar)
             <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Ej: Vmagni" className={inputCls} />
           </label>
-          <label className="text-[13px] text-ink2">Correo de recuperación
+          <label className="text-sm text-ink2">Correo de recuperación
             <input value={u.email || ""} disabled className={inputCls + " opacity-70"} />
           </label>
-          <label className="text-[13px] text-ink2">Rol
+          <label className="text-sm text-ink2">Rol
             <select value={role} onChange={(e) => setRole(e.target.value as Role)} className={inputCls}>
               <option value="empleado">empleado</option>
               <option value="encargado">encargado</option>
               <option value="jefe">jefe</option>
             </select>
           </label>
-          <label className="text-[13px] text-ink2">Puesto
+          <label className="text-sm text-ink2">Puesto
             <input value={puesto} onChange={(e) => setPuesto(e.target.value)} placeholder="Ej: Analista impositivo" className={inputCls} />
           </label>
-          <label className="text-[13px] text-ink2">Responde a
+          <label className="text-sm text-ink2">Responde a
             <select value={managerId ?? ""} onChange={(e) => setManagerId(e.target.value || null)} className={inputCls}>
               <option value="">— Sin responsable</option>
               {managerOpts.map((mo) => <option key={mo.id} value={mo.id}>{mo.name}</option>)}
             </select>
           </label>
-          <label className="text-[13px] text-ink2">Marca
+          <label className="text-sm text-ink2">Marca
             <select value={marca ?? ""} onChange={(e) => setMarca(e.target.value || null)} disabled={!esJefe} className={inputCls}>
               <option value="">—</option>
               {org.marcas.map((mk) => <option key={mk} value={mk}>{mk}</option>)}
             </select>
           </label>
-          <label className="text-[13px] text-ink2">Sucursal
+          <label className="text-sm text-ink2">Sucursal
             <select value={sucursal ?? ""} onChange={(e) => setSucursal(e.target.value || null)} disabled={!esJefe} className={inputCls}>
               <option value="">— Sin sucursal —</option>
               {org.sucursales.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </label>
-          <label className="text-[13px] text-ink2">Ficha de puesto — qué se espera de este perfil
+          <label className="text-sm text-ink2">Ficha de puesto — qué se espera de este perfil
             <textarea value={ficha} onChange={(e) => setFicha(e.target.value)} rows={5}
               placeholder="Responsabilidades, entregables, estándares…" className={inputCls + " resize-y"} />
           </label>
           {esJefe && (
-            <label className="flex items-center gap-2.5 text-[13px] text-ink2 cursor-pointer">
+            <label className="flex items-center gap-2.5 text-sm text-ink2 cursor-pointer">
               <input type="checkbox" checked={oculto} onChange={(e) => setOculto(e.target.checked)} className="accent-accent w-4 h-4" />
               Usuario oculto (no aparece en listados ni métricas)
             </label>
@@ -180,12 +180,12 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
           <div className="mt-5 pt-4 border-t border-line">
             {!borrando ? (
               <button onClick={() => { setBorrando(true); setTipeado(""); }}
-                className="flex items-center gap-1.5 text-danger border border-line rounded-lg px-3 py-1.5 text-[13px] font-medium hover:bg-surface2">
+                className="flex items-center gap-1.5 text-danger border border-line rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-surface2">
                 <Trash2 size={14} /> Eliminar empleado
               </button>
             ) : (
               <div className="grid gap-2">
-                <p className="text-[13px] text-ink2 m-0">
+                <p className="text-sm text-ink2 m-0">
                   Esto elimina a <b className="text-ink">{u.name}</b> definitivamente. Sus tareas no se pierden: quedan
                   como "Sin asignar" para reasignar. Para confirmar, escribí el nombre exacto:
                 </p>
@@ -194,11 +194,11 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
                 <div className="flex gap-2">
                   <button onClick={() => eliminar.mutate()}
                     disabled={!confirmacionValida(tipeado, u.name) || eliminar.isPending}
-                    className="flex items-center gap-1.5 bg-danger text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:opacity-50">
+                    className="flex items-center gap-1.5 bg-danger text-white rounded-lg px-3.5 py-2 text-sm font-semibold disabled:opacity-50">
                     <Trash2 size={14} /> {eliminar.isPending ? "Eliminando…" : "Eliminar definitivamente"}
                   </button>
                   <button onClick={() => { setBorrando(false); setTipeado(""); }}
-                    className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Cancelar</button>
+                    className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-sm">Cancelar</button>
                 </div>
               </div>
             )}
@@ -208,10 +208,10 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
         {msg && <p className={"text-sm mt-3 " + (msg.ok ? "text-done" : "text-danger")}>{msg.txt}</p>}
         <div className="flex gap-2 mt-4">
           <button onClick={onSave} disabled={save.isPending}
-            className="bg-accent text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:opacity-60">
+            className="bg-accent text-white rounded-lg px-3.5 py-2 text-sm font-semibold disabled:opacity-60">
             {save.isPending ? "Guardando…" : "Guardar cambios"}
           </button>
-          <button onClick={onClose} className="ml-auto border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Cerrar</button>
+          <button onClick={onClose} className="ml-auto border border-line bg-surface2 rounded-lg px-3.5 py-2 text-sm">Cerrar</button>
         </div>
     </Modal>
   );

@@ -13,20 +13,20 @@ export function Delegaciones({ cards, team, hoyISO, onOpenCard }: {
 
   return (
     <div className="bg-surface border border-line rounded-2xl px-5 py-4 mb-5" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
-      <h2 className="flex items-center gap-1.5 text-[11px] text-ink2 uppercase tracking-[0.08em] font-semibold mb-2.5">
+      <h2 className="flex items-center gap-1.5 text-2xs text-ink2 uppercase tracking-[0.08em] font-semibold mb-2.5">
         <Users size={13} /> Delegaciones en curso
       </h2>
       {items.map(({ card, de, a, diasSinMover, trabada }) => (
         <div key={card.id} onClick={() => onOpenCard(card)}
           className="flex items-start gap-2.5 py-1.5 border-b border-line last:border-0 cursor-pointer">
           <span className="flex-1 min-w-0">
-            <b className="block text-[13px]">{card.title}</b>
+            <b className="block text-sm">{card.title}</b>
             <span className="block text-xs text-ink2">
               De {de?.name ?? "?"} a {a.length ? a.map((p) => p.name).join(", ") : "?"} · {diasSinMover === 0 ? "sin movimiento hoy" : `${diasSinMover} día${diasSinMover === 1 ? "" : "s"} sin movimiento`}
             </span>
           </span>
           {trabada && (
-            <span className="shrink-0 text-[11px] font-semibold text-warn bg-warn/15 rounded-full px-2 py-0.5">
+            <span className="shrink-0 text-2xs font-semibold text-warn bg-warn/15 rounded-full px-2 py-0.5">
               Esta tarea lleva {diasSinMover} días sin movimiento
             </span>
           )}

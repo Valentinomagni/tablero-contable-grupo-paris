@@ -52,7 +52,7 @@ export function EstancadaPrompt({ card, diasSinMover, quien, onAbrir, onPosponer
   });
 
   const ocupado = seguir.isPending || terminar.isPending;
-  const btn = "min-h-[40px] rounded-lg border border-line bg-surface2 px-3 text-[13px] font-semibold " +
+  const btn = "min-h-[40px] rounded-lg border border-line bg-surface2 px-3 text-sm font-semibold " +
     "text-ink transition hover:border-accent/50 disabled:opacity-50";
 
   return (
@@ -61,8 +61,8 @@ export function EstancadaPrompt({ card, diasSinMover, quien, onAbrir, onPosponer
         <HelpCircle size={15} className="text-ink2 shrink-0" />
         <span className="text-xs uppercase tracking-wide text-ink2 font-semibold">Una consulta</span>
       </div>
-      <p className="font-semibold text-[14px] tracking-tight leading-snug m-0 break-words">{card.title}</p>
-      <p className="text-[13px] text-ink2 m-0 mt-1">
+      <p className="font-semibold text-base tracking-tight leading-snug m-0 break-words">{card.title}</p>
+      <p className="text-sm text-ink2 m-0 mt-1">
         No tiene novedades desde hace {diasSinMover} días. ¿Seguís con esto o ya está terminada?
       </p>
       <div className="mt-3 flex flex-wrap gap-2">

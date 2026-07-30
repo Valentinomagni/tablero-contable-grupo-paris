@@ -76,12 +76,12 @@ export function VacacionesModal({ me, team, cards, onClose }: {
   });
 
   const puede = !!owner && rangoValido(desde, hasta);
-  const inputCls = "bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-[13px]";
+  const inputCls = "bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-sm";
 
   return (
     <Modal onClose={onClose} maxWidth={560}>
       <h3 className="flex items-center gap-2 text-lg font-semibold m-0 mb-1"><Plane size={18} /> Vacaciones y cobertura</h3>
-      <p className="text-ink2 text-[13px] mt-0 mb-4">
+      <p className="text-ink2 text-sm mt-0 mb-4">
         Registrá ausencias del equipo y pasá las tareas abiertas del ausente a quien lo cubre.
       </p>
 
@@ -115,7 +115,7 @@ export function VacacionesModal({ me, team, cards, onClose }: {
         )}
 
         {impacto && impacto.tareas.length > 0 && (
-          <div className="border border-line rounded-lg p-2.5 bg-surface2/60 text-[13px]">
+          <div className="border border-line rounded-lg p-2.5 bg-surface2/60 text-sm">
             <p className="m-0 mb-1.5">
               Si aprobás esta licencia, quedan <b>{impacto.tareas.length}</b> tarea{impacto.tareas.length === 1 ? "" : "s"} con
               vencimiento en ese período (esfuerzo total: <b>{impacto.effortTotal}</b>).
@@ -126,10 +126,10 @@ export function VacacionesModal({ me, team, cards, onClose }: {
               ))}
             </ul>
             {impacto.tareas.length > 5 && (
-              <p className="text-ink2 text-[12px] m-0">y {impacto.tareas.length - 5} más.</p>
+              <p className="text-ink2 text-xs m-0">y {impacto.tareas.length - 5} más.</p>
             )}
             {reemplazante && (
-              <p className="text-ink2 text-[12px] m-0 mt-1">
+              <p className="text-ink2 text-xs m-0 mt-1">
                 Convendría traspasarle estas tareas a {nombreDe(reemplazante)} para que queden cubiertas.
               </p>
             )}
@@ -138,7 +138,7 @@ export function VacacionesModal({ me, team, cards, onClose }: {
 
         <button onClick={() => puede ? crear.mutate() : toast.error("Elegí persona y un rango de fechas válido")}
           disabled={crear.isPending}
-          className="flex items-center justify-center gap-1.5 bg-accent text-[color:var(--accent-ink)] rounded-lg px-3.5 py-2 text-[13px] font-semibold disabled:opacity-60">
+          className="flex items-center justify-center gap-1.5 bg-accent text-[color:var(--accent-ink)] rounded-lg px-3.5 py-2 text-sm font-semibold disabled:opacity-60">
           <Plus size={14} /> {crear.isPending ? "Guardando…" : "Registrar vacaciones"}</button>
       </div>
 
@@ -155,11 +155,11 @@ export function VacacionesModal({ me, team, cards, onClose }: {
                 <Avatar name={ausenteNom} size={22} />
                 <div className="flex-1 min-w-0">
                   <b className="text-sm">{ausenteNom}</b>
-                  <div className="text-ink2 text-[12px]">
+                  <div className="text-ink2 text-xs">
                     {fmt(v.desde)} – {fmt(v.hasta)} · {v.motivo}
                     {replNom && <> · cubre <b className="text-ink">{replNom}</b></>}
                   </div>
-                  {v.notas && <p className="text-ink2 text-[12px] m-0 mt-1 whitespace-pre-line">{v.notas}</p>}
+                  {v.notas && <p className="text-ink2 text-xs m-0 mt-1 whitespace-pre-line">{v.notas}</p>}
                 </div>
                 <button onClick={() => eliminar.mutate(v.id)} title="Eliminar" disabled={eliminar.isPending}
                   className="border border-line bg-surface2 rounded-lg p-1.5 text-ink2 hover:text-danger shrink-0"><Trash2 size={13} /></button>
@@ -167,21 +167,21 @@ export function VacacionesModal({ me, team, cards, onClose }: {
 
               {abiertas.length > 0 && (
                 <div className="mt-2.5 pt-2.5 border-t border-line/60">
-                  <div className="text-[11px] uppercase tracking-wide text-ink2 mb-1.5">Tareas abiertas de {ausenteNom}</div>
+                  <div className="text-2xs uppercase tracking-wide text-ink2 mb-1.5">Tareas abiertas de {ausenteNom}</div>
                   <div className="flex flex-col gap-1">
                     {abiertas.map((c) => (
-                      <div key={c.id} className="flex items-center gap-2 text-[13px]">
+                      <div key={c.id} className="flex items-center gap-2 text-sm">
                         <span className="flex-1 truncate">{c.title}</span>
                         {v.reemplazante && replNom && (
                           <button onClick={() => cubrir.mutate({ card: c, aRepl: v.reemplazante!, ausenteNom, replNom, desdeV: fmt(v.desde), hastaV: fmt(v.hasta) })}
                             disabled={cubrir.isPending}
-                            className="flex items-center gap-1 border border-line bg-surface2 rounded-lg px-2 py-1 text-[12px] text-ink2 hover:text-accent shrink-0 disabled:opacity-60">
+                            className="flex items-center gap-1 border border-line bg-surface2 rounded-lg px-2 py-1 text-xs text-ink2 hover:text-accent shrink-0 disabled:opacity-60">
                             <ArrowRight size={12} /> Pasar a {replNom}</button>
                         )}
                       </div>
                     ))}
                   </div>
-                  {!v.reemplazante && <p className="text-ink2 text-[11px] mt-1.5 mb-0">Asigná un reemplazante para poder pasarle estas tareas.</p>}
+                  {!v.reemplazante && <p className="text-ink2 text-2xs mt-1.5 mb-0">Asigná un reemplazante para poder pasarle estas tareas.</p>}
                 </div>
               )}
             </div>
@@ -189,7 +189,7 @@ export function VacacionesModal({ me, team, cards, onClose }: {
         })}
       </div>
 
-      <button onClick={onClose} className="w-full mt-4 border border-line bg-surface2 rounded-lg py-2 text-[13px]">Cerrar</button>
+      <button onClick={onClose} className="w-full mt-4 border border-line bg-surface2 rounded-lg py-2 text-sm">Cerrar</button>
     </Modal>
   );
 }

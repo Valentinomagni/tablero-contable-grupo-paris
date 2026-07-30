@@ -40,12 +40,12 @@ export function ReasignarModal({ me, equipo, profiles, cards, onClose }: {
     onError: (e) => toast.error("No se pudo reasignar: " + (e as Error).message),
   });
 
-  const inputCls = "bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-[13px]";
+  const inputCls = "bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-sm";
 
   return (
     <Modal onClose={onClose} maxWidth={520}>
       <h3 className="flex items-center gap-2 text-lg font-semibold m-0 mb-1"><ArrowRightLeft size={18} /> Reasignar tareas</h3>
-      <p className="text-ink2 text-[13px] mt-0 mb-4">Pasá tareas abiertas de un miembro de tu equipo a otro. Solo dentro de tu equipo.</p>
+      <p className="text-ink2 text-sm mt-0 mb-4">Pasá tareas abiertas de un miembro de tu equipo a otro. Solo dentro de tu equipo.</p>
 
       <div className="flex flex-wrap gap-3 mb-4 text-sm text-ink2">
         <label className="flex items-center gap-1.5">De
@@ -69,7 +69,7 @@ export function ReasignarModal({ me, equipo, profiles, cards, onClose }: {
                 const on = sel.includes(c.id);
                 return (
                   <button key={c.id} onClick={() => toggle(c.id)}
-                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] border text-left transition ${on ? "border-accent bg-accent-soft" : "border-line bg-surface2"}`}>
+                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm border text-left transition ${on ? "border-accent bg-accent-soft" : "border-line bg-surface2"}`}>
                     <Avatar name={nom(origen)} size={20} />
                     <span className="flex-1 truncate">{c.title}</span>
                     {on && <Check size={14} className="text-accent shrink-0" />}
@@ -81,9 +81,9 @@ export function ReasignarModal({ me, equipo, profiles, cards, onClose }: {
       )}
 
       <div className="flex gap-2 justify-end pt-3 border-t border-line">
-        <button onClick={onClose} className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-[13px]">Cancelar</button>
+        <button onClick={onClose} className="border border-line bg-surface2 rounded-lg px-3.5 py-2 text-sm">Cancelar</button>
         <button onClick={() => reasignar.mutate()} disabled={!puede || reasignar.isPending}
-          className="inline-flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] font-semibold rounded-lg px-3.5 py-2 text-[13px] disabled:opacity-50">
+          className="inline-flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] font-semibold rounded-lg px-3.5 py-2 text-sm disabled:opacity-50">
           <ArrowRightLeft size={14} /> {reasignar.isPending ? "Reasignando…" : `Reasignar ${sel.length || ""}`}</button>
       </div>
     </Modal>

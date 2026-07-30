@@ -47,28 +47,28 @@ function CardItem({ c, blocked, waiting, esperaTitulos = [], onOpen }: { c: Card
       className="bg-surface rounded-xl px-3.5 py-3 mb-2.5 cursor-pointer border border-line/70 transition
         hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-[var(--shadow-lg)]"
       style={{ boxShadow: "var(--shadow)" }}>
-      <div className="font-semibold text-[13.5px] tracking-tight leading-snug">{c.title}</div>
+      <div className="font-semibold text-sm tracking-tight leading-snug">{c.title}</div>
       <div className="flex gap-2 flex-wrap mt-1.5 text-xs text-ink2 items-center">
         {c.protected && <span title="Tarea protegida por un jefe" className="inline-flex items-center gap-1 bg-chip rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Shield size={11} /> Protegida</span>}
         {isShared(c) && <span title="Tarea compartida con otras personas" className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Users size={11} /> Compartida</span>}
         {blocked && <span className="inline-flex items-center gap-1 bg-warn-soft text-warn rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Lock size={11} /> Bloqueada</span>}
         {waiting && <span className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Hourglass size={11} /> Te esperan</span>}
         {esCobertura(c).activa && <span title="Cubierta por vacaciones" className="inline-flex items-center gap-1 bg-chip text-ink2 rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Plane size={11} /> Cobertura</span>}
-        {c.categoria && <span className="bg-chip rounded-md px-1.5 py-0.5 text-[11px] whitespace-nowrap">{c.categoria}</span>}
+        {c.categoria && <span className="bg-chip rounded-md px-1.5 py-0.5 text-2xs whitespace-nowrap">{c.categoria}</span>}
         {/* Etiquetas (contexto: empresa/marca puntual) — chip redondeado + acento, para no
             confundirse con la categoría (tipo de trabajo, chip cuadrado neutro de arriba). */}
         {(c.etiquetas ?? []).map((et) => (
-          <span key={et} className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap">
+          <span key={et} className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-full px-2 py-0.5 text-2xs font-medium whitespace-nowrap">
             <Tag size={10} />{et}
           </span>
         ))}
-        {c.dato_control && <span className="bg-chip rounded-md px-1.5 py-0.5 text-[11px] whitespace-nowrap tnum">{c.dato_control}</span>}
+        {c.dato_control && <span className="bg-chip rounded-md px-1.5 py-0.5 text-2xs whitespace-nowrap tnum">{c.dato_control}</span>}
         {pr}<DueBadge c={c} />{c.recurring && <span title="Mensual"><Repeat size={12} /></span>}
         {(c.effort ?? 1) > 1 && <span className="bg-chip rounded-md px-1.5 py-0.5 tnum">{c.effort} pts</span>}
         {ck}{c.comments.length > 0 && <span className="inline-flex items-center gap-1"><MessageSquare size={11} /> {c.comments.length}</span>}
       </div>
       {blocked && esperaTitulos.length > 0 && (
-        <div className="text-[11px] text-warn mt-1">
+        <div className="text-2xs text-warn mt-1">
           Espera: {esperaTitulos.slice(0, 2).join(", ")}{esperaTitulos.length > 2 ? ` y ${esperaTitulos.length - 2} más` : ""}
         </div>
       )}
@@ -286,10 +286,10 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
       <input autoFocus value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder={placeholder}
         onKeyDown={(e) => { if (e.key === "Enter") confirmAdd(); if (e.key === "Escape") { setAdding(null); setNewTitle(""); } }}
         onBlur={() => { setAdding(null); setNewTitle(""); }}
-        className="w-full bg-surface border border-accent rounded-lg px-2.5 py-2 text-[13px] outline-none" />
+        className="w-full bg-surface border border-accent rounded-lg px-2.5 py-2 text-sm outline-none" />
     ) : (
       <button onClick={() => { setAdding(col); setNewTitle(""); }}
-        className="w-full border border-dashed border-line rounded-lg py-2 text-[13px] text-ink2 hover:text-accent hover:border-accent transition">
+        className="w-full border border-dashed border-line rounded-lg py-2 text-sm text-ink2 hover:text-accent hover:border-accent transition">
         + Añadir {col === "oper" ? "operativa" : "tarea"}</button>
     );
 
@@ -308,7 +308,7 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
     const activo = catFiltro === val;
     return (
       <button key={lbl} onClick={() => setCatFiltro(activo ? null : val)}
-        className={cn("border rounded-full px-3 py-1 text-[12px] transition",
+        className={cn("border rounded-full px-3 py-1 text-xs transition",
           activo ? "bg-accent-soft border-accent text-accent font-semibold" : "border-line bg-surface2 text-ink2 hover:border-accent/40")}>
         {lbl}</button>
     );
@@ -318,7 +318,7 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
     <div className="flex-1 flex flex-col min-w-0">
       <div className="flex gap-1.5 flex-wrap items-center px-6 pb-3">
         <label title="Agrupar en carriles que cruzan las tres columnas"
-          className={cn("inline-flex items-center gap-1.5 border rounded-full px-3 py-1 text-[12px] transition",
+          className={cn("inline-flex items-center gap-1.5 border rounded-full px-3 py-1 text-xs transition",
             agruparModo !== "ninguno" ? "bg-accent-soft border-accent text-accent font-semibold" : "border-line bg-surface2 text-ink2 hover:border-accent/40")}>
           <Layers size={12} />
           <select value={agruparModo} onChange={(e) => setAgruparModo(e.target.value as ModoAgrupar)}
@@ -333,7 +333,7 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
           <>
             <span className="w-px h-4 bg-line mx-1" />
             <button onClick={() => setCatFiltro(null)}
-              className={cn("border rounded-full px-3 py-1 text-[12px] transition",
+              className={cn("border rounded-full px-3 py-1 text-xs transition",
                 catFiltro === null ? "bg-accent-soft border-accent text-accent font-semibold" : "border-line bg-surface2 text-ink2 hover:border-accent/40")}>
               Todas</button>
             {catsUsadas.map((cat) => chipCat(cat, cat))}
@@ -348,13 +348,13 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
               return (
                 <button key={et} title="Filtrar por etiqueta (se pueden combinar varias)"
                   onClick={() => setEtFiltro((fs) => activo ? fs.filter((x) => x.toLowerCase() !== et.toLowerCase()) : [...fs, et])}
-                  className={cn("inline-flex items-center gap-1 border rounded-full px-3 py-1 text-[12px] transition",
+                  className={cn("inline-flex items-center gap-1 border rounded-full px-3 py-1 text-xs transition",
                     activo ? "bg-accent-soft border-accent text-accent font-semibold" : "border-line bg-surface2 text-ink2 hover:border-accent/40")}>
                   <Tag size={11} />{et}</button>
               );
             })}
             {etFiltro.length > 0 && (
-              <button onClick={() => setEtFiltro([])} className="border border-line bg-surface2 rounded-full px-3 py-1 text-[12px] text-ink2 hover:border-accent/40">
+              <button onClick={() => setEtFiltro([])} className="border border-line bg-surface2 rounded-full px-3 py-1 text-xs text-ink2 hover:border-accent/40">
                 Limpiar etiquetas</button>
             )}
           </>
@@ -363,13 +363,13 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
           <>
             <span className="w-px h-4 bg-line mx-1" />
             <select value={marcaFiltro ?? ""} onChange={(e) => { setMarcaFiltro(e.target.value || null); setSucursalFiltro(null); }}
-              className="border border-line bg-surface2 text-ink2 rounded-full px-3 py-1 text-[12px] outline-none">
+              className="border border-line bg-surface2 text-ink2 rounded-full px-3 py-1 text-xs outline-none">
               <option value="">Todas las marcas</option>
               {org.marcas.map((m) => <option key={m} value={m}>{m}</option>)}
             </select>
             {org.sucursales.length > 0 && (
               <select value={sucursalFiltro ?? ""} onChange={(e) => setSucursalFiltro(e.target.value || null)}
-                className="border border-line bg-surface2 text-ink2 rounded-full px-3 py-1 text-[12px] outline-none">
+                className="border border-line bg-surface2 text-ink2 rounded-full px-3 py-1 text-xs outline-none">
                 <option value="">Todas las sucursales</option>
                 {org.sucursales.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -380,7 +380,7 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
     {/* Mes cerrado: se avisa POR QUÉ no se puede editar y CÓMO revertirlo. Un tablero que no
         responde sin explicar por qué se lee como que la app está rota. */}
     {cerrado && (
-      <div className="mx-6 mb-3 flex items-center gap-2 rounded-lg border border-line bg-surface2 px-3.5 py-2.5 text-[13px] text-ink2">
+      <div className="mx-6 mb-3 flex items-center gap-2 rounded-lg border border-line bg-surface2 px-3.5 py-2.5 text-sm text-ink2">
         <Lock size={14} className="shrink-0" />
         <span>Este mes está cerrado: se puede consultar, no editar. Para modificarlo, reabrilo desde <b className="text-ink font-semibold">Cierre</b>.</span>
       </div>
@@ -406,9 +406,9 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
           {bloques.map((b) => (
             <div key={b.grupo || "__todo"}>
               {b.grupo && (
-                <div className="mx-1.5 mt-1 mb-1.5 text-[11px] font-semibold text-ink2 flex items-center gap-2">
+                <div className="mx-1.5 mt-1 mb-1.5 text-2xs font-semibold text-ink2 flex items-center gap-2">
                   <span className="truncate">{b.grupo}</span>
-                  <span className="bg-chip rounded-full px-1.5 py-0.5 tnum text-[10px]">{b.cards.length}</span>
+                  <span className="bg-chip rounded-full px-1.5 py-0.5 tnum text-2xs">{b.cards.length}</span>
                 </div>
               )}
               {b.cards.map(renderCard)}
@@ -418,7 +418,7 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
           {/* Pendiente abre el flujo formal (spec 21 item 2); "En proceso" conserva el atajo inline. */}
           {k === "pend" && (
             <button onClick={() => setCreando(true)}
-              className="w-full border border-dashed border-line rounded-lg py-2 text-[13px] text-ink2 hover:text-accent hover:border-accent transition">
+              className="w-full border border-dashed border-line rounded-lg py-2 text-sm text-ink2 hover:text-accent hover:border-accent transition">
               + Añadir tarea</button>
           )}
           {k === "proc" && addInline(k, "Título y Enter…")}
@@ -434,7 +434,7 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
             renderCard={renderCard} onDropCard={(id, status) => { const cardPrev = byId(id); if (cardPrev) move.mutate({ id, status, cardPrev }); }} />
           {mine.length === 0 && <EmptyState title="Sin tareas acá." />}
           <button onClick={() => setCreando(true)}
-            className="w-[290px] border border-dashed border-line rounded-lg py-2 text-[13px] text-ink2 hover:text-accent hover:border-accent transition">
+            className="w-[290px] border border-dashed border-line rounded-lg py-2 text-sm text-ink2 hover:text-accent hover:border-accent transition">
             + Añadir tarea</button>
           {/* Atajo inline de "En proceso" (spec 21 item 2), restaurado también en modo carriles:
               la card nace sin categoría y cae en "Sin categoría", coherente con el resto. */}
@@ -473,7 +473,7 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
             </div>
           );
         })}
-        {opers.length === 0 && <p className="text-ink2 text-[13px] px-2 pb-2">Pagos, trámites y gestiones a demanda: no se cierran, se registran.</p>}
+        {opers.length === 0 && <p className="text-ink2 text-sm px-2 pb-2">Pagos, trámites y gestiones a demanda: no se cierran, se registran.</p>}
         {addInline("oper", "Ej: Pagos a proveedores…")}
       </div>
       {creando && <NuevaTareaModal ownerId={ownerId} meName={meName} cards={cards.filter((c) => c.owner === ownerId)} onClose={() => setCreando(false)} />}

@@ -24,11 +24,11 @@ export function PlantillaCierre({ team }: { team: Profile[] }) {
     else { toast.success("Plantilla guardada"); qc.invalidateQueries({ queryKey: ["settings"] }); setDraft(null); }
   }
 
-  const inputCls = "bg-surface2 border border-line rounded-lg px-2 py-1.5 text-ink text-[13px]";
+  const inputCls = "bg-surface2 border border-line rounded-lg px-2 py-1.5 text-ink text-sm";
   return (
     <>
-      <h2 className="text-[14px] font-bold tracking-[-0.01em] text-ink mb-1">Plantilla de cierre mensual</h2>
-      <p className="text-ink2 text-[13px] mt-0 mb-2.5 max-w-[640px]">
+      <h2 className="text-base font-bold tracking-[-0.01em] text-ink mb-1">Plantilla de cierre mensual</h2>
+      <p className="text-ink2 text-sm mt-0 mb-2.5 max-w-[640px]">
         Seiketsu (estandarizar): el proceso de cierre por escrito, una sola vez. Cada mes, un click genera todas las tareas
         con responsable, vencimiento y esfuerzo. Si se aprieta dos veces no duplica.
       </p>
@@ -41,7 +41,7 @@ export function PlantillaCierre({ team }: { team: Profile[] }) {
               <option value="">Responsable…</option>
               {team.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
             </select>
-            <label className="text-[12px] text-ink2 flex items-center gap-1">Vence el día
+            <label className="text-xs text-ink2 flex items-center gap-1">Vence el día
               <input type="number" min={1} max={31} value={it.due_day ?? ""} placeholder="—"
                 onChange={(e) => upd(i, { due_day: e.target.value === "" ? null : Number(e.target.value) })} className={inputCls + " w-[64px]"} />
             </label>
@@ -57,11 +57,11 @@ export function PlantillaCierre({ team }: { team: Profile[] }) {
         ))}
         <div className="flex flex-wrap gap-2 mt-3">
           <button onClick={() => setDraft([...items, { title: "", owner: "", due_day: null, effort: 1, priority: "media" }])}
-            className="flex items-center gap-1.5 border border-dashed border-line rounded-lg px-3 py-1.5 text-[13px] text-ink2 hover:text-accent hover:border-accent">
+            className="flex items-center gap-1.5 border border-dashed border-line rounded-lg px-3 py-1.5 text-sm text-ink2 hover:text-accent hover:border-accent">
             <Plus size={14} /> Agregar ítem</button>
-          {draft && <button onClick={guardar} className="bg-accent text-white rounded-lg px-3.5 py-1.5 text-[13px] font-semibold">Guardar plantilla</button>}
+          {draft && <button onClick={guardar} className="bg-accent text-white rounded-lg px-3.5 py-1.5 text-sm font-semibold">Guardar plantilla</button>}
           {items.length > 0 && (
-            <span className="ml-auto self-center text-[12px] text-ink2">
+            <span className="ml-auto self-center text-xs text-ink2">
               Las tareas del mes se generan desde <span className="text-accent font-semibold">Cierre mensual</span>.
             </span>
           )}

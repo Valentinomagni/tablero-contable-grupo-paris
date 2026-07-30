@@ -53,12 +53,12 @@ function Evolucion({ ownerId, archives }: { ownerId: string; archives: CardArchi
     <div className="flex items-center gap-2 shrink-0" title="Cumplimiento de los últimos meses. Es un dato para acompañar y ver si hace falta apoyo o redistribuir carga, no una calificación de la persona.">
       <Sparkline curva={curva} />
       <span className="flex flex-col leading-tight">
-        <span className="flex items-center gap-1 text-[11px] text-ink2">
+        <span className="flex items-center gap-1 text-2xs text-ink2">
           <Icon size={13} />
           {TENDENCIA_LBL[t]}
         </span>
         {est.nivel !== "sin-datos" && (
-          <span className="text-[10.5px] text-ink2">{est.texto}</span>
+          <span className="text-2xs text-ink2">{est.texto}</span>
         )}
       </span>
     </div>
@@ -76,26 +76,26 @@ function Nodo({ nodo, cards, nivel, archives }: { nodo: NodoOrg; cards: Card[]; 
         <Avatar name={p.name} size={34} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <b className="text-[14px] tracking-[-0.01em] truncate">{p.name}</b>
-            <span className="text-[10px] uppercase tracking-[0.06em] font-semibold text-ink2 bg-surface2 border border-line rounded-md px-1.5 py-px shrink-0">{ROLE_LBL[p.role]}</span>
+            <b className="text-base tracking-[-0.01em] truncate">{p.name}</b>
+            <span className="text-2xs uppercase tracking-[0.06em] font-semibold text-ink2 bg-surface2 border border-line rounded-md px-1.5 py-px shrink-0">{ROLE_LBL[p.role]}</span>
             {p.marca && (
-              <span className="flex items-center gap-1 text-[10.5px] text-ink2 bg-chip rounded px-1.5 py-0.5 shrink-0">
+              <span className="flex items-center gap-1 text-2xs text-ink2 bg-chip rounded px-1.5 py-0.5 shrink-0">
                 <MarcaIcon marca={p.marca} size={11} />
                 {p.marca}
               </span>
             )}
-            {p.sucursal && <span className="text-[10.5px] text-ink2 bg-chip rounded px-1.5 py-0.5">{p.sucursal}</span>}
+            {p.sucursal && <span className="text-2xs text-ink2 bg-chip rounded px-1.5 py-0.5">{p.sucursal}</span>}
           </div>
           <div className="flex items-center gap-1.5">
-            {p.puesto && <div className="text-[12px] text-ink2 truncate">{p.puesto}</div>}
-            <span className="flex items-center gap-1 text-[11px] text-ink2 shrink-0">
+            {p.puesto && <div className="text-xs text-ink2 truncate">{p.puesto}</div>}
+            <span className="flex items-center gap-1 text-2xs text-ink2 shrink-0">
               {online && <span className="w-2 h-2 rounded-full bg-done" />}
               {textoUltimaConexion(p.last_seen, ahora)}
             </span>
           </div>
         </div>
         {archives.length > 0 && <Evolucion ownerId={p.id} archives={archives} />}
-        <span className="shrink-0 text-[12px] text-ink2 tnum bg-surface2 border border-line rounded-full px-2.5 py-1" title="Tareas abiertas">
+        <span className="shrink-0 text-xs text-ink2 tnum bg-surface2 border border-line rounded-full px-2.5 py-1" title="Tareas abiertas">
           <b className="text-ink">{abiertas}</b> abiertas
         </span>
       </div>
@@ -147,18 +147,18 @@ export function Organigrama({ team, cards }: { team: Profile[]; cards: Card[] })
   return (
     <div className="px-6 py-4 w-full max-w-[820px]">
       {marcas.length === 0 && sinMarca.length === team.length && (
-        <div className="bg-surface2 border border-line rounded-xl px-4 py-3 mb-5 text-[13px] text-ink2">
+        <div className="bg-surface2 border border-line rounded-xl px-4 py-3 mb-5 text-sm text-ink2">
           Sin marca asignada todavía. Cuando cargues marca y responsable de cada persona, el organigrama se arma por marca y jerarquía automáticamente.
         </div>
       )}
       {marcas.length > 0 && (
         <div className="flex items-center gap-2 mb-5">
-          <label htmlFor="organigrama-filtro-marca" className="text-[12px] font-semibold text-ink2">Marca</label>
+          <label htmlFor="organigrama-filtro-marca" className="text-xs font-semibold text-ink2">Marca</label>
           <select
             id="organigrama-filtro-marca"
             value={filtroMarca ?? ""}
             onChange={(e) => setFiltroMarca(e.target.value || null)}
-            className="text-[13px] bg-surface border border-line rounded-lg px-2.5 py-1.5"
+            className="text-sm bg-surface border border-line rounded-lg px-2.5 py-1.5"
           >
             <option value="">Todas las marcas</option>
             {marcas.map((m) => <option key={m} value={m}>{m} · {grupos[m].length}</option>)}
