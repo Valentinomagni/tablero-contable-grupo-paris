@@ -14,10 +14,19 @@ import { cn } from "../lib/ui";
 // La migración de los archivos existentes se hace POR TANDAS, verificando a ojo cada una —
 // no de una sola vez, porque son 23 pantallas y un error de estilo masivo es difícil de ver
 // en un diff.
-export function Panel({ children, className }: { children: ReactNode; className?: string }) {
+export function Panel({ children, className, densidad = "normal" }: {
+  children: ReactNode;
+  className?: string;
+  /** `compacta` para tarjetas dentro de otra tarjeta o filas densas. */
+  densidad?: "normal" | "compacta";
+}) {
   return (
     <div
-      className={cn("bg-surface border border-line rounded-2xl p-[18px]", className)}
+      className={cn(
+        "bg-surface border border-line rounded-2xl",
+        densidad === "compacta" ? "p-3" : "p-[18px]",
+        className,
+      )}
       style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}
     >
       {children}

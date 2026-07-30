@@ -2,9 +2,7 @@ import type { Profile } from "../../lib/types";
 import { comparativaMensual } from "../../lib/comparador";
 import { mesLabel } from "../../lib/archivo";
 import { useArchiveEquipo } from "../../hooks/useArchive";
-
-const cardSh = { boxShadow: "var(--ring),var(--shadow)" };
-const card = "bg-surface rounded-2xl p-[18px]";
+import { Panel } from "../../components/Panel";
 
 // Escala de grises monocroma: 0% blanco/surface, 100% negro/ink — sin colores de semáforo,
 // esto es una foto histórica, no una alerta.
@@ -66,10 +64,10 @@ export function Comparador({ team, meses = 6 }: { team: Profile[]; meses?: numbe
 
   if (!serie.length) {
     return (
-      <div className={card} style={cardSh}>
+      <Panel>
         <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2">Comparativa mensual por marca y sucursal</h3>
         <p className="text-ink2 text-sm">Sin historial todavía — se completa a medida que se archivan meses cerrados.</p>
-      </div>
+      </Panel>
     );
   }
 
@@ -80,7 +78,7 @@ export function Comparador({ team, meses = 6 }: { team: Profile[]; meses?: numbe
   const datosSucursal = serie.map((s) => s.porSucursal);
 
   return (
-    <div className={card} style={cardSh}>
+    <Panel>
       <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-3.5">Comparativa mensual por marca y sucursal</h3>
       <div className="flex flex-col gap-4">
         <Heatmap titulo="Por marca" filas={marcas} meses={mesesCol} datos={datosMarca} />
@@ -88,7 +86,7 @@ export function Comparador({ team, meses = 6 }: { team: Profile[]; meses?: numbe
           ? <Heatmap titulo="Por sucursal" filas={sucursales} meses={mesesCol} datos={datosSucursal} />
           : <p className="text-ink2 text-xs">Las sucursales se habilitan tras la migración 27.</p>}
       </div>
-    </div>
+    </Panel>
   );
 }
 

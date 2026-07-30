@@ -5,6 +5,7 @@ import { dueInfo, saludScore, toARTDate } from "../../lib/metrics";
 import { puntualidad } from "../../lib/puntualidad";
 import { Donut, Gauge, Legend, type Seg } from "../../components/charts";
 import { Avatar } from "../../lib/ui";
+import { Panel } from "../../components/Panel";
 import { useSnapshots, useOrganizacion } from "../../hooks/useData";
 import { utilizacionEquipo } from "../../lib/ociosidad";
 import { useArqueoStats } from "../../hooks/useArqueo";
@@ -75,7 +76,6 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
   // Controles de caja (arqueo) — cumplimiento del mes actual por card de control (P1).
   const arqueo = useArqueoStats(cards, mesActualPrefix());
 
-  const card = "bg-surface rounded-2xl p-[18px]";
   const cardSh = { boxShadow: "var(--ring),var(--shadow)" };
 
   // Vista de impresión DEDICADA (spec 28-correcciones, item 1). Ver src/lib/impresion.ts:
@@ -208,18 +208,18 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
       </div>
 
       <div className="grid gap-3.5" style={{ gridTemplateColumns: "1fr 1fr" }}>
-        <div className={card} style={cardSh}>
+        <Panel>
           <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-3.5">Tareas por estado</h3>
           <div className="flex items-center gap-[18px] flex-wrap"><Donut segs={estSegs} centerTop={`${norm.length}`} centerBot="tareas" /><Legend segs={estSegs} /></div>
-        </div>
-        <div className={card} style={cardSh}>
+        </Panel>
+        <Panel>
           <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-3.5">Carga abierta por persona</h3>
           <div className="flex items-center gap-[18px] flex-wrap"><Donut segs={personaSegs} centerTop={`${abiertas.length}`} centerBot="abiertas" />
             {personaSegs.length ? <Legend segs={personaSegs.slice(0, 6)} /> : <span className="text-ink2 text-sm">Sin carga abierta.</span>}</div>
-        </div>
+        </Panel>
       </div>
 
-      <div className={card} style={cardSh}>
+      <Panel>
         <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-3.5">Ranking de productividad (esfuerzo cerrado, 30 días)</h3>
         {rank.filter((r) => r.ef > 0 || r.act > 0).map((r, i) => (
           <div key={r.u.id} className="flex items-center gap-3 py-2 text-sm border-t border-line first:border-0">
@@ -230,9 +230,9 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
           </div>
         ))}
         {rank.every((r) => r.ef === 0 && r.act === 0) && <p className="text-ink2 text-sm">Sin actividad en el período.</p>}
-      </div>
+      </Panel>
 
-      <div className={card} style={cardSh}>
+      <Panel>
         <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-3.5">Utilización del tiempo (30 días)</h3>
         {util.length ? util.map((p) => (
           <div key={p.id} className="flex items-center gap-3 py-2 text-sm border-t border-line first:border-0">
@@ -244,10 +244,10 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
           </div>
         )) : <p className="text-ink2 text-sm">Sin datos de utilización.</p>}
         <p className="text-2xs text-ink2 mt-3">Indicador de planificación de carga — no mide presencia ni productividad individual</p>
-      </div>
+      </Panel>
 
       {arqueo.length > 0 && (
-        <div className={card} style={cardSh}>
+        <Panel>
           <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-3.5">Controles de caja (arqueo)</h3>
           {arqueo.map(({ card: c, stats }) => {
             const owner = team.find((u) => u.id === c.owner);
@@ -260,7 +260,7 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
               </div>
             );
           })}
-        </div>
+        </Panel>
       )}
 
       <AnalisisMensual cards={cards} team={teamSeg} activity={activity} segmento={marcaFiltro ? `${marcaFiltro}${sucursalFiltro ? ` · ${sucursalFiltro}` : ""}` : null} />

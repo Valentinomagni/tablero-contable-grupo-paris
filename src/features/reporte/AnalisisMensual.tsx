@@ -8,13 +8,13 @@ import { concentracion } from "../../lib/busfactor";
 import { analiticaOperativas } from "../../lib/analitica-operativas";
 import { armarLibroAnalisis, descargarExcel } from "../../lib/excel";
 import { Gauge } from "../../components/charts";
+import { Panel } from "../../components/Panel";
 import { useOccurrences } from "../../hooks/useOccurrences";
 import { useArchiveEquipo } from "../../hooks/useArchive";
 import { useArqueoOccsAll } from "../../hooks/useArqueo";
 import { toast } from "sonner";
 
 const cardSh = { boxShadow: "var(--ring),var(--shadow)" };
-const card = "bg-surface rounded-2xl p-[18px]";
 const fmtMonto = (n: number) => n.toLocaleString("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
 
 // Semáforo SOLO numérico (marca monocroma): el color queda en el número, no en el fondo.
@@ -117,7 +117,7 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
       </div>
 
       {/* Cumplimiento por persona */}
-      <div className={card} style={cardSh}>
+      <Panel>
         <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-3.5">Cumplimiento por persona</h3>
         {a.porPersona.length ? (
           <table className="w-full text-sm">
@@ -143,14 +143,14 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
             </tbody>
           </table>
         ) : <p className="text-ink2 text-sm">Sin personas en este segmento.</p>}
-      </div>
+      </Panel>
 
       {/* Marca / sucursal */}
       <div className="grid gap-3.5" style={{ gridTemplateColumns: "1fr 1fr" }}>
         {([["Cumplimiento por marca", a.porMarca.map((m) => ({ lbl: m.marca, pct: m.pct, total: m.total }))],
           ["Cumplimiento por sucursal", a.porSucursal.map((s) => ({ lbl: s.sucursal, pct: s.pct, total: s.total }))]] as const)
           .map(([titulo, filas], i) => (
-            <div key={i} className={card} style={cardSh}>
+            <Panel key={i}>
               <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-3.5">{titulo}</h3>
               {filas.length ? (
                 <table className="w-full text-sm">
@@ -165,12 +165,12 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
                   </tbody>
                 </table>
               ) : <p className="text-ink2 text-sm">Sin datos.</p>}
-            </div>
+            </Panel>
           ))}
       </div>
 
       {/* Retrabajo: reaperturas de tareas ya terminadas. Encuadre no punitivo (spec 28 Fase B). */}
-      <div className={card} style={cardSh}>
+      <Panel>
         <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-1">Retrabajo</h3>
         <p className="text-ink2 text-xs mb-3.5">
           Mide cuántas tareas terminadas se reabrieron, no quién las reabrió. Una tarea que se reabre
@@ -226,11 +226,11 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
             </ul>
           </div>
         )}
-      </div>
+      </Panel>
 
       {/* Arqueos + distribución de carga */}
       <div className="grid gap-3.5" style={{ gridTemplateColumns: "1fr 1fr" }}>
-        <div className={card} style={cardSh}>
+        <Panel>
           <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-3.5">Diferencias de arqueo</h3>
           {a.arqueos.difs > 0 ? (
             <div className="flex items-start gap-2.5 text-sm">
@@ -241,8 +241,8 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
               </div>
             </div>
           ) : <p className="text-ink2 text-sm">Sin diferencias de arqueo este mes.</p>}
-        </div>
-        <div className={card} style={cardSh}>
+        </Panel>
+        <Panel>
           <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-3.5">Distribución del trabajo</h3>
           {a.distribucion.sobrecargados.length ? (
             <div className="text-sm flex flex-col gap-1.5">
@@ -257,7 +257,7 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
               })}
             </div>
           ) : <p className="text-ink2 text-sm">Carga balanceada (mediana {a.distribucion.medianaAbiertas} abiertas por persona).</p>}
-        </div>
+        </Panel>
       </div>
 
       {/* Tendencia de diferencias de arqueo (Task 6, spec28 fase B). Encuadre en positivo:
@@ -266,7 +266,7 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
           meses hubo diferencias (señal de proceso) y NO el monto: el monto total ya está en
           la serie mensual, y al lado de un nombre convierte la tabla en un ranking. */}
       {tendencia.serie.length > 0 && (
-        <div className={card} style={cardSh}>
+        <Panel>
           <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-1">Diferencias de caja en el tiempo</h3>
           <p className="text-ink2 text-xs mb-3.5">
             Muestra cómo evolucionan las diferencias de arqueo mes a mes y en cuántos meses se
@@ -307,14 +307,14 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
               </table>
             </div>
           )}
-        </div>
+        </Panel>
       )}
 
       {/* Concentración de conocimiento (bus factor): riesgo de continuidad del negocio, no
           una evaluación de nadie. Si nadie concentra una categoría al 80%+, no hay nada que
           mostrar y el bloque directamente no aparece. */}
       {busFactor.length > 0 && (
-        <div className={card} style={cardSh}>
+        <Panel>
           <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-1">Concentración de conocimiento</h3>
           <p className="text-ink2 text-xs mb-3.5">
             Categorías donde una sola persona concentra la mayor parte del trabajo histórico. No es
@@ -341,7 +341,7 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
               ))}
             </tbody>
           </table>
-        </div>
+        </Panel>
       )}
 
       {/* Analítica de tareas operativas (Task 9, spec 28 Fase D). Encuadre: sirve para
@@ -351,7 +351,7 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
           de personas. "Tipo de tarea" = título de la card operativa (una categoría
           agrupa varias tareas distintas y ocultaría justo la que consume tiempo de más). */}
       {(operativas.porEmpleado.length > 0 || operativas.porTipo.length > 0) && (
-        <div className={card} style={cardSh}>
+        <Panel>
           <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-1">Tareas operativas</h3>
           <p className="text-ink2 text-xs mb-3.5">
             Cantidad ejecutada por tarea. El objetivo es ver si algún tipo de tarea concentra
@@ -428,7 +428,7 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
               </div>
             </>
           )}
-        </div>
+        </Panel>
       )}
     </div>
   );
