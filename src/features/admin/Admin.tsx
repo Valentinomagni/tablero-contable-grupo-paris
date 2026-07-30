@@ -68,8 +68,13 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
   const [parStuck, setParStuck] = useState<string | null>(null);
   const [nuevaCat, setNuevaCat] = useState("");
   // Plantillas de tareas (propuesta P6): responsable por defecto elegido al generar y borrador de creación.
-  const [plOwner, setPlOwner] = useState<Record<number, string>>({});
-  const [plGenBusy, setPlGenBusy] = useState<number | null>(null);
+  // Indexados por NOMBRE de plantilla, no por posición en el arreglo. Con el índice, borrar
+  // una plantilla del medio corría todas las de abajo y el responsable por defecto que se
+  // había elegido para la borrada quedaba pegado a la que ocupara ese lugar: el select
+  // aparecía con una persona ya seleccionada que nadie eligió, y al Generar todos los ítems
+  // sin responsable se creaban asignados a ella. El nombre no se mueve cuando se borra otra.
+  const [plOwner, setPlOwner] = useState<Record<string, string>>({});
+  const [plGenBusy, setPlGenBusy] = useState<string | null>(null);
   const [plDraft, setPlDraft] = useState<PlantillaTareas>({ nombre: "", categoria: "", items: [] });
   const [plItem, setPlItem] = useState<{ titulo: string; owner: string; effort: 1 | 2 | 3 | 5; priority: "alta" | "media" | "baja" }>({ titulo: "", owner: "", effort: 1, priority: "media" });
   // Archivo mensual (spec 21 item 9): opciones = mes actual y anterior (YYYY-MM)
@@ -123,12 +128,12 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
     saveTiemposMax(next, "Tiempo máximo eliminado");
   }
 
-  async function generarPlantilla(pl: PlantillaTareas, idx: number) {
-    const porDefecto = plOwner[idx] ?? "";
+  async function generarPlantilla(pl: PlantillaTareas) {
+    const porDefecto = plOwner[pl.nombre] ?? "";
     // Si algún ítem no tiene owner propio, necesitamos un responsable por defecto.
     if (pl.items.some((it) => !it.owner) && !porDefecto) { toast.error("Elegí un responsable por defecto para los ítems sin responsable."); return; }
     if (!pl.items.length) { toast.error("La plantilla no tiene ítems."); return; }
-    setPlGenBusy(idx);
+    setPlGenBusy(pl.nombre);
     const filas = filasDePlantilla(pl, meName, new Date().toISOString(), porDefecto);
     const { error } = await supabase.from("cards").insert(filas);
     setPlGenBusy(null);
@@ -371,19 +376,19 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
 
         {plantillas.length === 0 && <p className="text-ink2 text-sm m-0 mb-3">Todavía no hay plantillas. Creá una abajo.</p>}
         {plantillas.map((pl, idx) => (
-          <div key={idx} className="flex flex-wrap items-center gap-2 py-2 border-b border-line/60 last:border-0">
+          <div key={pl.nombre} className="flex flex-wrap items-center gap-2 py-2 border-b border-line/60 last:border-0">
             <div className="min-w-[200px] flex-1">
               <b className="text-sm text-ink">{pl.nombre}</b>
               <span className="text-ink2 text-xs"> · {pl.categoria} · {pl.items.length} ítem{pl.items.length === 1 ? "" : "s"}</span>
             </div>
-            <select value={plOwner[idx] ?? ""} onChange={(e) => setPlOwner({ ...plOwner, [idx]: e.target.value })} className={inputCls}
+            <select value={plOwner[pl.nombre] ?? ""} onChange={(e) => setPlOwner({ ...plOwner, [pl.nombre]: e.target.value })} className={inputCls}
               title="Responsable por defecto para los ítems sin responsable">
               <option value="">Responsable por defecto…</option>
               {equipoVisible.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
             </select>
-            <button onClick={() => generarPlantilla(pl, idx)} disabled={plGenBusy === idx}
+            <button onClick={() => generarPlantilla(pl)} disabled={plGenBusy === pl.nombre}
               className="flex items-center gap-1.5 bg-[#0b0b0d] text-white rounded-lg px-3 py-1.5 text-sm font-semibold disabled:opacity-50">
-              <CalendarPlus size={14} /> {plGenBusy === idx ? "Generando…" : "Generar"}</button>
+              <CalendarPlus size={14} /> {plGenBusy === pl.nombre ? "Generando…" : "Generar"}</button>
             <button title="Eliminar plantilla" onClick={() => eliminarPlantilla(idx)}
               className="border border-line bg-surface2 rounded-lg p-1.5 text-ink2 hover:text-danger"><Trash2 size={13} /></button>
           </div>

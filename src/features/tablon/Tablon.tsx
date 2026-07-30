@@ -7,7 +7,7 @@ import { useAnnouncements } from "../../hooks/useData";
 import { useArca, ArcaAgenda } from "./arca";
 import { relevantes } from "../../lib/arca-filtro";
 import type { Announcement, Profile } from "../../lib/types";
-import { fmtDateTime } from "../../lib/metrics";
+import { fmtDateTime, toARTDate } from "../../lib/metrics";
 import { PREF, setPref } from "../../lib/prefs";
 import { estadoVencimiento, ordenarVencimientos, CLS_TONO } from "../../lib/vencimientos";
 import { AnuncioEditForm } from "../../components/AnuncioEditForm";
@@ -47,7 +47,11 @@ export function Tablon({ me, team = [], onGoCalendario }: { me?: Profile; team?:
   const [confirmDelId, setConfirmDelId] = useState<string | null>(null);
   const arca = relevantes(useArca());
   const mes = new Date().toLocaleDateString("es-AR", { month: "long", year: "numeric" });
-  const hoy = new Date().toISOString().slice(0, 10);
+  // `toARTDate` y NO `toISOString().slice(0,10)`: estamos en UTC-3, así que entre las 21 y la
+  // medianoche el ISO en UTC ya es el día siguiente. Con el cálculo viejo, un aviso cuyo
+  // último día de vigencia era HOY se movía a "Archivados" tres horas antes de vencer —
+  // justamente en el horario en que alguien se queda cerrando algo y va a buscarlo.
+  const hoy = toARTDate(new Date().toISOString());
 
   const vivos = activos(annos, hoy);
   const guardados = archivados(annos, hoy);
