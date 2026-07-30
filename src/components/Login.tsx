@@ -46,7 +46,11 @@ export function Login({ onSignIn }: { onSignIn: (e: string, p: string) => Promis
     setBusy(true); setErr("");
     const error = await onSignIn(identificador, password);
     setBusy(false);
-    if (error) setErr(error.message.includes("Invalid") ? "Usuario o contraseña incorrectos." : error.message);
+    // El mensaje ya viene traducido por `mensajeDeLogin` (lib/auth.ts), que distingue usuario
+    // inexistente, credenciales que no coinciden, falta de conexión y demasiados intentos.
+    // Antes había acá un ternario que buscaba "Invalid" en el texto crudo de Supabase; con la
+    // traducción hecha río arriba esa rama no dispara nunca, así que se fue.
+    if (error) setErr(error.message);
   }
 
   return (

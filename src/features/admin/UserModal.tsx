@@ -203,7 +203,11 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
         {/* Blanquear va ANTES de eliminar y separado: es reversible y frecuente, mientras que
             eliminar es definitivo y raro. Lo peligroso va último para que nadie apriete lo
             que no quería. */}
-        {esJefe && <BlanquearClave userId={u.id} nombre={u.name} />}
+        {/* Se excluye "Sin asignar": es un perfil centinela al que se le reasignan las tareas
+            de quien se va, no una persona que entre al sistema. Blanquearle la clave no le
+            sirve a nadie y la función devolvería un error. Sobre la cuenta propia SÍ se
+            permite, que es la única forma que tiene un jefe de cambiarse la suya. */}
+        {esJefe && !esSinAsignar(u) && <BlanquearClave userId={u.id} nombre={u.name} />}
 
         {puedeEliminar && (
           <div className="mt-5 pt-4 border-t border-line">
