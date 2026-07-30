@@ -7,11 +7,11 @@ Documento de situación. Separa lo que depende de mí (código) de lo que depend
 
 ## 1. Dónde estamos
 
-- **Tablero Contable v2.9.0**, con **1079 pruebas automáticas** verdes, TypeScript sin
-  errores, lint sin errores y build OK.
+- **Tablero Contable v2.10.0**, con **1102 pruebas automáticas** en 97 archivos, verdes,
+  TypeScript sin errores, lint sin errores y build OK.
 - **Sistema visual documentado** en `docs/SISTEMA-VISUAL.md`, con dos tests guardianes que
   impiden que se erosione.
-- 34 migraciones de base de datos escritas.
+- 36 migraciones de base de datos escritas. Las 35 y 36 ya están aplicadas.
 - Repositorio en GitHub con CI (lint + tests + build + e2e en cada push) y **mantenimiento
   automático** semanal (Dependabot + auditoría de seguridad y de código sin uso).
 
@@ -19,7 +19,7 @@ Documento de situación. Separa lo que depende de mí (código) de lo que depend
 
 Esto es lo único urgente del documento.
 
-### 2.1 Dieciséis commits sin publicar
+### 2.1 Cuarenta commits sin publicar
 
 Están hechos, probados y commiteados **en esta máquina**, pero no subidos. Publicar
 requiere abrir GitHub Desktop en tu pantalla, y quedamos en que eso lo hago sólo cuando
@@ -59,6 +59,8 @@ poner ese email en la línea marcada dentro del archivo. Está explicado arriba 
 | Recuperación de fallas (versión nueva, sin conexión, permisos) | Hecho |
 | Sistema visual: escala tipográfica, foco, movimiento, esqueletos | Hecho — **mirá el tablero y el reporte**, ver 7 |
 | Saneado de filas en el borde de Supabase | Hecho |
+| Blanqueo de contraseña por el jefe | Hecho — **falta desplegar la Edge Function** |
+| Mensajes de login que explican qué pasó | Hecho |
 
 ## 4. Pendiente MÍO (código)
 
@@ -74,17 +76,22 @@ poner ese email en la línea marcada dentro del archivo. Está explicado arriba 
 
 ## 5. Pendiente TUYO
 
-1. **Correr `migraciones-pendientes.sql`** (ver punto 2.2). Es lo que desbloquea todo.
-2. **Avisarme para publicar** los 16 commits.
-3. **Verificación visual del PDF**: Reporte → Imprimir/PDF → confirmar que la vista previa
+1. **Desplegar la Edge Function `blanquear-clave`** — es lo único que separa el blanqueo de
+   contraseñas de estar andando. Supabase Dashboard → Edge Functions → "Create function" con
+   ese nombre exacto → pegar el contenido de `edge-function-blanquear-clave.ts` (raíz del
+   repo) → Deploy. **Hasta que eso pase, el botón existe pero da error.** Pasos detallados en
+   `docs/ACCESO-Y-PERMISOS.md`.
+2. **Correr `migraciones-pendientes.sql`** (ver punto 2.2). Es lo que desbloquea todo.
+3. **Avisarme para publicar** los 40 commits.
+4. **Verificación visual del PDF**: Reporte → Imprimir/PDF → confirmar que la vista previa
    tiene contenido. Los tests garantizan que el documento se arma bien, **no** que el
    navegador lo imprima bien — esa es exactamente la falla que tuve la vez pasada.
-4. **Si querés que analicemos las consultas juntos**: crear `.env.consultas.local` con el
+5. **Si querés que analicemos las consultas juntos**: crear `.env.consultas.local` con el
    email y la contraseña de la cuenta de administración, y correr `node scripts/consultas.mjs`.
    Instrucciones en `docs/CONSULTAS-PARA-ANALISIS.md`. Depende de la migración 33.
-5. **Decisiones abiertas**: ¿va el cronómetro? (desaconsejado en `docs/PROPUESTA-ICR.md`).
+6. **Decisiones abiertas**: ¿va el cronómetro? (desaconsejado en `docs/PROPUESTA-ICR.md`).
    ¿Sentry para monitoreo de errores? (el Error Boundary ya está preparado).
-6. **Rotación de credenciales** — diferida por decisión tuya hasta salir de beta.
+7. **Rotación de credenciales** — diferida por decisión tuya hasta salir de beta.
 
 ## 6. Bloqueado, para que conste
 

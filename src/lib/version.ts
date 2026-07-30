@@ -3,6 +3,16 @@
 // nueva arriba de todo y la versión se actualiza sola (ver docs/RELEASE.md).
 export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] = [
   {
+    version: "2.10.0",
+    fecha: "2026-07-30",
+    cambios: [
+      "El jefe ya puede blanquear la contraseña de alguien desde Administración, sin depender de nadie. Se muestra una vez, se anota y se le pasa a la persona.",
+      "Si te blanquean la contraseña, te llega un aviso dentro de la app diciendo quién lo hizo.",
+      "Cuando falla el ingreso, ahora dice qué pasó y qué hacer, en vez de \"Usuario no encontrado\". Distingue usuario inexistente, contraseña equivocada, falta de conexión y demasiados intentos seguidos.",
+      "Corregido: un encargado no podía guardar la recurrencia de una tarea de su equipo ni ver lo que registraban en las operativas.",
+    ],
+  },
+  {
     version: "2.9.0",
     fecha: "2026-07-30",
     cambios: [
