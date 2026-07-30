@@ -31,7 +31,17 @@ export function useArqueoStats(cards: Card[], mesPrefix: string): ArqueoRow[] {
     queryKey: ["arqueo", mesPrefix, ids],
     enabled: ids.length > 0,
     queryFn: async (): Promise<TaskOccurrence[]> => {
-      const { data, error } = await supabase.from("task_occurrences").select("*").in("card_id", ids);
+      // Filtrado por MES en el servidor, no en el cliente. Antes se traían TODAS las
+      // ocurrencias históricas de todas las cards de control y se filtraba después con
+      // `mesPrefix`. Supabase corta en 1000 filas por defecto y no avisa: con diez cajas
+      // diarias y dos años de historia son ~7000 filas, así que llegaban 1000 en orden
+      // indefinido y el cumplimiento del mes se calculaba sobre un subconjunto arbitrario.
+      // Un porcentaje de arqueo que baja porque la consulta se truncó es la peor forma de
+      // mentir en un proyecto cuya regla es que las métricas no juzgan personas.
+      const { data, error } = await supabase.from("task_occurrences").select("*")
+        .in("card_id", ids)
+        .gte("fecha", `${mesPrefix}-01`)
+        .lte("fecha", `${mesPrefix}-31`);
       if (error) return [];
       return (data as TaskOccurrence[]) ?? [];
     },
@@ -39,15 +49,28 @@ export function useArqueoStats(cards: Card[], mesPrefix: string): ArqueoRow[] {
   return computeArqueoStats(cards, occs, mesPrefix);
 }
 
-// TODAS las ocurrencias (sin filtro de mes) de las cards de control — para la tendencia
-// histórica de diferencias (Task 6, spec28 fase B). DEFENSIVO: ante cualquier error → [].
+/** Meses de historia que se traen para la tendencia. Ver el comentario de abajo. */
+const MESES_TENDENCIA = 24;
+
+// Ocurrencias de las cards de control para la tendencia histórica de diferencias
+// (Task 6, spec28 fase B). DEFENSIVO: ante cualquier error → [].
 export function useArqueoOccsAll(cards: Card[]): TaskOccurrence[] {
   const ids = cardsDeControl(cards).map((c) => c.id);
   const { data: occs = [] } = useQuery({
     queryKey: ["arqueo", "all", ids],
     enabled: ids.length > 0,
     queryFn: async (): Promise<TaskOccurrence[]> => {
-      const { data, error } = await supabase.from("task_occurrences").select("*").in("card_id", ids);
+      // Ventana EXPLÍCITA de 24 meses en vez de "todo". Sin límite, Supabase cortaba en 1000
+      // filas sin avisar y en orden indefinido: la tendencia se dibujaba con un subconjunto
+      // arbitrario y parecía completa. Un recorte declarado y ordenado es honesto; uno
+      // silencioso es un gráfico que miente.
+      const desde = new Date();
+      desde.setMonth(desde.getMonth() - MESES_TENDENCIA);
+      const { data, error } = await supabase.from("task_occurrences").select("*")
+        .in("card_id", ids)
+        .gte("fecha", desde.toISOString().slice(0, 10))
+        .order("fecha", { ascending: false })
+        .limit(5000);
       if (error) return [];
       return (data as TaskOccurrence[]) ?? [];
     },

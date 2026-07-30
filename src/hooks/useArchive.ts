@@ -26,10 +26,21 @@ export function useArchiveEquipo(enabled = true) {
     queryKey: ["archive", "equipo"],
     enabled,
     queryFn: async (): Promise<CardArchive[]> => {
-      const { data, error } = await supabase.from("cards_archive")
-        .select("*").order("mes", { ascending: false });
+      // `count: "exact"` + `limit` explícito. Sin esto, Supabase cortaba en 1000 filas sin
+      // avisar: una fila por card por mes son 7500 con 25 personas y un año, así que el
+      // Comparador decía "sin historial" para meses que sí existen en la base. El límite
+      // declarado no arregla el techo, pero el aviso hace que se pueda ver en vez de
+      // adivinarlo — que es la diferencia entre un dato incompleto y un dato que miente.
+      const { data, error, count } = await supabase.from("cards_archive")
+        .select("*", { count: "exact" })
+        .order("mes", { ascending: false })
+        .limit(5000);
       if (error) return [];
-      return (data as CardArchive[]) ?? [];
+      const filas = (data as CardArchive[]) ?? [];
+      if (typeof count === "number" && count > filas.length) {
+        console.warn(`[archive] el histórico tiene ${count} filas y se trajeron ${filas.length}: los meses más viejos no entran en las comparaciones.`);
+      }
+      return filas;
     },
   });
 }

@@ -54,14 +54,37 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
 
   const save = useMutation({
     mutationFn: async () => {
-      const fila = { name: name.trim(), username: username.trim() || null, role, puesto: puesto.trim(), ficha: ficha.trim(), manager_id: managerId, ...(esJefe ? { marca, sucursal: sucursal || null, oculto } : { marca: null, sucursal: null }) };
-      const { error } = await supabase.from("profiles")
+      // Quien NO es jefe manda un payload SIN marca/sucursal/oculto, en vez de mandarlos en
+      // null. Antes iban `marca: null, sucursal: null` explícitos, y eso tenía dos finales
+      // malos, los dos silenciosos:
+      //   · Un encargado editando a alguien de su equipo: la policy sólo permite
+      //     `id = auth.uid() or es_jefe()`, así que el update no matcheaba NINGUNA fila.
+      //     PostgREST devuelve error null, y la pantalla decía "Guardado." sin guardar nada.
+      //   · Un encargado editando su propio perfil: la fila sí matchea, pero si tenía una
+      //     marca asignada el trigger cortaba con excepción y no podía guardar ni su nombre.
+      // Y aparecía o no según el dato (si marca ya era null, el `is distinct from` no salta),
+      // que es lo peor posible para diagnosticarlo.
+      const fila = {
+        name: name.trim(), username: username.trim() || null, role,
+        puesto: puesto.trim(), ficha: ficha.trim(), manager_id: managerId,
+        ...(esJefe ? { marca, sucursal: sucursal || null, oculto } : {}),
+      };
+      const { error, data } = await supabase.from("profiles")
         .update(payloadProfiles(fila, migracionesAplicadas))
-        .eq("id", u.id);
+        .eq("id", u.id)
+        .select("id");
       if (error) throw error;
+      // `select` + conteo: sin esto, un update que no matchea ninguna fila (porque RLS no lo
+      // permite) es indistinguible de uno exitoso. Decir "Guardado." cuando no se guardó nada
+      // es peor que mostrar un error.
+      if (!data || data.length === 0) {
+        throw new Error("No se pudo guardar: tu cuenta no tiene permiso para editar este perfil.");
+      }
     },
     onSuccess: () => { setMsg({ ok: true, txt: "Guardado." }); qc.invalidateQueries({ queryKey: ["team"] }); },
-    onError: (e: Error) => setMsg({ ok: false, txt: "" + e.message }),
+    // El mensaje de la base puede ser el texto crudo de un trigger. Se muestra tal cual sólo
+    // si ya viene en lenguaje entendible; los de Postgres arrancan con mayúscula y jerga.
+    onError: (e: Error) => setMsg({ ok: false, txt: e.message || "No se pudo guardar." }),
   });
 
   const eliminar = useMutation({

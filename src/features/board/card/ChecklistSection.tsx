@@ -155,8 +155,7 @@ function ChecklistDelDia({ c }: { c: Card }) {
   const occ = useMemo(() => occs.find((o) => o.fecha === fecha), [occs, fecha]);
   const items: ChecklistItem[] = occ?.checklist ?? [];
 
-  // Guarda el detalle del día. Si todavía no hay fila para esa fecha, la crea con done=false
-  // (una ocurrencia sin hacer no altera ninguna métrica: statsArqueo sólo mira las done).
+  // Guarda el detalle del día. Si todavía no hay fila para esa fecha, la crea.
   // El payload pasa por payloadOccurrences: si faltara la migración, las columnas nuevas no
   // viajan y el update no revienta con 42703.
   const guardar = useMutation({
@@ -167,8 +166,22 @@ function ChecklistDelDia({ c }: { c: Card }) {
         const { error } = await supabase.from("task_occurrences").update(payload).eq("id", occ.id);
         if (error) throw error;
       } else {
+        // OJO con `done: false` acá: PostgREST traduce el upsert a ON CONFLICT DO UPDATE SET
+        // para CADA columna del payload, así que si la fila ya existía en la base, mandar
+        // `done:false` la PISA y el día queda desmarcado como no hecho.
+        //
+        // Y esta rama corre cuando `occ` es undefined, que no significa "no existe": significa
+        // "no la tengo". `useCardOccurrences` es defensivo a ultranza y devuelve [] ante
+        // cualquier error, así que un corte de red o un 401 momentáneo bastaba para que
+        // tildar un ítem del checklist borrara el cumplimiento del día, sin ningún aviso.
+        // Peor todavía: `resultado` no viaja en el payload, así que sobrevivía, y quedaba una
+        // fila con done=false y resultado='ok' — un estado que ninguna parte del código
+        // contempla.
+        //
+        // La solución es no opinar sobre `done` en el upsert: si la fila es nueva, la columna
+        // toma su default de la base (false); si ya existía, se respeta lo que había.
         const { error } = await supabase.from("task_occurrences")
-          .upsert({ card_id: c.id, owner: c.owner, fecha, done: false, done_at: null, ...payload },
+          .upsert({ card_id: c.id, owner: c.owner, fecha, ...payload },
             { onConflict: "card_id,fecha" });
         if (error) throw error;
       }
