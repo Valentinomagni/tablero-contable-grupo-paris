@@ -17,8 +17,9 @@ export function Delegaciones({ cards, team, hoyISO, onOpenCard }: {
         <Users size={13} /> Delegaciones en curso
       </h2>
       {items.map(({ card, de, a, diasSinMover, trabada }) => (
-        <div key={card.id} onClick={() => onOpenCard(card)}
-          className="flex items-start gap-2.5 py-1.5 border-b border-line last:border-0 cursor-pointer">
+        // Botón real: la delegación se abre con Enter. text-left/w-full la dejan igual.
+        <button type="button" key={card.id} onClick={() => onOpenCard(card)}
+          className="text-left w-full flex items-start gap-2.5 py-1.5 border-b border-line last:border-0 cursor-pointer">
           <span className="flex-1 min-w-0">
             <b className="block text-sm">{card.title}</b>
             <span className="block text-xs text-ink2">
@@ -30,7 +31,7 @@ export function Delegaciones({ cards, team, hoyISO, onOpenCard }: {
               Esta tarea lleva {diasSinMover} días sin movimiento
             </span>
           )}
-        </div>
+        </button>
       ))}
     </div>
   );

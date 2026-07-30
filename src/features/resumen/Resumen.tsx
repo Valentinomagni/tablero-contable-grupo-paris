@@ -12,7 +12,7 @@ import { useSnapshots, useOrganizacion } from "../../hooks/useData";
 import { useVacaciones } from "../../hooks/useVacaciones";
 import { estaDeVacaciones } from "../../lib/vacaciones";
 import { claveFecha } from "../../lib/calendario";
-import { Avatar } from "../../lib/ui";
+import { Avatar, teclaActiva } from "../../lib/ui";
 import { DepGraph } from "./DepGraph";
 import { useArca } from "../tablon/arca";
 import { relevantes } from "../../lib/arca-filtro";
@@ -216,7 +216,11 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
               const oldDays = oldest ? Math.floor((now - new Date(oldest.created_at).getTime()) / day) : null;
               const ef = his.filter((c) => c.status === "term" && c.done_at && new Date(c.done_at).getTime() >= week).reduce((s, c) => s + (c.effort ?? 1), 0);
               return (
-                <tr key={u.id} onClick={() => onGoPerson(u.id)} className="border-t border-line cursor-pointer hover:bg-surface2 tnum">
+                // Una fila de tabla no puede ser un <button> sin romper la tabla:
+                // tabIndex + onKeyDown le dan el teclado sin cambiar el marcado.
+                <tr key={u.id} role="button" tabIndex={0} onClick={() => onGoPerson(u.id)}
+                  onKeyDown={teclaActiva(() => onGoPerson(u.id))}
+                  className="border-t border-line cursor-pointer hover:bg-surface2 tnum">
                   <td className="px-3 py-2.5 flex items-center gap-2"><Avatar name={u.name} size={22} /><b>{u.name}</b> <span className="text-ink2 text-xs capitalize">{u.role}</span>
                     {estaDeVacaciones(vacaciones, u.id, hoyISO) && <span className="text-2xs rounded px-1.5 py-0.5 font-medium bg-chip text-ink2">de vacaciones</span>}</td>
                   <td className="px-3 py-2.5 text-center">{his.filter((c) => c.status === "pend").length}</td>
@@ -236,11 +240,12 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
         : stuck.map((c) => {
           const i = dueInfo(c), last = c.comments[c.comments.length - 1];
           return (
-            <div key={c.id} onClick={() => onOpenCard(c)} className="bg-surface border-l-[3px] border-danger rounded-lg px-3.5 py-2.5 mb-2 cursor-pointer" style={cardSh}>
+            // Botón real: la tarjeta se abre con Enter. text-left/w-full la dejan igual.
+            <button type="button" key={c.id} onClick={() => onOpenCard(c)} className="text-left w-full bg-surface border-l-[3px] border-danger rounded-lg px-3.5 py-2.5 mb-2 cursor-pointer" style={cardSh}>
               <b>{c.title}</b> <span className="text-ink2 text-xs">· {nom(c.owner)}</span>
               {i && i.days < 0 && <span className="ml-2 bg-danger-soft text-danger rounded-md px-2 py-0.5 text-xs font-semibold">Venció {i.lbl}</span>}
-              {last && <p className="text-sm mt-1.5 mb-0">"{last.txt}" <span className="text-ink2 text-xs">— {last.who}, {fmtDateTime(last.when)}</span></p>}
-            </div>
+              {last && <span className="block text-sm mt-1.5">"{last.txt}" <span className="text-ink2 text-xs">— {last.who}, {fmtDateTime(last.when)}</span></span>}
+            </button>
           );
         })}
 
@@ -296,9 +301,9 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
       <h2 className="text-base font-bold tracking-[-0.01em] text-ink mb-2.5 mt-6">Terminadas los últimos 7 días</h2>
       {doneWeek.length === 0 ? <p className="text-ink2 text-sm">Todavía nada esta semana.</p>
         : doneWeek.slice(0, 20).map((c) => (
-          <div key={c.id} onClick={() => onOpenCard(c)} className="bg-surface border border-line rounded-lg px-3.5 py-2 mb-1.5 cursor-pointer text-sm" style={cardSh}>
+          <button type="button" key={c.id} onClick={() => onOpenCard(c)} className="text-left w-full bg-surface border border-line rounded-lg px-3.5 py-2 mb-1.5 cursor-pointer text-sm" style={cardSh}>
             <b>{c.title}</b> <span className="text-ink2 text-xs">· {nom(c.owner)} · {fmtDateTime(c.done_at)}</span>
-          </div>
+          </button>
         ))}
     </div>
   );

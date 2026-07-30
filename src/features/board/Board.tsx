@@ -5,7 +5,7 @@ import { supabase } from "../../lib/supabase";
 import { COLS, type Card, type Status, type ActivityLog, type Profile, type CardPeriodo } from "../../lib/types";
 import { notifsAlFinalizar, debeNotificarDesdeCliente } from "../../lib/notificaciones";
 import { dueInfo, fmtDateTime } from "../../lib/metrics";
-import { cn } from "../../lib/ui";
+import { cn, teclaActiva } from "../../lib/ui";
 import { pushUndo } from "../../lib/undo";
 import { isShared, siblingSyncPatches } from "../../lib/shared";
 import { bloqueadaPorTitulos } from "../../lib/deps";
@@ -43,8 +43,10 @@ function CardItem({ c, blocked, waiting, esperaTitulos = [], onOpen }: { c: Card
   const pr = c.priority === "alta"
     ? <span className="bg-danger-soft text-danger rounded-md px-2 py-0.5 font-semibold">Alta</span> : null;
   return (
-    <div onClick={() => onOpen(c)}
-      className="bg-surface rounded-xl px-3.5 py-3 mb-2.5 cursor-pointer border border-line/70 transition
+    // Botón real y no un div: abrir la tarea es LA interacción del tablero y tiene que
+    // llegar con Tab y activarse con Enter. text-left/w-full mantienen el aspecto del div.
+    <button type="button" onClick={() => onOpen(c)}
+      className="text-left w-full bg-surface rounded-xl px-3.5 py-3 mb-2.5 cursor-pointer border border-line/70 transition
         hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-[var(--shadow-lg)]"
       style={{ boxShadow: "var(--shadow)" }}>
       <div className="font-semibold text-sm tracking-tight leading-snug">{c.title}</div>
@@ -73,7 +75,7 @@ function CardItem({ c, blocked, waiting, esperaTitulos = [], onOpen }: { c: Card
         </div>
       )}
       {c.done_at && <div className="flex items-center gap-1 text-done font-semibold text-xs mt-1.5"><Check size={12} /> Terminada el {fmtDateTime(c.done_at)}</div>}
-    </div>
+    </button>
   );
 }
 
@@ -457,7 +459,14 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
           const hoy = regs.filter((a) => new Date(a.at).toDateString() === hoyStr).reduce((s, a) => s + a.qty, 0);
           const sem = regs.filter((a) => Date.now() - new Date(a.at).getTime() < 7 * 86400000).reduce((s, a) => s + a.qty, 0);
           return (
-            <div key={c.id} onClick={() => onOpen(c)} className="bg-surface rounded-lg p-3 mb-2 cursor-pointer border border-transparent hover:border-accent/30 transition" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
+            // Sigue siendo un div: adentro tiene el botón "+ Registrar" y su input, y un
+            // <button> dentro de otro es HTML inválido. role/tabIndex/onKeyDown le dan el
+            // comportamiento de botón sin romper el marcado.
+            // El guard e.target === e.currentTarget evita que el Enter del input o del botón
+            // "+ Registrar" burbujee hasta acá y abra la tarea sin querer.
+            <div key={c.id} role="button" tabIndex={0} onClick={() => onOpen(c)}
+              onKeyDown={(e) => { if (e.target === e.currentTarget) teclaActiva(() => onOpen(c))(e); }}
+              className="bg-surface rounded-lg p-3 mb-2 cursor-pointer border border-transparent hover:border-accent/30 transition" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
               <div className="font-semibold text-sm tracking-tight">{c.title}</div>
               <div className="flex gap-2 flex-wrap mt-1.5 text-xs text-ink2">
                 <span className="bg-chip rounded-md px-1.5 py-0.5 tnum">hoy: {hoy}</span>

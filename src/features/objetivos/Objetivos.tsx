@@ -24,11 +24,12 @@ export function Objetivos({ ownerId, ownerName }: { ownerId: string; ownerName: 
       {mine.map((o) => {
         const pct = kpiPct(o), cls = kpiClass(pct);
         return (
-          <div key={o.id} onClick={() => setEditing(o)} className="bg-surface border border-line rounded-xl px-4 py-3 mb-2.5 cursor-pointer" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
+          // Botón real: el objetivo se abre con Enter. text-left/w-full lo dejan igual.
+          <button type="button" key={o.id} onClick={() => setEditing(o)} className="text-left w-full bg-surface border border-line rounded-xl px-4 py-3 mb-2.5 cursor-pointer" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
             <div className="flex justify-between items-center gap-2.5">
               <b>{o.title}</b><span className="bg-chip rounded-full px-2.5 py-0.5 font-bold tnum shrink-0">{o.weight}%</span>
             </div>
-            {o.description && <p className="text-ink2 text-sm mt-1.5 mb-0">{o.description}</p>}
+            {o.description && <span className="block text-ink2 text-sm mt-1.5">{o.description}</span>}
             {o.kpi_name && (
               <>
                 <div className="flex justify-between items-center gap-2.5 mt-2 text-sm tnum">
@@ -38,8 +39,8 @@ export function Objetivos({ ownerId, ownerName }: { ownerId: string; ownerName: 
                 {pct !== null && <div className="h-2 bg-surface2 rounded-full mt-1.5 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.min(pct, 100)}%`, background: KPI_COLOR[cls] }} /></div>}
               </>
             )}
-            {o.notes && <p className="text-ink2 text-sm mt-1.5 mb-0">{o.notes}</p>}
-          </div>
+            {o.notes && <span className="block text-ink2 text-sm mt-1.5">{o.notes}</span>}
+          </button>
         );
       })}
       <button onClick={() => setEditing("new")}

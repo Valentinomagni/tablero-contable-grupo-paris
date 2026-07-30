@@ -15,7 +15,7 @@ import { ReasignarModal } from "./ReasignarModal";
 import { Huerfanas } from "./Huerfanas";
 import { equipoDe } from "../../lib/jerarquia";
 import { personasVisibles } from "../../lib/visibilidad";
-import { Avatar } from "../../lib/ui";
+import { Avatar, teclaActiva } from "../../lib/ui";
 import { useSettings, useMigraciones, useTiemposMax } from "../../hooks/useData";
 import { estadoMigraciones } from "../../lib/migraciones";
 import { enLinea, textoUltimaConexion } from "../../lib/presencia";
@@ -252,7 +252,11 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
               const ahora = new Date().toISOString();
               const online = enLinea(u.last_seen, ahora);
               return (
-              <tr key={u.id} onClick={() => onOpenUser(u)} className="border-t border-line cursor-pointer hover:bg-surface2">
+              // Una fila de tabla no puede ser un <button> sin romper la tabla:
+              // tabIndex + onKeyDown le dan el teclado sin cambiar el marcado.
+              <tr key={u.id} role="button" tabIndex={0} onClick={() => onOpenUser(u)}
+                onKeyDown={teclaActiva(() => onOpenUser(u))}
+                className="border-t border-line cursor-pointer hover:bg-surface2">
                 <td className="px-4 py-2.5"><div className="flex items-center gap-2"><Avatar name={u.name} size={24} /><div><div className="flex items-center gap-1.5"><b>{u.name}</b>{u.oculto === true && (
                   <span className="inline-flex items-center gap-1 bg-chip text-ink2 rounded-full px-2 py-0.5 text-2xs font-medium"><EyeOff size={11} /> Oculto</span>
                 )}</div><div className="flex items-center gap-2"><span className="text-ink2 text-xs">{u.username ? "@" + u.username : "sin usuario"}</span><span className="flex items-center gap-1 text-2xs text-ink2">{online && <span className="w-2 h-2 rounded-full bg-done" />}{textoUltimaConexion(u.last_seen, ahora)}</span></div></div></div></td>

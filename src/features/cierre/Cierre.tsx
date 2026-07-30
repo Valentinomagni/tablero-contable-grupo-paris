@@ -322,15 +322,17 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
               const blocked = c.status !== "term" && isBlocked(c, cards, {});
               const Icon = c.status === "term" ? CheckCircle2 : c.status === "proc" ? Clock : Circle;
               return (
-                <div key={c.id} onClick={() => onOpenCard(c)}
-                  className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-surface2 ${idx ? "border-t border-line" : ""}`}>
+                // Botón real para que la fila se alcance con Tab y abra con Enter.
+                // w-full/text-left conservan exactamente el ancho y la alineación del div.
+                <button type="button" key={c.id} onClick={() => onOpenCard(c)}
+                  className={`text-left w-full flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-surface2 ${idx ? "border-t border-line" : ""}`}>
                   <Icon size={17} style={{ color: c.status === "term" ? "var(--done)" : "var(--ink2)" }} className="shrink-0" />
                   <span className={`flex-1 min-w-0 truncate ${c.status === "term" ? "line-through text-ink2" : "text-ink"} font-medium`}>{c.title}</span>
                   {blocked && <span className="flex items-center gap-1 text-warn text-2xs font-semibold shrink-0"><Link2 size={12} /> Bloqueada</span>}
                   {late && <span className="flex items-center gap-1 bg-danger-soft text-danger rounded-md px-2 py-0.5 text-2xs font-semibold shrink-0"><AlarmClock size={11} /> Venció {i!.lbl}</span>}
                   {!late && i && c.status !== "term" && <span className="text-ink2 text-xs tnum shrink-0">vence {i.lbl}</span>}
                   <span className="flex items-center gap-1.5 shrink-0 w-[130px] justify-end"><span className="text-ink2 text-xs truncate">{nom(c.owner)}</span><Avatar name={nom(c.owner)} size={22} /></span>
-                </div>
+                </button>
               );
             })}
           </div>

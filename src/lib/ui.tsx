@@ -1,5 +1,17 @@
+import type { KeyboardEvent } from "react";
+
 export function cn(...xs: (string | false | null | undefined)[]) {
   return xs.filter(Boolean).join(" ");
+}
+
+/** Activa un elemento no nativo con Enter o Espacio, como haría un botón real.
+    Vive acá y no copiado en cada vista: es la misma regla de accesibilidad para
+    todas las filas y tarjetas que no pueden ser un <button> de verdad (5S/Seiton).
+    El preventDefault es obligatorio: sin él, la barra espaciadora además scrollea. */
+export function teclaActiva(accion: () => void) {
+  return (e: KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); accion(); }
+  };
 }
 
 // paleta monocromática de marca: escala grafito (negro/gris), sin azul ni arcoíris

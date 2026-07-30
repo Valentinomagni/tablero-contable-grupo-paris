@@ -62,9 +62,10 @@ export function MiMes({ cards, activity, ownerId, onOpenCard }: {
       <h2 className="text-base font-bold tracking-[-0.01em] text-ink mb-2.5">¿Qué conviene hacer ahora?</h2>
       {sugeridas.length === 0 ? <p className="text-ink2 text-sm">Sin tareas abiertas.</p>
         : sugeridas.map(({ c, r }) => (
-          <div key={c.id} onClick={() => onOpenCard(c)} className="bg-surface border border-line rounded-lg px-3.5 py-2 mb-1.5 cursor-pointer text-sm" style={cardSh}>
+          // Botón real: la sugerida se abre con Enter. text-left/w-full la dejan igual.
+          <button type="button" key={c.id} onClick={() => onOpenCard(c)} className="text-left w-full bg-surface border border-line rounded-lg px-3.5 py-2 mb-1.5 cursor-pointer text-sm" style={cardSh}>
             <b>{c.title}</b> <span className="text-ink2"> · {r.length ? r.join(" · ") : "sin urgencia — ordenala a tu criterio"}</span>
-          </div>
+          </button>
         ))}
       <p className="text-ink2 text-sm mt-2">Criterio del orden: vencidas → por vencer → que otros esperan → prioridad alta → rápidas.</p>
     </div>
