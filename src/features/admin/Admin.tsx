@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase, SUPABASE_URL } from "../../lib/supabase";
 import type { Card, Profile, Role, AppSettings, PlantillaTareas } from "../../lib/types";
 import { filasDePlantilla } from "../../lib/plantillas";
+import { guardarPermissions } from "../../lib/settings-guardar";
 import { generarVencimientosMes } from "../../lib/fiscal";
 import { MESES } from "../../lib/cierre";
 import { useAnnouncements } from "../../hooks/useData";
@@ -95,10 +96,17 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
   const fiscalYear = hoyFiscal.getFullYear();
   const fiscalMonth = hoyFiscal.getMonth() + 1;
 
-  async function saveSettings(next: AppSettings, okTxt: string) {
-    const { error } = await supabase.from("settings").update({ value: next }).eq("key", "permissions");
-    setPermMsg(error ? "No se pudo guardar: " + error.message : okTxt);
-    if (!error) qc.invalidateQueries({ queryKey: ["settings"] });
+  // Recibe SÓLO los campos que cambian, no el objeto completo. Mandar el objeto completo
+  // desde una copia en memoria de hace horas era lo que borraba lo que otra pantalla había
+  // guardado en el medio. El merge contra el valor fresco vive en `lib/settings-guardar.ts`.
+  async function saveSettings(patch: Partial<AppSettings>, okTxt: string) {
+    try {
+      await guardarPermissions(patch);
+      setPermMsg(okTxt);
+      qc.invalidateQueries({ queryKey: ["settings"] });
+    } catch (e) {
+      setPermMsg((e as Error).message);
+    }
     setTimeout(() => setPermMsg(""), 3000);
   }
 
@@ -163,7 +171,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
   }
 
   function eliminarPlantilla(idx: number) {
-    saveSettings({ ...settings, plantillas: plantillas.filter((_, i) => i !== idx) }, "Plantilla eliminada");
+    saveSettings({plantillas: plantillas.filter((_, i) => i !== idx) }, "Plantilla eliminada");
   }
 
   function agregarItem() {
@@ -176,7 +184,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
     if (!plDraft.nombre.trim()) { toast.error("Ponele un nombre a la plantilla."); return; }
     if (!plDraft.categoria) { toast.error("Elegí una categoría."); return; }
     if (!plDraft.items.length) { toast.error("Agregá al menos un ítem."); return; }
-    saveSettings({ ...settings, plantillas: [...plantillas, { ...plDraft, nombre: plDraft.nombre.trim() }] }, "Plantilla guardada");
+    saveSettings({plantillas: [...plantillas, { ...plDraft, nombre: plDraft.nombre.trim() }] }, "Plantilla guardada");
     setPlDraft({ nombre: "", categoria: "", items: [] });
     setPlItem({ titulo: "", owner: "", effort: 1, priority: "media" });
   }
@@ -332,7 +340,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
       <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
         <label className="flex items-center gap-2.5 text-sm cursor-pointer">
           <input type="checkbox" checked={settings.edit_closed} className="accent-accent w-4 h-4"
-            onChange={(e) => saveSettings({ ...settings, edit_closed: e.target.checked }, "Permiso actualizado")} />
+            onChange={(e) => saveSettings({edit_closed: e.target.checked }, "Permiso actualizado")} />
           Permitir que encargados y empleados modifiquen o reabran tareas ya terminadas
         </label>
         <p className="text-ink2 text-sm mt-1.5 mb-0">Apagado: solo los jefes pueden tocar una tarea cerrada. La restricción se aplica en el servidor.</p>
@@ -345,7 +353,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
             <span key={cat} className="inline-flex items-center gap-1.5 bg-chip rounded-full px-3 py-1 text-sm">
               {cat}
               <button title={`Quitar "${cat}"`}
-                onClick={() => saveSettings({ ...settings, categorias: (settings.categorias ?? []).filter((c) => c !== cat) }, "Categorías guardadas")}
+                onClick={() => saveSettings({categorias: (settings.categorias ?? []).filter((c) => c !== cat) }, "Categorías guardadas")}
                 className="text-ink2 hover:text-danger"><X size={12} /></button>
             </span>
           ))}
@@ -357,7 +365,7 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
           if (!cat) return;
           const actuales = settings.categorias ?? [];
           if (!actuales.some((c) => c.toLowerCase() === cat.toLowerCase()))
-            saveSettings({ ...settings, categorias: [...actuales, cat] }, "Categorías guardadas");
+            saveSettings({categorias: [...actuales, cat] }, "Categorías guardadas");
           setNuevaCat("");
         }}>
           <input value={nuevaCat} onChange={(e) => setNuevaCat(e.target.value)}
@@ -476,7 +484,6 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
             <input type="number" min={1} max={30} value={parStuck ?? String(settings.stuck_days ?? 2)} onChange={(e) => setParStuck(e.target.value)} className={inputCls + " w-[90px] mt-1"} /></label>
         </div>
         <button onClick={() => saveSettings({
-            ...settings,
             board_name: (parBoardName ?? settings.board_name ?? "Grupo Paris").trim() || "Grupo Paris",
             due_warn_days: Math.max(1, Math.min(30, Number(parWarn ?? settings.due_warn_days ?? 3) || 3)),
             stuck_days: Math.max(1, Math.min(30, Number(parStuck ?? settings.stuck_days ?? 2) || 2)),

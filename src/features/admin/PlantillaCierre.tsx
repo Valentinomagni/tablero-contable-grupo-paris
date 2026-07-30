@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
-import { supabase } from "../../lib/supabase";
+import { guardarPermissions } from "../../lib/settings-guardar";
 import type { Profile, AppSettings } from "../../lib/types";
 import { validarPlantilla, type TemplateItem } from "../../lib/plantilla";
 import { useSettings } from "../../hooks/useData";
@@ -19,9 +19,17 @@ export function PlantillaCierre({ team }: { team: Profile[] }) {
   async function guardar() {
     const err = validarPlantilla(items);
     if (err) { toast.error(err); return; }
-    const { error } = await supabase.from("settings").update({ value: { ...settings, closing_template: items } }).eq("key", "permissions");
-    if (error) toast.error("No se pudo guardar: " + error.message);
-    else { toast.success("Plantilla guardada"); qc.invalidateQueries({ queryKey: ["settings"] }); setDraft(null); }
+    // Sólo el campo que cambia, y el merge contra el valor fresco lo hace
+    // `guardarPermissions`. Antes esto escribía el blob completo desde la copia en memoria,
+    // así que si en otra pestaña se había tocado un permiso o una categoría, se perdía.
+    try {
+      await guardarPermissions({ closing_template: items });
+      toast.success("Plantilla guardada");
+      qc.invalidateQueries({ queryKey: ["settings"] });
+      setDraft(null);
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   }
 
   const inputCls = "bg-surface2 border border-line rounded-lg px-2 py-1.5 text-ink text-sm";
