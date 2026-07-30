@@ -1,4 +1,11 @@
 import type { Consulta } from "./types";
+// Con extensión `.ts` explícita, a diferencia del resto del proyecto, y a propósito:
+// `scripts/consultas.mjs` importa este archivo con Node, cuyo resolver exige la extensión.
+// Sin ella el script muere con ERR_MODULE_NOT_FOUND. Vite y `tsc` lo aceptan igual porque
+// el tsconfig ya tiene `allowImportingTsExtensions`. Las dos libs de abajo sólo importan
+// tipos, así que la cadena termina acá y no hay que tocar nada más.
+import { ordenarConsultas, contarNuevas, ESTADO_LBL } from "./consultas.ts";
+import { toARTDate } from "./metrics.ts";
 
 // Informe de la bandeja de consultas, para leerlo y analizarlo fuera de la app.
 //
@@ -8,31 +15,43 @@ import type { Consulta } from "./types";
 // ENCUADRE: esto describe PEDIDOS Y PROBLEMAS DEL SISTEMA, no personas. El autor aparece
 // para poder responderle, no para contabilizarlo: no hay conteo por persona ni ranking.
 // Alguien que reporta diez errores está haciendo el trabajo bien, no mal.
+//
+// Reusa `ordenarConsultas`, `contarNuevas` y las etiquetas de `./consultas`, que son las
+// mismas que usa la bandeja dentro de la app. Este archivo agrega UNA sola cosa que la
+// bandeja no necesita: el agrupado por tipo. Antes tenía su propia copia del ordenamiento
+// y de las etiquetas, y la misma consulta aparecía como "Leída" en la app y "leida" acá.
 
 export interface PerfilMinimo { id: string; name: string }
 
 /** Los errores primero: son los que tienen a alguien trabado ahora mismo. */
-const PESO_TIPO: Record<Consulta["tipo"], number> = { error: 0, consulta: 1, sugerencia: 2 };
-/** Lo no visto primero: es lo que todavía espera una respuesta. */
-const PESO_ESTADO: Record<Consulta["estado"], number> = { nueva: 0, leida: 1, archivada: 2 };
-
-const TITULO_GRUPO: Record<Consulta["tipo"], string> = {
-  error: "## Errores",
-  consulta: "## Consultas",
-  sugerencia: "## Sugerencias",
-};
 const ORDEN_GRUPOS: Consulta["tipo"][] = ["error", "consulta", "sugerencia"];
+const TITULO_GRUPO: Record<Consulta["tipo"], string> = {
+  error: "Errores",
+  consulta: "Consultas",
+  sugerencia: "Sugerencias",
+};
+/** Grupo de descarte. Su razón de ser está explicada en `agruparPorTipo`. */
+const TITULO_OTROS = "Otros";
 
-/** Copia ordenada: errores → consultas → sugerencias, nuevas primero, más reciente primero. */
-export function ordenarConsultas(cs: Consulta[]): Consulta[] {
-  if (!Array.isArray(cs)) return [];
-  return [...cs].sort((a, b) => {
-    const t = (PESO_TIPO[a.tipo] ?? 9) - (PESO_TIPO[b.tipo] ?? 9);
-    if (t !== 0) return t;
-    const e = (PESO_ESTADO[a.estado] ?? 9) - (PESO_ESTADO[b.estado] ?? 9);
-    if (e !== 0) return e;
-    return (b.created_at ?? "").localeCompare(a.created_at ?? "");
-  });
+/**
+ * Agrupa por tipo, en orden de urgencia, y mete en "Otros" cualquier tipo desconocido.
+ *
+ * El grupo "Otros" NO es paranoia. Si el informe iterara sólo los tres tipos conocidos, el
+ * día que se agregue uno nuevo esas consultas desaparecerían del archivo mientras el total
+ * del resumen las seguiría contando. Un informe que se contradice solo es peor que uno
+ * incompleto: quien lo lee no tiene forma de darse cuenta. Que algo aparezca en un grupo
+ * raro se nota; que se esfume, no.
+ */
+export function agruparPorTipo(cs: Consulta[]): { titulo: string; consultas: Consulta[] }[] {
+  const lista = ordenarConsultas(cs);
+  const grupos: { titulo: string; consultas: Consulta[] }[] = [];
+  for (const tipo of ORDEN_GRUPOS) {
+    const delTipo = lista.filter((c) => c.tipo === tipo);
+    if (delTipo.length > 0) grupos.push({ titulo: TITULO_GRUPO[tipo], consultas: delTipo });
+  }
+  const sobrantes = lista.filter((c) => !ORDEN_GRUPOS.includes(c.tipo));
+  if (sobrantes.length > 0) grupos.push({ titulo: TITULO_OTROS, consultas: sobrantes });
+  return grupos;
 }
 
 /**
@@ -40,8 +59,11 @@ export function ordenarConsultas(cs: Consulta[]): Consulta[] {
  * persona y puede empezar con "#", "-" o "```". Pegado crudo, partiría el informe en dos
  * y una consulta podría tapar a las que vienen abajo.
  */
-function citar(texto: string): string {
-  return String(texto ?? "").split("\n").map((l) => "> " + l).join("\n");
+function citar(texto: string | null): string {
+  const t = String(texto ?? "").trim();
+  // Decirlo explícito en vez de dejar un "> " pelado, que se lee como una falla de formato.
+  if (!t) return "> (sin texto)";
+  return t.split("\n").map((l) => "> " + l).join("\n");
 }
 
 function nombreDe(perfiles: PerfilMinimo[], id: string): string {
@@ -49,15 +71,21 @@ function nombreDe(perfiles: PerfilMinimo[], id: string): string {
   return perfiles.find((p) => p?.id === id)?.name ?? id;
 }
 
-/** YYYY-MM-DD de un instante ISO. Si no se puede leer, devuelve el original. */
-function dia(iso: string): string {
+/**
+ * Día calendario ARGENTINO de un instante. `toARTDate` y no `toISOString()`: estamos en
+ * UTC-3, así que todo lo mandado después de las 21 se fecharía al día siguiente, y el
+ * propio "Generado el" del informe saldría con fecha futura si se corre de noche.
+ */
+function dia(iso: string | null): string {
+  if (!iso) return "fecha desconocida";
   const d = new Date(iso);
-  return isFinite(d.getTime()) ? d.toISOString().slice(0, 10) : String(iso ?? "");
+  return isFinite(d.getTime()) ? toARTDate(iso) : String(iso);
 }
 
 function bloque(c: Consulta, perfiles: PerfilMinimo[]): string {
+  const estado = ESTADO_LBL[c.estado] ?? c.estado;
   const partes = [
-    `### ${nombreDe(perfiles, c.autor)} · ${dia(c.created_at)} · ${c.estado}`,
+    `### ${nombreDe(perfiles, c.autor)} · ${dia(c.created_at)} · ${estado}`,
     "",
     citar(c.texto),
     "",
@@ -75,23 +103,20 @@ function bloque(c: Consulta, perfiles: PerfilMinimo[]): string {
  * sea pura y testeable: sin él, cada corrida daría un texto distinto.
  */
 export function informeConsultas(cs: Consulta[], perfiles: PerfilMinimo[], generadoISO: string): string {
-  const lista = ordenarConsultas(cs);
+  const grupos = agruparPorTipo(cs);
   const cabecera = `# Bandeja de consultas\n\nGenerado el ${dia(generadoISO)}.\n`;
-  if (lista.length === 0) {
-    return cabecera + "\nNo hay consultas para mostrar.\n";
-  }
+  const total = grupos.reduce((n, g) => n + g.consultas.length, 0);
+  if (total === 0) return cabecera + "\nNo hay consultas para mostrar.\n";
 
-  const cuenta = (e: Consulta["estado"]) => lista.filter((c) => c.estado === e).length;
-  const resumen =
-    `\n${lista.length} en total · ${cuenta("nueva")} nuevas · ` +
-    `${cuenta("leida")} leída${cuenta("leida") === 1 ? "" : "s"} · ${cuenta("archivada")} archivadas\n`;
+  // El resumen se calcula sobre lo que el informe REALMENTE muestra, no sobre la entrada:
+  // así no puede decir "12 en total" y listar 11.
+  const todas = grupos.flatMap((g) => g.consultas);
+  const detalle = grupos.map((g) => `${g.titulo.toLowerCase()} ${g.consultas.length}`).join(" · ");
+  const resumen = `\n${total} en total · ${contarNuevas(todas)} sin ver · ${detalle}\n`;
 
-  const grupos = ORDEN_GRUPOS.map((tipo) => {
-    const delTipo = lista.filter((c) => c.tipo === tipo);
-    if (delTipo.length === 0) return ""; // sin grupos vacíos: ruido puro
-    return `\n${TITULO_GRUPO[tipo]} (${delTipo.length})\n\n` +
-      delTipo.map((c) => bloque(c, perfiles)).join("\n");
-  }).join("");
+  const cuerpo = grupos
+    .map((g) => `\n## ${g.titulo} (${g.consultas.length})\n\n` + g.consultas.map((c) => bloque(c, perfiles)).join("\n"))
+    .join("");
 
-  return cabecera + resumen + grupos;
+  return cabecera + resumen + cuerpo;
 }

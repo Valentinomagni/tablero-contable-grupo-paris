@@ -7,7 +7,7 @@ Documento de situación. Separa lo que depende de mí (código) de lo que depend
 
 ## 1. Dónde estamos
 
-- **Tablero Contable v2.8.0**, con **987 pruebas automáticas** verdes, TypeScript sin
+- **Tablero Contable v2.8.0**, con **1016 pruebas automáticas** verdes, TypeScript sin
   errores, lint sin errores y build OK.
 - 34 migraciones de base de datos escritas.
 - Repositorio en GitHub con CI (lint + tests + build + e2e en cada push) y **mantenimiento
@@ -17,7 +17,7 @@ Documento de situación. Separa lo que depende de mí (código) de lo que depend
 
 Esto es lo único urgente del documento.
 
-### 2.1 Doce commits sin publicar
+### 2.1 Dieciséis commits sin publicar
 
 Están hechos, probados y commiteados **en esta máquina**, pero no subidos. Publicar
 requiere abrir GitHub Desktop en tu pantalla, y quedamos en que eso lo hago sólo cuando
@@ -68,13 +68,16 @@ poner ese email en la línea marcada dentro del archivo. Está explicado arriba 
 ## 5. Pendiente TUYO
 
 1. **Correr `migraciones-pendientes.sql`** (ver punto 2.2). Es lo que desbloquea todo.
-2. **Avisarme para publicar** los 12 commits.
+2. **Avisarme para publicar** los 16 commits.
 3. **Verificación visual del PDF**: Reporte → Imprimir/PDF → confirmar que la vista previa
    tiene contenido. Los tests garantizan que el documento se arma bien, **no** que el
    navegador lo imprima bien — esa es exactamente la falla que tuve la vez pasada.
-4. **Decisiones abiertas**: ¿va el cronómetro? (desaconsejado en `docs/PROPUESTA-ICR.md`).
+4. **Si querés que analicemos las consultas juntos**: crear `.env.consultas.local` con el
+   email y la contraseña de la cuenta de administración, y correr `node scripts/consultas.mjs`.
+   Instrucciones en `docs/CONSULTAS-PARA-ANALISIS.md`. Depende de la migración 33.
+5. **Decisiones abiertas**: ¿va el cronómetro? (desaconsejado en `docs/PROPUESTA-ICR.md`).
    ¿Sentry para monitoreo de errores? (el Error Boundary ya está preparado).
-5. **Rotación de credenciales** — diferida por decisión tuya hasta salir de beta.
+6. **Rotación de credenciales** — diferida por decisión tuya hasta salir de beta.
 
 ## 6. Bloqueado, para que conste
 

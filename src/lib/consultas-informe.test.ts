@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ordenarConsultas, informeConsultas, type PerfilMinimo } from "./consultas-informe";
+import { agruparPorTipo, informeConsultas, type PerfilMinimo } from "./consultas-informe";
 import type { Consulta } from "./types";
 
 const PERFILES: PerfilMinimo[] = [
@@ -16,18 +16,27 @@ function consulta(over: Partial<Consulta> = {}): Consulta {
   };
 }
 
-describe("ordenarConsultas", () => {
+describe("agruparPorTipo", () => {
   it("pone los errores primero: bloquean a alguien ahora", () => {
     const cs = [consulta({ id: "a", tipo: "sugerencia" }), consulta({ id: "b", tipo: "error" })];
-    expect(ordenarConsultas(cs)[0].id).toBe("b");
+    expect(agruparPorTipo(cs)[0].titulo).toBe("Errores");
   });
 
-  it("dentro del mismo tipo, las nuevas antes que las ya vistas", () => {
+  it("respeta el orden errores, consultas, sugerencias", () => {
+    const cs = [
+      consulta({ id: "a", tipo: "sugerencia" }),
+      consulta({ id: "b", tipo: "consulta" }),
+      consulta({ id: "c", tipo: "error" }),
+    ];
+    expect(agruparPorTipo(cs).map((g) => g.titulo)).toEqual(["Errores", "Consultas", "Sugerencias"]);
+  });
+
+  it("dentro del grupo, las nuevas antes que las ya vistas", () => {
     const cs = [
       consulta({ id: "a", tipo: "error", estado: "archivada" }),
       consulta({ id: "b", tipo: "error", estado: "nueva" }),
     ];
-    expect(ordenarConsultas(cs)[0].id).toBe("b");
+    expect(agruparPorTipo(cs)[0].consultas[0].id).toBe("b");
   });
 
   it("a igual tipo y estado, la más reciente primero", () => {
@@ -35,34 +44,51 @@ describe("ordenarConsultas", () => {
       consulta({ id: "a", created_at: "2026-07-01T10:00:00Z" }),
       consulta({ id: "b", created_at: "2026-07-20T10:00:00Z" }),
     ];
-    expect(ordenarConsultas(cs)[0].id).toBe("b");
+    expect(agruparPorTipo(cs)[0].consultas[0].id).toBe("b");
+  });
+
+  it("no crea grupos vacíos", () => {
+    expect(agruparPorTipo([consulta({ tipo: "error" })]).map((g) => g.titulo)).toEqual(["Errores"]);
+  });
+
+  // DEFECTO ENCONTRADO EN REVISIÓN: antes, un tipo desconocido desaparecía del informe
+  // mientras el total del resumen lo seguía contando. Un informe que se contradice solo es
+  // peor que uno incompleto, porque quien lo lee no puede notarlo.
+  it("un tipo desconocido va a 'Otros' en vez de desaparecer", () => {
+    const cs = [consulta({ id: "raro", tipo: "pedido" as Consulta["tipo"], texto: "no me pierdas" })];
+    const grupos = agruparPorTipo(cs);
+    expect(grupos.map((g) => g.titulo)).toEqual(["Otros"]);
+    expect(grupos[0].consultas[0].id).toBe("raro");
   });
 
   it("no muta el arreglo que recibe", () => {
     const cs = [consulta({ id: "a", tipo: "sugerencia" }), consulta({ id: "b", tipo: "error" })];
-    ordenarConsultas(cs);
+    agruparPorTipo(cs);
     expect(cs[0].id).toBe("a");
   });
 
   it("es defensiva ante entradas raras", () => {
-    expect(ordenarConsultas(null as unknown as Consulta[])).toEqual([]);
+    expect(agruparPorTipo(null as unknown as Consulta[])).toEqual([]);
+  });
+
+  // DEFECTO ENCONTRADO EN REVISIÓN: un null adentro del arreglo rompía el informe entero.
+  it("un elemento nulo no tira abajo todo el informe", () => {
+    const cs = [consulta({ id: "a" }), null as unknown as Consulta];
+    expect(agruparPorTipo(cs)[0].consultas).toHaveLength(1);
   });
 });
 
 describe("informeConsultas", () => {
   it("resuelve el nombre del autor a partir de los perfiles", () => {
-    const md = informeConsultas([consulta({ autor: "u2" })], PERFILES, GENERADO);
-    expect(md).toContain("Bruno Díaz");
+    expect(informeConsultas([consulta({ autor: "u2" })], PERFILES, GENERADO)).toContain("Bruno Díaz");
   });
 
   it("si no conoce al autor, muestra el id en vez de romperse", () => {
-    const md = informeConsultas([consulta({ autor: "desconocido" })], PERFILES, GENERADO);
-    expect(md).toContain("desconocido");
+    expect(informeConsultas([consulta({ autor: "desconocido" })], PERFILES, GENERADO)).toContain("desconocido");
   });
 
   it("incluye el texto de la consulta", () => {
-    const md = informeConsultas([consulta()], PERFILES, GENERADO);
-    expect(md).toContain("No encuentro el botón de imprimir");
+    expect(informeConsultas([consulta()], PERFILES, GENERADO)).toContain("No encuentro el botón de imprimir");
   });
 
   it("cita el texto como blockquote para que no rompa la estructura del informe", () => {
@@ -77,17 +103,26 @@ describe("informeConsultas", () => {
     expect(md).toContain("> linea dos");
   });
 
+  it("un texto vacío se dice, no se muestra como un blockquote pelado", () => {
+    const md = informeConsultas([consulta({ texto: "" })], PERFILES, GENERADO);
+    expect(md).toContain("(sin texto)");
+  });
+
   it("muestra la respuesta cuando ya la hay", () => {
-    const md = informeConsultas([consulta({ respuesta: "Está en el menú" })], PERFILES, GENERADO);
-    expect(md).toContain("Está en el menú");
+    expect(informeConsultas([consulta({ respuesta: "Está en el menú" })], PERFILES, GENERADO)).toContain("Está en el menú");
   });
 
   it("marca explícitamente lo que sigue sin responder", () => {
-    const md = informeConsultas([consulta({ respuesta: null })], PERFILES, GENERADO);
-    expect(md).toMatch(/sin responder/i);
+    expect(informeConsultas([consulta({ respuesta: null })], PERFILES, GENERADO)).toMatch(/sin responder/i);
   });
 
-  it("resume cuántas hay de cada estado", () => {
+  it("usa las mismas etiquetas de estado que la bandeja de la app", () => {
+    // Antes imprimía el valor crudo: la misma consulta era "Leída" en la app y "leida" acá.
+    const md = informeConsultas([consulta({ estado: "leida" })], PERFILES, GENERADO);
+    expect(md).toContain("Leída");
+  });
+
+  it("resume cuántas hay en total y cuántas sin ver", () => {
     const cs = [
       consulta({ id: "a", estado: "nueva" }),
       consulta({ id: "b", estado: "nueva" }),
@@ -95,8 +130,16 @@ describe("informeConsultas", () => {
     ];
     const md = informeConsultas(cs, PERFILES, GENERADO);
     expect(md).toContain("3 en total");
-    expect(md).toContain("2 nuevas");
-    expect(md).toContain("1 leída");
+    expect(md).toContain("2 sin ver");
+  });
+
+  // El resumen se calcula sobre lo que el informe MUESTRA, no sobre la entrada.
+  it("el total del resumen coincide con lo listado, incluso con un tipo desconocido", () => {
+    const cs = [consulta({ id: "a" }), consulta({ id: "b", tipo: "pedido" as Consulta["tipo"] })];
+    const md = informeConsultas(cs, PERFILES, GENERADO);
+    expect(md).toContain("2 en total");
+    expect(md).toContain("## Otros (1)");
+    expect(md).toContain("## Consultas (1)");
   });
 
   it("agrupa por tipo con un título por grupo", () => {
@@ -107,8 +150,7 @@ describe("informeConsultas", () => {
   });
 
   it("no crea grupos vacíos", () => {
-    const md = informeConsultas([consulta({ tipo: "error" })], PERFILES, GENERADO);
-    expect(md).not.toContain("## Sugerencias");
+    expect(informeConsultas([consulta({ tipo: "error" })], PERFILES, GENERADO)).not.toContain("## Sugerencias");
   });
 
   // Encuadre no punitivo: el informe habla de pedidos, no de personas.
@@ -120,13 +162,31 @@ describe("informeConsultas", () => {
   });
 
   it("sin consultas lo dice, en vez de devolver un archivo vacío", () => {
-    const md = informeConsultas([], PERFILES, GENERADO);
-    expect(md).toMatch(/no hay consultas/i);
+    expect(informeConsultas([], PERFILES, GENERADO)).toMatch(/no hay consultas/i);
   });
 
   it("deja la fecha de generación para saber a qué momento corresponde", () => {
-    const md = informeConsultas([consulta()], PERFILES, GENERADO);
-    expect(md).toContain("2026-07-29");
+    expect(informeConsultas([consulta()], PERFILES, GENERADO)).toContain("2026-07-29");
+  });
+
+  // DEFECTO ENCONTRADO EN REVISIÓN: con toISOString(), todo lo mandado después de las 21
+  // hora argentina se fechaba al día siguiente, y el "Generado el" salía con fecha futura
+  // si el script se corría de noche — que es justo cuando se corrió la primera vez.
+  it("fecha en día calendario argentino, no en UTC", () => {
+    // 2026-07-29 23:30 en Argentina sigue siendo el 29, aunque en UTC ya sea el 30.
+    const cs = [consulta({ created_at: "2026-07-30T02:30:00Z" })];
+    const md = informeConsultas(cs, PERFILES, "2026-07-30T01:10:00Z");
+    expect(md).toContain("Generado el 2026-07-29");
+    expect(md).toContain("· 2026-07-29 ·");
+  });
+
+  it("una fecha ausente se dice, en vez de dejar un separador vacío", () => {
+    const md = informeConsultas([consulta({ created_at: null as unknown as string })], PERFILES, GENERADO);
+    expect(md).toContain("fecha desconocida");
+  });
+
+  it("una fecha ilegible se muestra tal cual en vez de romper", () => {
+    expect(informeConsultas([consulta({ created_at: "ayer" })], PERFILES, GENERADO)).toContain("ayer");
   });
 
   it("es defensiva ante entradas raras", () => {

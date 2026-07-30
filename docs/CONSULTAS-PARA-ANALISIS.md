@@ -29,6 +29,11 @@ Escribe **`consultas-bandeja.md`** en la carpeta del proyecto, agrupado así:
 - Después **consultas**, y por último **sugerencias**.
 - Dentro de cada grupo, lo que todavía nadie vio va arriba, y lo más reciente primero.
 - Cada una indica quién la mandó, cuándo, y si ya tiene respuesta.
+- Si algún día apareciera un tipo de consulta que el informe no conoce, va a un grupo
+  **Otros** en vez de desaparecer. Nada que el equipo mande se pierde en silencio.
+
+Mirá lo que imprime en la consola, además del archivo: ahí avisa si la cuenta no está
+viendo todo (ver más abajo).
 
 ## Qué NO hace
 
@@ -46,9 +51,13 @@ Escribe **`consultas-bandeja.md`** en la carpeta del proyecto, agrupado así:
 - **`.env.consultas.local` tiene una contraseña en texto plano.** También está ignorado por
   git. Es el precio de no tener que abrir el navegador cada vez; si preferís no tenerlo,
   la alternativa es mirar las consultas desde la app como hasta ahora.
-- **Si el archivo sale vacío**, puede ser que todavía nadie haya mandado nada, o que la
-  cuenta no tenga permiso: hace falta la **migración 33** aplicada y que esa cuenta esté
-  marcada como administradora del sistema.
+- **Si dice "No hay consultas para mostrar", o si en la consola avisa que todas las
+  consultas que vinieron son tuyas**, puede ser que el resto del equipo todavía no haya
+  mandado nada, o que la cuenta no tenga permiso para ver las de los demás: hace falta la
+  **migración 33** aplicada y que esa cuenta esté marcada como administradora del sistema.
+  Es importante entender esto: sin ese permiso, Supabase **no da error** — te devuelve sólo
+  tus propias consultas, y el informe sale parcial con pinta de completo. Por eso el script
+  avisa en la consola, no sólo cuando no viene nada.
 
 ## Por qué no una segunda base de datos
 

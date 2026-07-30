@@ -5,11 +5,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import { useConsultas } from "../../hooks/useData";
 import { esTablaInexistente } from "../../hooks/usePeriodos";
-import { ordenarConsultas } from "../../lib/consultas";
+// Las etiquetas viven en la lib y no acá: el informe de `scripts/consultas.mjs` usa las
+// mismas, y cuando estaban duplicadas la misma consulta se llamaba distinto en cada lado.
+import { ordenarConsultas, TIPO_LBL, ESTADO_LBL } from "../../lib/consultas";
 import type { Consulta } from "../../lib/types";
-
-const TIPO_LBL: Record<Consulta["tipo"], string> = { consulta: "Consulta", sugerencia: "Sugerencia", error: "Error" };
-const ESTADO_LBL: Record<Consulta["estado"], string> = { nueva: "Nueva", leida: "Leída", archivada: "Archivada" };
 
 export function BandejaConsultas({ team }: { team: { id: string; name: string }[] }) {
   const qc = useQueryClient();

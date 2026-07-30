@@ -34,9 +34,14 @@ const SALIDA = join(RAIZ, "consultas-bandeja.md");
 const SUPABASE_URL = "https://yyyrlopgwmuvfbzwxiwp.supabase.co";
 const ANON_KEY = "sb_publishable_cL-5aTeSpy2dNBQHzqO9Sg_D_fncvGN";
 
-function salirConAyuda(motivo) {
-  console.error(`
-${motivo}
+/**
+ * Error de configuración, con la ayuda adentro. LANZA en vez de llamar a `process.exit()`:
+ * en Node 24 sobre Windows, cortar el proceso de golpe hace abortar a libuv con un
+ * "Assertion failed" que se imprime DEBAJO del mensaje de ayuda y cambia el código de
+ * salida a 127. Con un throw hay un solo camino de salida, el de abajo, y sale ordenado.
+ */
+function errorDeConfig(motivo) {
+  return new Error(`${motivo}
 
 Falta el archivo de credenciales. Creá "${join(RAIZ, ".env.consultas.local")}" con:
 
@@ -44,16 +49,20 @@ Falta el archivo de credenciales. Creá "${join(RAIZ, ".env.consultas.local")}" 
   SUPABASE_PASSWORD=la-contrasena
 
 Es la misma cuenta con la que entrás a la app a ver las consultas. El archivo está
-ignorado por git y no sale de esta computadora.
-`);
-  process.exit(1);
+ignorado por git y no sale de esta computadora.`);
 }
 
 /** Lee un .env simple (CLAVE=valor por línea). Sin dependencias. */
 function leerEnv(ruta) {
   let crudo;
   try { crudo = readFileSync(ruta, "utf8"); }
-  catch { salirConAyuda("No encontré las credenciales."); }
+  // Distingue "no existe" de "existe pero no puedo leerlo": mandar a crear un archivo que
+  // ya está ahí es la clase de mensaje que hace perder media hora.
+  catch (e) {
+    throw errorDeConfig(e.code === "ENOENT"
+      ? "No encontré las credenciales."
+      : `No pude leer el archivo de credenciales (${e.code}).`);
+  }
   const env = {};
   for (const linea of crudo.split(/\r?\n/)) {
     const t = linea.trim();
@@ -75,37 +84,61 @@ async function iniciarSesion(email, password) {
     const detalle = await r.text();
     throw new Error(`No pude iniciar sesión (${r.status}). Revisá el email y la contraseña.\n${detalle}`);
   }
-  const { access_token } = await r.json();
+  const { access_token, user } = await r.json();
   if (!access_token) throw new Error("El login no devolvió una sesión válida.");
-  return access_token;
+  // El id se usa para poder avisar si la cuenta sólo está viendo sus propias consultas.
+  return { token: access_token, userId: user?.id ?? null };
 }
 
 async function traer(tabla, columnas, token) {
   const url = `${SUPABASE_URL}/rest/v1/${tabla}?select=${columnas}`;
   const r = await fetch(url, {
-    headers: { apikey: ANON_KEY, authorization: `Bearer ${token}` },
+    headers: {
+      apikey: ANON_KEY,
+      authorization: `Bearer ${token}`,
+      // `count=exact` hace que Supabase devuelva el total real en Content-Range. Sin eso no
+      // hay forma de distinguir "hay 1000" de "te devolví 1000 de 4000": el informe saldría
+      // truncado y con pinta de completo, que es la peor combinación posible.
+      prefer: "count=exact",
+    },
   });
   if (!r.ok) throw new Error(`No pude leer "${tabla}" (${r.status}): ${await r.text()}`);
-  return r.json();
+  const filas = await r.json();
+  const total = Number((r.headers.get("content-range") ?? "").split("/")[1]);
+  if (Number.isFinite(total) && total > filas.length) {
+    console.log(
+      `Aviso: "${tabla}" tiene ${total} filas y el servidor devolvió ${filas.length}.\n` +
+      "El informe está incompleto porque Supabase limita la cantidad de filas por consulta.",
+    );
+  }
+  return filas;
 }
 
 async function main() {
   const env = leerEnv(join(RAIZ, ".env.consultas.local"));
   if (!env.SUPABASE_EMAIL || !env.SUPABASE_PASSWORD) {
-    salirConAyuda("El archivo de credenciales está incompleto.");
+    throw errorDeConfig("El archivo de credenciales está incompleto.");
   }
 
-  const token = await iniciarSesion(env.SUPABASE_EMAIL, env.SUPABASE_PASSWORD);
+  const { token, userId } = await iniciarSesion(env.SUPABASE_EMAIL, env.SUPABASE_PASSWORD);
   const [consultas, perfiles] = await Promise.all([
     traer("consultas", "id,autor,tipo,texto,estado,respuesta,created_at,respondida_at", token),
     traer("profiles", "id,name", token),
   ]);
 
-  if (consultas.length === 0) {
+  // La regla de RLS es `autor = auth.uid() or es_admin_sistema()`. Una cuenta que no sea
+  // admin NO recibe un error: recibe sus propias consultas y un 200, así que el informe
+  // sale parcial con pinta de completo. Por eso el aviso no puede depender sólo de que
+  // venga vacío: también hay que mirar si todo lo que vino es de uno mismo.
+  const soloPropias = consultas.length > 0 && userId && consultas.every((c) => c.autor === userId);
+  if (consultas.length === 0 || soloPropias) {
     console.log(
-      "La consulta funcionó pero no vino ninguna fila.\n" +
-      "Puede ser que todavía nadie haya mandado nada, o que esta cuenta no tenga permiso\n" +
-      "para verlas (hace falta la migración 33 y que la cuenta sea admin del sistema).",
+      (consultas.length === 0
+        ? "La consulta funcionó pero no vino ninguna fila.\n"
+        : "Ojo: todas las consultas que vinieron son tuyas.\n") +
+      "Puede ser que el resto del equipo todavía no haya mandado nada, o que esta cuenta no\n" +
+      "tenga permiso para ver las de los demás: hace falta la migración 33 aplicada y que la\n" +
+      "cuenta esté marcada como administradora del sistema.",
     );
   }
 
