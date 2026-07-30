@@ -1,7 +1,26 @@
 -- ============================================================================
---  TABLERO CONTABLE — MIGRACIONES PENDIENTES (32 + 33 + 34)
---  Generado el 28/07/2026. Correr UNA sola vez en Supabase → SQL Editor.
+--  TABLERO CONTABLE — MIGRACIONES PENDIENTES (32 + 33 + 34 + 35)
+--  Generado el 28/07/2026, actualizado el 30/07/2026.
+--  Correr UNA sola vez en Supabase → SQL Editor.
 -- ============================================================================
+--
+--  ⚠️⚠️  LEER ESTO PRIMERO: LA 35 ES UN ARREGLO DE SEGURIDAD
+--
+--      Si ya corriste la 33 (y la corriste), HAY UN AGUJERO ABIERTO AHORA MISMO.
+--      La 33 creó la columna `admin_sistema` pero no la agregó al trigger que
+--      protege las columnas sensibles de `profiles`. Resultado: cualquier
+--      empleado puede hacerse administrador del sistema sobre su propia fila y
+--      pasar a leer TODAS las consultas del equipo — el canal donde la gente
+--      reporta problemas contando con que el jefe no los ve.
+--
+--      La 35 lo cierra. Son 20 líneas, no toca ningún dato y se puede correr
+--      sola, sin las otras. Si vas a correr una sola cosa hoy, que sea ésta.
+--      El archivo suelto también está en `migracion-35-cerrar-escalada-admin.sql`.
+--
+--      Para ver quién es admin del sistema hoy (deberían ser sólo las cuentas
+--      que pusiste vos):
+--        select name, email, admin_sistema from public.profiles
+--         where admin_sistema = true;
 --
 --  QUÉ HABILITA CADA UNA
 --    32 · Períodos       → el selector de mes del tablero muestra datos reales y
@@ -11,6 +30,8 @@
 --                          (cuenta de administración), no al jefe.
 --    34 · Checklist día  → una tarea recurrente diaria deja de perder lo que
 --                          tildaste ayer.
+--    35 · SEGURIDAD      → cierra la escalada de privilegios que dejó abierta
+--                          la 33. Ver el aviso de arriba.
 --
 --  ⚠️  UN PASO PREVIO, SÓLO PARA LA 33
 --      Antes de correr esto, creá la cuenta de administración:
