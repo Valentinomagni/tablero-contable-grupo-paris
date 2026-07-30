@@ -37,7 +37,7 @@ export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] 
       "En \"Mi día\", si una tarea tuya lleva varios días sin moverse, aparece un aviso discreto para confirmar si seguís con ella, marcarla terminada o posponerlo. Solo lo ves vos.",
       "Cerrar un mes ahora lo deja de solo lectura, con candado en el selector. Se puede consultar pero no editar; para modificarlo, se reabre desde Cierre.",
       "Organigrama: junto a la evolución de cada persona se indica si sus resultados son parejos o dispares entre meses.",
-      "Los indicadores muestran un sello de confiabilidad del dato que los sustenta, para saber de cuáles conviene fiarse.",
+      "Director: el panel \"Confianza del dato\" trae un sello que traduce el puntaje a algo que se lee de un vistazo, para saber si conviene fiarse de las métricas del período.",
       "En \"Mi día\" aparece una línea con la última tarea que venías trabajando, para retomar sin buscarla. Si no hay nada claro que retomar, no se muestra.",
       "Desde \"Mi día\" podés marcar una tarea como terminada con un solo toque, sin abrirla, y deshacerlo desde el mismo aviso. Los arqueos siguen pidiendo que elijas el resultado.",
       "Las tareas recurrentes diarias ahora guardan el checklist y las observaciones de cada día por separado: lo que tildaste ayer ya no se pierde.",

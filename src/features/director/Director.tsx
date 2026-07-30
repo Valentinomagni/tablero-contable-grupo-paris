@@ -16,6 +16,8 @@ import { useArchiveEquipo } from "../../hooks/useArchive";
 import { useSnapshots } from "../../hooks/useData";
 import { panelesDirector, type EntradaDirector, type Semaforo } from "../../lib/director";
 import { icr } from "../../lib/icr";
+import { confianzaDe } from "../../lib/confianza-metrica";
+import { BadgeConfianza } from "../../components/BadgeConfianza";
 import { exposicion } from "../../lib/exposicion";
 import { saludOperativa } from "../../lib/salud-operativa";
 import { flujoMensual } from "../../lib/flujo-mensual";
@@ -154,7 +156,13 @@ export function Director({ cards, team, annos }: { cards: Card[]; team: Profile[
 
         {/* ---- Confianza del dato (ICR) ---- */}
         <div>
-          <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-2.5">Confianza del dato</h2>
+          <div className="flex items-center gap-2 mb-2.5">
+            <h2 className="text-xs uppercase tracking-wide text-ink2 font-semibold m-0">Confianza del dato</h2>
+            {/* El chip traduce el puntaje a algo que se lee de un vistazo: un 62/100 no dice
+                nada por sí solo, "confianza media" sí. Califica al DATO, no a personas — el
+                rótulo y la explicación viven en `lib/confianza-metrica.ts`. */}
+            <BadgeConfianza confianza={confianzaDe(calidad)} />
+          </div>
           <Panel className="px-5 py-4">
             {calidad.suficiente ? (
               <>
