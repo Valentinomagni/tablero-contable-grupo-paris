@@ -15,6 +15,9 @@ create table if not exists public.notifications (
   created_at timestamptz not null default now()
 );
 alter table public.notifications enable row level security;
+-- `drop ... if exists` primero: sin esto, correr el archivo dos veces falla con 42710
+-- (policy already exists) y aborta la transacción, dejando todo lo de abajo sin aplicar.
+drop policy if exists "notif propias" on public.notifications;
 create policy "notif propias" on public.notifications for all
   using (owner = auth.uid()) with check (owner = auth.uid() or exists (
     select 1 from public.profiles p where p.id = auth.uid() and p.role in ('jefe','encargado')));

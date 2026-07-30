@@ -95,6 +95,10 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
   const d14 = ultimos14(cards, now);
   const alertas = alertasDeRiesgo(cards, teamSeg, now);
   const cargaPersona = teamSeg.map((u) => ({
+    // `id` además del nombre: la lista se indexaba por nombre, y dos homónimos —o un perfil
+    // dado de baja y uno nuevo con el mismo nombre— daban claves duplicadas, con lo que React
+    // puede reusar el nodo equivocado y mezclar las barras.
+    id: u.id,
     n: u.name,
     v: norm.filter((c) => c.owner === u.id && c.status !== "term").reduce((s, c) => s + (c.effort ?? 1), 0),
   })).filter((f) => f.v > 0).sort((a, b) => b.v - a.v);
@@ -274,7 +278,7 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
       <div className="bg-surface border border-line rounded-xl p-3 mb-6" style={cardSh}>
         {cargaPersona.length === 0 ? <p className="text-ink2 text-sm m-0">Sin carga abierta.</p>
           : cargaPersona.map((f) => (
-            <div key={f.n} title={`${f.n}: ${f.v} puntos de esfuerzo abiertos`} className="flex items-center gap-2 py-1">
+            <div key={f.id} title={`${f.n}: ${f.v} puntos de esfuerzo abiertos`} className="flex items-center gap-2 py-1">
               <span className="w-[110px] text-sm truncate shrink-0">{f.n}</span>
               <div className="flex-1 h-3 bg-surface2 rounded-full overflow-hidden">
                 <div className="h-full bg-accent rounded-full" style={{ width: `${Math.round((f.v / cargaPersona[0].v) * 100)}%` }} />

@@ -9,5 +9,8 @@ create table if not exists public.notes (
   updated_at timestamptz not null default now()
 );
 alter table public.notes enable row level security;
+-- `drop ... if exists` primero: sin esto, correr el archivo dos veces falla con 42710
+-- (policy already exists) y aborta la transacción, dejando todo lo de abajo sin aplicar.
+drop policy if exists "notas solo del dueño" on public.notes;
 create policy "notas solo del dueño" on public.notes for all
   using (owner = auth.uid()) with check (owner = auth.uid());

@@ -430,7 +430,12 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
           de estado. La card cambia de columna sin salir de su carril. */}
       {agruparModo !== "ninguno" && (
         <div className="flex flex-col gap-3 shrink-0">
-          <Carriles cards={mine} modo={agruparModo} ownerId={ownerId} profiles={team} columnas={COLS}
+          {/* `key` con modo y owner: `Carriles` lee los grupos colapsados de localStorage en el
+              inicializador de su estado, que corre UNA sola vez al montar. Sin esta key, pasar
+              de agrupar por Categoría a agrupar por Marca no remonta el componente, así que se
+              arrastran los colapsados del modo anterior — y el primer toggle los escribe bajo
+              la clave del modo nuevo. Lo mismo al mirar el tablero de otra persona. */}
+          <Carriles key={`${agruparModo}-${ownerId}`} cards={mine} modo={agruparModo} ownerId={ownerId} profiles={team} columnas={COLS}
             renderCard={renderCard} onDropCard={(id, status) => { const cardPrev = byId(id); if (cardPrev) move.mutate({ id, status, cardPrev }); }} />
           {mine.length === 0 && <EmptyState title="Sin tareas acá." />}
           <button onClick={() => setCreando(true)}
