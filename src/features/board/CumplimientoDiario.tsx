@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "../../lib/supabase";
 import type { TaskOccurrence } from "../../lib/types";
 import { useCardOccurrences, useCardOccurrencesAll } from "../../hooks/useOccurrences";
-import { claveFecha } from "../../lib/calendario";
+import { toARTDate } from "../../lib/metrics";
 import { mensajeUsuario } from "../../lib/fallas";
 import { statsArqueo, evolucionMensual, textoDiferencia } from "../../lib/arqueo";
 import { cn } from "../../lib/ui";
@@ -22,7 +22,9 @@ export function CumplimientoDiario({ cardId, owner, year, month, requiere = fals
   const qc = useQueryClient();
   const { data: ocurrencias = [] } = useCardOccurrences(cardId, year, month);
   const { data: todas = [] } = useCardOccurrencesAll(cardId, requiere);
-  const hoyISO = claveFecha(new Date());
+  // "Hoy" en hora argentina y NO en la zona del navegador: con `claveFecha(new Date())`, en
+  // una máquina en UTC u otro huso, una ocurrencia de hoy se pintaría como "pasada sin hacer".
+  const hoyISO = toARTDate(new Date().toISOString());
   const diasEnMes = new Date(year, month, 0).getDate();
   const mesPrefix = `${year}-${pad(month)}`;
   const [pendiente, setPendiente] = useState<string | null>(null);

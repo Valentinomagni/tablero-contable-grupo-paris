@@ -7,7 +7,7 @@ import { supabase } from "../../lib/supabase";
 import type { Card, Profile } from "../../lib/types";
 import { useVacaciones } from "../../hooks/useVacaciones";
 import { rangoValido, vacacionesActivasYFuturas, impactoLicencia } from "../../lib/vacaciones";
-import { claveFecha } from "../../lib/calendario";
+import { toARTDate } from "../../lib/metrics";
 import { Avatar } from "../../lib/ui";
 
 const fmt = (iso: string) => new Date(iso + "T12:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" });
@@ -18,7 +18,10 @@ export function VacacionesModal({ me, team, cards, onClose }: {
 }) {
   const qc = useQueryClient();
   const { data: vacs = [] } = useVacaciones();
-  const hoyISO = claveFecha(new Date());
+  // "Hoy" en hora argentina y NO en la zona del navegador: con `claveFecha(new Date())`, en
+  // una máquina en UTC u otro huso, una licencia que arranca hoy podría quedar afuera del
+  // listado de activas y futuras.
+  const hoyISO = toARTDate(new Date().toISOString());
 
   const [owner, setOwner] = useState("");
   const [desde, setDesde] = useState("");

@@ -4,14 +4,13 @@ import { Download, ClipboardCopy, Inbox, AlarmClock, CheckCircle2, Activity, Arr
 import type { Card, Profile, ActivityLog, Announcement } from "../../lib/types";
 import { RadarVencimientos } from "./RadarVencimientos";
 import { Delegaciones } from "./Delegaciones";
-import { dueInfo, fmtDateTime, wow, onTimeAdherence, type Wow } from "../../lib/metrics";
+import { dueInfo, fmtDateTime, wow, onTimeAdherence, toARTDate, type Wow } from "../../lib/metrics";
 import { alertasDeRiesgo } from "../../lib/alertas";
 import { isBlocked } from "../../lib/deps";
 import { buildCsv, standupText, cicloDelMes, cargaPorFecha, ultimos14 } from "../../lib/resumen";
 import { useSnapshots, useOrganizacion } from "../../hooks/useData";
 import { useVacaciones } from "../../hooks/useVacaciones";
 import { estaDeVacaciones } from "../../lib/vacaciones";
-import { claveFecha } from "../../lib/calendario";
 import { Avatar, teclaActiva } from "../../lib/ui";
 import { DepGraph } from "./DepGraph";
 import { useArca } from "../tablon/arca";
@@ -63,7 +62,10 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
   const teamSeg = team.filter((u) => (!marcaFiltro || u.marca === marcaFiltro) && (!sucursalFiltro || u.sucursal === sucursalFiltro));
   const now = Date.now(), day = 86400000, week = now - 7 * day;
   const { data: vacaciones = [] } = useVacaciones();
-  const hoyISO = claveFecha(new Date());
+  // "Hoy" en hora argentina y NO en la zona del navegador: `claveFecha(new Date())` usa la
+  // zona local, así que en una máquina en UTC u otro huso el Resumen mostraría un día
+  // distinto al de Mi día y las vacaciones o los vencimientos se leerían corridos un día.
+  const hoyISO = toARTDate(new Date().toISOString());
   const norm = cards.filter((c) => c.card_type !== "operativa");
   const open = norm.filter((c) => c.status !== "term");
   const late = open.filter((c) => { const i = dueInfo(c); return i && i.days < 0; });

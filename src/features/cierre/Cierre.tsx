@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight, CalendarPlus, CheckCircle2, Circle, Clock, AlarmClock, Link2, AlertTriangle, Lock, LockOpen, CalendarRange } from "lucide-react";
 import type { Card, Profile, AppSettings, Role } from "../../lib/types";
-import { dueInfo } from "../../lib/metrics";
+import { dueInfo, toARTDate } from "../../lib/metrics";
 import { isBlocked } from "../../lib/deps";
 import { supabase } from "../../lib/supabase";
 import { closingCards, cierreStats, ordenarCierre, shiftMonth, MESES } from "../../lib/cierre";
@@ -27,8 +27,15 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
   cards: Card[]; team: Profile[]; isJefe: boolean; meId: string; meName: string; meRole: Role;
   settings: AppSettings; onOpenCard: (c: Card) => void;
 }) {
-  const hoy = new Date();
-  const [ym, setYm] = useState({ year: hoy.getFullYear(), month: hoy.getMonth() + 1 });
+  // "Hoy" en hora argentina y NO en la zona del navegador: armar el ISO con
+  // getFullYear/getMonth/getDate usa la zona local, así que en una máquina en UTC u otro huso
+  // el Cierre abriría en un mes distinto al que muestra Mi día y la proyección mediría contra
+  // un día equivocado. En vencimientos fiscales, un día de diferencia es un incumplimiento
+  // inventado. Fuente única: `toARTDate`.
+  const hoyISO = toARTDate(new Date().toISOString());
+  const hoyAnio = Number(hoyISO.slice(0, 4));
+  const hoyMes = Number(hoyISO.slice(5, 7));
+  const [ym, setYm] = useState({ year: hoyAnio, month: hoyMes });
   const [busy, setBusy] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
   const qc = useQueryClient();
@@ -78,8 +85,8 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
   const cerrarMes = useCerrarMes();
   const reabrirMes = useReabrirMes();
   const mesNavegado = `${ym.year}-${String(ym.month).padStart(2, "0")}`;
-  const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
-  const esMesEnCurso = ym.year === hoy.getFullYear() && ym.month === hoy.getMonth() + 1;
+  const mesActual = hoyISO.slice(0, 7);
+  const esMesEnCurso = ym.year === hoyAnio && ym.month === hoyMes;
   const miCierre = mesCerradoPor(periodos, meId, mesNavegado);
   const misAbiertos = mesesAbiertos(periodos, meId, mesesConTrabajoDe(cards, meId), mesActual);
   const esGestor = isJefe || meRole === "encargado";
@@ -98,7 +105,6 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
   // Se mira SU propio avance (closingMio), igual que el semáforo. Silencio cuando va bien
   // o cuando no hay ritmo medible: no alarmar sin datos.
   const snapshots = useSnapshots(esMesEnCurso).data ?? [];
-  const hoyISO = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
   const ultimoDia = new Date(ym.year, ym.month, 0).getDate();
   const finDeMesISO = `${ym.year}-${String(ym.month).padStart(2, "0")}-${String(ultimoDia).padStart(2, "0")}`;
   const proyeccion = esMesEnCurso ? proyeccionCierre(closingMio, snapshots, hoyISO, finDeMesISO) : null;

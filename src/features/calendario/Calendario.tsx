@@ -9,7 +9,8 @@ import { useOccurrences } from "../../hooks/useOccurrences";
 import { useVacaciones } from "../../hooks/useVacaciones";
 import { ausentesEnFecha } from "../../lib/vacaciones";
 import { VacacionesModal } from "./VacacionesModal";
-import { MESES, DIAS_SEMANA, grillaMes, eventosPorDia, conteoPorMes, claveFecha } from "../../lib/calendario";
+import { MESES, DIAS_SEMANA, grillaMes, eventosPorDia, conteoPorMes } from "../../lib/calendario";
+import { toARTDate } from "../../lib/metrics";
 import { CLS_TONO } from "../../lib/vencimientos";
 import { Modal } from "../../components/Modal";
 import { AnuncioEditForm } from "../../components/AnuncioEditForm";
@@ -35,10 +36,16 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
   const { data: vacaciones = [] } = useVacaciones();
   const [vacModal, setVacModal] = useState(false);
   const qc = useQueryClient();
-  const hoy = new Date();
-  const hoyISO = claveFecha(hoy);
-  const [year, setYear] = useState(hoy.getFullYear());
-  const [month, setMonth] = useState(hoy.getMonth() + 1);
+  // "Hoy" sale de la hora argentina y NO de la zona del navegador: `claveFecha(new Date())`
+  // usa la zona local, así que en una máquina en UTC (viaje, VM, zona mal configurada) el
+  // calendario marcaría un día distinto al de Mi día y una tarea que vence hoy aparecería
+  // vencida en una vista y no en la otra. En vencimientos fiscales, un día de diferencia es
+  // un incumplimiento inventado.
+  const hoyISO = toARTDate(new Date().toISOString());
+  const hoyAnio = Number(hoyISO.slice(0, 4));
+  const hoyMes = Number(hoyISO.slice(5, 7));
+  const [year, setYear] = useState(hoyAnio);
+  const [month, setMonth] = useState(hoyMes);
   const [vista, setVista] = useState<"mes" | "anio">("mes");
   const [diaSel, setDiaSel] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
@@ -130,7 +137,7 @@ export function Calendario({ me, team, cards = [] }: { me: Profile; team: Profil
     <div className="px-6 py-4 w-full max-w-[1000px]">
       <div className="flex items-center gap-2 mb-4 flex-wrap">
         <button onClick={() => irMes(-1)} className={btn} aria-label="Mes anterior"><ChevronLeft size={16} /></button>
-        <button onClick={() => { setYear(hoy.getFullYear()); setMonth(hoy.getMonth() + 1); }} className={btn}>Hoy</button>
+        <button onClick={() => { setYear(hoyAnio); setMonth(hoyMes); }} className={btn}>Hoy</button>
         <button onClick={() => irMes(1)} className={btn} aria-label="Mes siguiente"><ChevronRight size={16} /></button>
         <h2 className="text-xl font-bold tracking-[-0.02em] capitalize ml-1">
           {vista === "mes" ? `${MESES[month - 1]} ${year}` : year}
