@@ -25,29 +25,33 @@ Están hechos, probados y commiteados **en esta máquina**, pero no subidos. Pub
 requiere abrir GitHub Desktop en tu pantalla, y quedamos en que eso lo hago sólo cuando
 me avises.
 
-### 2.2 Tres migraciones sin correr
+### 2.2 Migraciones: al día
 
-**`migraciones-pendientes.sql`** (raíz del repo) junta las tres en un solo archivo, listo
-para pegar una vez en Supabase → SQL Editor.
+Las 36 están aplicadas — nos lo confirmaste el 30/07/2026. Eso desbloquea períodos,
+administrador del sistema, checklist por día, el cierre de la escalada de privilegios (35) y
+los permisos de encargado (36).
 
-| # | Qué habilita | Sin ella |
-|---|---|---|
-| 32 | Períodos | El selector de mes no muestra datos reales |
-| 33 | Administrador del sistema | No podés ver las consultas del equipo |
-| 34 | Checklist por día | Las recurrentes diarias siguen pisando el checklist |
+**Queda una sola cosa del lado de Supabase, y no es una migración**: desplegar la Edge
+Function `blanquear-clave`. Ver el punto 1 de la sección 5.
 
-**La 33 tiene un paso previo**: crear la cuenta en Supabase → Authentication → Users, y
-poner ese email en la línea marcada dentro del archivo. Está explicado arriba de todo.
+Verificación rápida, por si querés confirmarlo:
 
-**Nada de esto rompe si no lo corrés**: la app es defensiva y se comporta como hoy.
+```sql
+select name, email, admin_sistema from public.profiles where admin_sistema = true;
+select tablename, policyname from pg_policies
+ where tablename in ('task_occurrences','activity_log') order by tablename;
+```
+
+La primera tiene que devolver sólo las cuentas de administración que pusiste vos. La segunda,
+exactamente dos filas: "occ del equipo" y "activity del equipo".
 
 ## 3. Lo que se hizo y está esperando que lo veas
 
 | Qué | Estado |
 |---|---|
 | PDF del Reporte (vista de impresión dedicada) | Hecho — **verificación visual tuya pendiente** |
-| Períodos: adelantar meses, cierre con candado, checklist diario | Hecho — necesita migraciones 32 y 34 |
-| Usuario fantasma + consultas fuera del jefe | Hecho — necesita migración 33 |
+| Períodos: adelantar meses, cierre con candado, checklist diario | Hecho y habilitado |
+| Usuario fantasma + consultas fuera del jefe | Hecho y habilitado |
 | Pantalla vacía al entrar | Corregido |
 | Agrupar y ordenar por columna | Hecho |
 | Modo Director (5 señales + recomendaciones + confianza del dato) | Hecho |
@@ -55,7 +59,7 @@ poner ese email en la línea marcada dentro del archivo. Está explicado arriba 
 | Mi día: retomar, tarea estancada, cerrar de un toque, Tu semana | Hecho |
 | Mantenimiento automático (Dependabot + auditoría) | Hecho |
 | Instructivo del equipo (14 diapositivas) | Hecho |
-| Bandeja de consultas leíble fuera de la app (`node scripts/consultas.mjs`) | Hecho — necesita migración 33 |
+| Bandeja de consultas leíble fuera de la app (`node scripts/consultas.mjs`) | Hecho y habilitado |
 | Recuperación de fallas (versión nueva, sin conexión, permisos) | Hecho |
 | Sistema visual: escala tipográfica, foco, movimiento, esqueletos | Hecho — **mirá el tablero y el reporte**, ver 7 |
 | Saneado de filas en el borde de Supabase | Hecho |
@@ -81,14 +85,14 @@ poner ese email en la línea marcada dentro del archivo. Está explicado arriba 
    ese nombre exacto → pegar el contenido de `edge-function-blanquear-clave.ts` (raíz del
    repo) → Deploy. **Hasta que eso pase, el botón existe pero da error.** Pasos detallados en
    `docs/ACCESO-Y-PERMISOS.md`.
-2. **Correr `migraciones-pendientes.sql`** (ver punto 2.2). Es lo que desbloquea todo.
+2. **Migraciones: nada pendiente.** Las 36 están aplicadas.
 3. **Avisarme para publicar** los 40 commits.
 4. **Verificación visual del PDF**: Reporte → Imprimir/PDF → confirmar que la vista previa
    tiene contenido. Los tests garantizan que el documento se arma bien, **no** que el
    navegador lo imprima bien — esa es exactamente la falla que tuve la vez pasada.
 5. **Si querés que analicemos las consultas juntos**: crear `.env.consultas.local` con el
    email y la contraseña de la cuenta de administración, y correr `node scripts/consultas.mjs`.
-   Instrucciones en `docs/CONSULTAS-PARA-ANALISIS.md`. Depende de la migración 33.
+   Instrucciones en `docs/CONSULTAS-PARA-ANALISIS.md`.
 6. **Decisiones abiertas**: ¿va el cronómetro? (desaconsejado en `docs/PROPUESTA-ICR.md`).
    ¿Sentry para monitoreo de errores? (el Error Boundary ya está preparado).
 7. **Rotación de credenciales** — diferida por decisión tuya hasta salir de beta.
