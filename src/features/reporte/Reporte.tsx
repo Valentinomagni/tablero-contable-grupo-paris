@@ -60,12 +60,25 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
     .filter((s) => s.val > 0).sort((a, b) => b.val - a.val)
     .map((s, i) => ({ ...s, color: CAT[i % CAT.length] }));
 
+  // Carga cerrada por persona. ORDEN ALFABÉTICO, y esto NO es un detalle de presentación.
+  //
+  // Antes esto se llamaba "Ranking de productividad", venía ordenado de mayor a menor y cada
+  // fila tenía su número de puesto (1, 2, 3…). Eso es un podio, y el podio contradice de
+  // frente la regla más dura del proyecto: las métricas describen situaciones y procesos,
+  // nunca juzgan personas. Encima el panel de al lado aclara "no mide productividad
+  // individual", así que la misma pantalla se contradecía a sí misma.
+  //
+  // El dato sirve —ver cómo se reparte el trabajo es lo que permite equilibrarlo— y por eso
+  // se conserva. Lo que se fue es el encuadre: sin puestos, sin orden por volumen, y la barra
+  // pasa a leerse como parte del total del equipo en vez de como distancia contra el primero.
   const rank = teamSeg.map((u) => ({
     u, ef: term30.filter((c) => c.owner === u.id).reduce((s, c) => s + (c.effort ?? 1), 0),
     n: term30.filter((c) => c.owner === u.id).length,
     act: activity.filter((a) => a.owner === u.id && new Date(a.at).getTime() >= mes).reduce((s, a) => s + a.qty, 0),
-  })).sort((a, b) => b.ef - a.ef);
-  const maxEf = Math.max(1, ...rank.map((r) => r.ef));
+  })).sort((a, b) => a.u.name.localeCompare(b.u.name, "es"));
+  // Sobre el TOTAL del equipo, no sobre el máximo: con el máximo, la barra más larga siempre
+  // llega al 100% y arma un primer puesto visual aunque no haya números de puesto.
+  const efTotal = Math.max(1, rank.reduce((s, r) => s + r.ef, 0));
 
   // Utilización del tiempo (planificación de carga): últimos 30 días hasta hoy, días hábiles.
   const snaps = useSnapshots(true).data ?? [];
@@ -115,9 +128,14 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
       {
         // Mismo filtro que en pantalla (`rank.filter(r => r.ef > 0 || r.act > 0)`): sin él
         // el PDF listaba a TODO el equipo con 0/0/0 —incluidas licencias e ingresos
-        // recientes— y las dos vistas del mismo ranking no coincidían. Si nadie tuvo
-        // actividad, la sección queda sin filas y sale el texto "Sin datos en este período".
-        titulo: "Ranking de productividad (esfuerzo cerrado, 30 días)",
+        // recientes— y las dos vistas no coincidían. Si nadie tuvo actividad, la sección
+        // queda sin filas y sale el texto "Sin datos en este período".
+        //
+        // El título y el orden alfabético vienen de `rank` y son deliberados: acá se
+        // llamaba "Ranking de productividad" y salía ordenado de mayor a menor. Un podio
+        // impreso es peor que uno en pantalla — queda sobre un escritorio, sin el contexto
+        // de la pantalla y sin nadie que lo explique.
+        titulo: "Carga cerrada por persona (30 días) — describe reparto de trabajo, no desempeño",
         encabezados: ["Persona", "Esfuerzo", "Tareas", "Actividad"],
         filas: rank.filter((r) => r.ef > 0 || r.act > 0)
           .map((r) => ({ celdas: [r.u.name, String(r.ef), String(r.n), String(r.act)] })),
@@ -220,12 +238,15 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
       </div>
 
       <Panel>
-        <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-3.5">Ranking de productividad (esfuerzo cerrado, 30 días)</h3>
-        {rank.filter((r) => r.ef > 0 || r.act > 0).map((r, i) => (
+        <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-1">Carga cerrada por persona (30 días)</h3>
+        {/* El encuadre va A LA VISTA y no en un tooltip, igual que la regla de lectura del ICR:
+            es lo que evita que estas barras se lean como una nota de desempeño. */}
+        <p className="text-xs text-ink2 mt-0 mb-3.5">Sirve para ver cómo se reparte el trabajo y equilibrarlo. No mide desempeño individual: el esfuerzo depende de qué tareas tocaron, no de quién las hizo.</p>
+        {rank.filter((r) => r.ef > 0 || r.act > 0).map((r) => (
           <div key={r.u.id} className="flex items-center gap-3 py-2 text-sm border-t border-line first:border-0">
-            <span className="w-5 text-center font-bold text-ink2 tnum">{i + 1}</span><Avatar name={r.u.name} size={26} />
+            <Avatar name={r.u.name} size={26} />
             <span className="w-[170px] shrink-0 truncate">{r.u.name} <span className="text-ink2 capitalize">{r.u.role}</span></span>
-            <div className="flex-1 h-[9px] bg-surface2 rounded-full overflow-hidden min-w-[60px]"><div className="h-full rounded-full" style={{ width: `${Math.round((r.ef / maxEf) * 100)}%`, background: "linear-gradient(90deg,var(--s1),var(--accent))" }} /></div>
+            <div className="flex-1 h-[9px] bg-surface2 rounded-full overflow-hidden min-w-[60px]"><div className="h-full rounded-full" style={{ width: `${Math.round((r.ef / efTotal) * 100)}%`, background: "var(--s1)" }} /></div>
             <span className="shrink-0 tnum font-semibold text-sm">{r.ef} pts <span className="text-ink2 font-normal">· {r.n} tareas{r.act ? ` · ${r.act} op.` : ""}</span></span>
           </div>
         ))}

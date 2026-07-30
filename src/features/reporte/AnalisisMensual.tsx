@@ -406,6 +406,8 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
 
           {operativas.cargaCruzada.length > 0 && (
             <>
+              {/* encuadre-ok: la palabra aparece dentro de la ACLARACIÓN de que esto no es un
+                  ranking. Es la conducta que el guardián quiere fomentar, no la que persigue. */}
               <span className="text-2xs text-ink2 uppercase tracking-wide">Carga operativa por tarea (no es un ranking de personas)</span>
               <div className="mt-1.5 flex flex-col gap-3">
                 {operativas.porTipo.map((t) => {
