@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import type { Card, Profile, Objective, ActivityLog, ResumenMensual, Empresa } from "../lib/types";
 import type { DepInfo, RevDep } from "../lib/deps";
-import { CardSchema, validateRows } from "../lib/schemas";
+import { CardSchema, validateRows, saneaCards } from "../lib/schemas";
 import { COLUMNAS_CARDS } from "../lib/esquema";
 import type { Organizacion } from "../lib/organizacion";
 import { parseOrganizacion, DEFAULT_ORG } from "../lib/organizacion";
@@ -349,11 +349,15 @@ export function useCards() {
       // Fallback a `*` si la base todavía no tiene alguna de esas columnas (42703 /
       // PGRST204 en una base sin migrar): pedir columnas explícitas hace fallar el select
       // ENTERO, y quedarse sin tablero es peor que traer un tsvector de más.
+      // Dos pasos con roles distintos (ver el comentario largo en lib/schemas.ts):
+      // `validateRows` AVISA del drift sin tocar nada, y `saneaCards` ARREGLA lo arreglable
+      // y descarta lo inservible antes de que un componente lo toque. Una fila con
+      // `checklist` en null tumbaba la pantalla entera desde el `.map()` de un componente.
       if (error) {
         const { data: todo } = await supabase.from("cards").select("*").order("created_at");
-        return validateRows((todo as Card[]) ?? [], CardSchema, "cards");
+        return saneaCards(validateRows((todo as Card[]) ?? [], CardSchema, "cards"));
       }
-      return validateRows((data as unknown as Card[]) ?? [], CardSchema, "cards");
+      return saneaCards(validateRows((data as unknown as Card[]) ?? [], CardSchema, "cards"));
     },
   });
 }
