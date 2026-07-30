@@ -1,4 +1,4 @@
-# Estado del proyecto — al 28/07/2026
+# Estado del proyecto — al 30/07/2026
 
 Documento de situación. Separa lo que depende de mí (código) de lo que depende de vos
 (decisiones y acciones externas). Honesto y sin adornos.
@@ -7,8 +7,10 @@ Documento de situación. Separa lo que depende de mí (código) de lo que depend
 
 ## 1. Dónde estamos
 
-- **Tablero Contable v2.8.0**, con **1016 pruebas automáticas** verdes, TypeScript sin
+- **Tablero Contable v2.9.0**, con **1079 pruebas automáticas** verdes, TypeScript sin
   errores, lint sin errores y build OK.
+- **Sistema visual documentado** en `docs/SISTEMA-VISUAL.md`, con dos tests guardianes que
+  impiden que se erosione.
 - 34 migraciones de base de datos escritas.
 - Repositorio en GitHub con CI (lint + tests + build + e2e en cada push) y **mantenimiento
   automático** semanal (Dependabot + auditoría de seguridad y de código sin uso).
@@ -54,11 +56,16 @@ poner ese email en la línea marcada dentro del archivo. Está explicado arriba 
 | Mantenimiento automático (Dependabot + auditoría) | Hecho |
 | Instructivo del equipo (14 diapositivas) | Hecho |
 | Bandeja de consultas leíble fuera de la app (`node scripts/consultas.mjs`) | Hecho — necesita migración 33 |
+| Recuperación de fallas (versión nueva, sin conexión, permisos) | Hecho |
+| Sistema visual: escala tipográfica, foco, movimiento, esqueletos | Hecho — **mirá el tablero y el reporte**, ver 7 |
+| Saneado de filas en el borde de Supabase | Hecho |
 
 ## 4. Pendiente MÍO (código)
 
-1. **Migrar las 20 pantallas restantes al componente `Panel`.** Es cosmético y sin riesgo
-   funcional, pero requiere verificación visual — se hace por tandas cuando puedas mirar.
+1. **Decidir las variantes de `Panel` que faltan.** Medido: de 41 superficies, 18 son la
+   tarjeta canónica y ya usan `Panel`. Las otras 23 son 4 o 5 superficies distintas (`p-4`,
+   `p-5`, `p-8`, `px-5 py-4`, shells sin padding). Unificarlas necesita que vos mires la
+   pantalla y digas cuáles son la misma cosa. Detalle en `docs/SISTEMA-VISUAL.md`.
 2. **`mv_resumen_mensual`**: la vista materializada existe y **nadie la usa**. Le faltan
    `sucursal` y `categoria` y el filtro de operativas para que las métricas den bien.
    Arreglarla es una migración nueva; no la mezclé con lo demás.
@@ -90,6 +97,12 @@ poner ese email en la línea marcada dentro del archivo. Está explicado arriba 
 
 ## 7. Riesgos abiertos
 
+- **El tablero y el reporte van a verse distintos, y es lo correcto.** `--ring` estaba
+  definido como un color y no como una sombra, así que `box-shadow: var(--ring),var(--shadow)`
+  era CSS inválido y el navegador **descartaba la declaración entera**: cinco pantallas venían
+  renderizando sin ninguna sombra y nadie lo notó en meses. Ya está arreglado. Cuando publiques
+  vas a ver aparecer una línea finita de borde y una sombra suave en esas tarjetas. Miralo y
+  decime si te gusta.
 - **Verificación visual acumulada**: hay bastante entregado que todavía no viste
   funcionando. Los tests cubren la lógica, no la percepción. Cuanto antes corras las
   migraciones y mires, menos se acumula.

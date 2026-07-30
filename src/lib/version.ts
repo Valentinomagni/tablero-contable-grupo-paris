@@ -3,6 +3,21 @@
 // nueva arriba de todo y la versión se actualiza sola (ver docs/RELEASE.md).
 export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] = [
   {
+    version: "2.9.0",
+    fecha: "2026-07-30",
+    cambios: [
+      "Si publicamos una versión nueva mientras tenés la app abierta, ahora te avisa y te ofrece actualizar con un botón. Antes mostraba un error genérico con un \"Reintentar\" que en ese caso no podía funcionar.",
+      "Las pantallas de error ahora dicen qué pasó en lenguaje claro, ofrecen la acción que de verdad sirve según el caso, y te dejan copiar el detalle para mandarlo por Consultas.",
+      "Si algo falla en segundo plano, ahora te enterás con un aviso en vez de que la acción quede sin efecto en silencio.",
+      "Corregido: las tarjetas del tablero y del reporte no mostraban su sombra. Un error en el estilo hacía que el navegador la descartara por completo.",
+      "Mientras carga una pantalla ahora se ve la forma de lo que viene, en lugar de la palabra \"Cargando\".",
+      "Tipografía unificada en toda la app: se acabaron las diferencias de medio píxel entre pantallas.",
+      "Al navegar con el teclado ahora se ve claramente dónde estás parado, también dentro del menú lateral oscuro.",
+      "Si tenés activado \"reducir movimiento\" en tu sistema, la app lo respeta.",
+      "Una tarea con datos incompletos ya no puede tumbar una pantalla entera: se muestra lo que se puede y se avisa del resto.",
+    ],
+  },
+  {
     version: "2.8.0",
     fecha: "2026-07-27",
     cambios: [
