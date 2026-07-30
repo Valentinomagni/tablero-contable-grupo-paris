@@ -4,3 +4,9 @@ dist/
 
 test-results/
 playwright-report/
+
+# Bandeja de consultas (scripts/consultas.mjs): datos reales del equipo y credenciales.
+# NUNCA se versionan. `.env.consultas.local` ya cae bajo `*.local`; se repite explícito
+# para que se vea al leer el archivo y nadie lo mueva sin darse cuenta.
+consultas-bandeja.md
+.env.consultas.local
