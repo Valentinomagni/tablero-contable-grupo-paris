@@ -12,6 +12,7 @@ import { nombreValido } from "../../lib/validacion";
 import { puedeSerManager, esSinAsignar } from "../../lib/jerarquia";
 import { esVisible } from "../../lib/visibilidad";
 import { confirmacionValida } from "../../lib/borrado";
+import { BlanquearClave } from "./BlanquearClave";
 import { toast } from "sonner";
 
 export function UserModal({ user: u, meId, team, cards, activity, onClose }:
@@ -198,6 +199,11 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
           <Stat v={m.activity30} label="Actividad operativa (30 d)" />
           {arqueoRows.length > 0 && <Stat v={arqueoPctOk + "%"} label="Arqueo (mes)" />}
         </div>
+
+        {/* Blanquear va ANTES de eliminar y separado: es reversible y frecuente, mientras que
+            eliminar es definitivo y raro. Lo peligroso va último para que nadie apriete lo
+            que no quería. */}
+        {esJefe && <BlanquearClave userId={u.id} nombre={u.name} />}
 
         {puedeEliminar && (
           <div className="mt-5 pt-4 border-t border-line">
