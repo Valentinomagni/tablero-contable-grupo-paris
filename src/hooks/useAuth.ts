@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import type { Profile } from "../lib/types";
-import { resuelveIdentificador } from "../lib/auth";
+import { resuelveIdentificador, mensajeDeLogin } from "../lib/auth";
 
 export function useAuth() {
   const qc = useQueryClient();
@@ -35,12 +35,14 @@ export function useAuth() {
     const id = identificador.trim();
     if (resuelveIdentificador(id) === "email") {
       const { error } = await supabase.auth.signInWithPassword({ email: id, password });
-      return error;
+      return error ? { message: mensajeDeLogin(error, id) } : null;
     }
     const { data: email } = await supabase.rpc("email_por_usuario", { u: id });
-    if (!email) return { message: "Usuario no encontrado" };
+    // `codigo` propio para que `mensajeDeLogin` distinga este caso del de contraseña
+    // equivocada: son problemas distintos y llevan a acciones distintas.
+    if (!email) return { message: mensajeDeLogin({ codigo: "sin-usuario" }, id), codigo: "sin-usuario" };
     const { error } = await supabase.auth.signInWithPassword({ email: email as string, password });
-    return error;
+    return error ? { message: mensajeDeLogin(error, id) } : null;
   }
   async function signOut() {
     await supabase.auth.signOut();
