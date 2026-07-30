@@ -53,6 +53,7 @@ poner ese email en la línea marcada dentro del archivo. Está explicado arriba 
 | Mi día: retomar, tarea estancada, cerrar de un toque, Tu semana | Hecho |
 | Mantenimiento automático (Dependabot + auditoría) | Hecho |
 | Instructivo del equipo (14 diapositivas) | Hecho |
+| Bandeja de consultas leíble fuera de la app (`node scripts/consultas.mjs`) | Hecho — necesita migración 33 |
 
 ## 4. Pendiente MÍO (código)
 
