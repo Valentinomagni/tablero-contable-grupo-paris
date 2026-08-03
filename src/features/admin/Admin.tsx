@@ -22,6 +22,7 @@ import { enLinea, textoUltimaConexion } from "../../lib/presencia";
 import { BandejaConsultas } from "../consultas/BandejaConsultas";
 import { Empresas } from "./Empresas";
 import { mensajeUsuario, clasificarFalla } from "../../lib/fallas";
+import { toARTDate } from "../../lib/metrics";
 
 // chip de estado de migraciones (spec 27, T2): verde al día / ámbar faltan / gris desconocido
 function MigracionesChip() {
@@ -93,9 +94,11 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
   const { data: annos = [] } = useAnnouncements();
   const [fiscalPreview, setFiscalPreview] = useState<{ title: string; detail: string; due_date: string }[] | null>(null);
   const [fiscalBusy, setFiscalBusy] = useState(false);
-  const hoyFiscal = new Date();
-  const fiscalYear = hoyFiscal.getFullYear();
-  const fiscalMonth = hoyFiscal.getMonth() + 1;
+  // El mes del calendario fiscal sale del día argentino, no de la zona del navegador:
+  // el 31 a las 22 hora de acá un navegador en UTC ya estaría generando el mes siguiente.
+  const hoyFiscal = toARTDate(new Date().toISOString());
+  const fiscalYear = Number(hoyFiscal.slice(0, 4));
+  const fiscalMonth = Number(hoyFiscal.slice(5, 7));
 
   // Recibe SÓLO los campos que cambian, no el objeto completo. Mandar el objeto completo
   // desde una copia en memoria de hace horas era lo que borraba lo que otra pantalla había

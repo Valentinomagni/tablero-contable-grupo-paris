@@ -7,7 +7,7 @@ import { useCardOccurrences } from "../../../hooks/useOccurrences";
 import { useMigraciones } from "../../../hooks/useData";
 import { tieneChecklistDiario, payloadOccurrences } from "../../../lib/esquema";
 import { mensajeUsuario } from "../../../lib/fallas";
-import { claveFecha } from "../../../lib/calendario";
+import { toARTDate } from "../../../lib/metrics";
 import { editarItem, borrarItem } from "../../../lib/checklist";
 import { textoDiferencia } from "../../../lib/arqueo";
 import { ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
@@ -145,11 +145,13 @@ function ChecklistDelDia({ c }: { c: Card }) {
   const { data: aplicadas } = useMigraciones();
   const habilitado = tieneChecklistDiario(aplicadas);
 
-  const hoy = new Date();
-  const year = hoy.getFullYear();
-  const month = hoy.getMonth() + 1;
+  // Día argentino: el checklist diario se abre en el día que el equipo está viviendo,
+  // no en el del reloj del navegador (en UTC ya sería mañana después de las 21 de acá).
+  const hoy = toARTDate(new Date().toISOString());
+  const year = Number(hoy.slice(0, 4));
+  const month = Number(hoy.slice(5, 7));
   const diasEnMes = new Date(year, month, 0).getDate();
-  const [fecha, setFecha] = useState(claveFecha(hoy));
+  const [fecha, setFecha] = useState(hoy);
   const [nuevo, setNuevo] = useState("");
 
   const { data: occs = [] } = useCardOccurrences(c.id, year, month);

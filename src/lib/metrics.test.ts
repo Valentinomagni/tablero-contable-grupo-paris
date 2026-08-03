@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { kpiPct, kpiClass, toARTDate, saludScore, userMetrics30d, wow, onTimeAdherence } from "./metrics";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { dueInfo, kpiPct, kpiClass, toARTDate, saludScore, userMetrics30d, wow, onTimeAdherence } from "./metrics";
 import type { Card, Objective, ActivityLog } from "./types";
 
 describe("kpiPct", () => {
@@ -124,5 +124,34 @@ describe("userMetrics30d", () => {
       { id: "3", card_id: "x", owner: "u2", who_name: "O", qty: 9, note: "", at: "2020-02-25T10:00:00Z" }, // otro
     ];
     expect(userMetrics30d([], [], act, "u1", NOW).activity30).toBe(3);
+  });
+});
+
+describe("dueInfo", () => {
+  // La zona del runner no debe influir: se fija a UTC para que el "hoy" del navegador
+  // y el "hoy" argentino puedan diferir, que es justo el bug que se quiere evitar.
+  const TZ = process.env.TZ;
+  beforeEach(() => { process.env.TZ = "UTC"; vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); process.env.TZ = TZ; });
+
+  it("sin fecha de vencimiento no hay chip", () =>
+    expect(dueInfo({ due_date: null })).toBeNull());
+
+  describe("con el día ART igual al del navegador (mediodía)", () => {
+    beforeEach(() => vi.setSystemTime(new Date("2026-08-03T15:00:00Z")));
+    it("vence hoy: 0 días", () => expect(dueInfo({ due_date: "2026-08-03" })?.days).toBe(0));
+    it("venció ayer: -1 día", () => expect(dueInfo({ due_date: "2026-08-02" })?.days).toBe(-1));
+    it("vence en 3 días: 3", () => expect(dueInfo({ due_date: "2026-08-06" })?.days).toBe(3));
+    // el separador y el relleno con cero dependen del ICU del entorno: se fija el día y el mes.
+    it("la etiqueta muestra día y mes", () => expect(dueInfo({ due_date: "2026-08-06" })?.lbl).toMatch(/^0?6.0?8$/));
+  });
+
+  describe("navegador en UTC a las 21:30 de Argentina (regresión)", () => {
+    // 00:30 UTC del 4 = 21:30 ART del 3: para el navegador ya es día 4, para el país es 3.
+    beforeEach(() => vi.setSystemTime(new Date("2026-08-04T00:30:00Z")));
+    it("la tarea que vence hoy en Argentina NO figura vencida", () =>
+      expect(dueInfo({ due_date: "2026-08-03" })?.days).toBe(0));
+    it("mañana argentino sigue siendo 1 día", () =>
+      expect(dueInfo({ due_date: "2026-08-04" })?.days).toBe(1));
   });
 });

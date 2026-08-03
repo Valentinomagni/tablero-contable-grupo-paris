@@ -14,9 +14,14 @@ export const fmtDateTime = (iso: string | null) =>
 export interface DueInfo { days: number; lbl: string; }
 export function dueInfo(c: Pick<Card, "due_date">): DueInfo | null {
   if (!c.due_date) return null;
-  const today = new Date(); today.setHours(0, 0, 0, 0);
+  // "Hoy" es el día calendario ARGENTINO, no el del navegador: un navegador en UTC ya
+  // pasó de día a las 21 hora local y marcaría "Venció" una tarea que vence hoy, dentro
+  // de la misma pantalla cuyo hoy sí es argentino. Fuente única: `toARTDate`.
+  const hoy = toARTDate(new Date().toISOString());
+  // La diferencia de días se calcula sobre las dos fechas en UTC, así ninguna de las dos
+  // arrastra el desfase de la zona del navegador.
+  const days = Math.round((Date.parse(c.due_date + "T00:00:00Z") - Date.parse(hoy + "T00:00:00Z")) / 86400000);
   const d = new Date(c.due_date + "T00:00:00");
-  const days = Math.round((d.getTime() - today.getTime()) / 86400000);
   const lbl = d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" });
   return { days, lbl };
 }

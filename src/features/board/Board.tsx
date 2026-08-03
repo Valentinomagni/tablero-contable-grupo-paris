@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import { COLS, type Card, type Status, type ActivityLog, type Profile, type CardPeriodo } from "../../lib/types";
 import { notifsAlFinalizar, debeNotificarDesdeCliente } from "../../lib/notificaciones";
-import { dueInfo, fmtDateTime } from "../../lib/metrics";
+import { dueInfo, fmtDateTime, toARTDate } from "../../lib/metrics";
 import { cn, teclaActiva } from "../../lib/ui";
 import { pushUndo } from "../../lib/undo";
 import { isShared, siblingSyncPatches } from "../../lib/shared";
@@ -303,7 +303,9 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
     </div>
   );
 
-  const hoyStr = new Date().toDateString();
+  // Día calendario argentino, no el del navegador: el contador "hoy:" de las operativas
+  // tiene que cambiar de día a la medianoche de acá, no a la de la zona del equipo.
+  const hoyISO = toARTDate(new Date().toISOString());
   const colBg = { background: "color-mix(in srgb,var(--surface2) 55%,var(--bg))" };
 
   const chipCat = (lbl: string, val: string | null) => {
@@ -456,7 +458,7 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
         </h2>
         {opers.map((c) => {
           const regs = activity.filter((a) => a.card_id === c.id);
-          const hoy = regs.filter((a) => new Date(a.at).toDateString() === hoyStr).reduce((s, a) => s + a.qty, 0);
+          const hoy = regs.filter((a) => toARTDate(a.at) === hoyISO).reduce((s, a) => s + a.qty, 0);
           const sem = regs.filter((a) => Date.now() - new Date(a.at).getTime() < 7 * 86400000).reduce((s, a) => s + a.qty, 0);
           return (
             // Sigue siendo un div: adentro tiene el botón "+ Registrar" y su input, y un
