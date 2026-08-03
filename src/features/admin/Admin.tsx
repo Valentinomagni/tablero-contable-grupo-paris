@@ -508,16 +508,17 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
               setArchBusy(true);
               const { data, error } = await supabase.rpc("archivar_mes", { p_mes: archMes });
               setArchBusy(false);
-              // La pista de la migración 22 se conserva aparte y NO se delega en
-              // `clasificarFalla`: cuando falta la función, PostgREST responde PGRST202
-              // ("could not find the function ... in the schema cache"), que no cae en la
-              // rama de falta-migracion. Para quien administra, esa pista es lo único que
-              // desatasca. Si la falla sí quedó clasificada como migración, no se repite.
               if (error) {
                 const online = navigator.onLine;
                 const base = mensajeUsuario(error, "archivar el mes", online);
-                const yaLoDice = clasificarFalla(error, online).tipo === "falta-migracion";
-                toast.error(yaLoDice ? base : base + " Si administrás el sistema, revisá que esté aplicada la migración 22.");
+                // La pista de la migración 22 sólo tiene sentido cuando la falla quedó
+                // SIN clasificar: falta la función RPC y PostgREST responde PGRST202
+                // ("could not find the function ... in the schema cache"), que cae en
+                // "desconocida" y no en "falta-migracion" (esa rama es para columnas).
+                // Si la falla es sin-conexion, sin-permiso o version-vieja, la pista
+                // manda a revisar la base cuando el problema es otro: no se agrega.
+                const faltaLaFuncion = clasificarFalla(error, online).tipo === "desconocida";
+                toast.error(faltaLaFuncion ? base + " Si administrás el sistema, revisá que esté aplicada la migración 22." : base);
               }
               else { toast.success(`Mes ${mesLabel(archMes)} archivado: ${data ?? 0} tareas.`); qc.invalidateQueries({ queryKey: ["archive"] }); }
             }}
