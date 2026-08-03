@@ -43,9 +43,12 @@ function CardItem({ c, blocked, waiting, esperaTitulos = [], onOpen }: { c: Card
   const pr = c.priority === "alta"
     ? <span className="bg-danger-soft text-danger rounded-md px-2 py-0.5 font-semibold">Alta</span> : null;
   return (
-    // Botón real y no un div: abrir la tarea es LA interacción del tablero y tiene que
-    // llegar con Tab y activarse con Enter. text-left/w-full mantienen el aspecto del div.
-    <button type="button" onClick={() => onOpen(c)}
+    // Esta tarjeta es un div aunque otras del proyecto sean <button>: va envuelta en el
+    // <div draggable> del kanban y Firefox históricamente NO inicia el arrastre nativo
+    // cuando el mousedown cae sobre un control de formulario. Arrastrar entre columnas es
+    // la interacción principal del tablero, así que manda el arrastre; el teclado se
+    // resuelve igual con role/tabIndex/onKeyDown, mismo patrón que la tarjeta de operativas.
+    <div role="button" tabIndex={0} onClick={() => onOpen(c)} onKeyDown={teclaActiva(() => onOpen(c))}
       className="text-left w-full bg-surface rounded-xl px-3.5 py-3 mb-2.5 cursor-pointer border border-line/70 transition
         hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-[var(--shadow-lg)]"
       style={{ boxShadow: "var(--shadow)" }}>
@@ -75,7 +78,7 @@ function CardItem({ c, blocked, waiting, esperaTitulos = [], onOpen }: { c: Card
         </div>
       )}
       {c.done_at && <div className="flex items-center gap-1 text-done font-semibold text-xs mt-1.5"><Check size={12} /> Terminada el {fmtDateTime(c.done_at)}</div>}
-    </button>
+    </div>
   );
 }
 
