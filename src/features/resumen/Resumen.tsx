@@ -218,9 +218,11 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
               const oldDays = oldest ? Math.floor((now - new Date(oldest.created_at).getTime()) / day) : null;
               const ef = his.filter((c) => c.status === "term" && c.done_at && new Date(c.done_at).getTime() >= week).reduce((s, c) => s + (c.effort ?? 1), 0);
               return (
-                // Una fila de tabla no puede ser un <button> sin romper la tabla:
-                // tabIndex + onKeyDown le dan el teclado sin cambiar el marcado.
-                <tr key={u.id} role="button" tabIndex={0} onClick={() => onGoPerson(u.id)}
+                // Sin role="button": ese role reemplaza al de fila y deja a los <td> como
+                // hijos inválidos, así que el lector de pantalla deja de anunciar columnas
+                // y encabezados y lee la fila corrida. tabIndex + onKeyDown alcanzan para
+                // el teclado y la tabla sigue siendo una tabla.
+                <tr key={u.id} tabIndex={0} onClick={() => onGoPerson(u.id)}
                   onKeyDown={teclaActiva(() => onGoPerson(u.id))}
                   className="border-t border-line cursor-pointer hover:bg-surface2 tnum">
                   <td className="px-3 py-2.5 flex items-center gap-2"><Avatar name={u.name} size={22} /><b>{u.name}</b> <span className="text-ink2 text-xs capitalize">{u.role}</span>
@@ -243,7 +245,7 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
           const i = dueInfo(c), last = c.comments[c.comments.length - 1];
           return (
             // Botón real: la tarjeta se abre con Enter. text-left/w-full la dejan igual.
-            <button type="button" key={c.id} onClick={() => onOpenCard(c)} className="text-left w-full bg-surface border-l-[3px] border-danger rounded-lg px-3.5 py-2.5 mb-2 cursor-pointer" style={cardSh}>
+            <button type="button" key={c.id} onClick={() => onOpenCard(c)} className="block text-left w-full bg-surface border-l-[3px] border-danger rounded-lg px-3.5 py-2.5 mb-2 cursor-pointer" style={cardSh}>
               <b>{c.title}</b> <span className="text-ink2 text-xs">· {nom(c.owner)}</span>
               {i && i.days < 0 && <span className="ml-2 bg-danger-soft text-danger rounded-md px-2 py-0.5 text-xs font-semibold">Venció {i.lbl}</span>}
               {last && <span className="block text-sm mt-1.5">"{last.txt}" <span className="text-ink2 text-xs">— {last.who}, {fmtDateTime(last.when)}</span></span>}
@@ -303,7 +305,7 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
       <h2 className="text-base font-bold tracking-[-0.01em] text-ink mb-2.5 mt-6">Terminadas los últimos 7 días</h2>
       {doneWeek.length === 0 ? <p className="text-ink2 text-sm">Todavía nada esta semana.</p>
         : doneWeek.slice(0, 20).map((c) => (
-          <button type="button" key={c.id} onClick={() => onOpenCard(c)} className="text-left w-full bg-surface border border-line rounded-lg px-3.5 py-2 mb-1.5 cursor-pointer text-sm" style={cardSh}>
+          <button type="button" key={c.id} onClick={() => onOpenCard(c)} className="block text-left w-full bg-surface border border-line rounded-lg px-3.5 py-2 mb-1.5 cursor-pointer text-sm" style={cardSh}>
             <b>{c.title}</b> <span className="text-ink2 text-xs">· {nom(c.owner)} · {fmtDateTime(c.done_at)}</span>
           </button>
         ))}

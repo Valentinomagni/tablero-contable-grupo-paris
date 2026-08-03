@@ -256,9 +256,11 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
               const ahora = new Date().toISOString();
               const online = enLinea(u.last_seen, ahora);
               return (
-              // Una fila de tabla no puede ser un <button> sin romper la tabla:
-              // tabIndex + onKeyDown le dan el teclado sin cambiar el marcado.
-              <tr key={u.id} role="button" tabIndex={0} onClick={() => onOpenUser(u)}
+              // Sin role="button": ese role reemplaza al de fila y deja a los <td> como
+              // hijos inválidos, así que el lector de pantalla deja de anunciar columnas
+              // y encabezados y lee la fila corrida. tabIndex + onKeyDown alcanzan para
+              // el teclado y la tabla sigue siendo una tabla.
+              <tr key={u.id} tabIndex={0} onClick={() => onOpenUser(u)}
                 onKeyDown={teclaActiva(() => onOpenUser(u))}
                 className="border-t border-line cursor-pointer hover:bg-surface2">
                 <td className="px-4 py-2.5"><div className="flex items-center gap-2"><Avatar name={u.name} size={24} /><div><div className="flex items-center gap-1.5"><b>{u.name}</b>{u.oculto === true && (
