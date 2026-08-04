@@ -105,6 +105,8 @@ export interface AppSettings {
   closing_template?: import("./plantilla").TemplateItem[];
   categorias?: string[];
   plantillas?: PlantillaTareas[];
+  /** Pesos del orden sugerido: el criterio de qué va primero, escrito y configurable. */
+  pesos_prioridad?: import("./prioridad-calculada").PesosPrioridad;
 }
 export interface PlantillaTareas {
   nombre: string;

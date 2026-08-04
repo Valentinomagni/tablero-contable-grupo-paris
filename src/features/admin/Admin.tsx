@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Archive, Download, UserPlus, ArrowRightLeft, Plus, X, Trash2, CalendarPlus, ShieldCheck, AlertTriangle, HelpCircle, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { mesLabel } from "../../lib/archivo";
@@ -23,6 +23,7 @@ import { BandejaConsultas } from "../consultas/BandejaConsultas";
 import { Empresas } from "./Empresas";
 import { mensajeUsuario, clasificarFalla } from "../../lib/fallas";
 import { toARTDate } from "../../lib/metrics";
+import { PESOS_POR_DEFECTO, puntajeDeOrden, porQueVaPrimero, type PesosPrioridad } from "../../lib/prioridad-calculada";
 
 // chip de estado de migraciones (spec 27, T2): verde al día / ámbar faltan / gris desconocido
 function MigracionesChip() {
@@ -70,6 +71,23 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
   const [parWarn, setParWarn] = useState<string | null>(null);
   const [parStuck, setParStuck] = useState<string | null>(null);
   const [nuevaCat, setNuevaCat] = useState("");
+  // Pesos del orden sugerido. Se editan como texto porque un input numérico vacío devuelve ""
+  // y forzarlo a número mientras se escribe hace saltar el cursor al borrar un dígito.
+  const pesosGuardados = settings.pesos_prioridad ?? PESOS_POR_DEFECTO;
+  const [pesosDraft, setPesosDraft] = useState<Record<keyof PesosPrioridad, string> | null>(null);
+  const pesosTxt: Record<keyof PesosPrioridad, string> = pesosDraft ?? {
+    vencimiento: String(pesosGuardados.vencimiento ?? 0),
+    prioridad: String(pesosGuardados.prioridad ?? 0),
+    bloquea: String(pesosGuardados.bloquea ?? 0),
+    esfuerzo: String(pesosGuardados.esfuerzo ?? 0),
+  };
+  const acotar = (v: string) => Math.max(0, Math.min(100, Number(v) || 0));
+  const pesosEditados: PesosPrioridad = {
+    vencimiento: acotar(pesosTxt.vencimiento),
+    prioridad: acotar(pesosTxt.prioridad),
+    bloquea: acotar(pesosTxt.bloquea),
+    esfuerzo: acotar(pesosTxt.esfuerzo),
+  };
   // Plantillas de tareas (propuesta P6): responsable por defecto elegido al generar y borrador de creación.
   // Indexados por NOMBRE de plantilla, no por posición en el arreglo. Con el índice, borrar
   // una plantilla del medio corría todas las de abajo y el responsable por defecto que se
@@ -115,6 +133,23 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
   }
 
   const plantillas = settings.plantillas ?? [];
+
+  // Vista previa en vivo del orden sugerido. Sin esto los cuatro números son abstractos: nadie
+  // sabe qué está tocando hasta que ve qué tareas del propio tablero quedarían primeras.
+  // El "hoy" se congela al montar para que la lista no se recalcule sola mientras se edita.
+  const ahoraISO = useMemo(() => new Date().toISOString(), []);
+  const vistaPrevia = useMemo(() => {
+    const pendientes = (cards ?? []).filter((c) => c && c.status !== "term");
+    return pendientes
+      .map((c) => ({
+        card: c,
+        puntaje: puntajeDeOrden(c, pendientes, pesosEditados, ahoraISO),
+        motivos: porQueVaPrimero(c, pendientes, pesosEditados, ahoraISO),
+      }))
+      .sort((a, b) => b.puntaje - a.puntaje)
+      .slice(0, 5);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cards, ahoraISO, pesosEditados.vencimiento, pesosEditados.prioridad, pesosEditados.bloquea, pesosEditados.esfuerzo]);
 
   // Tiempo máximo por categoría (settings key='tiempos_max', spec 28 Task 4). Patrón idéntico al de plantillas:
   // se lee con un hook propio y se guarda con upsert directo a la fila de esa key.
@@ -499,6 +534,47 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
             stuck_days: Math.max(1, Math.min(30, Number(parStuck ?? settings.stuck_days ?? 2) || 2)),
           }, "Parámetros guardados")}
           className="bg-accent text-white rounded-lg px-3.5 py-2 text-sm font-semibold mt-3">Guardar parámetros</button>
+        {permMsg && <p className={"text-sm mt-2 mb-0 " + (!permMsg.startsWith("No se pudo") ? "text-done" : "text-danger")}>{permMsg}</p>}
+      </div>
+
+      <h2 className="text-base font-bold tracking-[-0.01em] text-ink mb-2.5">Qué se hace primero</h2>
+      <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
+        <p className="text-ink2 text-sm mt-0 mb-3 max-w-[640px]">Cuánto pesa cada cosa al sugerir el orden de trabajo. Así el criterio queda escrito en un lugar y es el mismo para todos: quien cubre a otro sabe por dónde empezar. Cada valor va de 0 a 100 y se compara con los demás.</p>
+        <div className="flex flex-wrap gap-4">
+          <label className="text-sm text-ink2">Está vencida o por vencer<br />
+            <input type="number" min={0} max={100} value={pesosTxt.vencimiento} onChange={(e) => setPesosDraft({ ...pesosTxt, vencimiento: e.target.value })} className={inputCls + " w-[90px] mt-1"} /></label>
+          <label className="text-sm text-ink2">Prioridad declarada<br />
+            <input type="number" min={0} max={100} value={pesosTxt.prioridad} onChange={(e) => setPesosDraft({ ...pesosTxt, prioridad: e.target.value })} className={inputCls + " w-[90px] mt-1"} /></label>
+          <label className="text-sm text-ink2">Otras tareas la esperan<br />
+            <input type="number" min={0} max={100} value={pesosTxt.bloquea} onChange={(e) => setPesosDraft({ ...pesosTxt, bloquea: e.target.value })} className={inputCls + " w-[90px] mt-1"} /></label>
+          <label className="text-sm text-ink2">Es rápida de sacar<br />
+            <input type="number" min={0} max={100} value={pesosTxt.esfuerzo} onChange={(e) => setPesosDraft({ ...pesosTxt, esfuerzo: e.target.value })} className={inputCls + " w-[90px] mt-1"} /></label>
+        </div>
+
+        {/* La vista previa muestra el efecto de los pesos sobre las tareas reales del tablero,
+            con los motivos al lado: un orden que no se puede explicar se ignora la segunda vez
+            que se equivoca. Los motivos hablan de la tarea, nunca de quien la tiene. */}
+        <p className="text-ink2 text-sm mt-4 mb-2">Con estos valores, las tareas que quedarían primeras:</p>
+        {vistaPrevia.length === 0
+          ? <p className="text-ink2 text-sm m-0">No hay tareas sin terminar para mostrar.</p>
+          : vistaPrevia.map((v, i) => (
+            <div key={v.card.id} className="flex items-start gap-2 py-1.5 border-b border-line/60 last:border-0">
+              <span className="text-ink2 text-sm w-5 shrink-0">{i + 1}.</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-ink m-0 truncate">{v.card.title}</p>
+                <p className="text-2xs text-ink2 m-0">{v.motivos.length ? v.motivos.join(" · ") : "Sin nada que la destaque"}</p>
+              </div>
+              <span className="text-ink2 text-sm shrink-0">{v.puntaje}</span>
+            </div>
+          ))}
+
+        <button onClick={() => saveSettings({ pesos_prioridad: pesosEditados }, "Criterio guardado")}
+          className="bg-accent text-white rounded-lg px-3.5 py-2 text-sm font-semibold mt-3">Guardar criterio</button>
+        <button onClick={() => setPesosDraft({
+            vencimiento: String(PESOS_POR_DEFECTO.vencimiento), prioridad: String(PESOS_POR_DEFECTO.prioridad),
+            bloquea: String(PESOS_POR_DEFECTO.bloquea), esfuerzo: String(PESOS_POR_DEFECTO.esfuerzo),
+          })}
+          className="border border-line bg-surface2 text-ink2 rounded-lg px-3.5 py-2 text-sm font-semibold mt-3 ml-2 hover:text-accent">Volver a los valores sugeridos</button>
         {permMsg && <p className={"text-sm mt-2 mb-0 " + (!permMsg.startsWith("No se pudo") ? "text-done" : "text-danger")}>{permMsg}</p>}
       </div>
 
