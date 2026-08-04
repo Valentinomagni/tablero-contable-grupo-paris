@@ -3,6 +3,16 @@
 // nueva arriba de todo y la versión se actualiza sola (ver docs/RELEASE.md).
 export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] = [
   {
+    version: "2.12.0",
+    fecha: "2026-08-04",
+    cambios: [
+      "El historial de una tarea ahora muestra lo que pasó en el mes que estás mirando, en vez de todo mezclado desde que se creó. Los otros meses siguen a un click.",
+      "Al crear una tarea ahora elegís si es de una sola vez o si se repite todos los meses. Por defecto es de una sola vez, así lo puntual no vuelve para siempre.",
+      "Nuevo para jefes y encargados: \"En qué anda el equipo\", con lo que cada persona tiene abierto y desde cuándo. Sirve para repartir la carga y dar una mano, no para medir a nadie.",
+      "El jefe puede configurar qué pesa más al sugerir por dónde empezar: vencimiento, prioridad, tareas que esperan por ésta, o lo rápido de sacar. La app explica siempre por qué una tarea va primero.",
+    ],
+  },
+  {
     version: "2.11.0",
     fecha: "2026-08-04",
     cambios: [

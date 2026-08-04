@@ -1,4 +1,4 @@
-# Estado del proyecto — al 30/07/2026
+# Estado del proyecto — al 04/08/2026
 
 Documento de situación. Separa lo que depende de mí (código) de lo que depende de vos
 (decisiones y acciones externas). Honesto y sin adornos.
@@ -7,7 +7,7 @@ Documento de situación. Separa lo que depende de mí (código) de lo que depend
 
 ## 1. Dónde estamos
 
-- **Tablero Contable v2.10.0**, con **1102 pruebas automáticas** en 97 archivos, verdes,
+- **Tablero Contable v2.12.0**, con **1158 pruebas automáticas** en 103 archivos, verdes,
   TypeScript sin errores, lint sin errores y build OK.
 - **Sistema visual documentado** en `docs/SISTEMA-VISUAL.md`, con dos tests guardianes que
   impiden que se erosione.
@@ -19,7 +19,7 @@ Documento de situación. Separa lo que depende de mí (código) de lo que depend
 
 Esto es lo único urgente del documento.
 
-### 2.1 Cuarenta commits sin publicar
+### 2.1 Cincuenta y ocho commits sin publicar
 
 Están hechos, probados y commiteados **en esta máquina**, pero no subidos. Publicar
 requiere abrir GitHub Desktop en tu pantalla, y quedamos en que eso lo hago sólo cuando
@@ -65,6 +65,10 @@ exactamente dos filas: "occ del equipo" y "activity del equipo".
 | Saneado de filas en el borde de Supabase | Hecho |
 | Blanqueo de contraseña por el jefe | Hecho — **falta desplegar la Edge Function** |
 | Mensajes de login que explican qué pasó | Hecho |
+| Historial de una tarea acotado al período que se está mirando | Hecho |
+| Al crear una tarea, elegir si es de una sola vez o si se repite (por defecto, una sola vez) | Hecho |
+| "En qué anda el equipo": qué tiene abierto cada persona y desde cuándo, para jefe y encargado | Hecho |
+| Criterio de orden configurable (vencimiento, prioridad, tareas que esperan, rapidez) con el motivo explicado | Hecho |
 
 ## 4. Pendiente MÍO (código)
 
@@ -86,7 +90,7 @@ exactamente dos filas: "occ del equipo" y "activity del equipo".
    repo) → Deploy. **Hasta que eso pase, el botón existe pero da error.** Pasos detallados en
    `docs/ACCESO-Y-PERMISOS.md`.
 2. **Migraciones: nada pendiente.** Las 36 están aplicadas.
-3. **Avisarme para publicar** los 40 commits.
+3. **Avisarme para publicar** los 58 commits.
 4. **Verificación visual del PDF**: Reporte → Imprimir/PDF → confirmar que la vista previa
    tiene contenido. Los tests garantizan que el documento se arma bien, **no** que el
    navegador lo imprima bien — esa es exactamente la falla que tuve la vez pasada.
@@ -98,6 +102,9 @@ exactamente dos filas: "occ del equipo" y "activity del equipo".
 7. **Rotación de credenciales** — diferida por decisión tuya hasta salir de beta.
 
 ## 6. Bloqueado, para que conste
+
+> Detalle completo, junto con qué documentos se sacaron y cuáles se dejaron a propósito, en
+> `docs/LIMPIEZA-2026-08.md`.
 
 - **Sacar 6 dependencias que nadie usa** (`@base-ui/react`, `class-variance-authority`,
   `clsx`, `shadcn`, `tailwind-merge`, `tw-animate-css`). Verificado que no las importa
