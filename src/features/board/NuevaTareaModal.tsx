@@ -7,6 +7,7 @@ import { similares } from "../../lib/similitud";
 import { categoriasEnUso, mergeCategorias } from "../../lib/categorias";
 import { useSettings, useMigraciones } from "../../hooks/useData";
 import { payloadCards } from "../../lib/esquema";
+import { camposDeAlta, TIPO_ALTA_POR_DEFECTO, type TipoAlta } from "../../lib/recurrencia-alta";
 import type { Card } from "../../lib/types";
 import { mensajeUsuario } from "../../lib/fallas";
 
@@ -27,6 +28,9 @@ export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { owne
   const [effort, setEffort] = useState<Card["effort"]>(1);
   const [categoria, setCategoria] = useState("");
   const [datoControl, setDatoControl] = useState("");
+  // Si se repite o no. Arranca en "una-vez" a propósito: es lo reversible. Sin esta pregunta,
+  // la base asumía 'mensual' y toda tarea puntual volvía a Pendiente cada mes para siempre.
+  const [tipoAlta, setTipoAlta] = useState<TipoAlta>(TIPO_ALTA_POR_DEFECTO);
 
   const crear = useMutation({
     mutationFn: async () => {
@@ -35,6 +39,9 @@ export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { owne
         due_date: dueDate || null, priority, effort,
         categoria: categoria.trim() || null,
         dato_control: datoControl.trim() || null,
+        // Van por `payloadCards` junto con el resto del row (ver abajo), que es el gateado
+        // defensivo del esquema: nunca se manda una columna que la base todavía no tiene.
+        ...camposDeAlta(tipoAlta),
         history: [{ who: meName, at: new Date().toISOString(), txt: "Creó la tarea" }],
       };
       const { error } = await supabase.from("cards").insert(payloadCards(row, migracionesAplicadas));
@@ -92,6 +99,24 @@ export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { owne
             <input value={datoControl} onChange={(e) => setDatoControl(e.target.value)}
               className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-sm w-36" />
           </label>
+        </div>
+        {/* La pregunta que faltaba. Dos opciones y nada más: lo que se necesita saber al crear
+            es si la tarea vuelve o no. El default queda en "Una sola vez" (ver recurrencia-alta.ts). */}
+        <div className="mb-3">
+          <div className="text-sm text-ink2 mb-1.5">Repetición</div>
+          <div className="flex gap-4 flex-wrap items-center text-sm text-ink">
+            <label className="flex items-center gap-1.5">
+              <input type="radio" name="tipo-alta" value="una-vez"
+                checked={tipoAlta === "una-vez"} onChange={() => setTipoAlta("una-vez")} />
+              Una sola vez
+            </label>
+            <label className="flex items-center gap-1.5">
+              <input type="radio" name="tipo-alta" value="cada-mes"
+                checked={tipoAlta === "cada-mes"} onChange={() => setTipoAlta("cada-mes")} />
+              Todos los meses
+            </label>
+          </div>
+          <div className="text-xs text-ink2 mt-1.5">Las de todos los meses vuelven a Pendiente cuando arranca el mes nuevo.</div>
         </div>
         {masParecida && (
           <div className="bg-warn-soft text-warn rounded-lg px-3 py-2 text-sm mb-3">
