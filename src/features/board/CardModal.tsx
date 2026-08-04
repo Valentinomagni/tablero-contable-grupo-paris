@@ -22,6 +22,7 @@ import { MetaSection } from "./card/MetaSection";
 import { DepsSection } from "./card/DepsSection";
 import { ChecklistSection } from "./card/ChecklistSection";
 import { ComentariosSection } from "./card/ComentariosSection";
+import { HistorialSection } from "./card/HistorialSection";
 import { mensajeUsuario } from "../../lib/fallas";
 
 export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose, meId, meName = "—", periodo, vigente }:
@@ -234,14 +235,7 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
 
         <ComentariosSection c={c} team={team} meId={meId} meName={meName} patch={patch} />
 
-        {(c.history ?? []).length > 0 && (
-          <details className="mt-4 text-sm">
-            <summary className="cursor-pointer text-ink2 uppercase text-xs tracking-wide">Historial ({c.history.length})</summary>
-            {[...c.history].reverse().map((h, n) => (
-              <div key={n} className="pl-3 border-l-2 border-line ml-1 mt-1.5">{h.txt} <span className="text-ink2">— {h.who}, {fmtDateTime(h.at)}</span></div>
-            ))}
-          </details>
-        )}
+        <HistorialSection c={c} periodo={periodo} />
 
         <div className="flex gap-2 mt-4.5 flex-wrap items-center pt-4">
           {c.status !== "term"
