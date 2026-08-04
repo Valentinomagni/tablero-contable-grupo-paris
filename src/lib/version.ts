@@ -3,6 +3,14 @@
 // nueva arriba de todo y la versión se actualiza sola (ver docs/RELEASE.md).
 export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] = [
   {
+    version: "2.11.0",
+    fecha: "2026-08-04",
+    cambios: [
+      "Si el reinicio mensual no corrió, el tablero ahora lo avisa en vez de dejarte viendo el estado del mes pasado sin explicación.",
+      "El jefe puede reiniciar el mes desde ese mismo aviso, con un botón que dice antes qué va a pasar y después cuántas tareas archivó y reinició.",
+    ],
+  },
+  {
     version: "2.10.0",
     fecha: "2026-07-30",
     cambios: [

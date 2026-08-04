@@ -52,6 +52,9 @@ import { toARTDate } from "./lib/metrics";
 import { periodoVigente, periodosDisponibles, periodoLabel, cardsDelPeriodo } from "./lib/periodo-instancias";
 import { periodoCerrado, periodosCerradosDe } from "./lib/periodo-cierre";
 import { usePeriodos } from "./hooks/usePeriodos";
+import { useReinicios } from "./hooks/useReinicios";
+import { reinicioPendiente } from "./lib/reinicio-mensual";
+import { AvisoReinicio } from "./features/board/AvisoReinicio";
 import { supabase } from "./lib/supabase";
 import { cn } from "./lib/ui";
 
@@ -76,6 +79,9 @@ export default function App() {
   // justo al terminar de cargar. Regla: TODOS los hooks antes del primer return.
   const { data: cierres = [] } = usePeriodos();
   const { data: migracionesAplicadas } = useMigraciones();
+  // Registro de reinicios mensuales (migración 37). Va acá arriba por la misma razón que
+  // `usePeriodos`: todos los hooks antes del primer return.
+  const { data: reinicios = [] } = useReinicios();
   const hoyISO = new Date().toISOString();
   const [periodoSel, setPeriodoSel] = useState<string>(() => periodoVigente(hoyISO));
   const [viewing, setViewing] = useState<string>("");
@@ -204,6 +210,12 @@ export default function App() {
   const vigente = periodoVigente(hoyISO);
   const cardsVista = cardsDelPeriodo(cards, periodos, periodoSel, vigente);
 
+  // Aviso de reinicio mensual pendiente. Se muestra en el tablero de una persona y sólo
+  // mirando el mes VIGENTE: en un mes pasado, ver el estado del mes pasado es lo esperado y
+  // el cartel sería ruido. Es la pantalla donde el síntoma aparece (tareas de julio en
+  // "Terminado"), así que es la pantalla donde tiene que estar la explicación.
+  const mesSinReiniciar = reinicioPendiente(reinicios, hoyISO);
+
   // badge del tablón: vencimientos próximos o publicaciones no vistas (por navegador)
   const vencProximos = proximosVencimientos(annos, new Date(), 5).length;
   const visto = getPref(PREF.tablon) ?? "1970-01-01";
@@ -269,6 +281,9 @@ export default function App() {
             </button>
           )}
         </> : undefined}>
+        {isPersonView && mode === "board" && periodoSel === vigente && mesSinReiniciar && (
+          <AvisoReinicio mes={mesSinReiniciar} esJefe={!!isJefe} />
+        )}
         <ErrorBoundary key={view}>
         <Suspense fallback={<SkeletonVista />}>
         {view === "__resumen" ? <Resumen cards={scopedCards} team={equipoVisible} activity={activity} onOpenCard={setOpenCard} onGoPerson={(id) => { setViewing(id); setMode("board"); }} onDelegar={esGestor ? () => setDelegar(true) : undefined} annos={annos} esGestor={esGestor} />
