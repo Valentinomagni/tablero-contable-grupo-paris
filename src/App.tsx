@@ -36,6 +36,7 @@ const Calendario = lazy(() => import("./features/calendario/Calendario"));
 const Cierre = lazy(() => import("./features/cierre/Cierre").then((m) => ({ default: m.Cierre })));
 const Organigrama = lazy(() => import("./features/organigrama/Organigrama"));
 const Director = lazy(() => import("./features/director/Director").then((m) => ({ default: m.Director })));
+const EnQueAnda = lazy(() => import("./features/equipo/EnQueAnda").then((m) => ({ default: m.EnQueAnda })));
 const Notas = lazy(() => import("./features/notas/Notas").then((m) => ({ default: m.Notas })));
 const Bitacora = lazy(() => import("./features/bitacora/Bitacora"));
 const Admin = lazy(() => import("./features/admin/Admin").then((m) => ({ default: m.Admin })));
@@ -189,10 +190,11 @@ export default function App() {
     : view === "__cierre" ? "Cierre mensual"
     : view === "__organigrama" ? "Organigrama"
     : view === "__director" ? "Director"
+    : view === "__equipo" ? "En qué anda el equipo"
     : view === "__notas" ? "Anotaciones"
     : esGestor && person && person.id !== me.id ? `Tablero de ${person.name}` : "Mi tablero";
   const pendByOwner = (id: string) => cards.filter((c) => c.owner === id && c.status !== "term" && c.card_type !== "operativa").length;
-  const isPersonView = !["__resumen", "__reporte", "__tablon", "__admin", "__bitacora", "__calendario", "__cierre", "__organigrama", "__director", "__notas", "__misarqueos"].includes(view);
+  const isPersonView = !["__resumen", "__reporte", "__tablon", "__admin", "__bitacora", "__calendario", "__cierre", "__organigrama", "__director", "__equipo", "__notas", "__misarqueos"].includes(view);
   // Períodos (propuesta de períodos): selector de mes solo en el tablero de una persona.
   // Fase 2: el mes VIGENTE lee/escribe en `cards` como siempre; los meses NO vigentes leen
   // y escriben su estado en `card_periodos`, independientes. `cardsVista` es la lista que ve
@@ -295,6 +297,10 @@ export default function App() {
           : view === "__cierre" ? <Cierre cards={scopedCards} team={equipoVisible} isJefe={!!isJefe} meId={me.id} meName={me.name} meRole={me.role} settings={settings ?? { edit_closed: false } as AppSettings} onOpenCard={setOpenCard} />
           : view === "__organigrama" ? <Organigrama team={equipoVisible} cards={cards} />
           : view === "__director" ? <Director cards={scopedCards} team={equipoVisible} annos={annos} />
+          // Sólo gestores: el empleado no tiene esta vista. La entrada del menú ya está
+          // escondida, pero el gate se repite acá porque la vista se elige por un string y
+          // esconder el botón no es un permiso.
+          : view === "__equipo" ? (esGestor ? <EnQueAnda cards={scopedCards} team={fullTeam} me={me} /> : null)
           : view === "__notas" ? <Notas me={me} />
           : view === "__misarqueos" ? <MisArqueos cards={cards} ownerId={me.id} />
           : mode === "hoy" ? <MiDia ownerId={view} meId={me.id} cards={cards} team={equipoVisible} onOpenCard={setOpenCard} />

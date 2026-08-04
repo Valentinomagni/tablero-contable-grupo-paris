@@ -1,5 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
-import { LayoutDashboard, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin, Settings, KeyRound, AlignJustify, History, CalendarRange, ClipboardCheck, Network, Gauge, StickyNote, Sparkles, Keyboard, WifiOff, MessageSquarePlus, Wallet } from "lucide-react";
+import { LayoutDashboard, LogOut, Moon, ChevronDown, Menu, TrendingUp, Pin, Settings, KeyRound, AlignJustify, History, CalendarRange, ClipboardCheck, Network, Gauge, UsersRound, StickyNote, Sparkles, Keyboard, WifiOff, MessageSquarePlus, Wallet } from "lucide-react";
 import { useOnline } from "../hooks/useOnline";
 import { Avatar, cn } from "../lib/ui";
 import { PREF, getPref, setPref } from "../lib/prefs";
@@ -67,6 +67,8 @@ export function Shell({ me, team, viewing, title, theme, onCycleTheme, density, 
             <NavItem v="__reporte" icon={<TrendingUp size={17} />} label="Reporte ejecutivo" />
             <NavItem v="__cierre" icon={<ClipboardCheck size={17} />} label="Cierre mensual" />
             <NavItem v="__director" icon={<Gauge size={17} />} label="Director" />
+            {/* Sólo para gestores, igual que Director: vive dentro del bloque `esGestor`. */}
+            <NavItem v="__equipo" icon={<UsersRound size={17} />} label="En qué anda el equipo" />
             <NavItem v="__organigrama" icon={<Network size={17} />} label="Organigrama" />
             <NavItem v="__tablon" icon={<Pin size={17} />} label="Tablón" badge={tablonBadge} />
             <NavItem v="__calendario" icon={<CalendarRange size={17} />} label="Calendario" />
