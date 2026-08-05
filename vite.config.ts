@@ -18,8 +18,9 @@ export default defineConfig({
       output: {
         // rolldown-vite (Vite 8) solo acepta la forma de función para manualChunks;
         // el objeto { chunkName: [paquetes] } de Rollup clásico no tipa (ManualChunksFunction).
+        // Ya no hay regla para `motion`: la librería salió del proyecto y dejar el nombre
+        // acá generaría un chunk vacío o volvería a atraerla sin que nadie lo note.
         manualChunks(id: string) {
-          if (id.includes("node_modules/motion")) return "vendor-motion";
           if (id.includes("node_modules/@supabase/supabase-js")) return "vendor-supabase";
           if (id.includes("node_modules/@tanstack/react-query")) return "vendor-query";
         },
