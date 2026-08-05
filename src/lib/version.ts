@@ -3,6 +3,13 @@
 // nueva arriba de todo y la versión se actualiza sola (ver docs/RELEASE.md).
 export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] = [
   {
+    version: "2.13.1",
+    fecha: "2026-08-05",
+    cambios: [
+      "El aviso de \"Base de datos al día\" de Administración volvió a decir la verdad: venía revisando sólo hasta la migración 28 y daba el visto bueno sin mirar las nueve siguientes, entre ellas la que cierra un permiso de seguridad. Ahora las revisa todas.",
+    ],
+  },
+  {
     version: "2.13.0",
     fecha: "2026-08-05",
     cambios: [

@@ -51,10 +51,16 @@ describe("flujoMensual", () => {
     expect(r.find((f) => f.owner === "u1")!.perfil).toBe("temprano");
     expect(r.find((f) => f.owner === "u2")!.perfil).toBe("tardio");
   });
-  it("ordena de mayor a menor carga total", () => {
-    const r = flujoMensual([snap("2026-07-02","a",1), snap("2026-07-02","b",50)], "2026-07");
-    expect(r[0].owner).toBe("b");
-  });
+  // ACÁ HABÍA UN TEST QUE EXIGÍA EL PODIO, y vale dejar constancia de que existió.
+  //
+  // Se llamaba "ordena de mayor a menor carga total" y afirmaba `expect(r[0].owner).toBe("b")`,
+  // con `b` cerrando 50 contra 1 de `a`. O sea: un test verde blindando exactamente la conducta
+  // que la regla más dura del proyecto prohíbe. Mientras estuvo ahí, cualquiera que intentara
+  // arreglar el orden veía la suite en rojo y asumía que el equivocado era él.
+  //
+  // Por eso se borra en vez de "ajustarse": no es un aserto desactualizado, es la violación
+  // escrita como requisito. Lo reemplaza el test de "el orden nunca arma un podio", al final
+  // del archivo, que verifica lo contrario.
   it("sin snapshots devuelve lista vacía, no explota", () => {
     expect(flujoMensual([], "2026-07")).toEqual([]);
     expect(flujoMensual(null as unknown as Snapshot[], "2026-07")).toEqual([]);
@@ -85,3 +91,24 @@ describe("TEXTO_PERFIL", () => {
     expect(TEXTO_PERFIL["sin-datos"]).toBe("Sin actividad registrada");
   });
 });
+
+// GUARDIÁN DE ENCUADRE. Este orden lo puso una auditoría, no una preferencia.
+//
+// `flujoMensual` venía cerrando con `.sort((a, b) => b.total - a.total)`: las personas salían
+// de mayor a menor producción del mes. El comentario del componente lo decía sin darse cuenta
+// —"el orden es sólo por volumen total"— y eso ES el ranking, aunque nadie escriba la palabra.
+// Proyectado en una reunión de cierre, la fila de arriba es quien más cerró y la de abajo quien
+// menos: nadie lo nombra y todos lo leen.
+//
+// El panel responde "cuándo se concentra el trabajo en el mes", y a esa pregunta el orden entre
+// personas no le aporta nada. Se ordena por `owner`, que es estable y no dice nada de nadie; el
+// nombre lo pone la vista, que sí los tiene, y ahí se ordena alfabético.
+describe("el orden nunca arma un podio", () => {
+  it("no devuelve a las personas ordenadas por lo que produjeron", () => {
+    // `b` cierra mucho más que `a`. Si el orden fuera por volumen, `b` saldría primero.
+    const snaps = [snap("2026-07-01", "a", 1), snap("2026-07-02", "b", 50)];
+    const filas = flujoMensual(snaps, "2026-07");
+    expect(filas.map((f) => f.owner)).toEqual(["a", "b"]);
+  });
+});
+

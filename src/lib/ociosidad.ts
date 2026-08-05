@@ -65,5 +65,16 @@ export function utilizacionEquipo(
   return (team ?? []).map((u) => {
     const ut = utilizacion(u.id, cards, activity, snaps, desdeISO, hastaISO);
     return { id: u.id, name: u.name, indice: ut.indice, diasSinActividad: ut.diasSinActividad };
-  }).sort((a, b) => a.indice - b.indice);
+    // ORDEN ALFABÉTICO. Acá decía `.sort((a, b) => a.indice - b.indice)`, ASCENDENTE por índice
+    // de actividad: la persona con menos días con actividad registrada quedaba PRIMERA de la
+    // lista, con su porcentaje y su "X días sin actividad registrada" al lado del nombre.
+    //
+    // Dos líneas más abajo, el mismo panel aclara "no mide presencia ni productividad
+    // individual". La pantalla se contradecía a sí misma — que es literalmente el patrón del
+    // incidente del ranking anterior: el panel medía a las personas mientras el pie decía que no.
+    //
+    // Y el dato en sí es ambiguo: "sin actividad registrada" puede ser alguien que no cargó
+    // nada, alguien de licencia, o alguien cuyo trabajo ese día no se registra en la app.
+    // Poner eso primero en la lista lo convierte en una acusación con formato de métrica.
+  }).sort((a, b) => a.name.localeCompare(b.name, "es"));
 }

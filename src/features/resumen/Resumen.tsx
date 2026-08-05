@@ -103,7 +103,21 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
     id: u.id,
     n: u.name,
     v: norm.filter((c) => c.owner === u.id && c.status !== "term").reduce((s, c) => s + (c.effort ?? 1), 0),
-  })).filter((f) => f.v > 0).sort((a, b) => b.v - a.v);
+    // ORDEN ALFABÉTICO, y no es una preferencia de presentación.
+    //
+    // Acá decía `.sort((a, b) => b.v - a.v)` y la barra de abajo se normalizaba contra
+    // `cargaPersona[0].v`, o sea contra el máximo. Las dos cosas juntas son el mismo objeto
+    // visual que se sacó del Reporte cuando se llamaba "Ranking de productividad": lista de
+    // gente de mayor a menor, el primero con la barra llena al 100%, el número al lado.
+    // Sin la palabra "ranking" el guardián automático no lo ve, pero un jefe mirando la
+    // pantalla sí — y lo lee igual que un podio, porque es uno.
+    //
+    // El dato sirve: ver cómo se reparte la carga es lo que permite equilibrarla. Lo que se
+    // va es el encuadre. Mismo criterio y mismo razonamiento que `rank` en Reporte.tsx.
+  })).filter((f) => f.v > 0).sort((a, b) => a.n.localeCompare(b.n, "es"));
+  // Sobre el TOTAL del equipo, no sobre el máximo: con el máximo, la barra más larga siempre
+  // llega al 100% y arma un primer puesto visual aunque no haya números de puesto.
+  const cargaTotal = Math.max(1, cargaPersona.reduce((s, f) => s + f.v, 0));
 
   const exportCsv = () => {
     const a = document.createElement("a");
@@ -284,13 +298,17 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
       )}
 
       <h2 className="text-base font-bold tracking-[-0.01em] text-ink mb-2.5 mt-6">Carga abierta por persona — en esfuerzo (puntos)</h2>
+      {/* encuadre-ok: la aclaración es el encuadre, no una métrica de personas. Todo panel que
+          muestre datos por persona lleva la suya a la vista; sin ella, el mismo dato se lee
+          como calificación. */}
+      <p className="text-2xs text-ink2 mb-2">Describe cómo está repartido el trabajo abierto, para poder equilibrarlo. No mide desempeño: el esfuerzo depende de qué tareas tocaron.</p>
       <div className="bg-surface border border-line rounded-xl p-3 mb-6" style={cardSh}>
         {cargaPersona.length === 0 ? <p className="text-ink2 text-sm m-0">Sin carga abierta.</p>
           : cargaPersona.map((f) => (
             <div key={f.id} title={`${f.n}: ${f.v} puntos de esfuerzo abiertos`} className="flex items-center gap-2 py-1">
               <span className="w-[110px] text-sm truncate shrink-0">{f.n}</span>
               <div className="flex-1 h-3 bg-surface2 rounded-full overflow-hidden">
-                <div className="h-full bg-accent rounded-full" style={{ width: `${Math.round((f.v / cargaPersona[0].v) * 100)}%` }} />
+                <div className="h-full bg-accent rounded-full" style={{ width: `${Math.round((f.v / cargaTotal) * 100)}%` }} />
               </div>
               <span className="text-sm tnum w-6 text-right">{f.v}</span>
             </div>

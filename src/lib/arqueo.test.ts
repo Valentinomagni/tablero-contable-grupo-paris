@@ -187,13 +187,23 @@ describe("tendenciaDiferencias", () => {
     expect(r.serie.find((s) => s.mes === "2026-07")).toEqual({ mes: "2026-07", cantidad: 1, total: 30 });
   });
 
-  it("ordena reincidentes por meses desc y luego por total desc", () => {
+  // ESTE TEST EXIGÍA EL PODIO Y SE DIO VUELTA. Se llamaba "ordena reincidentes por meses desc
+  // y luego por total desc" y afirmaba `["u2", "u1"]`: Beto arriba de Ana por tener más meses
+  // con faltantes de caja, desempatado por MONTO.
+  //
+  // El monto es justamente el dato que la vista decidió no mostrar al lado de un nombre porque
+  // "convierte la tabla en un ranking". Se ocultó la columna y se dejó el criterio de orden,
+  // que hace exactamente lo mismo sin que se vea. Y acá estaba escrito como requisito, en
+  // verde, blindándolo.
+  //
+  // Ahora verifica lo contrario: alfabético, Ana antes que Beto, sin importar los números.
+  it("no ordena a las personas por sus faltantes de caja", () => {
     const occs = [
       dif("1", "u1", "2026-05-01", -10), dif("2", "u1", "2026-06-01", -10),
       dif("3", "u2", "2026-05-01", -500), dif("4", "u2", "2026-06-01", -500), dif("5", "u2", "2026-07-01", -500),
     ];
     const r = tendenciaDiferencias(occs, [perfil("u1", "Ana"), perfil("u2", "Beto")]);
-    expect(r.reincidentes.map((x) => x.id)).toEqual(["u2", "u1"]);
+    expect(r.reincidentes.map((x) => x.id)).toEqual(["u1", "u2"]);
   });
 });
 

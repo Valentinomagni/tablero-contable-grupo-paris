@@ -25,14 +25,30 @@ Esto es lo único urgente del documento.
 publicar. Lo que sigue pendiente es **mirarlo**: la sección 3 marca con negrita las tres cosas
 que necesitan tus ojos, no más código.
 
-### 2.2 Migraciones: al día
+### 2.2 Migraciones: falta una chica, la 38
 
-Las 37 están aplicadas — la 37 la corriste el 04/08/2026. Eso desbloquea períodos,
+Las 37 anteriores están aplicadas — la 37 la corriste el 04/08/2026. Eso desbloquea períodos,
 administrador del sistema, checklist por día, el cierre de la escalada de privilegios (35) y
 los permisos de encargado (36).
 
-**Queda una sola cosa del lado de Supabase, y no es una migración**: desplegar la Edge
-Function `blanquear-clave`. Ver el punto 1 de la sección 5.
+**Apareció una nueva, la 38, y sale de una auditoría del 05/08/2026.** No toca ningún dato:
+escribe tres renglones en el índice de migraciones. Motivo, en criollo:
+
+El chip de Administración que dice "Base de datos al día" venía revisando **sólo hasta la
+migración 28**. De la 29 a la 37 no las miraba, así que mostraba el escudo verde sin haberlas
+revisado — incluida la 35, que es la que cierra la escalada de privilegios. Un indicador que
+sólo sabe decir que sí no distingue entre "está todo bien" y "no miré".
+
+Al arreglarlo apareció lo segundo: a los archivos de la **35 y la 36 les faltaba la línea que
+las anota** en el índice. Están aplicadas, pero el índice no se enteró. Sin la 38, el chip te
+iba a decir "Faltan migraciones: 35, 36" para siempre y volver a correrlas no lo arreglaba.
+
+**Qué vas a ver hasta que corras la 38**: el chip en ámbar diciendo que faltan la 35, la 36 y
+la 38. Es esperable y no significa que la base esté mal. Corré `migracion-38-registrar-35-36.sql`
+y queda verde.
+
+**Lo otro del lado de Supabase, que no es una migración**: desplegar la Edge Function
+`blanquear-clave`. Ver el punto 1 de la sección 5.
 
 Verificación rápida, por si querés confirmarlo:
 
@@ -99,7 +115,9 @@ exactamente dos filas: "occ del equipo" y "activity del equipo".
    - `instalar` → `@sentry/react` (cuando arranquemos el monitoreo de errores)
 
    Instrucciones en `docs/COMO-INSTALAR-DEPENDENCIAS.md`.
-3. **Migraciones: nada pendiente.** Las 37 están aplicadas.
+3. **Correr `migracion-38-registrar-35-36.sql`** en Supabase → SQL Editor. Tarda un segundo y no
+   toca ningún dato: sólo hace que el chip de "Base de datos al día" deje de dar por faltantes a
+   la 35 y la 36. El porqué está en la sección 2.2.
 4. ~~Avisarme para publicar los commits nuevos.~~ **Hecho el 04/08/2026.**
 5. **Verificación visual del PDF**: Reporte → Imprimir/PDF → confirmar que la vista previa
    tiene contenido. Los tests garantizan que el documento se arma bien, **no** que el

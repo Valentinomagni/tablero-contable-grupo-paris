@@ -59,7 +59,18 @@ export function flujoMensual(snaps: Snapshot[], mes: string): FlujoPersona[] {
       dias.forEach((v, i) => { if (v > max) { max = v; picoDia = i + 1; } });
       return { owner, dias, total, picoDia, perfil: perfilDe(dias) };
     })
-    .sort((a, b) => b.total - a.total);
+    // ORDEN POR `owner`, NO POR VOLUMEN. Esto no es un detalle de presentación.
+    //
+    // Acá decía `.sort((a, b) => b.total - a.total)`: las personas salían de mayor a menor
+    // producción del mes. Eso es un podio, aunque nadie escriba la palabra "ranking" —y el
+    // comentario del componente lo admitía sin darse cuenta: "el orden es sólo por volumen
+    // total". Proyectado en una reunión, la fila de arriba es quien más cerró.
+    //
+    // La pregunta que este panel responde es CUÁNDO se concentra el trabajo en el mes, no
+    // quién hizo más. Para esa pregunta el orden entre personas no aporta nada, así que se
+    // usa uno estable que no dice nada de nadie. El nombre lo pone la vista, que sí tiene el
+    // equipo a mano, y allá se ordena alfabético.
+    .sort((a, b) => a.owner.localeCompare(b.owner));
 }
 
 /**

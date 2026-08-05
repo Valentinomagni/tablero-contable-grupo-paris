@@ -119,3 +119,13 @@ create policy "activity del equipo" on public.activity_log for all
 --    Si en esa lista alguien de un equipo aparece con `le_reporta_a` vacío, el arreglo se
 --    completa desde Administración asignándole su encargado.
 -- ------------------------------------------------------------
+
+-- ------------------------------------------------------------
+-- Registro en schema_migrations
+--
+-- Faltaba, igual que en la 35. Idempotente.
+-- ------------------------------------------------------------
+
+insert into public.schema_migrations (id, nombre)
+  values (36, 'migracion-36-encargados-equipo.sql')
+  on conflict (id) do nothing;

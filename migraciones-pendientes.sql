@@ -1,26 +1,37 @@
 -- ============================================================================
---  TABLERO CONTABLE — MIGRACIONES PENDIENTES (32 + 33 + 34 + 35)
---  Generado el 28/07/2026, actualizado el 30/07/2026.
---  Correr UNA sola vez en Supabase → SQL Editor.
+--  TABLERO CONTABLE — ARCHIVO HISTÓRICO (migraciones 32 + 33 + 34 + 35)
+--  Generado el 28/07/2026. Cerrado el 05/08/2026.
+--
+--  NO HAY NADA PENDIENTE ACÁ. Las cuatro están aplicadas.
+--  El nombre del archivo quedó del día que sí lo estaban.
 -- ============================================================================
 --
---  ⚠️⚠️  LEER ESTO PRIMERO: LA 35 ES UN ARREGLO DE SEGURIDAD
+--  POR QUÉ ESTE AVISO REEMPLAZA AL QUE HABÍA
 --
---      Si ya corriste la 33 (y la corriste), HAY UN AGUJERO ABIERTO AHORA MISMO.
---      La 33 creó la columna `admin_sistema` pero no la agregó al trigger que
---      protege las columnas sensibles de `profiles`. Resultado: cualquier
---      empleado puede hacerse administrador del sistema sobre su propia fila y
---      pasar a leer TODAS las consultas del equipo — el canal donde la gente
---      reporta problemas contando con que el jefe no los ve.
+--      Hasta hoy, esta cabecera empezaba diciendo "HAY UN AGUJERO ABIERTO AHORA
+--      MISMO" por la escalada de privilegios que la 33 dejó abierta. Era cierto
+--      cuando se escribió. Dejó de serlo cuando corriste la 35.
 --
---      La 35 lo cierra. Son 20 líneas, no toca ningún dato y se puede correr
---      sola, sin las otras. Si vas a correr una sola cosa hoy, que sea ésta.
---      El archivo suelto también está en `migracion-35-cerrar-escalada-admin.sql`.
+--      Un archivo que grita una emergencia ya resuelta hace un daño concreto: la
+--      próxima vez que un aviso sea real, no le vas a creer. Por eso se corrige
+--      en vez de dejarlo "por las dudas".
 --
---      Para ver quién es admin del sistema hoy (deberían ser sólo las cuentas
---      que pusiste vos):
+--      Para confirmar por tu cuenta que el agujero está cerrado — tiene que
+--      devolver sólo las cuentas de administración que pusiste vos:
 --        select name, email, admin_sistema from public.profiles
 --         where admin_sistema = true;
+--
+--      Y como empleado, esto tiene que FALLAR:
+--        update public.profiles set admin_sistema = true where id = auth.uid();
+--
+--  QUÉ CORRER HOY, SI CORRÉS ALGO
+--
+--      Lo único pendiente en la base es `migracion-38-registrar-35-36.sql`, que
+--      no toca ningún dato: sólo anota la 35 y la 36 en el índice de migraciones
+--      para que el chip de Administración deje de darlas por faltantes.
+--
+--      La fuente de verdad de qué falta es `docs/ESTADO-DEL-PROYECTO.md`, no
+--      este archivo.
 --
 --  QUÉ HABILITA CADA UNA
 --    32 · Períodos       → el selector de mes del tablero muestra datos reales y

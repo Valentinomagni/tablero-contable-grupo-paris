@@ -93,3 +93,14 @@ create trigger profiles_bloquear_campos_sensibles
 -- Y para ver quién es admin del sistema hoy (deberían ser sólo las cuentas que pusiste vos):
 --   select name, email, admin_sistema from public.profiles where admin_sistema = true;
 -- ------------------------------------------------------------
+
+-- ------------------------------------------------------------
+-- Registro en schema_migrations
+--
+-- Faltaba. Sin esto el chip de Administración no se entera de que esta migración se corrió, y
+-- la da por faltante para siempre. Es idempotente: se puede correr de nuevo sin efecto.
+-- ------------------------------------------------------------
+
+insert into public.schema_migrations (id, nombre)
+  values (35, 'migracion-35-cerrar-escalada-admin.sql')
+  on conflict (id) do nothing;

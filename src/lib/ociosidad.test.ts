@@ -110,3 +110,26 @@ describe("utilizacionEquipo", () => {
     expect(utilizacionEquipo([], [], [], [], "2026-07-13", "2026-07-17")).toEqual([]);
   });
 });
+
+// GUARDIÁN DE ENCUADRE. Este orden lo puso una auditoría.
+//
+// `utilizacionEquipo` venía cerrando con `.sort((a, b) => a.indice - b.indice)`: ASCENDENTE por
+// índice de actividad, o sea que la persona con menos días con actividad registrada quedaba
+// PRIMERA de la lista, con su porcentaje y su "X días sin actividad registrada" al lado del
+// nombre. Y el pie del panel dice "no mide presencia ni productividad individual", así que la
+// pantalla se contradecía a sí misma — que es exactamente lo que pasó con el ranking anterior.
+//
+// El orden alfabético es el mismo criterio que ya usan `rank` del Reporte y `en-que-anda`.
+describe("el orden nunca señala a nadie", () => {
+  it("no pone primero al que tiene menos actividad registrada", () => {
+    const team = [
+      { id: "z", name: "Zulema" },
+      { id: "a", name: "Ana" },
+    ] as never;
+    // Sin datos los dos quedan con el mismo índice; lo que se verifica es el criterio de orden,
+    // que no puede ser la métrica. Alfabético: Ana antes que Zulema, siempre.
+    const filas = utilizacionEquipo(team, [], [], [], "2026-07-13", "2026-07-17");
+    expect(filas.map((f) => f.name)).toEqual(["Ana", "Zulema"]);
+  });
+});
+

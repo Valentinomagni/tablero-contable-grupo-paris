@@ -154,7 +154,14 @@ export function tendenciaDiferencias(
   const reincidentes = [...porOwner.entries()]
     .filter(([, v]) => v.meses.size >= 2)
     .map(([id, v]) => ({ id, nombre: byId.get(id)?.name ?? id, meses: v.meses.size, cantidad: v.cantidad, total: v.total }))
-    .sort((a, b) => b.meses - a.meses || b.total - a.total);
+    // ORDEN ALFABÉTICO. Decía `.sort((a, b) => b.meses - a.meses || b.total - a.total)`: quien
+    // acumulaba más meses con faltantes de caja quedaba arriba de todo, desempatado por MONTO.
+    //
+    // Y el monto es justamente el dato que la vista decidió no mostrar al lado de un nombre,
+    // porque "convierte la tabla en un ranking". Se ocultó la columna y se dejó el criterio de
+    // orden, que hace lo mismo sin que se vea. Con dos o tres filas el orden no aporta ninguna
+    // lectura; lo único que aporta es jerarquía.
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
 
   return { serie, reincidentes };
 }
