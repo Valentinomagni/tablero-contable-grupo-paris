@@ -62,7 +62,9 @@ function archivosFuente(dir: string): string[] {
 }
 
 describe("Panel es la única superficie de tarjeta", () => {
-  it("nadie vuelve a dibujar la tarjeta canónica a mano", () => {
+  // 30 segundos y no los 5 por defecto: lee todo `src` de disco. Ver el comentario largo en
+  // `src/lib/encuadre.guard.test.ts` sobre por qué un guardián lento no puede ser flaky.
+  it("nadie vuelve a dibujar la tarjeta canónica a mano", { timeout: 30_000 }, () => {
     const culpables: string[] = [];
     for (const ruta of archivosFuente("src")) {
       // La firma de la tarjeta canónica: fondo de superficie + el padding exacto de `Panel`.
@@ -88,7 +90,7 @@ describe("Panel es la única superficie de tarjeta", () => {
   // tablero y el reporte— venían renderizando SIN NINGUNA sombra desde que se escribió, y
   // nadie lo notó en meses. Repetir la sombra correcta (`--ring-sh`) en un botón o en otro
   // elemento es legítimo y no se persigue acá; escribir la inválida, no.
-  it("nadie usa --ring como si fuera una sombra", () => {
+  it("nadie usa --ring como si fuera una sombra", { timeout: 30_000 }, () => {
     const culpables: string[] = [];
     for (const ruta of archivosFuente("src")) {
       if (/var\(--ring\),\s*var\(--shadow\)/.test(readFileSync(ruta, "utf8"))) culpables.push(ruta);

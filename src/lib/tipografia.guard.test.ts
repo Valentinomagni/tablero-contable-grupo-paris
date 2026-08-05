@@ -28,7 +28,11 @@ function archivosFuente(dir: string): string[] {
 }
 
 describe("escala tipográfica", () => {
-  it("ningún archivo usa un tamaño de texto en píxeles a mano", () => {
+  // 30 segundos y no los 5 por defecto: este test lee todo `src` de disco, así que su
+  // duración crece con el proyecto y depende de la carga de la máquina. Ver el comentario
+  // largo en `src/lib/encuadre.guard.test.ts` — un guardián que falla al azar se termina
+  // borrando por molesto, y ahí se pierde la protección.
+  it("ningún archivo usa un tamaño de texto en píxeles a mano", { timeout: 30_000 }, () => {
     const culpables: string[] = [];
     for (const ruta of archivosFuente("src")) {
       const texto = readFileSync(ruta, "utf8");

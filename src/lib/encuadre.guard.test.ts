@@ -95,7 +95,14 @@ function archivosFuente(dir: string): string[] {
 }
 
 describe("encuadre no punitivo", () => {
-  it("ninguna pantalla arma un podio de personas", () => {
+  // 30 segundos, no los 5 que da vitest por defecto. Este test no calcula nada: LEE TODO
+  // `src` de disco, y eso crece con el proyecto y depende de cuán cargada esté la máquina.
+  // Con la máquina ocupada se pasó de 5 s y salió en rojo sin que hubiera ninguna violación.
+  //
+  // Un guardián que falla al azar es peor que no tenerlo: la primera vez se investiga, la
+  // segunda se ignora, y la tercera alguien lo borra por molesto — y ahí se pierde la
+  // protección de verdad. El tiempo holgado es lo que lo mantiene creíble.
+  it("ninguna pantalla arma un podio de personas", { timeout: 30_000 }, () => {
     const culpables: string[] = [];
     for (const ruta of archivosFuente("src")) {
       // DOS versiones del mismo archivo, y hacen falta las dos:
