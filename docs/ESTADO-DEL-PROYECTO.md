@@ -11,7 +11,7 @@ Documento de situación. Separa lo que depende de mí (código) de lo que depend
   TypeScript sin errores, lint sin errores y build OK.
 - **Sistema visual documentado** en `docs/SISTEMA-VISUAL.md`, con dos tests guardianes que
   impiden que se erosione.
-- 36 migraciones de base de datos escritas. Las 35 y 36 ya están aplicadas.
+- 37 migraciones de base de datos escritas, todas aplicadas.
 - Repositorio en GitHub con CI (lint + tests + build + e2e en cada push) y **mantenimiento
   automático** semanal (Dependabot + auditoría de seguridad y de código sin uso).
 
@@ -19,15 +19,13 @@ Documento de situación. Separa lo que depende de mí (código) de lo que depend
 
 Esto es lo único urgente del documento.
 
-### 2.1 Cincuenta y ocho commits sin publicar
+### 2.1 Commits sin publicar
 
-Están hechos, probados y commiteados **en esta máquina**, pero no subidos. Publicar
-requiere abrir GitHub Desktop en tu pantalla, y quedamos en que eso lo hago sólo cuando
-me avises.
+Se publican con GitHub Desktop, y quedamos en que eso lo hago sólo cuando me avises.
 
 ### 2.2 Migraciones: al día
 
-Las 36 están aplicadas — nos lo confirmaste el 30/07/2026. Eso desbloquea períodos,
+Las 37 están aplicadas — la 37 la corriste el 04/08/2026. Eso desbloquea períodos,
 administrador del sistema, checklist por día, el cierre de la escalada de privilegios (35) y
 los permisos de encargado (36).
 
@@ -89,27 +87,34 @@ exactamente dos filas: "occ del equipo" y "activity del equipo".
    ese nombre exacto → pegar el contenido de `edge-function-blanquear-clave.ts` (raíz del
    repo) → Deploy. **Hasta que eso pase, el botón existe pero da error.** Pasos detallados en
    `docs/ACCESO-Y-PERMISOS.md`.
-2. **Migraciones: nada pendiente.** Las 36 están aplicadas.
-3. **Avisarme para publicar** los 58 commits.
-4. **Verificación visual del PDF**: Reporte → Imprimir/PDF → confirmar que la vista previa
+2. **Correr el workflow `Dependencias`** una vez publicado, para sacar el lastre y preparar lo
+   que viene. GitHub → Actions → Dependencias → Run workflow, dos corridas:
+   - `quitar` → `@base-ui/react class-variance-authority clsx shadcn tailwind-merge tw-animate-css motion`
+   - `instalar` → `@sentry/react` (cuando arranquemos el monitoreo de errores)
+
+   Instrucciones en `docs/COMO-INSTALAR-DEPENDENCIAS.md`.
+3. **Migraciones: nada pendiente.** Las 37 están aplicadas.
+4. **Avisarme para publicar** los commits nuevos.
+5. **Verificación visual del PDF**: Reporte → Imprimir/PDF → confirmar que la vista previa
    tiene contenido. Los tests garantizan que el documento se arma bien, **no** que el
    navegador lo imprima bien — esa es exactamente la falla que tuve la vez pasada.
-5. **Si querés que analicemos las consultas juntos**: crear `.env.consultas.local` con el
+6. **Si querés que analicemos las consultas juntos**: crear `.env.consultas.local` con el
    email y la contraseña de la cuenta de administración, y correr `node scripts/consultas.mjs`.
    Instrucciones en `docs/CONSULTAS-PARA-ANALISIS.md`.
-6. **Decisiones abiertas**: ¿va el cronómetro? (desaconsejado en `docs/PROPUESTA-ICR.md`).
+7. **Decisiones abiertas**: ¿va el cronómetro? (desaconsejado en `docs/PROPUESTA-ICR.md`).
    ¿Sentry para monitoreo de errores? (el Error Boundary ya está preparado).
-7. **Rotación de credenciales** — diferida por decisión tuya hasta salir de beta.
+8. **Rotación de credenciales** — diferida por decisión tuya hasta salir de beta.
 
 ## 6. Bloqueado, para que conste
 
 > Detalle completo, junto con qué documentos se sacaron y cuáles se dejaron a propósito, en
 > `docs/LIMPIEZA-2026-08.md`.
 
-- **Sacar 6 dependencias que nadie usa** (`@base-ui/react`, `class-variance-authority`,
-  `clsx`, `shadcn`, `tailwind-merge`, `tw-animate-css`). Verificado que no las importa
-  nadie. **No hay npm en esta máquina**, así que no puedo regenerar el `package-lock.json`;
-  subir el `package.json` desincronizado rompería el CI. Retomable cuando haya npm.
+- ~~**Sacar 6 dependencias que nadie usa.**~~ **DESBLOQUEADO el 04/08/2026.** Estaba trabado
+  porque no hay npm en esta máquina para regenerar el `package-lock.json` — pero el runner del
+  CI sí tiene npm. El workflow **Dependencias** lo hace. Quedan por sacar `@base-ui/react`,
+  `class-variance-authority`, `clsx`, `shadcn`, `tailwind-merge`, `tw-animate-css` y ahora
+  también `motion`, que dejó de usarse. Ver el punto correspondiente en la sección 5.
 - **`card_pausas`**: tabla creada y vacía a propósito. Depende del cronómetro, que el
   análisis del ICR desaconseja explícitamente.
 

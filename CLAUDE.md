@@ -9,14 +9,20 @@ perdiendo tiempo. Leelo antes de tocar código.
 
 ## 1. Entorno (esto invalida los reflejos habituales)
 
-**NO hay npm, pnpm, yarn ni corepack en esta máquina.** Verificado. Consecuencias:
+**NO hay npm, pnpm, yarn ni corepack en esta máquina.** Verificado. Pero eso **no** significa
+que no se pueda instalar nada — esa conclusión estuvo dando vueltas semanas y era falsa.
 
-- **No se puede instalar ninguna dependencia.** Si algo se resuelve "agregando una librería",
-  hay que hacerlo a mano o no hacerlo.
-- **No se puede regenerar `package-lock.json`.** Tocar `package.json` sin el lock rompe el
-  `npm ci` del CI. Por eso siguen 6 dependencias sin usar que no se pueden sacar.
+- **Para instalar o sacar dependencias está el workflow `Dependencias`** de GitHub Actions.
+  El runner de Ubuntu **sí** tiene npm: instala, corre lint + tests + build, y recién si todo
+  pasa commitea `package.json` y `package-lock.json` sincronizados. Instrucciones en
+  `docs/COMO-INSTALAR-DEPENDENCIAS.md`.
+- **Lo que sí sigue siendo cierto acá**: no se puede correr `npm install` ni regenerar el lock
+  localmente. Tocar `package.json` a mano, sin el lock, rompe el `npm ci` del CI.
 - Antes de descartar una librería, **revisá si ya está instalada**. `zod` estaba y casi
   escribí un validador a mano duplicándolo.
+- **Y antes de dar por imposible algo por el entorno, verificá el CI.** El error de razonamiento
+  que originó esta sección fue dar por cerrado que no había npm en ningún lado sin abrir
+  `.github/workflows/main.yml`, donde `npm ci` viene corriendo desde siempre.
 
 `node` está en `C:\Users\Vmagni\AppData\Local\OpenAI\Codex\bin\node.exe`.
 Con Bash: `export PATH="/c/Users/Vmagni/AppData/Local/OpenAI/Codex/bin:$PATH"`
