@@ -3,6 +3,13 @@
 // nueva arriba de todo y la versión se actualiza sola (ver docs/RELEASE.md).
 export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] = [
   {
+    version: "2.13.0",
+    fecha: "2026-08-05",
+    cambios: [
+      "La app abre más rápido: se sacó una librería de animación que pesaba casi lo mismo que media aplicación y se usaba en una sola pantalla.",
+    ],
+  },
+  {
     version: "2.12.0",
     fecha: "2026-08-04",
     cambios: [

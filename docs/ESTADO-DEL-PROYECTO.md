@@ -7,7 +7,7 @@ Documento de situación. Separa lo que depende de mí (código) de lo que depend
 
 ## 1. Dónde estamos
 
-- **Tablero Contable v2.12.0**, con **1158 pruebas automáticas** en 103 archivos, verdes,
+- **Tablero Contable v2.13.0**, con **1198 pruebas automáticas** en 107 archivos, verdes,
   TypeScript sin errores, lint sin errores y build OK.
 - **Sistema visual documentado** en `docs/SISTEMA-VISUAL.md`, con dos tests guardianes que
   impiden que se erosione.
@@ -67,6 +67,10 @@ exactamente dos filas: "occ del equipo" y "activity del equipo".
 | Al crear una tarea, elegir si es de una sola vez o si se repite (por defecto, una sola vez) | Hecho |
 | "En qué anda el equipo": qué tiene abierto cada persona y desde cuándo, para jefe y encargado | Hecho |
 | Criterio de orden configurable (vencimiento, prioridad, tareas que esperan, rapidez) con el motivo explicado | Hecho |
+| Arranque más liviano: se sacó la librería de animación que se usaba en una sola pantalla | Hecho |
+| Presupuesto de peso de arranque, verificado en cada push (falla el CI si se pasa) | Hecho |
+| Pruebas de las tres pantallas donde un error duele más (tablero, en qué anda el equipo, blanqueo de clave) | Hecho |
+| Workflow para instalar y quitar dependencias desde el CI, sin depender de esta máquina | Hecho — **falta correrlo por primera vez** |
 
 ## 4. Pendiente MÍO (código)
 
