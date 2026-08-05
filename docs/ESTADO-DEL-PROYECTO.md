@@ -19,9 +19,11 @@ Documento de situación. Separa lo que depende de mí (código) de lo que depend
 
 Esto es lo único urgente del documento.
 
-### 2.1 Commits sin publicar
+### 2.1 Commits: publicados
 
-Se publican con GitHub Desktop, y quedamos en que eso lo hago sólo cuando me avises.
+**El 04/08/2026 se publicaron los 9 commits que estaban esperando.** No queda nada sin
+publicar. Lo que sigue pendiente es **mirarlo**: la sección 3 marca con negrita las tres cosas
+que necesitan tus ojos, no más código.
 
 ### 2.2 Migraciones: al día
 
@@ -98,7 +100,7 @@ exactamente dos filas: "occ del equipo" y "activity del equipo".
 
    Instrucciones en `docs/COMO-INSTALAR-DEPENDENCIAS.md`.
 3. **Migraciones: nada pendiente.** Las 37 están aplicadas.
-4. **Avisarme para publicar** los commits nuevos.
+4. ~~Avisarme para publicar los commits nuevos.~~ **Hecho el 04/08/2026.**
 5. **Verificación visual del PDF**: Reporte → Imprimir/PDF → confirmar que la vista previa
    tiene contenido. Los tests garantizan que el documento se arma bien, **no** que el
    navegador lo imprima bien — esa es exactamente la falla que tuve la vez pasada.
