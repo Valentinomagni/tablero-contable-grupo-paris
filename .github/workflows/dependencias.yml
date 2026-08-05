@@ -1,0 +1,74 @@
+# Instalar o quitar dependencias sin tener npm en la máquina de trabajo.
+#
+# POR QUÉ EXISTE. En la máquina donde se desarrolla no hay npm, pnpm ni yarn, así que durante
+# semanas la conclusión fue "no se pueden agregar dependencias". Era falsa: el runner de
+# GitHub Actions SÍ tiene npm. Este workflow lo usa, corre la verificación completa, y
+# commitea `package.json` + `package-lock.json` sincronizados.
+#
+# Se dispara A MANO desde la pestaña Actions, nunca solo: instalar una dependencia es una
+# decisión, no algo que deba pasar por accidente.
+name: Dependencias
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: "Qué hacer"
+        required: true
+        type: choice
+        options: [instalar, quitar]
+      paquetes:
+        description: "Paquetes separados por espacio (ej: @sentry/react)"
+        required: true
+        type: string
+      dev:
+        description: "¿Es dependencia de desarrollo?"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  dependencias:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Aplicar el cambio
+        run: |
+          if [ "${{ inputs.accion }}" = "instalar" ]; then
+            npm install ${{ inputs.dev && '--save-dev' || '--save' }} ${{ inputs.paquetes }}
+          else
+            npm uninstall ${{ inputs.paquetes }}
+          fi
+
+      # Verificación ANTES de commitear. Una dependencia que rompe el build no entra: sin
+      # este paso, el workflow podría dejar `main` en rojo y nadie se entera hasta el
+      # siguiente push.
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run build
+
+      - name: Commitear el cambio
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet package.json package-lock.json; then
+            echo "No hubo cambios en las dependencias."
+            exit 0
+          fi
+          git add package.json package-lock.json
+          git commit -m "chore: ${{ inputs.accion }} ${{ inputs.paquetes }}
+
+          Aplicado desde el workflow Dependencias porque la maquina de trabajo
+          no tiene npm. Lint, tests y build pasaron antes de commitear.
+
+          Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+          git push
