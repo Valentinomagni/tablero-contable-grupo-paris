@@ -812,6 +812,148 @@ git commit -m "fix: rounded-xl y rounded-2xl eran el mismo pixel, y el movimient
 
 ---
 
+## Task B0: 69 clases que no generan una sola línea de CSS
+
+**Va primero de toda la Fase B.** Es el hallazgo más grave de las tres auditorías y es el mismo
+modo de falla que costó cinco pantallas sin sombra durante meses: el navegador descarta en
+silencio y nadie se entera.
+
+**Qué pasa.** Los colores de la marca están definidos en `tailwind.config.js` como `var(--x)`
+planas. **Tailwind 3 no sabe aplicarle un modificador de opacidad a un color así** —necesita el
+placeholder `<alpha-value>`— y en vez de avisar, **no emite la regla**. Cada `border-line/60`,
+`bg-surface2/40`, `border-accent/40` es una clase que no existe.
+
+**Verificado de forma concluyente** contra el CSS compilado:
+
+```
+border-line       (sin opacidad)  -> existe en el bundle
+border-line/60    (con opacidad)  -> NO existe
+white/10          (hex, no token) -> existe
+```
+
+La contraprueba con `white` es la que cierra el caso: no es que Tailwind no pueda hacer opacidad,
+es que no puede hacerla **sobre un token `var()`**.
+
+**Alcance medido: 69 usos en 20 archivos.** Los más repetidos:
+
+| Usos | Clase | Dónde |
+|---|---|---|
+| 16 | `border-line/60` | NotificacionesPanel, Admin, PlantillaCierre |
+| 10 | `border-accent/40` | Board, Calendario, MiDia |
+| 7 | `border-line/70` | Shell (la barra superior), Board, Calendario |
+| 4 | `border-warn/50` | ArqueoResultDialog, CumplimientoDiario, MiDia |
+| 4 | `bg-surface2/40` | VacacionesModal, MiDia, TuSemana |
+
+**Lo que hay que entender antes de arreglarlo:** cuando esto se corrija, **69 bordes y fondos que
+hoy son invisibles van a aparecer de golpe**. No es un efecto secundario de la migración: *es* la
+migración. Hay que mirar las 20 pantallas después.
+
+**Archivos:**
+- Crear: `src/lib/opacidad.guard.test.ts`
+- Modificar: `tailwind.config.js` o `src/index.css` (según el camino que se elija)
+
+- [ ] **Paso 1: Escribir el guardián que lo detecta, antes de arreglar nada**
+
+```ts
+/// <reference types="node" />
+import { describe, it, expect } from "vitest";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
+
+// GUARDIÁN DE OPACIDAD SOBRE TOKENS.
+//
+// POR QUÉ EXISTE. Los colores de la marca son `var(--x)` planas. Tailwind 3 no puede aplicarles
+// un modificador de opacidad —necesita el placeholder `<alpha-value>`— y cuando no puede, NO
+// EMITE LA REGLA. Sin error, sin warning, sin nada.
+//
+// Había 69 usos de `border-line/60`, `bg-surface2/40` y parecidas dibujándose sin ningún borde y
+// sin ningún fondo, en 20 archivos, y nadie lo notó nunca. Es exactamente el mismo modo de falla
+// que `box-shadow: var(--ring),var(--shadow)`, que dejó cinco pantallas sin sombra durante meses.
+//
+// La lección, que ya es la segunda vez: cuando el navegador descarta algo en silencio, la única
+// forma de enterarse es un test que lo busque a propósito.
+const TOKENS = "line|surface2|surface|ink2|ink|accent|warn|danger|done|chip|bg";
+const RE = new RegExp(`\\b(?:border|bg|text|ring|from|to|via)-(?:${TOKENS})\\/\\d+`, "g");
+
+describe("opacidad sobre tokens de color", () => {
+  it("nadie le pone opacidad a un color que es una variable CSS", () => {
+    const culpables: string[] = [];
+    for (const ruta of archivosFuente("src")) {
+      const lineas = readFileSync(ruta, "utf8").split("\n");
+      for (let i = 0; i < lineas.length; i++) {
+        const m = lineas[i].match(RE);
+        if (m) culpables.push(`${ruta}:${i + 1}: ${[...new Set(m)].join(", ")}`);
+      }
+    }
+    expect(
+      culpables,
+      "Tailwind 3 NO genera CSS para esto: la clase existe en el fuente y no en el bundle, así " +
+      "que el borde o el fondo no se dibuja. Usá el token sin opacidad, o definí una variable " +
+      "nueva en index.css con el valor ya mezclado.\n" + culpables.join("\n"),
+    ).toEqual([]);
+  });
+});
+
+function archivosFuente(dir: string): string[] {
+  const out: string[] = [];
+  for (const nombre of readdirSync(dir)) {
+    const ruta = join(dir, nombre);
+    if (statSync(ruta).isDirectory()) { out.push(...archivosFuente(ruta)); continue; }
+    if (!/\.tsx$/.test(nombre) || /\.test\.tsx$/.test(nombre)) continue;
+    out.push(ruta);
+  }
+  return out;
+}
+```
+
+- [ ] **Paso 2: Correr y confirmar que encuentra los 69**
+
+```bash
+node node_modules/vitest/vitest.mjs run src/lib/opacidad.guard.test.ts > /tmp/o.log 2>&1; echo "EXIT: $? (debe ser 1)"
+grep -c "border-\|bg-\|text-" /tmp/o.log
+```
+
+Si el número no está cerca de 69, contá a mano y entendé la diferencia antes de seguir:
+
+```bash
+grep -rhoE "(border|bg|text|ring)-(line|surface2|surface|ink2|ink|accent|warn|danger|done)/[0-9]+" src/ --include="*.tsx" | wc -l
+```
+
+- [ ] **Paso 3: Elegir el camino, y es una decisión real**
+
+**(a) Definir las mezclas como variables propias.** Para cada combinación que se usa de verdad
+(son ~10 distintas), una variable en `src/index.css` con el color ya mezclado:
+
+```css
+/* `--line` al 60%. No se puede escribir `border-line/60` porque Tailwind 3 no genera esa clase
+   cuando el color es una `var()` plana; hay que darle el valor ya resuelto. */
+--line-60: color-mix(in oklab, var(--line) 60%, transparent);
+```
+
+Funciona hoy, sin migrar nada, y `color-mix` está soportado en todos los navegadores desde 2023.
+
+**(b) Migrar a Tailwind 4.** Resuelve la opacidad con `color-mix` automáticamente y el problema
+desaparece de raíz. **Es el argumento más fuerte a favor del salto**, mucho más que la velocidad
+de build. Pero es un día de trabajo y hay que revisar las 20 pantallas igual.
+
+**Recomendación: (a) ahora, (b) cuando el sistema visual esté asentado.** El camino (a) arregla el
+defecto hoy y no bloquea el (b) después.
+
+- [ ] **Paso 4: Mirar las 20 pantallas**
+
+Los tests no pueden decirte si un borde que aparece de golpe se ve bien. Levantá la app y recorré
+los archivos que el guardián listó, en los dos temas. Lo que buscás: bordes que ahora se ven
+demasiado marcados, o fondos que tapan algo.
+
+- [ ] **Paso 5: Commit**
+
+```bash
+git add src/lib/opacidad.guard.test.ts src/index.css src/
+git commit -m "fix: 69 clases que no generaban una sola linea de CSS"
+```
+
+---
+
 ## Task B4: `Vista.tsx` — diez anchos de columna en quince pantallas
 
 **Medido:** `max-w-[560px]`, `[640px]`, `[720px]`, `[760px]`, `[820px]`, `[900px]`, `[940px]`,
@@ -1380,6 +1522,34 @@ un teléfono, lo que la gente espera es tocar. Pero antes de escribir una línea
 sólo vos podés contestar: **¿alguien del equipo usa hoy la app desde el teléfono?** Si nadie la usa
 —y puede ser que nadie la use *porque* no funciona—, el orden correcto es distinto.
 
+## D0. Dependabot tiene silenciadas TODAS las actualizaciones mayores
+
+Esto no es una decisión difícil, es una línea para borrar — pero va acá porque **explica por qué el
+proyecto se quedó atrás sin que nadie lo decidiera**.
+
+`.github/dependabot.yml:41-44` dice:
+
+```yaml
+ignore:
+  - dependency-name: "*"
+    update-types: ["version-update:semver-major"]
+```
+
+Y el comentario que tiene arriba dice: *"Las mayores NO se agrupan: Dependabot las abre por
+separado y se revisan una por una."*
+
+**`ignore` significa ignorar, no separar.** Dependabot no va a proponer nunca una mayor. Ni Tailwind
+4, ni React 20, ni Vite 9, ni el día que salga un parche de seguridad que sólo exista en una mayor.
+
+Es el mismo patrón que el chip de migraciones ciego y que el archivo que gritaba una emergencia
+resuelta: **un mecanismo que parece estar cuidando algo y no lo está**. Y el comentario al lado
+describe un comportamiento que el código no tiene, que es lo que hace que nadie lo revise.
+
+**El arreglo es borrar el bloque `ignore` entero.** El agrupamiento de menores y parches ya está
+bien resuelto más arriba, y `open-pull-requests-limit: 5` evita el desborde.
+
+---
+
 ## D2. El estado de una tarea vive en cuatro tablas, y de ahí salen cuatro bugs
 
 Hoy el estado de trabajo de una tarea está repartido así: `cards` guarda el del mes vigente,
@@ -1421,14 +1591,200 @@ dentro de seis.
 
 ---
 
+# FASE E — Las tres del arquitecto de front
+
+Van aparte porque son de otra naturaleza: no cambian lo que se ve, cambian lo que cuesta trabajar.
+Todo lo de acá está medido en esta máquina, no estimado.
+
+## Task E1: La suite tarda 6,6 veces más de lo necesario
+
+**Medido:** de 108 archivos de test, sólo **11** necesitan DOM. Los otros 97 pagan el arranque de
+jsdom para probar funciones puras.
+
+```
+mismos 98 archivos, mismos 1138 tests:
+  jsdom : 87,33 s
+  node  : 13,14 s     -> 6,6x, 74 segundos menos
+```
+
+**Por qué va primero de esta fase:** el hook de pre-commit corre `tsc` (14 s) más la suite entera.
+CLAUDE.md ya documenta esos 90-180 s como fricción. **Es el cambio que hace más barato hacer todos
+los demás**, y se paga en cada commit de los próximos dos años.
+
+- [ ] **Paso 1: Confirmar el corte**
+
+```bash
+node node_modules/vitest/vitest.mjs run src/lib --environment node > /tmp/n.log 2>&1; echo "EXIT: $?"; tail -12 /tmp/n.log
+```
+
+Los archivos que fallen son exactamente los que sí usan DOM. Anotalos: son la lista de excepciones.
+
+- [ ] **Paso 2: Partir el entorno con `test.projects`**
+
+Vitest 4 sacó `environmentMatchGlobs` y el docblock `@vitest-environment` ya no se parsea. Lo que
+sí existe es `projects`. En `vite.config.ts`:
+
+```ts
+test: {
+  projects: [
+    // Los tests de lógica no tocan el DOM. Montarles jsdom cuesta 74 segundos por corrida para
+    // probar funciones puras — y un ciclo de feedback largo es lo que hace que alguien empiece a
+    // saltearse el hook de pre-commit, que es la red que evita subir algo roto.
+    { extends: true, test: { name: "logica", environment: "node",
+        include: ["src/**/*.test.ts"],
+        exclude: ["src/lib/{prefs,red-global,impresion-dom}.test.ts"] } },
+    { extends: true, test: { name: "ui", environment: "jsdom",
+        include: ["src/**/*.test.tsx", "src/lib/{prefs,red-global,impresion-dom}.test.ts"] } },
+  ],
+}
+```
+
+Ajustá la lista de excepciones con lo que hayas anotado en el paso 1: si adivinás, algún test se
+va a quedar afuera de los dos proyectos y **va a dejar de correr sin que nadie lo note**.
+
+- [ ] **Paso 3: Verificar que corren TODOS**
+
+```bash
+node node_modules/vitest/vitest.mjs run > /tmp/a.log 2>&1; echo "EXIT: $?"; tail -5 /tmp/a.log
+```
+
+Esperado: EXIT 0 y **1202 tests**, el mismo número que antes. Si son menos, algún archivo quedó
+huérfano entre los dos proyectos: ése es el riesgo real de este cambio y por eso se verifica el
+número, no sólo el exit code.
+
+- [ ] **Paso 4: Commit**
+
+```bash
+git add vite.config.ts
+git commit -m "perf: los tests de logica dejan de montar jsdom - 87s a 13s"
+```
+
+---
+
+## Task E2: El presupuesto de peso no cuenta el archivo más pesado
+
+**Medido:** `src/assets/InterVariable.woff2` pesa **352.240 bytes**. `scripts/peso.mjs` filtra por
+`/^(index|vendor-)/` y por extensión `.js|.css`, así que la fuente no entra por ninguno de los dos.
+
+```
+lo que mide el gate:  222,4 kB  ("entra con 17,6 kB de margen")
+primer render real:   574,6 kB
+```
+
+Y no hay `<link rel="preload">`: el navegador la descubre recién después de bajar y parsear el CSS.
+
+**Por qué importa más que cualquier optimización de JS:** los ocho `lazy()` que faltan valen 12-18
+kB. Esto vale ~260 kB. Y un presupuesto que no cuenta el activo más grande entrena a confiar en un
+número equivocado — que es justo lo que el propio script dice venir a evitar.
+
+- [ ] **Paso 1: Meter la fuente en la medición, antes de optimizarla**
+
+En `scripts/peso.mjs`, que `ES_DE_ARRANQUE` incluya `.woff2`. El número va a saltar de 222 a ~575 y
+**el gate va a fallar**. Eso es correcto: el presupuesto estaba mal, no el archivo.
+
+Subir el presupuesto a un valor que refleje la realidad de hoy (por ejemplo 600 kB) y dejar escrito
+en el comentario que baja a 320 cuando la fuente esté subseteada. Un presupuesto que se cumple
+mintiendo no es un presupuesto.
+
+- [ ] **Paso 2: Subsetear a latín**
+
+La app es sólo en español. El archivo de rsms trae Griego, Cirílico y Vietnamita que nunca se usan.
+Generar el subconjunto `latin` + `latin-ext` y reemplazar el archivo.
+
+**Medí el resultado real** antes de anotar ningún número: el tamaño depende de la herramienta y de
+los rangos incluidos.
+
+- [ ] **Paso 3: Precargarla**
+
+En `index.html`, un `<link rel="preload" as="font" type="font/woff2" crossorigin>` apuntando al
+archivo con hash. Sin `crossorigin` el navegador la baja dos veces.
+
+- [ ] **Paso 4: Verificar y bajar el presupuesto**
+
+```bash
+node node_modules/vite/bin/vite.js build > /tmp/b.log 2>&1; echo "BUILD: $?"
+node scripts/peso.mjs
+```
+
+Con el número real medido, ajustá el presupuesto a algo que apriete de verdad.
+
+- [ ] **Paso 5: Commit**
+
+```bash
+git add scripts/peso.mjs index.html src/assets/ src/index.css
+git commit -m "perf: la fuente pesaba mas que todo el JS y no la contaba nadie"
+```
+
+---
+
+## Task E3: Siete componentes definidos adentro del render
+
+**Medido con el linter que ya está instalado, sólo apagado:**
+
+```bash
+node node_modules/oxlint/bin/oxlint -A all -D react/no-unstable-nested-components
+```
+
+Siete errores. El que más duele es `NavItem` en `Shell.tsx:32`: se recrea con identidad nueva en
+cada render, así que para React es un tipo de componente distinto y **desmonta y vuelve a montar
+los ~15 botones de la barra lateral** en vez de reconciliarlos. Como el estado del buscador vive en
+`App`, **cada tecla en "Buscar tarea…" dispara ese remonte completo**.
+
+- [ ] **Paso 1: Encender la regla**
+
+En `.oxlintrc.json`: `"react/no-unstable-nested-components": "error"`.
+
+- [ ] **Paso 2: Confirmar que falla con los siete**
+
+```bash
+node node_modules/oxlint/bin/oxlint > /tmp/l.log 2>&1; echo "EXIT: $? (debe ser 1)"; grep -c "no-unstable" /tmp/l.log
+```
+
+- [ ] **Paso 3: Sacar los siete al nivel de módulo**
+
+Uno por uno, pasándoles como props lo que hoy toman del closure. Es mecánico pero **no es
+automático**: cada uno usa variables distintas del render que lo contiene.
+
+- [ ] **Paso 4: Verificar**
+
+```bash
+node node_modules/oxlint/bin/oxlint > /tmp/l.log 2>&1; echo "LINT: $?"
+node node_modules/vitest/vitest.mjs run > /tmp/a.log 2>&1; echo "TESTS: $?"; tail -4 /tmp/a.log
+```
+
+- [ ] **Paso 5: Commit**
+
+```bash
+git add .oxlintrc.json src/
+git commit -m "perf: siete componentes se recreaban en cada render"
+```
+
+---
+
 # Lo que este plan NO hace, y por qué
 
-- **No migra a Tailwind 4.** El motor Oxide baja los builds de segundos a milisegundos, pero para
-  *este* proyecto la migración no es gratis: `tailwind.config.js` desaparece —y ahí viven la escala
-  tipográfica y el guardián que la protege— y el modo oscuro pasa a `prefers-color-scheme` por
-  defecto, mientras acá hay un selector de tres estados montado sobre `data-theme`. El beneficio es
-  velocidad de build, que hoy no es un problema. **Se hace cuando el sistema visual esté asentado**,
-  no antes: migrar un sistema que todavía se está definiendo es hacer el trabajo dos veces.
+- **No migra a Tailwind 4 todavía, pero el argumento cambió.** Yo tenía anotado que el beneficio
+  era velocidad de build. **Es mucho más que eso**: Tailwind 4 resuelve la opacidad sobre tokens
+  `var()` con `color-mix`, o sea que **arregla de raíz las 69 clases muertas de la Task B0**. Aun
+  así va después: la migración hace desaparecer `tailwind.config.js` —donde viven la escala
+  tipográfica, la de espaciado nueva y el guardián que las protege— y cambia el modo oscuro a
+  `prefers-color-scheme`, mientras acá hay un selector de tres estados sobre `data-theme`. Migrar
+  un sistema visual que todavía se está definiendo es hacer el trabajo dos veces. **La superficie
+  está medida y es chica**: 0 `space-x`, 0 `divide-`, 0 renombres de sombras o radios, 19
+  `outline-none`.
+- **No mete virtualización, y ahora con un número.** Se midió la curva: el trabajo de JS por render
+  recién cruza un frame (16,7 ms) alrededor de las **4.500 tarjetas vivas**, y el archivado mensual
+  mantiene `cards` en los cientos. Además el tablero muestra las tareas *de una persona*: a 30
+  personas y 800 tarjetas son ~20 por tablero. **El techo no es la cantidad de nodos: es un O(n²)
+  en el cálculo de dependencias**, y eso se arregla con un `Map` de seis líneas, no con una
+  librería.
+- **No enciende las reglas `react-perf` de oxlint.** Se midieron: **607 hallazgos**. Sin un solo
+  `memo()` en el proyecto, esas reglas no describen ningún problema real. 607 warnings se
+  desactivan en una semana y ahí se pierde la costumbre de mirar el linter.
+- **No suma Sentry todavía.** El canal de errores que existe (Consultas + el detalle copiable del
+  ErrorBoundary) funciona y no tiene mantenimiento. Sentry recién vale cuando haya alguien que mire
+  un tablero de errores. Si algún día se hace, **GlitchTip o Bugsink son compatibles con el SDK de
+  Sentry** —el código no cambia— y GlitchTip da 5.000 eventos al mes gratis.
 - **No mete un router.** Hoy la navegación es por estado, y eso significa que no hay URLs
   compartibles ni botón "atrás". Es una carencia real, pero es una decisión de producto ("¿querés
   poder mandarle a alguien el link de una tarea?") antes que técnica.
