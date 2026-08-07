@@ -10,8 +10,19 @@
 --  hoy NO SE RESPETA del lado de la base: cualquiera con sesión puede leer todos los avisos
 --  del tablón por la API, incluidos los dirigidos a otra persona.
 --
---  En la pantalla se ve bien, porque la app filtra antes de dibujar. Pero el filtro está del
---  lado del navegador, y eso no es un permiso: es una cortesía.
+--  CORRECCIÓN A LA PRIMERA VERSIÓN DE ESTE ARCHIVO. Acá decía que "en la pantalla se ve bien,
+--  porque la app filtra antes de dibujar". **Era falso, y no se había verificado.** `visible_to`
+--  aparece en cinco lugares del código: cuatro escrituras y la declaración del tipo. Cero
+--  lecturas. La app nunca filtró por ese campo — ni en el navegador ni en ningún lado.
+--
+--  Eso cambia lo que hay que hacer acá. Si sólo se borrara la policy permisiva, `visible_to: []`
+--  pasaría de significar "lo ve todo el equipo" a significar "no lo ve nadie", en silencio. Y
+--  hay dos lugares que publican así: el calendario fiscal (`Admin.tsx:203`) y los vencimientos
+--  de ARCA que se fijan desde el Calendario (`Calendario.tsx:124`).
+--
+--  O sea: la pantalla que existe para que nadie se olvide de un vencimiento impositivo habría
+--  dejado de mostrarle vencimientos a todo el equipo, y el único que los veía sería el jefe que
+--  los generó. Por eso el punto 2 incluye la rama del aviso general.
 --
 --  POR QUÉ PASABA, Y POR QUÉ NADIE LO VIO
 --
@@ -58,6 +69,11 @@ drop policy if exists "ver eventos segun rol" on public.announcements;
 create policy "ver eventos segun rol" on public.announcements for select using (
   owner_id = auth.uid()                                   -- propios
   or auth.uid() = any(visible_to)                         -- me lo compartieron
+  -- SIN DESTINATARIOS = PARA TODO EL EQUIPO. Esta rama es nueva y es la que evita romper el
+  -- calendario fiscal: publicar sin tildar a nadie siempre significó "es para todos", y sin
+  -- esto pasaría a significar "para nadie". El `coalesce` es porque en Postgres el
+  -- `array_length` de un arreglo vacío devuelve null, no cero.
+  or coalesce(array_length(visible_to, 1), 0) = 0
   or exists (select 1 from public.profiles p
               where p.id = auth.uid() and p.role = 'jefe')            -- jefe: todos
   or exists (select 1 from public.profiles e

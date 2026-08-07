@@ -252,7 +252,12 @@ function PublicarForm({ me, team, onDone }: { me: Profile; team: Profile[]; onDo
       <textarea value={detalle} onChange={(e) => setDetalle(e.target.value)} rows={2} placeholder="Detalle opcional" className={inputCls + " resize-y"} />
       {companeros.length > 0 && (
         <div>
-          <label className="block text-xs uppercase tracking-wide text-ink2 mb-1.5">Notificar a</label>
+          {/* El rótulo decía "Notificar a", que se lee como una lista opcional de avisos. No lo
+              es: esta lista decide QUIÉN PUEDE VER el aviso, y hasta la migración 40 no la
+              respetaba nadie. Ahora sí, así que el texto tiene que decir lo que hace — y sobre
+              todo, qué pasa si se deja vacía, que es el caso más común. */}
+          <label className="block text-xs uppercase tracking-wide text-ink2 mb-1.5">Quién lo ve</label>
+          <p className="text-2xs text-ink2 mb-1.5">Si no elegís a nadie, lo ve todo el equipo.</p>
           <div className="grid grid-cols-2 gap-1.5 max-h-[150px] overflow-y-auto">
             {companeros.map((u) => {
               const on = dest.includes(u.id);
