@@ -127,6 +127,42 @@ acumula, y aparece más caro tres semanas más tarde.
 Si estás por escribir una función nueva y hay defectos abiertos en la auditoría, **estás en el
 paso equivocado**.
 
+### Cuándo un paso está terminado
+
+Sin esto, la regla de arriba no sirve: *"terminado"* se vuelve una sensación, y la sensación
+siempre dice que sí.
+
+**Un paso está terminado cuando su chequeo pasa. No cuando alguien lo declara.**
+
+| Paso | Chequeo que lo cierra | Quién puede correrlo |
+|---|---|---|
+| **1. Ordenar** | `docs/INDICE.md` existe y su lista "lo que falta terminar" no tiene ninguna fila en "sin verificar" | Claude |
+| **2. Corregir** | Cero hallazgos abiertos en `docs/AUDITORIA-*.md`, **y** el chip de Administración en verde | Claude escribe · **el dueño corre las migraciones** |
+| **3. Actualizar** | Cada cosa que entró trae escrito qué mide, a quién ayuda y cuándo se descarta | Claude |
+| **4. Revisar** | `tsc`, lint, tests y build en 0, **y** una revisión independiente que contradiga o confirme | Claude escribe · **hace falta un segundo par de ojos** |
+
+**Dos de los cuatro no los puedo cerrar solo, y eso no es una excusa: es la forma del problema.**
+El paso 2 no cierra hasta que las migraciones se corren en Supabase, y eso pasa en una máquina a
+la que no llego. El paso 4 no cierra con autoevaluación — la matriz de cobertura del 06/08 se
+declaró completa a sí misma y una revisión independiente encontró once hallazgos adentro.
+
+### Sobre pedir "100% de certeza"
+
+Es la pregunta correcta y la respuesta honesta es que **nadie la puede dar**. Lo que sí se puede
+es no mentir sobre el nivel de certeza que hay.
+
+Este proyecto se lastimó cuatro veces por afirmaciones con tono de verificadas que no lo estaban:
+*"NO hay npm. Verificado"*, *"el encuadre está verificado por tests"*, la matriz de cobertura que
+decía "Revisada" sobre áreas que nadie miró, y la migración 40 que justificó su alcance con un
+comportamiento del front que no existía.
+
+Las cuatro tenían la misma forma: **se escribió la conclusión sin correr la comprobación.**
+
+Por eso la regla operativa no es "estar seguro", es más chica y sí se puede cumplir:
+
+> **Si escribís "verificado", escribí al lado el comando o el archivo:línea que lo comprueba.**
+> Si no podés, escribí "sin verificar". Las dos son respuestas válidas; inventar la primera, no.
+
 ## 3. Reglas duras del producto
 
 - **Cero emojis** en cualquier texto que vea un usuario. Iconos sólo de `lucide-react`.
