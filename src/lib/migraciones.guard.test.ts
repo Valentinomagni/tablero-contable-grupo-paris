@@ -30,12 +30,20 @@ import { MIGRACIONES_ESPERADAS } from "./migraciones";
 // por faltante para siempre — y una alarma que no se puede apagar se termina ignorando.
 // ============================================================
 
+/**
+ * Dónde viven las migraciones vigentes.
+ *
+ * Estaban sueltas en la raíz del repositorio —29 archivos `.sql` mezclados con la configuración—
+ * hasta que se ordenaron en `db/`. `db/historico/` queda fuera a propósito: ahí están las de la
+ * v1 (2 a 12) y el esquema base, que ya no se corren y no tienen que aparecer en el chip.
+ */
+const CARPETA = "db/migraciones";
+
 /** Los números de migración que existen como archivo en el repo. */
 function migracionesEnDisco(): number[] {
   const nums = new Set<number>();
-  for (const nombre of readdirSync(".")) {
-    // `migraciones-pendientes.sql` NO entra: es un compilado de otras, no una migración con
-    // número propio. El patrón pide `migracion-<n>-`, que es como se nombran las de verdad.
+  for (const nombre of readdirSync(CARPETA)) {
+    // El patrón pide `migracion-<n>-`, que es como se nombran las de verdad.
     const m = /^migracion-(\d+)-.*\.sql$/.exec(nombre);
     if (m) nums.add(Number(m[1]));
   }
@@ -72,7 +80,7 @@ describe("el chip de migraciones no puede quedarse viejo", () => {
 
   it("toda migración vigilada se registra sola en schema_migrations", () => {
     const mudas: string[] = [];
-    for (const nombre of readdirSync(".")) {
+    for (const nombre of readdirSync(CARPETA)) {
       const m = /^migracion-(\d+)-.*\.sql$/.exec(nombre);
       if (!m) continue;
       const numero = Number(m[1]);
@@ -80,7 +88,7 @@ describe("el chip de migraciones no puede quedarse viejo", () => {
       // La 13 a la 25 no se registran solas y está bien: las da de alta el backfill de la 28,
       // que se escribió justamente para eso. De la 26 en adelante, cada una se anota sola.
       if (numero <= 25) continue;
-      const sql = readFileSync(nombre, "utf8");
+      const sql = readFileSync(`${CARPETA}/${nombre}`, "utf8");
       if (!/insert\s+into\s+public\.schema_migrations/i.test(sql)) mudas.push(nombre);
     }
 

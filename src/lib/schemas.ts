@@ -22,6 +22,7 @@ export const CardSchema = z.object({
   categoria: z.string().optional().nullable(),
   reset_policy: z.enum(["mensual", "mantener", "manual"]).optional().nullable(),
   requiere_resultado: z.boolean().optional().nullable(),
+  exige_checklist: z.boolean().optional().nullable(),
 });
 
 // valida cada fila y avisa por consola de las que no cumplen; SIEMPRE devuelve los datos crudos

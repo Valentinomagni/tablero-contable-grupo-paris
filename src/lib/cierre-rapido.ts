@@ -1,4 +1,5 @@
 import type { Card } from "./types";
+import { checklistIncompleto, motivoChecklist } from "./checklist-gate";
 
 // Cerrar una tarea de UN TOQUE desde la lista — P5 de docs/PROPUESTAS-ADOPCION.md.
 //
@@ -27,6 +28,9 @@ export function sePuedeCerrarRapido(c: Card, todas: Card[]): boolean {
   if (c.protected === true) return false;
   // Bloqueada: cerrarla saltearía el motivo por el que espera.
   if (estaBloqueada(c, todas)) return false;
+  // Exige el checklist completo: cerrarla de un toque saltearía justamente los pasos que
+  // alguien marcó como obligatorios. Mismo criterio que `requiere_resultado` de arriba.
+  if (checklistIncompleto(c)) return false;
   return true;
 }
 
@@ -45,6 +49,8 @@ function estaBloqueada(c: Card, todas: Card[]): boolean {
 export function MOTIVO_NO_RAPIDO(c: Card, todas: Card[]): string | null {
   if (!c || c.status === "term") return null;
   if (c.requiere_resultado === true) return "Abrila para elegir el resultado del control.";
+  const falta = motivoChecklist(c);
+  if (falta) return falta + " Abrila para completarlos.";
   if (c.protected === true) return "Está protegida: abrila para modificarla.";
   if (estaBloqueada(c, todas)) return "Espera a que se libere otra tarea.";
   return null;

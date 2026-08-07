@@ -60,6 +60,23 @@ export const CAMPOS_NUEVOS_CARDS = ["proc_at", "tiempo_max_horas", "dato_control
 /** Columnas de `cards` que sólo existen con la migración 31 aplicada. */
 export const CAMPOS_ETIQUETAS_CARDS = ["etiquetas"] as const;
 
+/** Migración que agrega `cards.exige_checklist`. */
+export const MIGRACION_CHECKLIST_GATE = 41;
+
+/** Columnas de `cards` que sólo existen con la migración 41 aplicada. */
+export const CAMPOS_CHECKLIST_GATE = ["exige_checklist"] as const;
+
+/**
+ * ¿Está aplicada la migración 41 (`cards.exige_checklist`)? Ante la duda: false.
+ *
+ * Con false, la casilla "exige checklist completo" no se muestra al crear ni al editar una
+ * tarea, y nada bloquea el cierre. Es el mismo criterio conservador del resto del archivo: si
+ * no se sabe si la columna existe, la app se comporta como antes de que existiera.
+ */
+export function tieneChecklistGate(aplicadas: number[] | null | undefined): boolean {
+  return tieneMigracion(aplicadas, MIGRACION_CHECKLIST_GATE);
+}
+
 /**
  * Columnas de `cards` que la app realmente usa, para pedirlas EXPLÍCITAMENTE en vez de
  * `select("*")`.
@@ -75,7 +92,7 @@ export const COLUMNAS_CARDS = [
   "id", "owner", "title", "status", "description", "checklist", "comments", "history",
   "done_at", "due_date", "recurring", "priority", "effort", "card_type", "deps",
   "created_at", "recur_rule", "protected", "categoria", "reset_policy",
-  "requiere_resultado", "sucursal", "marca", "proc_at", "tiempo_max_horas", "dato_control",
+  "requiere_resultado", "exige_checklist", "sucursal", "marca", "proc_at", "tiempo_max_horas", "dato_control",
   "etiquetas",
 ].join(",");
 
@@ -142,7 +159,8 @@ export function payloadCompatible<T extends object>(
  */
 export function payloadCards<T extends object>(payload: T, aplicadas: number[] | null | undefined): T {
   const sinViejos = payloadCompatible(payload, aplicadas, CAMPOS_NUEVOS_CARDS, MIGRACION_ESQUEMA_NUEVO);
-  return payloadCompatible(sinViejos, aplicadas, CAMPOS_ETIQUETAS_CARDS, MIGRACION_ETIQUETAS);
+  const sinEtiquetas = payloadCompatible(sinViejos, aplicadas, CAMPOS_ETIQUETAS_CARDS, MIGRACION_ETIQUETAS);
+  return payloadCompatible(sinEtiquetas, aplicadas, CAMPOS_CHECKLIST_GATE, MIGRACION_CHECKLIST_GATE);
 }
 
 /**
