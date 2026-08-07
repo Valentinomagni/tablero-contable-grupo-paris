@@ -1761,6 +1761,226 @@ git commit -m "perf: siete componentes se recreaban en cada render"
 
 ---
 
+# FASE F — Lo que ninguno de los tres auditores miró
+
+Esta fase salió de una guía general de buenas prácticas que trajo un tercero. **Vale decir de dónde
+vino**: los tres auditores leyeron el código, y estas dos cosas no viven en el código — viven en la
+respuesta HTTP y en el navegador. Una lista genérica encontró lo que tres revisiones profundas no
+buscaron, y eso es exactamente para lo que sirven las listas genéricas.
+
+## Task F1: La app no manda una sola cabecera de seguridad
+
+**Verificado:** `public/_headers` **no existe**. No hay `Content-Security-Policy`, ni
+`X-Frame-Options`, ni `Strict-Transport-Security`, ni `Referrer-Policy` en ningún lado del
+proyecto.
+
+**Por qué en esta app importa más que en la mayoría.** El modelo de seguridad entero es la RLS de
+Postgres, y la clave pública de Supabase está en el bundle *por diseño*. Eso significa que
+**cualquier script que logre ejecutarse en la página puede hablar con PostgREST como el usuario
+que tiene la sesión abierta**, con todos sus permisos. No necesita robar nada: usa la sesión que
+ya está.
+
+Una `Content-Security-Policy` es la única defensa contra eso, y hoy no hay ninguna.
+
+El vector más plausible no es exótico: el tablón de avisos, los comentarios de una tarjeta y las
+consultas aceptan texto que después se muestra. React escapa por defecto —eso está bien—, pero
+alcanza un solo `dangerouslySetInnerHTML` futuro, o una dependencia comprometida, para que no
+haya nada atajando.
+
+**Archivos:**
+- Crear: `public/_headers`
+- Test: `e2e/cabeceras.spec.ts`
+
+- [ ] **Paso 1: Ver qué se está sirviendo hoy**
+
+```bash
+curl -sI https://<tu-dominio> | grep -i "content-security\|x-frame\|strict-transport\|referrer\|permissions"
+```
+
+Esperado hoy: nada. Cloudflare agrega HSTS por su cuenta en algunos planes, así que puede aparecer
+sólo esa. Anotá lo que salga: es la línea de base.
+
+- [ ] **Paso 2: Escribir `public/_headers`**
+
+`_headers` es la convención de Cloudflare Pages, la misma familia que el `_redirects` que ya usás
+para el proxy de ARCA.
+
+```
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://yyyrlopgwmuvfbzwxiwp.supabase.co wss://yyyrlopgwmuvfbzwxiwp.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+```
+
+Los dos puntos donde esto se rompe si no se cuida, y por eso van explicados:
+
+- **`style-src` lleva `'unsafe-inline'` y no se puede sacar.** Tailwind no lo necesita, pero el
+  proyecto usa `style={{ ... }}` inline en varios lugares (las barras de progreso calculan el
+  ancho, las sombras de tarjeta). Sacarlo dejaría media app sin estilos. `script-src` sí queda
+  estricto, que es el que importa.
+- **`connect-src` tiene que nombrar tu proyecto de Supabase, y también el `wss://`**, o el
+  realtime deja de conectar en silencio y las notificaciones dejan de llegar sin ningún error
+  visible.
+
+- [ ] **Paso 3: Escribir el test que verifica que llegan de verdad**
+
+Un archivo `_headers` mal escrito no da error: Cloudflare ignora las líneas que no entiende. Así
+que hay que comprobarlo contra la respuesta real, no contra el archivo.
+
+Crear `e2e/cabeceras.spec.ts`:
+
+```ts
+import { test, expect } from "@playwright/test";
+
+// Un `_headers` con un error de sintaxis no falla: Cloudflare ignora la línea y sigue. O sea que
+// el archivo puede estar en el repo, verse bien, y no estar protegiendo nada. La única forma de
+// saberlo es mirar la respuesta.
+test("la app manda las cabeceras de seguridad", async ({ request, baseURL }) => {
+  const r = await request.get(baseURL!);
+  const h = r.headers();
+
+  expect(h["content-security-policy"], "sin CSP, un script inyectado habla con la base como vos").toBeTruthy();
+  expect(h["content-security-policy"]).toContain("frame-ancestors 'none'");
+  expect(h["x-content-type-options"]).toBe("nosniff");
+  expect(h["referrer-policy"]).toBeTruthy();
+});
+```
+
+- [ ] **Paso 4: Verificar en la preview antes de main**
+
+Publicá a la rama `dev`, esperá la preview de Cloudflare, y **abrí la app entera** mirando la
+consola del navegador. Una CSP mal armada rompe cosas de forma silenciosa: el realtime deja de
+conectar, las fuentes no cargan, los `blob:` de las descargas fallan.
+
+Recorré: entrar, mover una tarjeta, abrir el reporte, descargar el Excel, ver que llegue una
+notificación. Si algo falla, la consola lo dice con `Refused to ...`.
+
+- [ ] **Paso 5: Commit**
+
+```bash
+git add public/_headers e2e/cabeceras.spec.ts
+git commit -m "feat: cabeceras de seguridad - hoy no se manda ninguna"
+```
+
+---
+
+## Task F2: Nunca se midió lo que siente el usuario
+
+**Verificado:** cero referencias a Lighthouse, a `web-vitals`, a LCP o a CLS en todo el proyecto.
+
+Lo que sí hay es `scripts/peso.mjs`, que mide kilobytes. **Pero kilobytes no es velocidad**, y la
+Task E2 ya mostró la trampa: el gate dice "222 kB, entra con margen" mientras el primer render real
+son 575 kB porque la fuente no está contada. Se viene optimizando contra un número que no
+representa lo que le pasa a una persona abriendo la app.
+
+Y falta lo que ese número no puede ver aunque esté bien: cuánto tarda en aparecer el contenido
+(LCP), cuánto salta el layout mientras carga (CLS), y cuánto tarda en responder al primer click
+(INP).
+
+- [ ] **Paso 1: Medir la línea de base, antes de tocar nada**
+
+Chrome → DevTools → Lighthouse → Mobile → Analizar. Contra la app publicada, no contra `localhost`
+(en local no hay latencia de red y los números mienten hacia arriba).
+
+Anotá los cuatro números en `docs/CONTINUIDAD.md` o en un archivo nuevo, con la fecha:
+Rendimiento, LCP, CLS, INP.
+
+**Esa medición es el entregable de este paso.** Sin línea de base, "mejoró" no se puede afirmar.
+
+- [ ] **Paso 2: Repetir después de la Task E2 (la fuente)**
+
+La fuente son ~260 kB del primer render y no tiene `preload`, así que el navegador la descubre
+recién después de parsear el CSS. Es el candidato número uno a estar dominando el LCP.
+
+Volvé a medir con los mismos parámetros y compará. **Si el LCP no mejoró, la hipótesis era
+equivocada** — y eso también hay que anotarlo, porque evita que alguien repita el intento.
+
+- [ ] **Paso 3: Poner el número donde se vea**
+
+Agregá los valores medidos a `docs/ESTADO-DEL-PROYECTO.md`, en la sección de estado, con la fecha
+de la medición. Un número medido hace seis meses y sin fecha es peor que ninguno.
+
+- [ ] **Paso 4: Commit**
+
+```bash
+git add docs/
+git commit -m "docs: la primera medicion real de lo que siente el usuario"
+```
+
+---
+
+## Task F3: La auditoría de dependencias no puede fallar nunca
+
+**Verificado**, `.github/workflows/mantenimiento.yml:45`:
+
+```yaml
+npm audit --audit-level=moderate 2>&1 | tail -40 >> $GITHUB_STEP_SUMMARY || true
+```
+
+El `|| true` está puesto a propósito y con un comentario que lo explica: sin él, el workflow entero
+se corta cuando encuentra algo. El problema no es la decisión, es la consecuencia: **el resultado
+va a un resumen que hay que abrir a mano, y siempre va a estar en rojo por `xlsx`**, que no tiene
+arreglo posible desde npm.
+
+Es el cuarto caso del mismo patrón que atraviesa todo este plan: un mecanismo que parece estar
+cuidando algo y no puede avisar. Los otros tres fueron el chip de migraciones ciego, el respaldo
+que trae 7 tablas de 20, y el presupuesto de peso que no cuenta la fuente.
+
+**El arreglo no es sacar el `|| true`** —sin eso vuelve el problema original— sino que la Task C5
+saque `xlsx`. Cuando eso pase, el `npm audit` queda limpio y **ahí sí** vale sacarle el `|| true`:
+un chequeo que grita siempre se ignora; uno que grita cuando pasa algo, se mira.
+
+- [ ] **Paso 1: Confirmar que quedó limpio después de la Task C5**
+
+```bash
+node node_modules/.bin/npm audit --audit-level=moderate 2>&1 | tail -20
+```
+
+- [ ] **Paso 2: Sacar el `|| true` y dejar escrito por qué se pudo**
+
+En `mantenimiento.yml`, reemplazar el comentario actual por uno que cuente la historia: que el
+`|| true` existió mientras hubo una vulnerabilidad sin arreglo, y que se sacó cuando dejó de
+haberla. Sin esa nota, el próximo que se tope con un audit en rojo lo va a volver a poner.
+
+- [ ] **Paso 3: Commit**
+
+```bash
+git add .github/workflows/mantenimiento.yml
+git commit -m "fix: la auditoria de dependencias vuelve a poder fallar"
+```
+
+---
+
+# Herramientas: qué sumar, qué sacar, qué actualizar
+
+Esta tabla es la respuesta corta a "¿qué instalo?". Está ordenada por relación valor/costo, y la
+última columna es la que decide: **este proyecto lo mantiene una persona sola que no es
+programadora**, así que una herramienta que necesita atención semanal es una mala herramienta acá
+aunque sea excelente en abstracto.
+
+| Herramienta | Acción | Qué gana | Qué cuesta | ¿Lo sostiene una persona sola? |
+|---|---|---|---|---|
+| **`test.projects` de Vitest** | Configurar | La suite baja de 147 s a ~65-75 s (medido: 87 s → 13 s en los tests de lógica) | 10 líneas, cero dependencias | **Sí.** El cambio de menor riesgo de todos |
+| **Subset de la fuente + `preload`** | Proceso | ~260 kB menos en el primer render — más que todo lo demás junto | 1 hora, una vez | **Sí.** Se genera y se commitea |
+| **`write-excel-file`** en vez de `xlsx` | Cambiar | −100 kB en la descarga diferida; el `npm audit` deja de estar en rojo permanente | ~8 líneas; la parte pura y testeada no se toca | **Sí.** La superficie usada son 4 funciones |
+| **`react/no-unstable-nested-components`** en oxlint | Encender | Los 7 componentes que remontan la barra lateral en cada tecla | 1 línea + 30 min | **Sí.** El linter ya está en CI |
+| **`_headers` de Cloudflare** | Sumar | CSP y cabeceras de seguridad, que hoy no existen | Un archivo de texto | **Sí.** No es una dependencia |
+| **`gen:types` de Supabase** | Activar | Elimina ~121 casts a mano; `tsc` empieza a ver los renombres de columnas | Un comando después de cada migración | **Sí**, pero es la única carga *recurrente* nueva. Vale porque hay 39 migraciones y van a seguir |
+| **`@tanstack/react-query-persist-client`** | Sumar | Recargar sin red muestra los últimos datos en vez de una app vacía | ~4 kB gzip, ~15 líneas | **Sí.** Es configuración |
+| **Tailwind 4** | Actualizar | Arregla de raíz las 69 clases muertas; builds 3-10x más rápidos; se van `postcss` y `autoprefixer` | ~1 día + revisar 20 pantallas donde van a aparecer estilos que hoy no se ven | **Sí**, pero **después** de que el sistema visual esté asentado |
+| **React Router** | Sumar | URLs compartibles, deep links, botón Atrás | ~13 kB + 1-2 días de reescribir la navegación | **Sí**, con reservas. Es la decisión más cara. Hacerla cuando alguien pida compartir un link |
+| **7 dependencias sin uso** | **Sacar** | 31 MB, 7 líneas menos de superficie de supply-chain, PRs de Dependabot más limpios | Una corrida del workflow `Dependencias` | **Sí** |
+| **Bloque `ignore` de Dependabot** | **Sacar** | Que vuelvan a proponerse las actualizaciones mayores, que hoy están todas silenciadas | Borrar 4 líneas | **Sí** |
+| **Sentry / GlitchTip** | Esperar | — | Cuenta, DSN, cuota, y sobre todo *alguien que mire un tablero* | **No todavía.** El canal actual (Consultas + detalle copiable) funciona y no tiene mantenimiento |
+| **Virtualización de listas** | **No** | — | Una librería, scroll y drag a rehacer | **No.** Medido: un tablero son ~20 tarjetas, y el techo real es un O(n²) que se arregla con 6 líneas |
+| **Reglas `react-perf` de oxlint** | **No** | — | 607 hallazgos medidos, ninguno describe un problema real | **No.** 607 warnings se apagan en una semana y ahí se pierde la costumbre de mirar el linter |
+| **typescript-eslint** en vez de oxlint | **No** | — | 10-50x más lento; y las reglas que faltarían ya están todas en oxlint | **No** |
+
+---
+
 # Lo que este plan NO hace, y por qué
 
 - **No migra a Tailwind 4 todavía, pero el argumento cambió.** Yo tenía anotado que el beneficio
