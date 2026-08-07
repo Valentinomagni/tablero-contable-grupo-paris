@@ -11,6 +11,7 @@
     "test": "vitest run",
     "deadcode": "knip",
     "peso": "node scripts/peso.mjs",
+    "migraciones": "node scripts/migraciones.mjs",
     "smoke": "node scripts/smoke.mjs",
     "e2e": "playwright test",
     "shots": "node scripts/shots.mjs",
