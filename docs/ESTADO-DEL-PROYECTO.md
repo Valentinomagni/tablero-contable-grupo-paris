@@ -174,7 +174,7 @@ exactamente dos filas: "occ del equipo" y "activity del equipo".
 ## 6. Bloqueado, para que conste
 
 > Detalle completo, junto con qué documentos se sacaron y cuáles se dejaron a propósito, en
-> `docs/LIMPIEZA-2026-08.md`.
+> `docs/archivo/LIMPIEZA-2026-08.md`.
 
 - ~~**Sacar 6 dependencias que nadie usa.**~~ **DESBLOQUEADO el 04/08/2026.** Estaba trabado
   porque no hay npm en esta máquina para regenerar el `package-lock.json` — pero el runner del

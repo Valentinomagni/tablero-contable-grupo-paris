@@ -10,3 +10,15 @@ playwright-report/
 # para que se vea al leer el archivo y nadie lo mueva sin darse cuenta.
 consultas-bandeja.md
 .env.consultas.local
+
+# Carpetas que viven adentro del proyecto pero NO son del proyecto.
+# superpowers-main: el marketplace de skills, codigo de terceros.
+# tablero-contable-v1-LEGADO: la app vieja. Lo que valia se rescato a db/historico/
+# y a edge-functions/crear-usuario.ts; el resto es historia, no fuente.
+superpowers-main/
+tablero-contable-v1-LEGADO/
+
+# Respaldos y paquetes armados a mano. No son fuente.
+*.zip
+*.rar
+*.7z

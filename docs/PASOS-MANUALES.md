@@ -422,7 +422,7 @@ Habilita:
    (repetir la verificación 2, el conteo no cambia).
 
 ## GitHub Actions (#2) — opcional
-El archivo del workflow está en `docs/ci-workflow.yml.txt`. Tu token no tiene scope `workflow`,
+El archivo del workflow está en `docs/archivo/ci-workflow.yml.txt`. Tu token no tiene scope `workflow`,
 así que no se pudo pushear. Para activarlo: GitHub → repo → pestaña **Actions** → New workflow →
 pegar ese contenido. (O regenerá el token con scope `workflow`.)
 

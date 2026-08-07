@@ -65,7 +65,69 @@ Para instalar, usá el primero. Para correr los comandos de la tabla de abajo, c
 **Códigos de salida.** `comando | tail` devuelve el estado de `tail`, no del comando. Siempre:
 `comando > /tmp/log 2>&1; echo "EXIT: $?"; tail -20 /tmp/log`
 
-## 2. Reglas duras del producto
+## 2. La rutina: orden, corrección, actualización, revisión
+
+**Esta es la regla que ordena a todas las demás, y es nueva.** Salió de una frase del dueño del
+proyecto: *"tenemos que dejar de funcionar como un kiosco"*.
+
+Durante meses el trabajo fue por impulso: aparecía algo, se arreglaba, aparecía otra cosa. Eso
+produce movimiento y no produce avance — y es cómo se llegó a tener 75 documentos sin saber
+cuáles decían la verdad, 29 migraciones sueltas en la raíz, y una lista de pendientes que nadie
+podía leer entera.
+
+**Toda tanda de trabajo sigue estos cuatro pasos, en este orden. No se saltea ninguno, y no se
+empieza el siguiente sin terminar el anterior.**
+
+### 1. ORDENAR
+
+Antes de tocar código: dejar el terreno legible. Clasificar lo que hay, separar lo vigente de lo
+histórico, y **escribir dónde está cada cosa**.
+
+Sale de acá: `docs/INDICE.md` actualizado.
+
+*Por qué primero:* si no sabés qué está terminado, vas a arreglar dos veces lo mismo o a dejar
+algo a mitad sin enterarte.
+
+### 2. CORREGIR
+
+Arreglar lo que está roto. **Nada nuevo hasta que esto esté en cero.**
+
+Los defectos abiertos viven en `docs/AUDITORIA-*.md`. Se cierran por daño real, no por orden de
+aparición ni por facilidad.
+
+*Por qué antes de actualizar:* una función nueva encima de un cálculo roto produce números
+falsos con más confianza. En Toyota es doctrina: **no se mejora un proceso inestable, primero se
+lo estabiliza.**
+
+### 3. ACTUALIZAR
+
+Recién acá van las funciones nuevas y las herramientas. De `docs/PROPUESTAS-*.md` y de los planes.
+
+Cada cosa que entra tiene que traer, escrito: **qué mide, a quién ayuda, y cuándo se descarta si
+no sirvió.** Sin criterio de descarte, no entra — una propuesta sin fecha de revisión es un
+compromiso permanente disfrazado de experimento.
+
+### 4. REVISAR
+
+Verificar que lo hecho es lo que se dijo. Los cuatro comandos con su código de salida, y
+**alguien externo mirando lo que uno escribió**.
+
+Ese último punto no es ceremonia. La matriz de cobertura del 06/08 se declaró completa a sí
+misma; una revisión independiente encontró once hallazgos en las áreas que la matriz daba por
+cerradas, incluida una contraseña en texto plano. **Una casilla marcada no es evidencia.**
+
+Sale de acá: `docs/ESTADO-DEL-PROYECTO.md` actualizado, con los números contados de nuevo.
+
+---
+
+**El fallo típico de este proyecto es saltar del 1 al 3**: ordenar un poco, entusiasmarse con algo
+nuevo, y dejar las correcciones para después. Cuando eso pasa, el paso 2 no desaparece: se
+acumula, y aparece más caro tres semanas más tarde.
+
+Si estás por escribir una función nueva y hay defectos abiertos en la auditoría, **estás en el
+paso equivocado**.
+
+## 3. Reglas duras del producto
 
 - **Cero emojis** en cualquier texto que vea un usuario. Iconos sólo de `lucide-react`.
 - **Encuadre no punitivo.** Las métricas describen situaciones y procesos, **nunca juzgan
@@ -78,7 +140,7 @@ Para instalar, usá el primero. Para correr los comandos de la tabla de abajo, c
 - **Comentarios en español que explican el POR QUÉ**, no el qué. La densidad alta de
   comentarios es deliberada: este código lo mantiene una sola persona que no es programadora.
 
-## 3. Sistema visual — leer `docs/SISTEMA-VISUAL.md`
+## 4. Sistema visual — leer `docs/SISTEMA-VISUAL.md`
 
 Lo mínimo para no romperlo:
 
@@ -95,7 +157,7 @@ Lo mínimo para no romperlo:
   únicamente en estados (`--done`, `--warn`, `--danger`).
 - Carga: `<Skeleton>` / `<SkeletonVista>`. Nunca la palabra "Cargando".
 
-## 4. Capa de datos
+## 5. Capa de datos
 
 - **`src/lib/esquema.ts` es el gateado defensivo.** `payloadCards`, `payloadProfiles`,
   `payloadOccurrences` y `COLUMNAS_CARDS` sacan columnas cuando la migración correspondiente
@@ -113,7 +175,7 @@ Lo mínimo para no romperlo:
   `task_occurrences` = por día. El único lugar donde se escribe una fila de `card_periodos` es
   `guardarPeriodo` en `src/lib/periodo-escritura.ts`.
 
-## 5. Errores y fallas
+## 6. Errores y fallas
 
 Todo error que vea un usuario pasa por `clasificarFalla` (`src/lib/fallas.ts`), que decide
 **la acción que de verdad desatasca**. El orden de sus ramas importa: **sin conexión se evalúa
@@ -122,7 +184,7 @@ deja la pantalla en blanco.
 
 Ofrecer "Reintentar" cuando reintentar no puede funcionar es peor que no ofrecer nada.
 
-## 6. Cómo trabajar acá
+## 7. Cómo trabajar acá
 
 - **Nunca editar JSX con expresiones regulares ni `sed`.** Ya pasó: dejó un `</div>` donde iba
   un `</Panel>` y rompió el archivo. Ediciones puntuales y exactas, mirando cada cierre.
@@ -136,7 +198,7 @@ Ofrecer "Reintentar" cuando reintentar no puede funcionar es peor que no ofrecer
   exportadas con la misma firma y comportamiento distinto. 5S/Kaizen son valores del proyecto:
   la duplicación es un defecto, no un detalle.
 
-## 7. Ramas y release
+## 8. Ramas y release
 
 Features nuevas van a `dev` (Cloudflare genera una preview por rama); merge a `main` = deploy a
 producción, sólo tras revisar la preview. Hotfixes chicos pueden ir directo a `main`. Ver
@@ -146,7 +208,7 @@ Antes de todo push a `main` que agregue funcionalidad visible: agregar una entra
 `CHANGELOG` en `src/lib/version.ts` (semver + fecha + cambios **en lenguaje de usuario**).
 `APP_VERSION` se deriva sola de esa entrada — nunca se edita a mano. Ver `docs/RELEASE.md`.
 
-## 8. Publicar (y el límite que no se cruza)
+## 9. Publicar (y el límite que no se cruza)
 
 `git push` **falla**: no hay credencial en un shell no interactivo. Publicar se hace con
 **GitHub Desktop**, controlando la pantalla del usuario.
@@ -159,7 +221,7 @@ Dos trampas ya conocidas al publicar: puede estar la sesión de GitHub equivocad
 Desktop puede estar apuntando a **otro clon** del repo (`Documents\GitHub\...` en vez de la
 carpeta del Escritorio).
 
-## 9. Estado y pendientes
+## 10. Estado y pendientes
 
 `docs/ESTADO-DEL-PROYECTO.md` es la fuente de verdad de qué falta, separado entre lo que
 depende de Claude y lo que depende del usuario. Mantenerlo actualizado —incluidos los números
