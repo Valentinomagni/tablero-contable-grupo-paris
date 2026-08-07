@@ -3,6 +3,22 @@
 // Sale con código 1 si algo se rompe → sirve de gate antes de generar el zip de deploy.
 import puppeteer from "puppeteer-core";
 
+// Credenciales por entorno, NUNCA en el código.
+//
+// Acá estaban en claro el usuario y la contraseña de una cuenta con rol jefe. El commit
+// "fix(seguridad): credenciales de e2e fuera del código" sacó las de `e2e/` y dio el tema por
+// cerrado — pero estas tres copias quedaron, y `docs/SEGURIDAD.md` declaró el estado BIEN. Una
+// corrección aplicada en 2 de 5 archivos y declarada completa es peor que ninguna: nadie vuelve
+// a buscar el string.
+const USUARIO = process.env.E2E_USER;
+const CLAVE = process.env.E2E_PASSWORD;
+if (!USUARIO || !CLAVE) {
+  console.error("Faltan E2E_USER y E2E_PASSWORD en el entorno.");
+  console.error("PowerShell:  $env:E2E_USER='...'; $env:E2E_PASSWORD='...'");
+  process.exit(1);
+}
+
+
 const URL = process.argv[2] || "http://localhost:5173";
 const EDGE = "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe";
 
@@ -26,8 +42,8 @@ try {
   await pg.waitForSelector('input[autocomplete="username"]', { timeout: 10000 });
   paso("login carga");
 
-  await pg.type('input[autocomplete="username"]', "jefe1@grupoparis.com");
-  await pg.type("input[type=password]", "Paris2026!");
+  await pg.type('input[autocomplete="username"]', USUARIO);
+  await pg.type("input[type=password]", CLAVE);
   await Promise.all([
     pg.click("button[type=submit]"),
     pg.waitForFunction(() => document.body.innerText.includes("Resumen del equipo"), { timeout: 15000 }),

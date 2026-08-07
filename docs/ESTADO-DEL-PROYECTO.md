@@ -19,11 +19,14 @@ Documento de situación. Separa lo que depende de mí (código) de lo que depend
 
 Esto es lo único urgente del documento.
 
-### 2.1 Commits: publicados
+### 2.1 Commits sin publicar: 5
 
-**El 04/08/2026 se publicaron los 9 commits que estaban esperando.** No queda nada sin
-publicar. Lo que sigue pendiente es **mirarlo**: la sección 3 marca con negrita las tres cosas
-que necesitan tus ojos, no más código.
+Del 05 al 07/08/2026. Se publican con GitHub Desktop y quedamos en que eso lo hago sólo cuando
+me avisás.
+
+Contienen: los arreglos de la auditoría (el chip de migraciones ciego, los cuatro agujeros de
+permisos, los tres podios), las migraciones 38 y 39, el plan de salto de calidad y la matriz de
+cobertura de revisión.
 
 ### 2.2 Migraciones: falta una chica, la 38
 
@@ -43,9 +46,26 @@ Al arreglarlo apareció lo segundo: a los archivos de la **35 y la 36 les faltab
 las anota** en el índice. Están aplicadas, pero el índice no se enteró. Sin la 38, el chip te
 iba a decir "Faltan migraciones: 35, 36" para siempre y volver a correrlas no lo arreglaba.
 
-**Qué vas a ver hasta que corras la 38**: el chip en ámbar diciendo que faltan la 35, la 36 y
-la 38. Es esperable y no significa que la base esté mal. Corré `migracion-38-registrar-35-36.sql`
-y queda verde.
+### 2.3 Y hay una segunda, la 39, que sí arregla cosas que se notan
+
+`migracion-39-cerrar-cuatro-agujeros.sql`. Cierra cuatro agujeros que encontró la auditoría del
+05/08. El que más se nota en el día a día es el segundo:
+
+1. El jefe podía darse a sí mismo acceso al canal de consultas del equipo.
+2. **Un empleado no podía avisarle nada a nadie.** Delegás una tarea, la tarjeta aparece en el
+   tablero del otro, y la notificación la rechaza la base. **Hoy hay notificaciones que no
+   llegan**, y nunca se supo porque el error se descartaba solo.
+3. Cualquiera podía publicar un aviso anónimo para toda la empresa.
+4. Cualquiera podía plantar una tarea protegida en el tablero de otro.
+
+**Qué vas a ver hasta que corras las dos**: el chip en ámbar diciendo que faltan la 35, 36, 38 y
+39. Es esperable y no significa que la base esté mal — la 35 y la 36 están aplicadas, lo que
+falta es el registro. Corré las dos en orden y queda verde:
+
+```
+migracion-38-registrar-35-36.sql
+migracion-39-cerrar-cuatro-agujeros.sql
+```
 
 **Lo otro del lado de Supabase, que no es una migración**: desplegar la Edge Function
 `blanquear-clave`. Ver el punto 1 de la sección 5.
@@ -109,12 +129,34 @@ exactamente dos filas: "occ del equipo" y "activity del equipo".
    ese nombre exacto → pegar el contenido de `edge-function-blanquear-clave.ts` (raíz del
    repo) → Deploy. **Hasta que eso pase, el botón existe pero da error.** Pasos detallados en
    `docs/ACCESO-Y-PERMISOS.md`.
-2. **Correr el workflow `Dependencias`** una vez publicado, para sacar el lastre y preparar lo
-   que viene. GitHub → Actions → Dependencias → Run workflow, dos corridas:
-   - `quitar` → `@base-ui/react class-variance-authority clsx shadcn tailwind-merge tw-animate-css motion`
-   - `instalar` → `@sentry/react` (cuando arranquemos el monitoreo de errores)
+2. **Sacar el lastre de dependencias — pero NO las siete que decía antes.** Esta instrucción
+   estaba mal y la corrigió una auditoría el 07/08/2026. Decía que había que quitar siete
+   paquetes, e incluía `class-variance-authority`, `clsx` y `tailwind-merge`. **Esas tres las
+   necesita la Fase B del plan**: `Button.tsx` se construye con `cva`, y `cn` pasa a ser
+   `twMerge(clsx(...))` para arreglar las colisiones de clases. Si se ejecutaba la instrucción
+   vieja, se borraba la base del trabajo siguiente.
 
-   Instrucciones en `docs/COMO-INSTALAR-DEPENDENCIAS.md`.
+   Lo que **sí** hay que sacar son cuatro: `@base-ui/react`, `shadcn`, `tw-animate-css` y `motion`.
+
+   Y ya no hace falta el workflow: **hay npm en esta máquina** (ver el punto siguiente).
+
+   ```bash
+   npm uninstall @base-ui/react shadcn tw-animate-css motion
+   ```
+
+3. **Se puede instalar y desinstalar acá, directamente.** Durante semanas se dio por sentado que
+   no había npm en esta máquina, y se construyó un workflow entero de GitHub Actions para
+   resolverlo. Era falso: `npm 10.9.2` está instalado en
+   `C:\Users\Vmagni\tools\node-v22.17.0-win-x64`, con acceso al registro, y el hook de
+   pre-commit lo viene usando en cada commit.
+
+   ```bash
+   export PATH="$HOME/tools/node-v22.17.0-win-x64:$PATH"
+   ```
+
+   El workflow `Dependencias` sigue sirviendo —corre lint, tests y build antes de commitear el
+   lock, que es una red útil— pero ya no es el único camino. Detalle del error y su lección en
+   `CLAUDE.md` §1.
 3. **Correr `migracion-38-registrar-35-36.sql`** en Supabase → SQL Editor. Tarda un segundo y no
    toca ningún dato: sólo hace que el chip de "Base de datos al día" deje de dar por faltantes a
    la 35 y la 36. El porqué está en la sección 2.2.

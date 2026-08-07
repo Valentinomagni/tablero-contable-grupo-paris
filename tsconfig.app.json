@@ -18,6 +18,24 @@
     "jsx": "react-jsx",
 
     /* Linting */
+
+    /* `strict` FALTABA, y no por deuda: por accidente.
+     *
+     * La plantilla de Vite lo trae en true y en algún momento se perdió. Estuvo apagado el
+     * tiempo suficiente para que `docs/SEGURIDAD.md` describiera el build como "typecheck
+     * estricto" en dos lugares — una afirmación falsa sobre la red de seguridad más básica
+     * del proyecto.
+     *
+     * Lo importante: al prenderlo, `tsc --strict` da CERO errores. El código ya estaba escrito
+     * con ese rigor; lo único que faltaba era el interruptor. O sea que esto no arregla nada de
+     * hoy: evita que se rompa mañana.
+     *
+     * Y acá pesa más que en una app común. Toda la capa de datos (`esquema.ts`, `schemas.ts`)
+     * está construida alrededor de "puede faltar una columna". Sin `strictNullChecks`, el día
+     * que Supabase devuelva `undefined` donde el tipo promete un objeto, el compilador no dice
+     * nada — que es exactamente el error que esa capa existe para atajar. */
+    "strict": true,
+
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,

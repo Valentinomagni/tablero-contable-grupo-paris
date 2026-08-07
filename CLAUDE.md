@@ -7,25 +7,50 @@ perdiendo tiempo. Leelo antes de tocar código.
 
 ---
 
-## 1. Entorno (esto invalida los reflejos habituales)
+## 1. Entorno
 
-**NO hay npm, pnpm, yarn ni corepack en esta máquina.** Verificado. Pero eso **no** significa
-que no se pueda instalar nada — esa conclusión estuvo dando vueltas semanas y era falsa.
+**SÍ hay npm en esta máquina.** `npm 10.9.2`, `npx` y `corepack`, con acceso al registro.
 
-- **Para instalar o sacar dependencias está el workflow `Dependencias`** de GitHub Actions.
-  El runner de Ubuntu **sí** tiene npm: instala, corre lint + tests + build, y recién si todo
-  pasa commitea `package.json` y `package-lock.json` sincronizados. Instrucciones en
-  `docs/COMO-INSTALAR-DEPENDENCIAS.md`.
-- **Lo que sí sigue siendo cierto acá**: no se puede correr `npm install` ni regenerar el lock
-  localmente. Tocar `package.json` a mano, sin el lock, rompe el `npm ci` del CI.
-- Antes de descartar una librería, **revisá si ya está instalada**. `zod` estaba y casi
-  escribí un validador a mano duplicándolo.
-- **Y antes de dar por imposible algo por el entorno, verificá el CI.** El error de razonamiento
-  que originó esta sección fue dar por cerrado que no había npm en ningún lado sin abrir
-  `.github/workflows/main.yml`, donde `npm ci` viene corriendo desde siempre.
+```sh
+export PATH="$HOME/tools/node-v22.17.0-win-x64:$PATH"
+npm --version   # 10.9.2
+npm ping        # PONG
+```
 
-`node` está en `C:\Users\Vmagni\AppData\Local\OpenAI\Codex\bin\node.exe`.
-Con Bash: `export PATH="/c/Users/Vmagni/AppData/Local/OpenAI/Codex/bin:$PATH"`
+**Esta sección decía exactamente lo contrario, con la palabra "Verificado" al lado, durante
+semanas.** Vale dejar escrito cómo pasó, porque es el error más caro que tuvo el proyecto y no
+fue técnico:
+
+1. Se comprobó que no había npm **en el PATH por defecto** y se concluyó "no hay npm".
+2. Se escribió acá con el sello "Verificado", y a partir de ahí nadie volvió a probarlo.
+3. Se construyó un workflow entero de GitHub Actions (`Dependencias`) para instalar paquetes
+   desde el CI, resolviendo un problema que no existía.
+4. Cinco documentos más repitieron la afirmación. Uno llegó a decir *"no hace falta volver a
+   evaluarlo"*, que es la frase que convierte un error en algo permanente.
+5. Mientras tanto, `.githooks/pre-commit` —tres líneas más abajo en este mismo repositorio—
+   hacía `export PATH="$HOME/tools/..."` y después `npx tsc` y `npx vitest`. **Si no hubiera
+   npx, ningún commit se habría podido cerrar.** La evidencia estuvo a la vista todo el tiempo.
+
+La lección no es "verificá el entorno". Es más específica: **una afirmación con el sello
+"Verificado" deja de revisarse.** Si escribís esa palabra, escribí al lado el comando que lo
+comprueba, para que el que venga pueda repetirlo en diez segundos en vez de confiar.
+
+**Consecuencia práctica:** `npm install`, `npm ci` y regenerar `package-lock.json` se pueden
+hacer acá, directamente. El workflow `Dependencias` sigue existiendo y sirve como alternativa
+—corre lint, tests y build antes de commitear el lock, que es una red útil— pero **ya no es el
+único camino**.
+
+Antes de agregar una librería, **revisá si ya está instalada**. `zod` estaba y casi se
+duplicó a mano.
+
+**Ojo con los dos toolchains.** Hay dos `node` en la máquina y no son el mismo:
+
+| Ruta | Versión | Trae npm |
+|---|---|---|
+| `$HOME/tools/node-v22.17.0-win-x64` | v22.17.0 | **sí** |
+| `C:\Users\Vmagni\AppData\Local\OpenAI\Codex\bin` | v24.14.0 | no |
+
+Para instalar, usá el primero. Para correr los comandos de la tabla de abajo, cualquiera sirve.
 
 | Qué | Comando |
 |---|---|
