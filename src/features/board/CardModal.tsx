@@ -19,6 +19,8 @@ import { escribeEnPeriodo, filaPeriodo, guardarPeriodo, soloDefinicion, CAMPOS_E
 import { nuevaCantidad, progresoCarga, extraerMetaCarga, conMetaCarga, descripcionSinMeta } from "../../lib/operativas";
 import { TXT_REAPERTURA } from "../../lib/retrabajo";
 import { Adjuntos } from "./Adjuntos";
+import { TransferenciasSection } from "./TransferenciasSection";
+import { esTareaDeTransferencias } from "../../lib/transferencias";
 import { MetaSection } from "./card/MetaSection";
 import { DepsSection } from "./card/DepsSection";
 import { ChecklistSection } from "./card/ChecklistSection";
@@ -173,6 +175,14 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
           className="w-full bg-surface2 border border-line rounded-lg text-ink text-sm px-2.5 py-2 min-h-[52px] resize-y" />
 
         <Adjuntos cardId={c.id} canEdit={!locked} />
+
+        {/* Registro de transferencias (reporte de Patricia). Aparece SÓLO en las tareas de
+            categoría transferencias, igual que los Registros de abajo aparecen sólo en las
+            operativas: una sección de más en cada tarea del tablero sería ruido para las
+            veinte personas que no la usan. */}
+        {esTareaDeTransferencias(c.categoria) && (
+          <TransferenciasSection cardId={c.id} meId={meId} canEdit={!locked} />
+        )}
 
         {c.card_type === "operativa" && (() => {
           const regs = activity.filter((a) => a.card_id === c.id);
