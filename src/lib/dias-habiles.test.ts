@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { esHabil, habilesDelMes, diasHabilesEntre } from "./dias-habiles";
+import { esHabil, habilesDelMes, diasHabilesEntre, diasHabilesTranscurridos } from "./dias-habiles";
 
 // Fechas reales de agosto de 2026, con el día anotado para que dentro de un año nadie tenga que
 // abrir un calendario:
@@ -93,5 +93,42 @@ describe("contar días hábiles entre dos fechas", () => {
   it("una fecha rota devuelve 0", () => {
     expect(diasHabilesEntre("no-es-fecha", "2026-08-14", new Set())).toBe(0);
     expect(diasHabilesEntre("2026-08-14", "", new Set())).toBe(0);
+  });
+});
+
+describe("días hábiles transcurridos entre dos fechas", () => {
+  it("del viernes al lunes transcurrió 1, no 3", () => {
+    // ESTE ES EL CASO DE VALENTINO, en su forma más dañina. `estancadas.ts` avisa a los 5 días
+    // sin movimiento. Con días corridos, una tarea tocada el viernes a la tarde dispara el
+    // aviso el miércoles — cuando pasaron 3 días de trabajo, no 5.
+    //
+    // El efecto es peor que un número mal: le pregunta a alguien "¿seguís con esto?" por algo
+    // que dejó hace tres días hábiles. Eso se siente como que el sistema no entiende cómo se
+    // trabaja, y es lo que hace que la gente deje de contestarle.
+    expect(diasHabilesTranscurridos("2026-08-14", "2026-08-17", new Set())).toBe(1);
+  });
+
+  it("del lunes al viernes transcurrieron 4", () => {
+    expect(diasHabilesTranscurridos("2026-08-10", "2026-08-14", new Set())).toBe(4);
+  });
+
+  it("el mismo día es 0", () => {
+    expect(diasHabilesTranscurridos("2026-08-10", "2026-08-10", new Set())).toBe(0);
+  });
+
+  it("un feriado en el medio no cuenta", () => {
+    // Lunes 10 a viernes 14 con el miércoles feriado: 3 en vez de 4.
+    expect(diasHabilesTranscurridos("2026-08-10", "2026-08-14", new Set(["2026-08-12"]))).toBe(3);
+  });
+
+  it("una tarea tocada un sábado no arranca contando ese sábado", () => {
+    // Sábado 8 a miércoles 12: cuentan lunes, martes y miércoles = 3 hábiles, menos el
+    // arranque = 2 transcurridos.
+    expect(diasHabilesTranscurridos("2026-08-08", "2026-08-12", new Set())).toBe(2);
+  });
+
+  it("nunca devuelve negativo", () => {
+    expect(diasHabilesTranscurridos("2026-08-17", "2026-08-14", new Set())).toBe(0);
+    expect(diasHabilesTranscurridos("no-es-fecha", "2026-08-14", new Set())).toBe(0);
   });
 });

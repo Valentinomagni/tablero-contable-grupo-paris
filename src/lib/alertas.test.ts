@@ -45,11 +45,41 @@ describe("alertasDeRiesgo — persona con vencidas", () => {
 
 describe("alertasDeRiesgo — alta prioridad sin novedades", () => {
   const team = [mkProfile({ id: "u1" })];
-  it("dispara media si history ≥5 días vieja", () => {
+  // El umbral pasó a contarse en DÍAS HÁBILES, no corridos (reporte de Valentino). Estas fechas
+  // están fijas y con el día anotado a propósito: antes el fixture decía `HOY - 6 * DIA` y había
+  // que hacer la cuenta mental para saber qué estaba probando — y con el cambio, esos 6 días
+  // corridos resultaron ser sólo 4 hábiles, porque HOY es sábado y el arranque caía domingo.
+  //
+  //   HOY = sábado 18/07 · viernes 10/07 → 5 hábiles transcurridos (13,14,15,16,17)
+  it("dispara media si no hay novedades hace 5 días hábiles", () => {
     const cards = [mkCard({ id: "a", owner: "u1", due_date: manana, priority: "alta",
-      history: [{ who: "Ana", at: new Date(HOY - 6 * DIA).toISOString(), txt: "x" }] })];
+      history: [{ who: "Ana", at: "2026-07-10T12:00:00Z", txt: "x" }] })];
     const r = alertasDeRiesgo(cards, team, HOY);
     expect(r).toContainEqual(expect.objectContaining({ sev: "media", titulo: expect.stringContaining("alta prioridad sin novedades") }));
+  });
+
+  // EL TEST QUE PROTEGE EL CAMBIO. El de arriba sólo prueba que el umbral sigue disparando;
+  // éste prueba que el fin de semana NO cuenta. Sin él, alguien podría volver a días corridos y
+  // los dos tests seguirían en verde.
+  //
+  //   HOY = sábado 18/07 · lunes 13/07 → 6 días CORRIDOS, pero sólo 4 hábiles (14,15,16,17).
+  //
+  // Con la cuenta vieja esto disparaba. Ahora no, y eso es lo correcto: es exactamente el caso
+  // que reportó Valentino, un aviso que llegaba dos días antes de lo que correspondía.
+  it("NO dispara si los días corridos alcanzan pero los hábiles no", () => {
+    const cards = [mkCard({ id: "a", owner: "u1", due_date: manana, priority: "alta",
+      history: [{ who: "Ana", at: "2026-07-13T12:00:00Z", txt: "x" }] })];
+    const r = alertasDeRiesgo(cards, team, HOY);
+    expect(r.some((x) => x.titulo.includes("alta prioridad sin novedades"))).toBe(false);
+  });
+
+  it("un feriado en el medio corre el aviso un día más", () => {
+    // Mismo caso que el primero (viernes 10 → 5 hábiles), pero con el miércoles 15 feriado:
+    // quedan 4 hábiles y ya no alcanza. Es la prueba de que la lista del jefe se respeta.
+    const cards = [mkCard({ id: "a", owner: "u1", due_date: manana, priority: "alta",
+      history: [{ who: "Ana", at: "2026-07-10T12:00:00Z", txt: "x" }] })];
+    const r = alertasDeRiesgo(cards, team, HOY, new Set(["2026-07-15"]));
+    expect(r.some((x) => x.titulo.includes("alta prioridad sin novedades"))).toBe(false);
   });
   it("NO dispara si movida hoy", () => {
     const cards = [mkCard({ id: "a", owner: "u1", due_date: manana, priority: "alta",

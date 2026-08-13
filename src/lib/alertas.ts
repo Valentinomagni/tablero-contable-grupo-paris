@@ -1,4 +1,6 @@
 import type { Card, Profile } from "./types";
+import { diasHabilesTranscurridos } from "./dias-habiles";
+import { toARTDate } from "./metrics";
 import { dueInfo } from "./metrics";
 import { esSinAsignar } from "./jerarquia";
 
@@ -6,7 +8,6 @@ import { esSinAsignar } from "./jerarquia";
 // Umbrales conservadores (anti-ruido): solo se dispara con evidencia clara.
 export interface Alerta { sev: "alta" | "media"; titulo: string; detalle: string }
 
-const DIA = 86400000;
 const MIN_VENCIDAS = 3;      // ≥3 tareas vencidas por persona
 const DIAS_SIN_MOVER = 5;    // prioridad alta quieta ≥5 días
 
@@ -17,7 +18,12 @@ function ultimoMovimientoMs(c: Card): number {
   return new Date(last ?? c.created_at).getTime();
 }
 
-export function alertasDeRiesgo(cards: Card[], team: Profile[], hoyMs: number): Alerta[] {
+export function alertasDeRiesgo(
+  cards: Card[], team: Profile[], hoyMs: number,
+  // Mismo parámetro y mismo default que `estancadas.ts`: las dos tienen que dar el mismo número
+  // sobre la misma tarea, o el jefe y el empleado ven cosas distintas.
+  noLaborables: Set<string> = new Set(),
+): Alerta[] {
   // solo cards no operativas y no terminadas
   const norm = cards.filter((c) => c.card_type !== "operativa" && c.status !== "term");
   const alertas: Alerta[] = [];
@@ -42,7 +48,12 @@ export function alertasDeRiesgo(cards: Card[], team: Profile[], hoyMs: number): 
   // 3) Prioridad alta sin movimiento ≥5 días → media
   for (const c of norm) {
     if (c.priority !== "alta") continue;
-    const dias = Math.floor((hoyMs - ultimoMovimientoMs(c)) / DIA);
+    // Días de trabajo, igual que en `estancadas.ts`. Si acá se contaran corridos y allá
+    // hábiles, la misma tarea se vería quieta hace 5 días para el jefe y hace 3 para quien la
+    // tiene — que es exactamente lo que el comentario de estancadas.ts advierte que no puede pasar.
+    const ultima = ultimoMovimientoMs(c);
+    if (!Number.isFinite(ultima)) continue;
+    const dias = diasHabilesTranscurridos(toARTDate(new Date(ultima).toISOString()), toARTDate(new Date(hoyMs).toISOString()), noLaborables);
     if (dias >= DIAS_SIN_MOVER) {
       alertas.push({ sev: "media", titulo: `${c.title}: alta prioridad sin novedades hace ${dias} días`, detalle: "Sin movimiento reciente." });
     }

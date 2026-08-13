@@ -1,4 +1,6 @@
 import type { Card } from "./types";
+import { diasHabilesTranscurridos } from "./dias-habiles";
+import { toARTDate } from "./metrics";
 import { esCobertura } from "./vacaciones";
 
 /**
@@ -18,7 +20,6 @@ import { esCobertura } from "./vacaciones";
 // algo que es largo por diseño se lee como desconfianza.
 export const DIAS_PARA_PREGUNTAR = 5;
 
-const DIA = 86400000;
 
 export interface Estancada { card: Card; diasSinMover: number }
 
@@ -55,6 +56,9 @@ function cubierta(c: Card): boolean {
  */
 export function tareaParaPreguntar(
   cards: Card[], hoyISO: string, pospuestas: string[],
+  // Feriados y días no laborables cargados por el jefe (migración 48). Por defecto vacío: sin
+  // ellos igual se descuentan sábados y domingos, que es la mayor parte del problema.
+  noLaborables: Set<string> = new Set(),
 ): Estancada | null {
   // Defensiva: cualquier entrada rara (undefined mientras carga la query) no rompe Mi día.
   if (!Array.isArray(cards)) return null;
@@ -70,8 +74,13 @@ export function tareaParaPreguntar(
     if (c.card_type === "operativa") continue;   // las operativas son a demanda por diseño.
     if (cubierta(c)) continue;                   // cubierta por vacaciones: no está abandonada.
 
-    const dias = Math.floor((hoyMs - ultimaSenalMs(c)) / DIA);
-    if (!Number.isFinite(dias) || dias < DIAS_PARA_PREGUNTAR) continue;
+    // DÍAS DE TRABAJO, no días corridos. Con días corridos, una tarea tocada el viernes a la
+    // tarde dispara este aviso el miércoles — cuando pasaron tres días hábiles, no cinco. Y el
+    // aviso le pregunta a la persona si sigue con algo que dejó anteayer.
+    const ultima = ultimaSenalMs(c);
+    if (!Number.isFinite(ultima)) continue;
+    const dias = diasHabilesTranscurridos(toARTDate(new Date(ultima).toISOString()), toARTDate(hoyISO), noLaborables);
+    if (dias < DIAS_PARA_PREGUNTAR) continue;
 
     if (!mejor || dias > mejor.diasSinMover) mejor = { card: c, diasSinMover: dias };
   }

@@ -105,3 +105,27 @@ export function diasHabilesEntre(desdeISO: string, hastaISO: string, noLaborable
   }
   return n;
 }
+
+/**
+ * Cuántos días de trabajo pasaron desde una fecha hasta otra.
+ *
+ * Es `diasHabilesEntre` menos el día de arranque: del viernes al lunes transcurrió **1**, no 3.
+ *
+ * POR QUÉ EXISTE COMO FUNCIÓN APARTE. La usan `estancadas.ts` (el "¿seguís con esto?" de Mi día)
+ * y `alertas.ts` (el aviso de riesgo del resumen del jefe), y las dos tienen que dar el mismo
+ * número. El comentario de `estancadas.ts` ya lo advertía: "que la misma tarea se vea quieta en
+ * el resumen del jefe y en Mi día no puede depender de dos definiciones distintas".
+ *
+ * Antes cada una hacía su propia cuenta con `Math.floor(ms / 86400000)`. Coincidían por
+ * casualidad: bastaba que alguien tocara una para que empezaran a decir cosas distintas sobre la
+ * misma tarea.
+ *
+ * EL DAÑO QUE EVITA, en concreto: con días corridos, una tarea tocada el viernes a la tarde
+ * dispara el aviso de "estancada" el miércoles, cuando pasaron tres días de trabajo y no cinco.
+ * Eso no es sólo un número mal — le pregunta a alguien si sigue con algo que dejó anteayer, y el
+ * sistema queda como que no entiende cómo se trabaja. Ahí es cuando la gente deja de contestarle.
+ */
+export function diasHabilesTranscurridos(desdeISO: string, hastaISO: string, noLaborables: Set<string>): number {
+  const n = diasHabilesEntre(desdeISO, hastaISO, noLaborables);
+  return n > 0 ? n - 1 : 0;
+}
