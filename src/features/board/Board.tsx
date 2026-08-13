@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { mensajeUsuario } from "../../lib/fallas";
 import { EmptyState } from "../../components/EmptyState";
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -6,6 +8,7 @@ import { COLS, type Card, type Status, type ActivityLog, type Profile, type Card
 import { notifsAlFinalizar, debeNotificarDesdeCliente } from "../../lib/notificaciones";
 import { dueInfo, fmtDateTime, toARTDate } from "../../lib/metrics";
 import { cn, teclaActiva } from "../../lib/ui";
+import { motivoChecklist } from "../../lib/checklist-gate";
 import { pushUndo } from "../../lib/undo";
 import { isShared, siblingSyncPatches } from "../../lib/shared";
 import { bloqueadaPorTitulos } from "../../lib/deps";
@@ -159,6 +162,13 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
       // Mes cerrado = sólo lectura (Fase 3). El corte va acá, en la mutación, y no sólo en
       // la UI: es lo único que cubre el drag & drop, los atajos y cualquier camino futuro.
       if (cerrado) throw new Error("Este mes está cerrado. Para modificarlo, reabrilo desde Cierre.");
+      // Checklist obligatorio, por el mismo motivo que la línea de arriba: acá es el único
+      // lugar que cubre el arrastre. El botón del modal y el cierre rápido de Mi día ya lo
+      // miran, pero arrastrar a Terminado los saltea a los dos.
+      if (status === "term") {
+        const falta = motivoChecklist(cardPrev);
+        if (falta) throw new Error(falta + " Abrí la tarea para completarlos.");
+      }
       const c = cardPrev;
       const now = new Date().toISOString();
       const patch: Partial<Card> = { status };
@@ -237,7 +247,15 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
     // Rollback como patch de la card fallida, no como reemplazo del snapshot completo: si dos
     // drags se solapan y uno falla, restaurar todo el array pisaría el optimismo del otro
     // (el invalidate de onSettled lo autosana, pero el flash es visible e innecesario).
-    onError: (_err, { id }, ctx) => {
+    onError: (err, { id }, ctx) => {
+      // AVISAR, no sólo revertir. Antes esto restauraba la pantalla en silencio: la tarjeta
+      // volvía sola a su columna y no había ninguna explicación. Eso se lee como un bug del
+      // arrastre, y lleva a intentarlo tres veces más.
+      //
+      // Pasa en tres casos reales: el mes está cerrado, el checklist obligatorio tiene pasos
+      // sin tildar, o la base rechaza la escritura por permisos. En los tres, la persona
+      // necesita saber cuál.
+      toast.error(mensajeUsuario(err as Error, "mover la tarea"));
       if (ctx?.previousPeriodos) { qc.setQueryData(["card_periodos"], ctx.previousPeriodos); return; }
       const prevCard = ctx?.previous?.find((c) => c.id === id);
       if (prevCard) qc.setQueryData<Card[]>(["cards"], (old) => old?.map((c) => (c.id === id ? { ...c, status: prevCard.status } : c)) ?? old);

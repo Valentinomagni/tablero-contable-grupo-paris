@@ -6,7 +6,7 @@ import { supabase } from "../../lib/supabase";
 import { similares } from "../../lib/similitud";
 import { categoriasEnUso, mergeCategorias } from "../../lib/categorias";
 import { useSettings, useMigraciones } from "../../hooks/useData";
-import { payloadCards } from "../../lib/esquema";
+import { payloadCards, tieneChecklistGate } from "../../lib/esquema";
 import { camposDeAlta, TIPO_ALTA_POR_DEFECTO, type TipoAlta } from "../../lib/recurrencia-alta";
 import type { Card } from "../../lib/types";
 import { mensajeUsuario } from "../../lib/fallas";
@@ -28,6 +28,7 @@ export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { owne
   const [effort, setEffort] = useState<Card["effort"]>(1);
   const [categoria, setCategoria] = useState("");
   const [datoControl, setDatoControl] = useState("");
+  const [exigeChecklist, setExigeChecklist] = useState(false);
   // Si se repite o no. Arranca en "una-vez" a propósito: es lo reversible. Sin esta pregunta,
   // la base asumía 'mensual' y toda tarea puntual volvía a Pendiente cada mes para siempre.
   const [tipoAlta, setTipoAlta] = useState<TipoAlta>(TIPO_ALTA_POR_DEFECTO);
@@ -39,6 +40,7 @@ export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { owne
         due_date: dueDate || null, priority, effort,
         categoria: categoria.trim() || null,
         dato_control: datoControl.trim() || null,
+        exige_checklist: exigeChecklist,
         // Van por `payloadCards` junto con el resto del row (ver abajo), que es el gateado
         // defensivo del esquema: nunca se manda una columna que la base todavía no tiene.
         ...camposDeAlta(tipoAlta),
@@ -100,6 +102,21 @@ export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { owne
               className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-sm w-36" />
           </label>
         </div>
+        {/* Sólo si la migración 41 está aplicada. Sin ella la columna no existe y ofrecer la
+            casilla sería prometer algo que la base va a rechazar. Mismo criterio que el resto
+            del gateado defensivo: ante la duda, no se muestra. */}
+        {tieneChecklistGate(migracionesAplicadas) && (
+          <label className="flex items-start gap-2 mb-3 text-sm text-ink cursor-pointer">
+            <input type="checkbox" checked={exigeChecklist} className="mt-0.5"
+              onChange={(e) => setExigeChecklist(e.target.checked)} />
+            <span>
+              No se puede cerrar con pasos sin tildar
+              <span className="block text-2xs text-ink2">
+                Para tareas donde saltearse un paso tiene consecuencias, como una conciliación.
+              </span>
+            </span>
+          </label>
+        )}
         {/* La pregunta que faltaba. Dos opciones y nada más: lo que se necesita saber al crear
             es si la tarea vuelve o no. El default queda en "Una sola vez" (ver recurrencia-alta.ts). */}
         <div className="mb-3">
