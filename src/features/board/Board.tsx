@@ -15,14 +15,14 @@ import { bloqueadaPorTitulos } from "../../lib/deps";
 import { categoriasEnUso, pasaFiltroCategoria } from "../../lib/categorias";
 import { etiquetasEnUso, pasaFiltroEtiquetas } from "../../lib/etiquetas";
 import { type ModoAgrupar } from "../../lib/agrupar";
-import { getPref, setPref, PREF } from "../../lib/prefs";
+import { getPref, setPref, PREF, leerColumnasPlegadas, alternarColumnaPlegada } from "../../lib/prefs";
 import { useOrganizacion, useTiemposMax, useMigraciones, useTriggerNotificaciones } from "../../hooks/useData";
 import { payloadCards, tieneEtiquetas } from "../../lib/esquema";
 import { escribeEnPeriodo, filaPeriodo, guardarPeriodo } from "../../lib/periodo-escritura";
 import { estadoTiempo, registrarIncumplimiento } from "../../lib/tiempos";
 import { textoTransicion } from "../../lib/retrabajo";
 import { filtrarPorSegmento } from "../../lib/segmento";
-import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Users, Shield, Layers, Plane, Tag } from "lucide-react";
+import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Users, Shield, Layers, Plane, Tag, ChevronDown, ChevronRight } from "lucide-react";
 import { esCobertura } from "../../lib/vacaciones";
 import { NuevaTareaModal } from "./NuevaTareaModal";
 import { Carriles } from "./Carriles";
@@ -139,6 +139,17 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
       return next;
     });
   };
+  // Columnas plegadas (D1). El tablero crecía hacia abajo sin final: la columna de terminadas
+  // de un mes entero tapa lo que sí hay que mirar hoy. Se relee al cambiar de owner, igual que
+  // las vistas por columna: cada tablero guarda lo suyo.
+  const [plegadas, setPlegadas] = useState<string[]>(() => leerColumnasPlegadas(ownerId));
+  useEffect(() => { setPlegadas(leerColumnasPlegadas(ownerId)); }, [ownerId]);
+  const alternarPlegada = (k: string) => setPlegadas(alternarColumnaPlegada(ownerId, k));
+  // Columna abierta sola porque hay una tarjeta arrastrándose encima. Esto NO se guarda: pasar
+  // por arriba arrastrando no es pedir que la columna quede abierta, y una preferencia que
+  // cambia sin que la persona la haya tocado se lee como que la app hace cosas por su cuenta.
+  const [abiertaPorArrastre, setAbiertaPorArrastre] = useState<string | null>(null);
+  const estaPlegada = (k: string) => plegadas.includes(k) && abiertaPorArrastre !== k;
   const visibles = cardsSeg.filter((c) => c.owner === ownerId && matches(c));
   const catsUsadas = categoriasEnUso(visibles);
   const hayMezcla = catsUsadas.length > 0 && visibles.some((c) => !c.categoria);
@@ -328,6 +339,8 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
   // tiene que cambiar de día a la medianoche de acá, no a la de la zona del equipo.
   const hoyISO = toARTDate(new Date().toISOString());
   const colBg = { background: "color-mix(in srgb,var(--surface2) 55%,var(--bg))" };
+  // Operativas también se pliega: es una columna más y también empuja el scroll hacia abajo.
+  const plegadaOper = estaPlegada("oper");
 
   const chipCat = (lbl: string, val: string | null) => {
     const activo = catFiltro === val;
@@ -410,43 +423,67 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
         <span>Este mes está cerrado: se puede consultar, no editar. Para modificarlo, reabrilo desde <b className="text-ink font-semibold">Cierre</b>.</span>
       </div>
     )}
-    <div className="flex gap-5 items-start px-6 pb-10 overflow-x-auto flex-1">
+    {/* onDragEnd va acá arriba y no en cada columna: el evento sale de la tarjeta que se
+        arrastró, así que este contenedor es el único punto que lo ve siempre — incluso si el
+        arrastre se cancela con Escape o se suelta fuera de toda columna. Sin esto, una columna
+        que se abrió sola al pasar por encima se quedaría abierta para siempre. */}
+    <div className="flex gap-5 items-start px-6 pb-10 overflow-x-auto flex-1"
+      onDragEnd={() => setAbiertaPorArrastre(null)}>
       {/* Modo "ninguno": tres columnas planas, exactamente como siempre (ruta por defecto). */}
       {agruparModo === "ninguno" && COLS.map(([k, lbl]) => {
         const deLaColumna = mine.filter((c) => c.status === k);
         // Orden y agrupación PROPIOS de esta columna (item 7). Con la vista por defecto
         // devuelve un único bloque sin cabecera → idéntico al tablero de siempre.
         const bloques = vistaDeColumna(deLaColumna, vistas[k], { profiles: team });
+        const plegada = estaPlegada(k);
         return (
-        <div key={k}
-          onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("ring-2", "ring-accent"); }}
+        <div key={k} data-testid={`columna-${k}`}
+          onDragOver={(e) => {
+            e.preventDefault(); e.currentTarget.classList.add("ring-2", "ring-accent");
+            // Una columna plegada se abre sola mientras hay algo arrastrándose encima. Es el
+            // caso que rompe la función si no se piensa: si arrastrás una tarjeta hasta una
+            // columna plegada y no pasa nada, la gente deja de plegar. Abriéndola se ve dónde
+            // va a caer, y el drop de abajo es exactamente el mismo de siempre.
+            if (abiertaPorArrastre !== k) setAbiertaPorArrastre(k);
+          }}
           onDragLeave={(e) => e.currentTarget.classList.remove("ring-2", "ring-accent")}
-          onDrop={(e) => { e.currentTarget.classList.remove("ring-2", "ring-accent"); const id = e.dataTransfer.getData("text/plain"); const cardPrev = id ? byId(id) : undefined; if (id && cardPrev) move.mutate({ id, status: k, cardPrev }); }}
+          onDrop={(e) => { e.currentTarget.classList.remove("ring-2", "ring-accent"); setAbiertaPorArrastre(null); const id = e.dataTransfer.getData("text/plain"); const cardPrev = id ? byId(id) : undefined; if (id && cardPrev) move.mutate({ id, status: k, cardPrev }); }}
           className="min-w-[290px] w-[290px] shrink-0 rounded-2xl p-3 border border-line/60" style={colBg}>
-          <h2 className="text-xs uppercase tracking-wider text-ink2 mx-1.5 mt-1 mb-2.5 flex items-center gap-2 font-semibold">
+          <h2 className={cn("text-xs uppercase tracking-wider text-ink2 mx-1.5 mt-1 flex items-center gap-2 font-semibold", plegada ? "mb-1" : "mb-2.5")}>
+            {/* El contador se muestra igual cuando está plegada: es lo que hace que plegar sea
+                esconder el detalle y no perder la información de cuánto hay pendiente. */}
+            <button onClick={() => alternarPlegada(k)} aria-expanded={!plegada}
+              title={plegada ? `Desplegar ${lbl}` : `Plegar ${lbl}`}
+              className="shrink-0 rounded-md text-ink2 hover:text-accent transition">
+              {plegada ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+            </button>
             <i className={cn("w-2 h-2 rounded-full", DOT[k])} />{lbl}
             <span className="ml-auto bg-chip rounded-full px-2 py-0.5 tnum">{deLaColumna.length}</span>
-            <MenuColumna vista={vistas[k]} etiqueta={lbl} onCambiar={(v) => setVistaCol(k, v)} />
+            {!plegada && <MenuColumna vista={vistas[k]} etiqueta={lbl} onCambiar={(v) => setVistaCol(k, v)} />}
           </h2>
-          {bloques.map((b) => (
-            <div key={b.grupo || "__todo"}>
-              {b.grupo && (
-                <div className="mx-1.5 mt-1 mb-1.5 text-2xs font-semibold text-ink2 flex items-center gap-2">
-                  <span className="truncate">{b.grupo}</span>
-                  <span className="bg-chip rounded-full px-1.5 py-0.5 tnum text-2xs">{b.cards.length}</span>
+          {!plegada && (
+            <>
+              {bloques.map((b) => (
+                <div key={b.grupo || "__todo"}>
+                  {b.grupo && (
+                    <div className="mx-1.5 mt-1 mb-1.5 text-2xs font-semibold text-ink2 flex items-center gap-2">
+                      <span className="truncate">{b.grupo}</span>
+                      <span className="bg-chip rounded-full px-1.5 py-0.5 tnum text-2xs">{b.cards.length}</span>
+                    </div>
+                  )}
+                  {b.cards.map(renderCard)}
                 </div>
+              ))}
+              {deLaColumna.length === 0 && <div className="mb-2"><EmptyState title="Sin tareas acá." /></div>}
+              {/* Pendiente abre el flujo formal (spec 21 item 2); "En proceso" conserva el atajo inline. */}
+              {k === "pend" && (
+                <button onClick={() => setCreando(true)}
+                  className="w-full border border-dashed border-line rounded-lg py-2 text-sm text-ink2 hover:text-accent hover:border-accent transition">
+                  + Añadir tarea</button>
               )}
-              {b.cards.map(renderCard)}
-            </div>
-          ))}
-          {deLaColumna.length === 0 && <div className="mb-2"><EmptyState title="Sin tareas acá." /></div>}
-          {/* Pendiente abre el flujo formal (spec 21 item 2); "En proceso" conserva el atajo inline. */}
-          {k === "pend" && (
-            <button onClick={() => setCreando(true)}
-              className="w-full border border-dashed border-line rounded-lg py-2 text-sm text-ink2 hover:text-accent hover:border-accent transition">
-              + Añadir tarea</button>
+              {k === "proc" && addInline(k, "Título y Enter…")}
+            </>
           )}
-          {k === "proc" && addInline(k, "Título y Enter…")}
         </div>
         );
       })}
@@ -473,11 +510,16 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
       )}
 
       <div className="min-w-[290px] w-[290px] shrink-0 rounded-2xl p-3 border border-dashed border-line/60" style={colBg}>
-        <h2 className="text-xs uppercase tracking-wider text-ink2 mx-1.5 mt-1 mb-2.5 flex items-center gap-2 font-semibold">
+        <h2 className={cn("text-xs uppercase tracking-wider text-ink2 mx-1.5 mt-1 flex items-center gap-2 font-semibold", plegadaOper ? "mb-1" : "mb-2.5")}>
+          <button onClick={() => alternarPlegada("oper")} aria-expanded={!plegadaOper}
+            title={plegadaOper ? "Desplegar Operativas" : "Plegar Operativas"}
+            className="shrink-0 rounded-md text-ink2 hover:text-accent transition">
+            {plegadaOper ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+          </button>
           <i className="w-2 h-2 rounded-full bg-accent" />Operativas · a demanda
           <span className="ml-auto bg-chip rounded-full px-2 py-0.5 tnum">{opers.length}</span>
         </h2>
-        {opers.map((c) => {
+        {!plegadaOper && opers.map((c) => {
           const regs = activity.filter((a) => a.card_id === c.id);
           const hoy = regs.filter((a) => toARTDate(a.at) === hoyISO).reduce((s, a) => s + a.qty, 0);
           const sem = regs.filter((a) => Date.now() - new Date(a.at).getTime() < 7 * 86400000).reduce((s, a) => s + a.qty, 0);
@@ -510,8 +552,8 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
             </div>
           );
         })}
-        {opers.length === 0 && <p className="text-ink2 text-sm px-2 pb-2">Pagos, trámites y gestiones a demanda: no se cierran, se registran.</p>}
-        {addInline("oper", "Ej: Pagos a proveedores…")}
+        {!plegadaOper && opers.length === 0 && <p className="text-ink2 text-sm px-2 pb-2">Pagos, trámites y gestiones a demanda: no se cierran, se registran.</p>}
+        {!plegadaOper && addInline("oper", "Ej: Pagos a proveedores…")}
       </div>
       {creando && <NuevaTareaModal ownerId={ownerId} meName={meName} cards={cards.filter((c) => c.owner === ownerId)} onClose={() => setCreando(false)} />}
     </div>
