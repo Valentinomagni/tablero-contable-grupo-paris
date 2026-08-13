@@ -133,3 +133,39 @@ describe("indiceRetrabajo", () => {
     expect(r.general.pct).toBe(33);
   });
 });
+
+// GUARDIÁN DE DOS ARCHIVOS QUE TIENEN QUE SEGUIR SIN CHOCAR.
+//
+// La migración 46 reactiva las tareas recurrentes y deja una marca en el historial. Si esa marca
+// contuviera el texto de reapertura, CADA CICLO de CADA tarea recurrente contaría como retrabajo
+// — una tarea diaria inflaría el índice unos 20 puntos por mes ella sola, y el equipo aparecería
+// rehaciendo trabajo que nunca rehízo. Ese número se le muestra al jefe.
+//
+// Hoy los dos textos no chocan por casualidad. Este test lo vuelve una regla: si alguien cambia
+// cualquiera de los dos y quedan solapados, esto se pone en rojo y explica por qué.
+describe("el ciclo automático no se confunde con una reapertura", () => {
+  it("los dos textos son distintos y no se contienen entre sí", async () => {
+    const { TXT_NUEVO_CICLO } = await import("./recurrencia-ciclo");
+    expect(TXT_NUEVO_CICLO).not.toBe(TXT_REAPERTURA);
+    expect(TXT_NUEVO_CICLO).not.toContain(TXT_REAPERTURA);
+    expect(TXT_REAPERTURA).not.toContain(TXT_NUEVO_CICLO);
+  });
+
+  it("una tarjeta reactivada por la recurrencia no cuenta como reabierta", async () => {
+    const { TXT_NUEVO_CICLO } = await import("./recurrencia-ciclo");
+    const card = mkCard({
+      history: [
+        { who: "Ana", at: "2026-08-06T10:00:00Z", txt: "Marcó terminada" },
+        { who: "Sistema", at: "2026-08-13T03:10:00Z", txt: TXT_NUEVO_CICLO },
+      ],
+    });
+    expect(reaperturasDe(card)).toBe(0);
+  });
+
+  it("y una reabierta de verdad sí cuenta, para que el test no pase por vacío", () => {
+    const card = mkCard({
+      history: [{ who: "Ana", at: "2026-08-06T10:00:00Z", txt: TXT_REAPERTURA }],
+    });
+    expect(reaperturasDe(card)).toBe(1);
+  });
+});
