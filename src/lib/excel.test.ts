@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { armarLibroAnalisis } from "./excel";
+import { ENCUADRE_REPARTO } from "./encuadre";
 import type { AnalisisMes } from "./analisis";
 
 const base: AnalisisMes = {
@@ -57,15 +58,39 @@ describe("armarLibroAnalisis", () => {
     expect(buscar("Rendimiento promedio histórico")?.[1]).toBe("—");
   });
 
+  // El aserto viejo era `filas[0] === [header]` y `filas.length === 3`. Cambió de significado:
+  // la hoja ahora arranca con el encuadre no punitivo (fila 0) y una fila en blanco, así que el
+  // header pasó a la fila 2. Los valores por persona no se tocaron.
   it("Por persona: header y una fila por persona con los valores correctos", () => {
     const libro = armarLibroAnalisis(base, { mesLabel: "julio 2026", segmento: null });
     const hoja = libro.hojas.find((h) => h.nombre === "Por persona")!;
-    expect(hoja.filas[0]).toEqual(["Nombre", "Cerradas %", "Total", "Vencidas", "Abiertas"]);
-    expect(hoja.filas.length).toBe(3); // header + 2 personas
+    expect(hoja.filas[2]).toEqual(["Nombre", "Cerradas %", "Total", "Vencidas", "Abiertas"]);
+    expect(hoja.filas.length).toBe(5); // encuadre + blanco + header + 2 personas
     const anaFila = hoja.filas.find((f) => f[0] === "Ana")!;
     expect(anaFila).toEqual(["Ana", 100, 4, 0, 0]);
     const boFila = hoja.filas.find((f) => f[0] === "Bo")!;
     expect(boFila).toEqual(["Bo", 50, 4, 1, 2]);
+  });
+
+  // ============================================================
+  // ENCUADRE NO PUNITIVO EN EL EXCEL (hallazgo 3 de la auditoría del 05/08, segunda parte).
+  //
+  // El PDF del Reporte lleva el encuadre pegado al título de la tabla por persona; el Excel
+  // salía pelado. Y un Excel es peor que un PDF para esto: circula solo, se abre sin la pantalla
+  // que lo explica, y la columna "Cerradas %" se ordena de mayor a menor con un clic — o sea que
+  // cualquiera puede fabricarse el podio que el proyecto decidió no tener.
+  // ============================================================
+  it("Por persona: la hoja arranca con el MISMO encuadre que el PDF", () => {
+    const libro = armarLibroAnalisis(base, { mesLabel: "julio 2026", segmento: null });
+    const hoja = libro.hojas.find((h) => h.nombre === "Por persona")!;
+    expect(String(hoja.filas[0][0])).toContain(ENCUADRE_REPARTO);
+  });
+
+  it("Por persona: la hoja pide bloquear el orden; las otras no", () => {
+    const libro = armarLibroAnalisis(base, { mesLabel: "julio 2026", segmento: null });
+    expect(libro.hojas.find((h) => h.nombre === "Por persona")!.bloquearOrden).toBe(true);
+    expect(libro.hojas.find((h) => h.nombre === "Por marca")!.bloquearOrden).toBeFalsy();
+    expect(libro.hojas.find((h) => h.nombre === "Resumen")!.bloquearOrden).toBeFalsy();
   });
 
   it("Por marca: header y filas", () => {

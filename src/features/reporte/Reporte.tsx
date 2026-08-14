@@ -16,6 +16,7 @@ import { FlujoMensual } from "./FlujoMensual";
 import { toast } from "sonner";
 import { documentoImpresion, type DatosReporte } from "../../lib/impresion";
 import { abrirImpresion } from "../../lib/impresion-dom";
+import { ENCUADRE_REPARTO } from "../../lib/encuadre";
 
 // Semáforo del cumplimiento de arqueo (SOLO sobre el número, marca monocroma).
 const colorArqueo = (pct: number) => (pct >= 98 ? "var(--done)" : pct >= 95 ? "var(--warn)" : "var(--danger)");
@@ -135,7 +136,10 @@ export function Reporte({ cards: cardsIn, team, activity }: { cards: Card[]; tea
         // llamaba "Ranking de productividad" y salía ordenado de mayor a menor. Un podio
         // impreso es peor que uno en pantalla — queda sobre un escritorio, sin el contexto
         // de la pantalla y sin nadie que lo explique.
-        titulo: "Carga cerrada por persona (30 días) — describe reparto de trabajo, no desempeño",
+        // El sufijo sale de `ENCUADRE_REPARTO` (encuadre.ts) y no de un string escrito acá: el
+        // Excel del Análisis muestra los mismos datos por persona y tiene que llevar el MISMO
+        // texto. Dos copias iguales de una frase son dos frases que se van a separar.
+        titulo: `Carga cerrada por persona (30 días) — ${ENCUADRE_REPARTO}`,
         encabezados: ["Persona", "Esfuerzo", "Tareas", "Actividad"],
         filas: rank.filter((r) => r.ef > 0 || r.act > 0)
           .map((r) => ({ celdas: [r.u.name, String(r.ef), String(r.n), String(r.act)] })),
