@@ -1,9 +1,10 @@
-# Instalar o quitar dependencias sin tener npm en la máquina de trabajo.
+# Instalar o quitar dependencias desde el CI, como alternativa a hacerlo en la máquina.
 #
-# POR QUÉ EXISTE. En la máquina donde se desarrolla no hay npm, pnpm ni yarn, así que durante
-# semanas la conclusión fue "no se pueden agregar dependencias". Era falsa: el runner de
-# GitHub Actions SÍ tiene npm. Este workflow lo usa, corre la verificación completa, y
-# commitea `package.json` + `package-lock.json` sincronizados.
+# POR QUÉ EXISTE. Nació para esquivar un problema que no existía: se comprobó que no había npm
+# en el PATH por defecto y se concluyó "no hay npm en esta máquina". Sí hay (CLAUDE.md §1, con
+# el comando al lado). Se queda igual, porque hace algo que la máquina no hace sola: corre
+# lint, tests y build ANTES de commitear `package.json` + `package-lock.json` sincronizados.
+# Ya no es el único camino; es la red.
 #
 # Se dispara A MANO desde la pestaña Actions, nunca solo: instalar una dependencia es una
 # decisión, no algo que deba pasar por accidente.
@@ -41,12 +42,34 @@ jobs:
 
       - run: npm ci
 
+      # Los inputs entran por `env:` y NUNCA con `${{ }}` adentro de un `run:`.
+      #
+      # POR QUÉ. Lo que se escribe con `${{ }}` lo reemplaza Actions en el TEXTO del script
+      # antes de que exista el shell, así que el valor deja de ser un dato y pasa a ser
+      # programa: un paquete llamado `x; curl algo | sh` se ejecuta, con el token del repo y
+      # permiso de escritura sobre `main`. Como variable de entorno el shell la expande
+      # después de parsear, y lo que hay adentro ya no se vuelve a interpretar. Es el patrón
+      # que documenta GitHub en "Security hardening for GitHub Actions → Understanding the
+      # risk of script injections".
+      #
+      # El riesgo acá es bajo porque disparar el workflow ya exige permiso de escritura. Pero
+      # convierte "puedo abrir un PR" en "ejecuto lo que quiera con el token", y esa diferencia
+      # es la que importa.
       - name: Aplicar el cambio
+        env:
+          ACCION: ${{ inputs.accion }}
+          PAQUETES: ${{ inputs.paquetes }}
+          DEV: ${{ inputs.dev }}
         run: |
-          if [ "${{ inputs.accion }}" = "instalar" ]; then
-            npm install ${{ inputs.dev && '--save-dev' || '--save' }} ${{ inputs.paquetes }}
+          # `set -f` apaga la expansión de comodines: `$PAQUETES` va sin comillas a propósito,
+          # porque tiene que partirse en varios paquetes por espacios, y sin esto un nombre con
+          # `*` se convertiría en la lista de archivos del repositorio.
+          set -f
+          if [ "$ACCION" = "instalar" ]; then
+            if [ "$DEV" = "true" ]; then guardar=--save-dev; else guardar=--save; fi
+            npm install "$guardar" $PAQUETES
           else
-            npm uninstall ${{ inputs.paquetes }}
+            npm uninstall $PAQUETES
           fi
 
       # Verificación ANTES de commitear. Una dependencia que rompe el build no entra: sin
@@ -56,7 +79,13 @@ jobs:
       - run: npm run test
       - run: npm run build
 
+      # Mismo cuidado que arriba, y no es de más: el mensaje del commit se arma con comillas
+      # dobles, así que un paquete que contenga una comilla cerraba la cadena y lo que venía
+      # después corría como comando. Este paso es el que además hace `git push`.
       - name: Commitear el cambio
+        env:
+          ACCION: ${{ inputs.accion }}
+          PAQUETES: ${{ inputs.paquetes }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -65,7 +94,7 @@ jobs:
             exit 0
           fi
           git add package.json package-lock.json
-          git commit -m "chore: ${{ inputs.accion }} ${{ inputs.paquetes }}
+          git commit -m "chore: $ACCION $PAQUETES
 
           Aplicado desde el workflow Dependencias porque la maquina de trabajo
           no tiene npm. Lint, tests y build pasaron antes de commitear.
