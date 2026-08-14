@@ -1,5 +1,5 @@
 import type { Card } from "./types";
-import { toARTDate } from "./metrics";
+import { toARTDate, entregadaATiempo } from "./metrics";
 
 // Puntualidad (spec 26 item 10): de las tareas CERRADAS en los últimos 30 días
 // respecto de hoyISO, qué % de las que tenían vencimiento se cerraron en fecha.
@@ -25,9 +25,11 @@ export function puntualidad(
 
   const conVto = cerradas30.filter((c) => c.due_date);
   const sinVto = cerradas30.filter((c) => !c.due_date);
-  const enFecha = conVto.filter(
-    (c) => c.done_at && new Date(c.done_at) <= new Date(c.due_date + "T23:59:59")
-  ).length;
+  // Fuente única (hallazgo 8 de la auditoría del 05/08): esto tenía su propia copia del
+  // criterio, armada con la medianoche del navegador. La ventana de arriba ya cuenta en días
+  // calendario argentinos; que el corte de puntualidad usara otra zona hacía que el mismo
+  // bloque del reporte mostrara más tareas "con vencimiento" que tareas cerradas.
+  const enFecha = conVto.filter(entregadaATiempo).length;
 
   const n = conVto.length;
   const pct = n ? Math.round((enFecha / n) * 100) : null;

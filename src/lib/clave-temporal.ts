@@ -14,10 +14,33 @@ export const LARGO_CLAVE = 10;
 const MINIMO = 8;
 
 /**
+ * Fuente de azar CRIPTOGRÁFICA, en [0, 1).
+ *
+ * POR QUÉ NO `Math.random` (hallazgo 9 de la auditoría del 05/08). `Math.random` no es un
+ * generador criptográfico: su estado interno se puede reconstruir observando salidas, y acá cada
+ * clave generada ES una salida observable. Alguien que reciba su propio blanqueo podría, en
+ * teoría, predecir el de otro.
+ *
+ * No es el riesgo más urgente del proyecto —el pase dura hasta que la persona entra y lo
+ * cambia— pero el arreglo es una línea y no toca el alfabeto ni el largo: la clave se sigue
+ * pudiendo dictar por teléfono, que era la única restricción real.
+ *
+ * `crypto` existe en todo navegador vigente y en Node 19+. Si por lo que sea no estuviera, se
+ * cae a `Math.random`: una clave menos fuerte es mucho mejor que un blanqueo que explota con
+ * alguien esperando para entrar.
+ */
+function azarSeguro(): number {
+  const c = globalThis.crypto;
+  if (!c?.getRandomValues) return Math.random();
+  // 32 bits sin signo divididos por 2^32 dan un flotante en [0, 1) con distribución pareja.
+  return c.getRandomValues(new Uint32Array(1))[0] / 4_294_967_296;
+}
+
+/**
  * Una clave temporal. `azar` se inyecta para poder testearla — sin eso, un test sobre algo
  * aleatorio o es frágil o no prueba nada.
  */
-export function generarClaveTemporal(azar: () => number = Math.random): string {
+export function generarClaveTemporal(azar: () => number = azarSeguro): string {
   const alfabeto = LETRAS + NUMEROS;
   let out = "";
   for (let i = 0; i < LARGO_CLAVE - 1; i++) {

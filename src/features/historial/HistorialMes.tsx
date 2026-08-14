@@ -4,6 +4,7 @@ import { useArchive } from "../../hooks/useArchive";
 import { mesesDisponibles, cardsDeArchivo, mesLabel } from "../../lib/archivo";
 import { fmtDateTime } from "../../lib/metrics";
 import { cn } from "../../lib/ui";
+import { SkeletonVista } from "../../components/Skeleton";
 
 // Historial mensual por empleado (spec 21, item 9): lectura de los snapshots
 // de cards_archive. TODO es READ-ONLY — acá no se edita ni se borra nada.
@@ -19,7 +20,10 @@ export function HistorialMes({ ownerId }: { ownerId: string }) {
   const [mesSel, setMesSel] = useState<string | null>(null);
   const mes = mesSel && meses.includes(mesSel) ? mesSel : meses[0];
 
-  if (isLoading) return <div className="px-6 py-8 text-ink2 text-sm">Cargando historial…</div>;
+  // La última pantalla que usaba la palabra prohibida (hallazgo 9 de la auditoría del 05/08).
+  // El aviso de novedades de la v2.9.0 —que sigue visible— promete que ya no existe en ningún
+  // lado: mientras esta línea decía "Cargando historial…", el changelog mentía.
+  if (isLoading) return <div className="px-6 py-8"><SkeletonVista /></div>;
 
   if (meses.length === 0) {
     return (

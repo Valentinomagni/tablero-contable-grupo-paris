@@ -20,6 +20,38 @@ export function periodoVigente(hoyISO: string): string {
   return toARTDate(hoyISO).slice(0, 7);
 }
 
+/**
+ * Adónde hay que mover la selección de período cuando el mes vigente cambió, o `null` si no hay
+ * que moverla.
+ *
+ * QUÉ ARREGLA (hallazgo 5 de la auditoría del 05/08). La selección se fijaba una sola vez, al
+ * montar la app, y el vigente se recalcula en cada render: nada los volvía a sincronizar.
+ *
+ * El escenario es de todos los meses. Alguien deja la app abierta el 31/08 y vuelve el 01/09. El
+ * vigente pasa a septiembre y la selección se queda en agosto. Como el mes vigente lee y escribe
+ * en `cards` y los no vigentes leen de `card_periodos`, agosto —que hasta ayer era el vigente y
+ * por eso no tiene filas de período— aparece **entero en pendiente, sin checklist y sin
+ * historial**. La persona cree que perdió el mes.
+ *
+ * Y lo que sigue es peor que el susto: si vuelve a marcar las tareas, esas ediciones se escriben
+ * ahora en el período de agosto en vez de en las tarjetas. Quedan dos verdades distintas para el
+ * mismo mes, y ninguna pantalla avisa cuál es la buena.
+ *
+ * POR QUÉ NO ALCANZA CON "SIEMPRE AL VIGENTE". Mirar un mes cerrado es una decisión deliberada:
+ * el 1/9 alguien puede estar revisando junio a propósito. Arrastrarlo a septiembre le sacaría de
+ * la pantalla justo lo que fue a buscar. Por eso la condición es angosta —sólo se mueve a quien
+ * estaba parado en el mes que **dejó** de ser vigente— y ante cualquier otra cosa no toca nada.
+ */
+export function reencuadrarPeriodo(
+  seleccionado: string, vigenteAnterior: string, vigenteNuevo: string,
+): string | null {
+  if (!seleccionado || !vigenteAnterior || !vigenteNuevo) return null;
+  // Sin cambio de mes no hay nada que hacer, y devolver un valor acá dispararía un setState en
+  // cada render: la app se colgaría en un bucle.
+  if (vigenteAnterior === vigenteNuevo) return null;
+  return seleccionado === vigenteAnterior ? vigenteNuevo : null;
+}
+
 /** 'YYYY-MM' del mes siguiente a `periodo`. Maneja el corte de año. Formato inválido → tal cual. */
 export function mesSiguiente(periodo: string): string {
   const m = /^(\d{4})-(\d{2})$/.exec(periodo ?? "");

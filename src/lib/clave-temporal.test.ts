@@ -53,3 +53,31 @@ describe("claveAceptable", () => {
     for (let i = 0; i < 20; i++) expect(claveAceptable(generarClaveTemporal())).toBeNull();
   });
 });
+
+// ── La fuente de azar por defecto ───────────────────────────────────────────────
+//
+// HALLAZGO 9 DE LA AUDITORÍA DEL 05/08: el default era `Math.random`, que no es un generador
+// criptográfico. Los tests de arriba inyectan `azar`, así que el camino que usa la app de verdad
+// —el default— no lo ejercitaba ninguno. Es el mismo modo de falla que en `mesesAbiertos`:
+// se prueba lo que se inyecta y se confía en lo que no.
+describe("generarClaveTemporal sin inyectar azar", () => {
+  it("cumple el formato con la fuente real, no sólo con la de mentira", () => {
+    for (let i = 0; i < 50; i++) {
+      const c = generarClaveTemporal();
+      expect(c).toHaveLength(LARGO_CLAVE);
+      expect(claveAceptable(c)).toBeNull();
+      // Sin ambiguos y terminada en número: las dos razones por las que existe el alfabeto.
+      // Los que se fueron son 0, 1, I, O y l minúscula. La `i` minúscula SÍ está: no se
+      // confunde con nada cuando se dicta.
+      expect(c).toMatch(/^[A-HJ-NP-Za-km-np-z2-9]{9}[2-9]$/);
+    }
+  });
+
+  it("no repite: 200 claves seguidas son 200 distintas", () => {
+    // Si el generador se quedara pegado —fuente rota, entorno sin crypto mal resuelto— esto lo
+    // detecta. Dos personas con la misma clave temporal es un incidente, no un detalle.
+    const vistas = new Set<string>();
+    for (let i = 0; i < 200; i++) vistas.add(generarClaveTemporal());
+    expect(vistas.size).toBe(200);
+  });
+});

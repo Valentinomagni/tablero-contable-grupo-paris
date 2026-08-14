@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { periodoVigente, mesSiguiente, instanciaEnBlanco, mergeCardPeriodo, cardsDelPeriodo, periodosDisponibles, periodoLabel } from "./periodo-instancias";
+import { periodoVigente, mesSiguiente, instanciaEnBlanco, mergeCardPeriodo, cardsDelPeriodo, periodosDisponibles, periodoLabel, reencuadrarPeriodo } from "./periodo-instancias";
 import type { Card, CardPeriodo } from "./types";
 
 function card(over: Partial<Card> = {}): Card {
@@ -172,5 +172,44 @@ describe("periodoLabel", () => {
   it("formato inválido → devuelve el valor tal cual", () => {
     expect(periodoLabel("basura")).toBe("basura");
     expect(periodoLabel("")).toBe("");
+  });
+});
+
+// ── Reencuadre al cambiar el mes ────────────────────────────────────────────────
+//
+// HALLAZGO 5 DE LA AUDITORÍA DEL 05/08. `periodoSel` se fijaba una sola vez, al montar
+// (`App.tsx:87`), y el vigente se recalcula en cada render. Nada los re-sincronizaba.
+//
+// EL ESCENARIO, que es de todos los meses: alguien deja la app abierta el 31/08 y vuelve el
+// 01/09. El vigente pasa a septiembre y la selección se queda en agosto. Como agosto escribía
+// en las tarjetas y no tiene filas de período, el tablero aparece ENTERO en pendiente, sin
+// checklist y sin historial. La persona cree que perdió todo. Y si vuelve a marcar las tareas,
+// esas ediciones se escriben en el período de agosto en vez de en las tarjetas: quedan dos
+// verdades distintas para el mismo mes, que es peor que la pantalla vacía.
+describe("reencuadrarPeriodo", () => {
+  it("mueve la selección al mes nuevo si estaba parada en el mes que dejó de ser vigente", () => {
+    expect(reencuadrarPeriodo("2026-08", "2026-08", "2026-09")).toBe("2026-09");
+  });
+
+  it("NO toca la selección si la persona eligió mirar otro mes a propósito", () => {
+    // Estar mirando junio el 1/9 es una decisión, no un descuido. Arrastrarla a septiembre
+    // le sacaría de la pantalla lo que fue a buscar, y eso es peor que el bug que arregla.
+    expect(reencuadrarPeriodo("2026-06", "2026-08", "2026-09")).toBeNull();
+  });
+
+  it("no hace nada mientras el vigente no cambió", () => {
+    // Es el caso de todos los renders menos uno al mes. Devolver un valor acá dispararía un
+    // setState en cada render y colgaría la app.
+    expect(reencuadrarPeriodo("2026-08", "2026-08", "2026-08")).toBeNull();
+  });
+
+  it("también sirve para atrás, si el reloj de la máquina se corrige", () => {
+    expect(reencuadrarPeriodo("2026-09", "2026-09", "2026-08")).toBe("2026-08");
+  });
+
+  it("ante datos rotos no devuelve nada, en vez de mandar a la persona a un mes inventado", () => {
+    expect(reencuadrarPeriodo("", "2026-08", "2026-09")).toBeNull();
+    expect(reencuadrarPeriodo("2026-08", "", "2026-09")).toBeNull();
+    expect(reencuadrarPeriodo("2026-08", "2026-08", "")).toBeNull();
   });
 });

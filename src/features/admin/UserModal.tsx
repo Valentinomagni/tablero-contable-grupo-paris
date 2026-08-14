@@ -6,6 +6,7 @@ import { supabase, SUPABASE_URL } from "../../lib/supabase";
 import type { ActivityLog, Card, Profile, Role } from "../../lib/types";
 import { useObjectives, useOrganizacion, useMigraciones } from "../../hooks/useData";
 import { payloadProfiles } from "../../lib/esquema";
+import { mensajeUsuario, FallaDeUsuario } from "../../lib/fallas";
 import { useArqueoStats } from "../../hooks/useArqueo";
 import { userMetrics30d } from "../../lib/metrics";
 import { nombreValido } from "../../lib/validacion";
@@ -79,13 +80,18 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
       // permite) es indistinguible de uno exitoso. Decir "Guardado." cuando no se guardó nada
       // es peor que mostrar un error.
       if (!data || data.length === 0) {
-        throw new Error("No se pudo guardar: tu cuenta no tiene permiso para editar este perfil.");
+        throw new FallaDeUsuario("No se pudo guardar: tu cuenta no tiene permiso para editar este perfil.");
       }
     },
     onSuccess: () => { setMsg({ ok: true, txt: "Guardado." }); qc.invalidateQueries({ queryKey: ["team"] }); },
-    // El mensaje de la base puede ser el texto crudo de un trigger. Se muestra tal cual sólo
-    // si ya viene en lenguaje entendible; los de Postgres arrancan con mayúscula y jerga.
-    onError: (e: Error) => setMsg({ ok: false, txt: e.message || "No se pudo guardar." }),
+    // ACÁ HABÍA UN COMENTARIO QUE DESCRIBÍA UNA COMPROBACIÓN QUE NO EXISTÍA: decía que el
+    // mensaje se mostraba tal cual "sólo si ya viene en lenguaje entendible", pero el código
+    // mostraba `e.message` siempre, incluido el texto crudo de un trigger de Postgres
+    // (hallazgo 6 de la auditoría del 05/08).
+    //
+    // Ahora la distinción es real y está en el tipo: lo que la app lanza como `FallaDeUsuario`
+    // pasa tal cual, y todo lo demás se traduce.
+    onError: (e: Error) => setMsg({ ok: false, txt: mensajeUsuario(e, "guardar el perfil") }),
   });
 
   const eliminar = useMutation({
@@ -102,7 +108,10 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
       } catch {
         out = { error: "No se pudo contactar la función eliminar-usuario. ¿Está desplegada en Supabase?" };
       }
-      if (!out.ok) throw new Error(out.error ?? "Error al eliminar");
+      // El `error` de la Edge Function ya viene escrito para una persona (lo escribimos
+      // nosotros, incluido el del catch de acá arriba), así que se marca como tal para que
+      // `mensajeUsuario` no lo reemplace por el genérico.
+      if (!out.ok) throw new FallaDeUsuario(out.error ?? "No se pudo eliminar al empleado.");
       return out.reasignadas ?? 0;
     },
     onSuccess: (reasignadas) => {
@@ -111,7 +120,7 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
       toast.success(`Empleado eliminado. ${reasignadas} tarea(s) quedaron "Sin asignar".`);
       onClose();
     },
-    onError: (e: Error) => toast.error("" + e.message),
+    onError: (e: Error) => toast.error(mensajeUsuario(e, "eliminar al empleado")),
   });
 
   const onSave = () => {

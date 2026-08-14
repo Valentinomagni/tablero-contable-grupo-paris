@@ -152,7 +152,31 @@ export function clasificarFalla(e: unknown, online: boolean): Falla {
  * recurrencia", "archivar el mes". Se usa sólo cuando la falla es desconocida, porque en los
  * casos conocidos la explicación de `clasificarFalla` ya es mejor que cualquier prefijo.
  */
+/**
+ * Un error que la app lanza A PROPÓSITO, con el texto ya escrito para que lo lea una persona.
+ *
+ * POR QUÉ HACE FALTA (hallazgo 6 de la auditoría del 05/08). `UserModal` mostraba `e.message`
+ * tal cual, con un comentario al lado que decía "se muestra tal cual sólo si ya viene en
+ * lenguaje entendible". El código no hacía esa comprobación en ningún lado: mostraba todo,
+ * incluido el texto crudo de un trigger de Postgres.
+ *
+ * El problema de fondo es que `Error` no distingue "esto lo escribí yo para vos" de "esto lo
+ * dijo la base". Sin esa distinción hay que elegir entre dos males: pasar todo crudo, o tapar
+ * también los mensajes buenos con el genérico. Marcarlo en el tipo lo resuelve de una vez y
+ * deja el mismo criterio disponible para las demás pantallas.
+ */
+export class FallaDeUsuario extends Error {
+  constructor(mensaje: string) {
+    super(mensaje);
+    this.name = "FallaDeUsuario";
+  }
+}
+
 export function mensajeUsuario(e: unknown, accion: string, online = true): string {
+  // Ya viene escrito para una persona: se respeta tal cual. Va PRIMERO porque algunos de estos
+  // mensajes contienen palabras ("permiso") que las ramas de abajo reconocerían y reemplazarían
+  // por su explicación genérica, perdiendo el detalle que hacía útil al mensaje.
+  if (e instanceof FallaDeUsuario) return e.message;
   const falla = clasificarFalla(e, online);
   if (falla.tipo !== "desconocida") return falla.explicacion;
   // Falla sin clasificar: se dice qué se intentaba y se ofrece el canal para reportarlo. El

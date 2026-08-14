@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { clasificarFalla, detalleTecnico, mensajeUsuario } from "./fallas";
+import { clasificarFalla, detalleTecnico, mensajeUsuario, FallaDeUsuario } from "./fallas";
 
 describe("clasificarFalla — versión vieja tras publicar", () => {
   // El caso real: se publica una versión nueva, el navegador tiene el shell viejo en caché
@@ -148,5 +148,38 @@ describe("detalleTecnico", () => {
   // inservible para pegarlo en una consulta.
   it("recorta un mensaje kilométrico", () => {
     expect(detalleTecnico(new Error("x".repeat(5000))).length).toBeLessThan(1200);
+  });
+});
+
+// ── El error que la app escribió a propósito ────────────────────────────────────
+//
+// HALLAZGO 6 DE LA AUDITORÍA DEL 05/08. `UserModal` mostraba `e.message` tal cual, con un
+// comentario al lado que decía que sólo lo hacía "si ya viene en lenguaje entendible". Esa
+// comprobación no existía en ninguna parte del código: mostraba todo.
+//
+// La raíz es que `Error` no distingue "esto lo escribí yo para vos" de "esto lo dijo Postgres",
+// y sin esa distinción hay que elegir entre pasar todo crudo o tapar también los mensajes
+// buenos. `FallaDeUsuario` la pone en el tipo.
+describe("FallaDeUsuario", () => {
+  it("respeta el texto tal cual: para eso se lanzó", () => {
+    const e = new FallaDeUsuario("No se pudo guardar: tu cuenta no tiene permiso para editar este perfil.");
+    expect(mensajeUsuario(e, "guardar el perfil")).toBe(
+      "No se pudo guardar: tu cuenta no tiene permiso para editar este perfil.",
+    );
+  });
+
+  it("gana sobre las ramas de clasificación, que si no le comerían el detalle", () => {
+    // El mensaje de arriba contiene la palabra "permiso". Si se clasificara primero, la rama
+    // de sin-permiso lo reemplazaría por su explicación genérica y se perdería el "editar este
+    // perfil", que es justamente lo que le dice a la persona qué pasó.
+    const e = new FallaDeUsuario("No tenés permiso para editar este perfil.");
+    expect(mensajeUsuario(e, "guardar")).toContain("editar este perfil");
+  });
+
+  it("un Error común SIGUE tapándose: la excepción es angosta a propósito", () => {
+    const crudo = new Error('new row violates row-level security policy for table "profiles"');
+    const m = mensajeUsuario(crudo, "guardar el perfil");
+    expect(m).not.toContain("row-level security");
+    expect(m).not.toContain("profiles");
   });
 });

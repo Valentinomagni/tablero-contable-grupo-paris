@@ -19,6 +19,7 @@ import { Login } from "./components/Login";
 import { Shell } from "./components/Shell";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { SkeletonVista } from "./components/Skeleton";
+import { esperaTareas } from "./lib/carga";
 import { Board } from "./features/board/Board";
 import { CardModal } from "./features/board/CardModal";
 import { DelegarModal } from "./features/board/DelegarModal";
@@ -50,7 +51,7 @@ import { personasVisibles, cardsVisibles } from "./lib/visibilidad";
 import { proximosVencimientos } from "./lib/vencimientos";
 import { avisosParaNotificar } from "./lib/notificaciones";
 import { toARTDate } from "./lib/metrics";
-import { periodoVigente, periodosDisponibles, periodoLabel, cardsDelPeriodo } from "./lib/periodo-instancias";
+import { periodoVigente, periodosDisponibles, periodoLabel, cardsDelPeriodo, reencuadrarPeriodo } from "./lib/periodo-instancias";
 import { periodoCerrado, periodosCerradosDe } from "./lib/periodo-cierre";
 import { usePeriodos } from "./hooks/usePeriodos";
 import { useReinicios } from "./hooks/useReinicios";
@@ -85,6 +86,25 @@ export default function App() {
   const { data: reinicios = [] } = useReinicios();
   const hoyISO = new Date().toISOString();
   const [periodoSel, setPeriodoSel] = useState<string>(() => periodoVigente(hoyISO));
+  const vigente = periodoVigente(hoyISO);
+  // Reencuadre al cambiar el mes (hallazgo 5 de la auditoría del 05/08).
+  //
+  // `periodoSel` se fijaba una sola vez al montar y `vigente` se recalcula en cada render: una
+  // pestaña abierta el 31/08 y retomada el 01/09 se quedaba parada en agosto. Y como el mes
+  // vigente lee de `cards` mientras los no vigentes leen de `card_periodos`, agosto aparecía
+  // ENTERO en pendiente, sin checklist ni historial. Peor que el susto: lo que se volviera a
+  // marcar se escribía en el período de agosto en vez de en las tarjetas, dejando dos verdades
+  // para el mismo mes.
+  //
+  // El ref guarda cuál era el vigente en el render anterior, que es el dato que no existía. La
+  // decisión de mover o no queda en `reencuadrarPeriodo`, testeada aparte: sólo se mueve a quien
+  // estaba parado en el mes que dejó de ser vigente, nunca a quien eligió mirar otro.
+  const vigenteAnteriorRef = useRef(vigente);
+  useEffect(() => {
+    const destino = reencuadrarPeriodo(periodoSel, vigenteAnteriorRef.current, vigente);
+    vigenteAnteriorRef.current = vigente;
+    if (destino) setPeriodoSel(destino);
+  }, [vigente, periodoSel]);
   const [viewing, setViewing] = useState<string>("");
   const [mode, setMode] = useState<Mode>("board");
   const [openCard, setOpenCard] = useState<Card | null>(null);
@@ -209,7 +229,6 @@ export default function App() {
   // está mirando (`view`), no sobre quien mira: el cierre es por persona y por mes.
   const periodoEstaCerrado = periodoCerrado(cierres, view, periodoSel);
   const cerradosDelTablero = periodosCerradosDe(cierres, view);
-  const vigente = periodoVigente(hoyISO);
   const cardsVista = cardsDelPeriodo(cards, periodos, periodoSel, vigente);
 
   // Aviso de reinicio mensual pendiente. Se muestra en el tablero de una persona y sólo
@@ -288,7 +307,16 @@ export default function App() {
         )}
         <ErrorBoundary key={view}>
         <Suspense fallback={<SkeletonVista />}>
-        {view === "__resumen" ? <Resumen cards={scopedCards} team={equipoVisible} activity={activity} onOpenCard={setOpenCard} onGoPerson={(id) => { setViewing(id); setMode("board"); }} onDelegar={esGestor ? () => setDelegar(true) : undefined} annos={annos} esGestor={esGestor} />
+        {/* Esperar a las tareas ANTES de dibujar números (hallazgo 7 de la auditoría del 05/08).
+            La guarda estaba en el anteúltimo lugar de esta cadena: sólo el tablero esperaba, y
+            todo lo de arriba se dibujaba con la lista vacía mientras la consulta seguía en
+            vuelo. Con conexión lenta eso mostraba "Salud del equipo 0%", "Vencidas 0" y "Nada
+            urgente para hoy" — un tablero que afirma con seguridad que no pasa nada. Un
+            esqueleto no miente; un cero, sí. Qué pantalla espera se decide en `esperaTareas`,
+            que tiene tests: repartida en catorce ramas de este ternario ya se demostró que
+            nadie la revisa. */}
+        {esperaTareas(view, mode, cardsLoading) ? <SkeletonVista />
+          : view === "__resumen" ? <Resumen cards={scopedCards} team={equipoVisible} activity={activity} onOpenCard={setOpenCard} onGoPerson={(id) => { setViewing(id); setMode("board"); }} onDelegar={esGestor ? () => setDelegar(true) : undefined} annos={annos} esGestor={esGestor} />
           : view === "__reporte" ? <Reporte cards={scopedCards} team={equipoVisible} activity={activity} />
           : view === "__tablon" ? <Tablon me={me} team={equipoVisible} onGoCalendario={() => setViewing("__calendario")} />
           : view === "__admin" ? <Admin team={fullTeam} cards={cards} me={me} meName={me.name} onOpenUser={setOpenUser} />

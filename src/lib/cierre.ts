@@ -1,6 +1,6 @@
 import type { Card } from "./types";
 import { marcaPlantilla } from "./plantilla";
-import { dueInfo } from "./metrics";
+import { dueInfo, entregadaATiempo } from "./metrics";
 
 // Cierre mensual (5S — Seiketsu: proceso estandarizado; Kaizen: se mide su avance).
 // Las tareas del cierre de un mes son las generadas desde la plantilla, ancladas por
@@ -28,7 +28,7 @@ export function cierreStats(closing: Card[]): CierreStats {
     return !!i && i.days < 0;
   }).length;
   const doneWithDue = closing.filter((c) => c.status === "term" && c.done_at && c.due_date);
-  const onTime = doneWithDue.filter((c) => new Date(c.done_at!) <= new Date(c.due_date + "T23:59:59")).length;
+  const onTime = doneWithDue.filter(entregadaATiempo).length;
   return {
     total, done, proc, pend, overdue,
     pct: total ? Math.round((done / total) * 100) : 0,

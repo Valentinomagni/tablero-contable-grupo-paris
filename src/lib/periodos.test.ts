@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { mesCerradoPor, mesesAbiertos, resumenEquipo, mesesConTrabajoDe, mesLegible, formatearMeses } from "./periodos";
 import type { CierrePeriodo, Profile, Card } from "./types";
 
@@ -163,5 +163,31 @@ describe("formatearMeses", () => {
   it("lista vacía o nula → string vacío", () => {
     expect(formatearMeses([])).toBe("");
     expect(formatearMeses(undefined as unknown as string[])).toBe("");
+  });
+});
+
+// ── El mes por defecto se calcula en hora argentina ─────────────────────────────
+//
+// HALLAZGO 9 DE LA AUDITORÍA DEL 05/08: `mesesAbiertos` usaba `new Date().toISOString()` para el
+// mes actual, que es el mes UTC. Entre las 21 y las 24 hora argentina del último día del mes,
+// UTC ya está en el mes siguiente y la ventana de seis meses se corre entera un lugar hacia
+// adelante: el mes más viejo que todavía estaba abierto desaparece del aviso un día antes.
+//
+// POR QUÉ NO SE HABÍA NOTADO: los diez tests de arriba pasan `hoy` explícito. El parámetro por
+// defecto —que es el que usa la app de verdad— no lo ejercitaba ninguno. Es el modo de falla
+// típico de un default: se prueba lo que se inyecta y se confía en lo que no.
+describe("mesesAbiertos — el mes por defecto", () => {
+  it("a las 22 del último día del mes todavía es el mes que termina, no el que viene", () => {
+    // 01/09 a las 01:00 UTC son las 22:00 del 31/08 en Argentina. La oficina está en agosto.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-01T01:00:00Z"));
+    try {
+      // Marzo está a seis meses de agosto, así que entra en la ventana. Con el mes UTC la
+      // ventana arrancaría en septiembre y marzo quedaría afuera: el aviso perdería el mes
+      // más viejo sin decir nada.
+      expect(mesesAbiertos([], "ana", ["2026-03"])).toEqual(["2026-03"]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

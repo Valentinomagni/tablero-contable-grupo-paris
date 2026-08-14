@@ -1,5 +1,5 @@
 import type { Card } from "./types";
-import { toARTDate } from "./metrics";
+import { toARTDate, entregadaATiempo } from "./metrics";
 
 // "Tu semana" — P4 de docs/PROPUESTAS-ADOPCION.md.
 //
@@ -79,14 +79,10 @@ export function esMomentoDeResumen(hoyISO: string): boolean {
   return false;
 }
 
-/** ¿Se cerró dentro de la fecha? Sin `due_date` no hay incumplimiento posible: cuenta como sí. */
-function cerroEnFecha(c: Card): boolean {
-  if (!c.due_date) return true;
-  if (!c.done_at) return false;
-  // `toARTDate` y no la zona del navegador: los vencimientos son días calendario argentinos,
-  // y una tarea cerrada a las 22 no puede pasar a contar como del día siguiente.
-  return toARTDate(c.done_at) <= c.due_date;
-}
+// Esta función vivía acá y era la ÚNICA de las cinco copias que estaba bien: usaba el día
+// calendario argentino en vez de la medianoche del navegador. Se mudó a `metrics.ts` como
+// `entregadaATiempo` para que las otras cuatro pudieran usarla en vez de repetirla mal
+// (hallazgo 8 de la auditoría del 05/08).
 
 /** Cards propias, no operativas, terminadas dentro del rango [desde, hasta] de días ISO. */
 function terminadasEntre(cards: Card[], ownerId: string, desde: string, hasta: string): Card[] {
@@ -116,7 +112,7 @@ function calcularRacha(cards: Card[], ownerId: string, lunes: Date): number {
     const fin = new Date(ini.getTime() + 6 * DIA_MS);
     const hechas = terminadasEntre(cards, ownerId, isoDia(ini), isoDia(fin));
     if (hechas.length === 0) continue; // semana vacía: ni suma ni corta
-    if (hechas.every(cerroEnFecha)) racha++;
+    if (hechas.every(entregadaATiempo)) racha++;
     else break;
   }
   return racha;
@@ -149,7 +145,7 @@ export function resumenDeSemana(cards: Card[], ownerId: string, hoyISO: string):
     hasta,
     titulos: hechas.slice(0, MAX_TITULOS).map((c) => c.title),
     total: hechas.length,
-    enFecha: hechas.filter(cerroEnFecha).length,
+    enFecha: hechas.filter(entregadaATiempo).length,
     // Una sola semana buena no es una racha; recién desde la segunda vale contarlo.
     racha: (() => { const r = calcularRacha(cards, ownerId, lunes); return r >= 2 ? r : 0; })(),
   };

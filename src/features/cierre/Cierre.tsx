@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { ChevronLeft, ChevronRight, CalendarPlus, CheckCircle2, Circle, Clock, AlarmClock, Link2, AlertTriangle, Lock, LockOpen, CalendarRange } from "lucide-react";
 import type { Card, Profile, AppSettings, Role } from "../../lib/types";
 import { dueInfo, toARTDate } from "../../lib/metrics";
+import { quedanRecurrentesSinReiniciar } from "../../lib/reinicio-mensual";
 import { isBlocked } from "../../lib/deps";
 import { supabase } from "../../lib/supabase";
 import { closingCards, cierreStats, ordenarCierre, shiftMonth, MESES } from "../../lib/cierre";
@@ -59,12 +60,16 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
   const prev = shiftMonth(ym.year, ym.month, -1);
   const mesPrevio = `${prev.year}-${String(prev.month).padStart(2, "0")}`;
   const archivadoMesPrevio = archives.some((a) => a.mes === mesPrevio);
-  const recurrentesMensuales = cards.filter(
-    (c) => c.recur_rule != null && (c.reset_policy == null || c.reset_policy === "mensual"),
-  );
-  const recurrentesOk = !recurrentesMensuales.some(
-    (c) => c.status === "term" && !!c.done_at && c.done_at.slice(0, 7) === mesPrevio,
-  );
+  // ESTE SEMÁFORO DABA VERDE JUSTO EN EL CASO DEL INCIDENTE DEL 04/08 (hallazgo 2 de la
+  // auditoría del 05/08). Tenía dos defectos en seis líneas: filtraba sólo por `recur_rule`
+  // —dejando afuera las que el equipo marca desde el modal, que quedan con `recurring: true` y
+  // sin regla— y comparaba el mes en UTC, así que una tarea cerrada el 31/07 a las 21:30 se
+  // leía como de agosto.
+  //
+  // El criterio ahora está una sola vez, en `reinicio-mensual.ts`, escrito para calcar el
+  // `where` de la función de la base. Tenerlo dos veces fue exactamente lo que permitió que
+  // divergieran sin que nadie se enterara.
+  const recurrentesOk = !quedanRecurrentesSinReiniciar(cards, mesPrevio);
   const semaforo = estadoCierre({
     checklist: closingMio.length ? statsMios : null,
     archivadoMesPrevio,

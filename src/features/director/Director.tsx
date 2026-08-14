@@ -8,7 +8,7 @@
 // COLOR: el punto del semáforo es el ÚNICO color de la pantalla. Acá el color comunica estado.
 // ENCUADRE: los titulares hablan de tareas y del proceso, nunca de personas.
 import type { Card, Profile, Announcement } from "../../lib/types";
-import { dueInfo } from "../../lib/metrics";
+import { dueInfo, toARTDate } from "../../lib/metrics";
 import { diasHasta, proximosVencimientos } from "../../lib/vencimientos";
 import { previsibilidad } from "../../lib/previsibilidad";
 import { concentracion as concentracionPorCategoria } from "../../lib/busfactor";
@@ -63,7 +63,10 @@ export function Director({ cards, team, annos }: { cards: Card[]; team: Profile[
   // Se calculan UNA sola vez y se reusan. Antes se llamaba dos veces a cada una con los
   // mismos argumentos (una para el panel, otra para el motor de recomendaciones): las dos
   // recorren listas completas, así que era trabajo repetido además de ruido para leer.
-  const mes = now.toISOString().slice(0, 7);
+  // El mes en hora ARGENTINA (hallazgo 9 de la auditoría del 05/08). Con `toISOString()` el mes
+  // es el de UTC: entre las 21 y las 24 del último día del mes, previsibilidad y flujo se
+  // calculaban sobre el mes siguiente —que está vacío— y los dos paneles salían en cero.
+  const mes = toARTDate(now.toISOString()).slice(0, 7);
   const concentraciones = concentracionPorCategoria(archives, team);
   const prevision = previsibilidad(norm, mes);
 

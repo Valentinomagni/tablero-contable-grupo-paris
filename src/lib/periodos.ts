@@ -1,6 +1,7 @@
 import type { CierrePeriodo, Profile, Card } from "./types";
 import { marcaPlantilla } from "./plantilla";
 import { MESES } from "./cierre";
+import { toARTDate } from "./metrics";
 
 // Cierre mensual POR PERSONA (spec 28, task 6).
 //
@@ -42,7 +43,10 @@ export function mesesAbiertos(
   periodos: CierrePeriodo[],
   ownerId: string,
   mesesConTrabajo: string[],
-  mesActual: string = new Date().toISOString().slice(0, 7),
+  // El mes actual en hora ARGENTINA, no en UTC (hallazgo 9 de la auditoría del 05/08). Entre las
+  // 21 y las 24 del último día del mes, UTC ya está en el mes siguiente: la ventana de seis meses
+  // se corría entera y el mes más viejo que seguía abierto desaparecía del aviso un día antes.
+  mesActual: string = toARTDate(new Date().toISOString()).slice(0, 7),
 ): string[] {
   if (!ownerId || !Array.isArray(mesesConTrabajo)) return [];
   const ventana = ultimosSeisMeses(mesActual);

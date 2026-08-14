@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { dueInfo, kpiPct, kpiClass, toARTDate, saludScore, userMetrics30d, wow, onTimeAdherence } from "./metrics";
+import { dueInfo, kpiPct, kpiClass, toARTDate, saludScore, userMetrics30d, wow, onTimeAdherence, entregadaATiempo } from "./metrics";
 import type { Card, Objective, ActivityLog } from "./types";
 
 describe("kpiPct", () => {
@@ -153,5 +153,52 @@ describe("dueInfo", () => {
       expect(dueInfo({ due_date: "2026-08-03" })?.days).toBe(0));
     it("mañana argentino sigue siendo 1 día", () =>
       expect(dueInfo({ due_date: "2026-08-04" })?.days).toBe(1));
+  });
+});
+
+// ── Una sola definición de "entregado a tiempo" ─────────────────────────────────
+//
+// HALLAZGO 8 DE LA AUDITORÍA DEL 05/08. Había DOS definiciones conviviendo:
+//
+//   `new Date(c.done_at) <= new Date(c.due_date + "T23:59:59")`   ← metrics, puntualidad, cierre
+//   `toARTDate(c.done_at) <= c.due_date`                          ← tu-semana
+//
+// La primera arma la medianoche en la zona horaria DEL NAVEGADOR. En una máquina en Argentina
+// da casi lo mismo; en una configurada en UTC —o en el runner de los tests— las 23:59:59 son
+// las 20:59:59 argentinas, así que una tarea cerrada a las 21:30 del día del vencimiento pasa
+// a contar como tarde.
+//
+// LO QUE SE VEÍA, en el mismo bloque de indicadores del reporte: "Cerradas (30 días): 42" y
+// "Puntualidad: 30 de 45 con vencimiento". Cuarenta y cinco con vencimiento sobre cuarenta y
+// dos cerradas es imposible de explicar, y el PDF lo dejaba escrito.
+describe("entregadaATiempo", () => {
+  it("cerrada el mismo día del vencimiento, a la noche, está a tiempo", () => {
+    // 2026-08-14 a las 21:30 ART = 2026-08-15T00:30Z. Con la cuenta vieja corrida por zona
+    // horaria, esto figuraba tarde. Es el caso que rompía la coherencia del reporte.
+    expect(entregadaATiempo({ done_at: "2026-08-15T00:30:00Z", due_date: "2026-08-14" })).toBe(true);
+  });
+
+  it("cerrada al día siguiente está tarde", () => {
+    expect(entregadaATiempo({ done_at: "2026-08-16T12:00:00Z", due_date: "2026-08-14" })).toBe(false);
+  });
+
+  it("sin vencimiento no hay incumplimiento posible", () => {
+    expect(entregadaATiempo({ done_at: "2026-08-16T12:00:00Z", due_date: null })).toBe(true);
+  });
+
+  it("sin cerrar no está a tiempo", () => {
+    expect(entregadaATiempo({ done_at: null, due_date: "2026-08-14" })).toBe(false);
+  });
+
+  it("no depende de la zona horaria de la máquina", () => {
+    // El mismo instante, evaluado igual corra donde corra. `toARTDate` fija la zona; construir
+    // una fecha con "T23:59:59" la deja al azar del equipo que abre la app.
+    const tz = process.env.TZ;
+    try {
+      process.env.TZ = "UTC";
+      expect(entregadaATiempo({ done_at: "2026-08-15T00:30:00Z", due_date: "2026-08-14" })).toBe(true);
+    } finally {
+      process.env.TZ = tz;
+    }
   });
 });
