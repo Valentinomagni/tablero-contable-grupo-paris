@@ -99,6 +99,14 @@ export interface Consulta {
   id: string; autor: string; tipo: "consulta" | "sugerencia" | "error";
   texto: string; estado: "nueva" | "leida" | "archivada";
   respuesta: string | null; created_at: string; respondida_at: string | null;
+  /**
+   * Ruta de la captura dentro del bucket privado `consultas` (migración 52). `null` si no
+   * mandó ninguna.
+   *
+   * El bucket NO es público: la imagen sólo se abre con una URL firmada, y la policy la
+   * concede al autor y a la cuenta de administración. El jefe no.
+   */
+  adjunto_path?: string | null;
 }
 export interface CierrePeriodo { id: string; owner: string; mes: string; cerrado_at: string; nota: string | null; }
 export interface Objective {

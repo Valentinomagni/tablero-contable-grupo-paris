@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { CheckCheck, Archive, Reply } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CheckCheck, Archive, Reply, ImageOff } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
@@ -10,6 +10,51 @@ import { esTablaInexistente } from "../../hooks/usePeriodos";
 import { ordenarConsultas, TIPO_LBL, ESTADO_LBL } from "../../lib/consultas";
 import type { Consulta } from "../../lib/types";
 import { mensajeUsuario } from "../../lib/fallas";
+
+/**
+ * La captura que mandó quien reportó (migración 52).
+ *
+ * URL FIRMADA Y NO PÚBLICA, y ése es el punto de todo esto. El bucket `consultas` es privado
+ * porque es el canal por el que alguien reporta un problema contando con que su jefe no lo lee.
+ * Una captura muestra más de lo que el texto dice —la pestaña de al lado, el archivo abierto,
+ * una notificación que entró justo—, así que la imagen sólo se abre con un enlace que dura un
+ * minuto y que la base concede al autor y a esta cuenta.
+ *
+ * Si falla se dice, no se deja el hueco: una miniatura rota en un reporte se lee como "no mandó
+ * nada", y ahí el reporte queda a medias sin que nadie sepa por qué.
+ */
+function CapturaConsulta({ ruta }: { ruta: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [falló, setFalló] = useState(false);
+
+  useEffect(() => {
+    let vivo = true;
+    (async () => {
+      const { data, error } = await supabase.storage.from("consultas").createSignedUrl(ruta, 60);
+      if (!vivo) return;
+      if (error || !data?.signedUrl) { setFalló(true); return; }
+      setUrl(data.signedUrl);
+    })();
+    // El enlace dura 60 segundos. `vivo` evita escribir estado sobre un componente
+    // desmontado cuando se cambia de filtro mientras la firma está en camino.
+    return () => { vivo = false; };
+  }, [ruta]);
+
+  if (falló) {
+    return (
+      <p className="flex items-center gap-1.5 text-ink2 text-xs mt-2 m-0">
+        <ImageOff size={13} /> Mandó una captura pero no se pudo abrir. Probá recargar.
+      </p>
+    );
+  }
+  if (!url) return <div className="w-32 h-20 rounded-md bg-surface2 border border-line mt-2 animate-pulse" />;
+  return (
+    <a href={url} target="_blank" rel="noreferrer" className="inline-block mt-2">
+      <img src={url} alt="Captura enviada con la consulta"
+        className="w-32 h-20 object-cover rounded-md border border-line hover:border-accent transition" />
+    </a>
+  );
+}
 
 export function BandejaConsultas({ team }: { team: { id: string; name: string }[] }) {
   const qc = useQueryClient();
@@ -67,6 +112,10 @@ export function BandejaConsultas({ team }: { team: { id: string; name: string }[
                 <span className="text-ink2 text-2xs ml-auto">{ESTADO_LBL[c.estado]}</span>
               </div>
               <p className="m-0 text-ink">{c.texto}</p>
+              {/* La captura, si la mandó (migración 52). Va DEBAJO del texto y no arriba: el
+                  texto dice qué pasó, la imagen lo muestra. Al revés obligaría a interpretar la
+                  pantalla antes de saber qué hay que mirar en ella. */}
+              {c.adjunto_path && <CapturaConsulta ruta={c.adjunto_path} />}
               {c.respuesta && (
                 <div className="mt-2 pt-2 border-t border-line/60">
                   <span className="text-ink2 text-2xs uppercase tracking-wide">Respuesta</span>

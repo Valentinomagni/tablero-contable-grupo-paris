@@ -3,6 +3,14 @@
 // nueva arriba de todo y la versión se actualiza sola (ver docs/RELEASE.md).
 export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] = [
   {
+    version: "2.15.0",
+    fecha: "2026-08-14",
+    cambios: [
+      "Al reportar un problema por Consultas ahora podés adjuntar una captura: sacala y pegala con Ctrl+V, sin tener que guardarla como archivo primero. La ve quien administra el sistema y vos; el resto del equipo no.",
+      "El trabajo que adelantás de un mes que todavía no llegó ya no desaparece cuando ese mes arranca.",
+    ],
+  },
+  {
     version: "2.14.0",
     fecha: "2026-08-14",
     cambios: [
