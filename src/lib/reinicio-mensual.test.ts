@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { mesAnterior, reinicioPendiente, seReiniciaCadaMes, quedanRecurrentesSinReiniciar, type Reinicio } from "./reinicio-mensual";
+import {
+  mesAnterior, reinicioPendiente, seReiniciaCadaMes, quedanRecurrentesSinReiniciar,
+  yaEstabaCerrado, textoYaCerrado, MARCA_YA_CERRADO, type Reinicio,
+} from "./reinicio-mensual";
 import type { Card } from "./types";
 
 // Fila mínima de `reinicios_mensuales` para los casos de abajo. Los contadores no
@@ -125,5 +128,47 @@ describe("¿quedaron recurrentes sin reiniciar?", () => {
   it("sin datos no rompe", () => {
     expect(quedanRecurrentesSinReiniciar([], "2026-07")).toBe(false);
     expect(quedanRecurrentesSinReiniciar(undefined as unknown as Card[], "2026-07")).toBe(false);
+  });
+});
+
+// ── "Ese mes ya se cerró": la respuesta que protege el archivo ──────────────────
+//
+// Hallazgo 1 de la auditoría del 05/08. Volver a apretar "Reiniciar mes" DESTRUÍA el archivo:
+// la función borraba la foto del mes y la rehacía desde `cards`, que el paso siguiente de esa
+// misma función ya había puesto en pendiente. Resultado: el mes quedaba archivado con todo sin
+// hacer, o sea 0% de cumplimiento para siempre, en el historial y en todo lo que lo promedia.
+//
+// La migración 50 le pone una guarda a `reset_mes_manual`: si ya hay fila en
+// `reinicios_mensuales` para ese mes, no hace NADA y contesta con la marca de abajo. Estas dos
+// funciones son el lado del front: reconocer esa respuesta y contarla en castellano.
+describe("la base contestó que el mes ya estaba cerrado", () => {
+  it("reconoce la respuesta marcada", () => {
+    expect(yaEstabaCerrado(`${MARCA_YA_CERRADO} el mes 2026-07 se cerró el 01/08/2026 03:05 (cron).`)).toBe(true);
+  });
+
+  it("una corrida normal NO se confunde con un mes ya cerrado", () => {
+    expect(yaEstabaCerrado("mes 2026-07: 84 archivadas, 61 tareas reiniciadas")).toBe(false);
+  });
+
+  // La base puede NO tener todavía la migración 50: ahí contesta el texto viejo y el botón
+  // tiene que seguir comportándose como antes, no romper.
+  it("con cualquier otra cosa devuelve false en vez de romper", () => {
+    for (const v of [null, undefined, 42, {}, [], true, ""]) {
+      expect(yaEstabaCerrado(v)).toBe(false);
+    }
+  });
+
+  // La marca es un PREFIJO, no una palabra suelta: si apareciera en el medio de un texto de la
+  // base no significa que el mes esté cerrado, y tomarlo por tal dejaría al jefe creyendo que
+  // el reinicio ya estaba hecho cuando no lo está.
+  it("la marca sólo cuenta al principio", () => {
+    expect(yaEstabaCerrado(`mes 2026-07 archivado, ${MARCA_YA_CERRADO} nada`)).toBe(false);
+  });
+
+  it("el texto que ve la persona nombra el mes y no arrastra nada de la base", () => {
+    const texto = textoYaCerrado("Julio 2026");
+    expect(texto).toContain("julio 2026");
+    expect(texto).not.toContain(MARCA_YA_CERRADO);
+    expect(texto).not.toMatch(/reinicios_mensuales|cards_archive|select|insert/i);
   });
 });

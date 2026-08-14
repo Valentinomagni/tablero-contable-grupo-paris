@@ -117,3 +117,60 @@ export function quedanRecurrentesSinReiniciar(cards: Card[], mesPrevio: string):
       toARTDate(c.done_at).slice(0, 7) === mesPrevio,
   );
 }
+
+// ============================================================
+// "ESE MES YA SE CERRÓ": LA RESPUESTA QUE PROTEGE EL ARCHIVO
+//
+// HALLAZGO 1 DE LA AUDITORÍA DEL 05/08, Y ERA IRREVERSIBLE. Volver a apretar "Reiniciar mes"
+// DESTRUÍA el archivo del mes. `reset_mes_manual` borraba la foto de `cards_archive` y la
+// rehacía desde `cards`… que el paso siguiente de esa misma función ya había puesto todo en
+// pendiente. O sea: la primera corrida guardaba la foto buena, y la segunda la reemplazaba por
+// la foto ya reiniciada. El mes quedaba archivado con TODO sin hacer — 0% de cumplimiento para
+// siempre, en el historial, en el promedio, en la comparativa entre meses y en el bus factor.
+// No hay forma de recuperarlo: `cards` ya no tiene los `done_at` que se borraron.
+//
+// Y era un escenario probable, no rebuscado: esta tabla arranca vacía a propósito (ver arriba),
+// así que el aviso "el mes pasado no se reinició" aparece igual aunque el cron haya archivado
+// bien. Quien lo ve aprieta el botón, que es exactamente lo que el cartel le sugiere hacer.
+//
+// LA MIGRACIÓN 50 le pone una guarda a la función: si ya hay fila en `reinicios_mensuales` para
+// ese mes, no toca NADA y contesta con la marca de abajo. Esto es el lado del front: reconocer
+// esa respuesta y decirle a la persona qué pasó, en castellano.
+// ============================================================
+
+/**
+ * Prefijo con el que `reset_mes_manual` (migración 50) avisa "ese mes ya estaba cerrado".
+ *
+ * POR QUÉ UNA MARCA Y NO EL TEXTO. La función no lanza una excepción a propósito: la misma
+ * guarda la usa el cron, y un cron que aborta con error para decir "no había nada que hacer"
+ * ensucia el registro y termina ignorándose. Como entonces la respuesta viaja por el camino del
+ * éxito, hace falta algo que el front pueda MIRAR sin leer prosa. Es un código, no un mensaje:
+ * lo que ve la persona lo escribe `textoYaCerrado`.
+ */
+export const MARCA_YA_CERRADO = "ya_cerrado:";
+
+/**
+ * ¿La base contestó que ese mes ya estaba cerrado y no hizo nada?
+ *
+ * DEFENSIVA A PROPÓSITO: si la base todavía no tiene la migración 50 contesta el texto viejo, y
+ * ahí esto da `false` y el botón se comporta igual que antes. Nada de lo que llegue por acá
+ * puede tirar la pantalla abajo.
+ */
+export function yaEstabaCerrado(respuesta: unknown): boolean {
+  return typeof respuesta === "string" && respuesta.startsWith(MARCA_YA_CERRADO);
+}
+
+/**
+ * Lo que se le muestra a la persona cuando el mes ya estaba cerrado.
+ *
+ * ENCUADRE. No hizo nada mal: apretó el botón que el cartel le ofrecía. El texto describe el
+ * estado del sistema y —esto es lo importante— dice que el archivo quedó intacto, que es
+ * justamente la pregunta que uno se hace cuando un botón contesta "no hice nada".
+ *
+ * `etiqueta` viene de `periodoLabel`: "Julio 2026". Se pasa a minúscula porque entra en el medio
+ * de una oración.
+ */
+export function textoYaCerrado(etiqueta: string): string {
+  return `El cierre de ${String(etiqueta ?? "").toLowerCase()} ya estaba hecho, así que no se ` +
+    `tocó nada. El archivo de ese mes queda como estaba.`;
+}

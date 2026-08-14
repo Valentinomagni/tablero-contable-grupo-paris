@@ -3,8 +3,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { RotateCcw } from "lucide-react";
 import { supabase } from "../../lib/supabase";
-import { mensajeUsuario } from "../../lib/fallas";
+import { mensajeUsuario, FallaDeUsuario } from "../../lib/fallas";
 import { periodoLabel } from "../../lib/periodo-instancias";
+import { yaEstabaCerrado, textoYaCerrado } from "../../lib/reinicio-mensual";
 
 /**
  * AVISO: el mes pasado no se reinició.
@@ -37,6 +38,22 @@ export function AvisoReinicio({ mes, esJefe }: { mes: string; esJefe: boolean })
     try {
       const { data, error } = await supabase.rpc("reset_mes_manual", { mes_a_cerrar: mes });
       if (error) throw error;
+      // EL MES YA ESTABA CERRADO Y LA BASE NO TOCÓ NADA (guarda de la migración 50).
+      //
+      // Este cartel aparece aunque el cron haya cerrado el mes bien, porque `reinicios_mensuales`
+      // arranca vacía a propósito. Hasta la 50, apretar el botón en esa situación DESTRUÍA el
+      // archivo del mes y lo dejaba en 0% para siempre. Ahora la base se planta, y acá hay que
+      // contarlo: un botón que contesta "listo" sin haber hecho nada enseña a no creerle.
+      //
+      // Se recarga el registro igual —y sólo eso, porque las tarjetas no cambiaron— para que el
+      // cartel desaparezca: si la base dice que el mes está cerrado, el aviso está de más.
+      if (yaEstabaCerrado(data)) {
+        qc.invalidateQueries({ queryKey: ["reinicios"] });
+        // Se lanza en vez de mostrarse acá para que salga por el MISMO camino que cualquier otra
+        // falla: `mensajeUsuario`. `FallaDeUsuario` es la marca de "este texto ya está escrito
+        // para una persona", así que pasa entero y el texto crudo de la base no llega nunca.
+        throw new FallaDeUsuario(textoYaCerrado(etiqueta));
+      }
       // Se invalidan las tarjetas además del registro: el reinicio les cambió el estado a
       // todas, y dejar la lista vieja en pantalla haría parecer que el botón no hizo nada.
       qc.invalidateQueries({ queryKey: ["cards"] });
