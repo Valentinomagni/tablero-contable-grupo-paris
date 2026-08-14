@@ -246,16 +246,42 @@ Antes de todo push a `main` que agregue funcionalidad visible: agregar una entra
 
 ## 9. Publicar (y el límite que no se cruza)
 
-`git push` **falla**: no hay credencial en un shell no interactivo. Publicar se hace con
-**GitHub Desktop**, controlando la pantalla del usuario.
+**`git push` FUNCIONA desde acá.** Comprobado el 14/08/2026:
 
-**Hay que pedirle permiso ANTES de cada vez que se usa su computadora**, no una vez por sesión.
-Está trabajando y le interrumpe. El diálogo del sistema que pide acceso **no cuenta** como
-haber preguntado. Nunca escribir sus credenciales.
+```sh
+git push origin main    # → 3ee80ea..3a1583e  main -> main
+```
 
-Dos trampas ya conocidas al publicar: puede estar la sesión de GitHub equivocada, y GitHub
-Desktop puede estar apuntando a **otro clon** del repo (`Documents\GitHub\...` en vez de la
-carpeta del Escritorio).
+**Esta sección decía lo contrario, y es la SEGUNDA vez que pasa lo mismo en este archivo.**
+Decía *"`git push` falla: no hay credencial en un shell no interactivo"*, así que durante
+semanas cada publicación exigió tomar la pantalla del usuario con GitHub Desktop —
+interrumpiéndole el trabajo— para hacer algo que se resolvía con un comando.
+
+El costo real fue peor que el tiempo: como publicar era caro, se publicaba poco. Se llegó a
+**30 commits sin publicar**, incluido el arreglo de un defecto de seguridad. El dueño abrió la
+app, vio la versión 2.13 y creyó que nada de lo hecho funcionaba. Nada estaba roto: estaba sin
+publicar.
+
+Es idéntico al caso de npm de la §1 — una afirmación cierta en algún momento, escrita sin el
+comando al lado, que nadie volvió a probar porque ya estaba escrita. **Cuando una regla de este
+archivo te obligue a un camino caro, probá primero el camino barato.** Cuesta diez segundos y
+ya evitó dos meses de trabajo inútil entre las dos veces.
+
+**Cómo publicar, entonces:** `git push origin main`. El merge a `main` dispara el deploy de
+producción en Cloudflare. Antes de publicar, los cuatro comandos en 0 y la entrada del
+`CHANGELOG` en `src/lib/version.ts` (ver §8).
+
+**GitHub Desktop sigue siendo el plan B** si algún día la credencial se vence. Sus dos trampas
+conocidas: puede estar la sesión de GitHub equivocada, y puede estar apuntando a **otro clon**
+del repo (`Documents\GitHub\...` en vez de la carpeta del Escritorio).
+
+**El límite que no se cruza, y que NO cambió:** hay que pedirle permiso ANTES de cada vez que se
+usa su computadora, no una vez por sesión. Está trabajando y le interrumpe. El diálogo del
+sistema que pide acceso **no cuenta** como haber preguntado. Nunca escribir sus credenciales.
+
+**Después de publicar, la app no cambia sola en la pantalla de nadie.** Es una PWA: el navegador
+sirve la versión cacheada hasta que se cierra y se vuelve a abrir. Si alguien dice "no veo los
+cambios", esa es la primera pregunta, no la última.
 
 ## 10. Estado y pendientes
 

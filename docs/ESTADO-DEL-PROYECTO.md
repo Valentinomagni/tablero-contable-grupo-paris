@@ -13,7 +13,7 @@ Los números de acá se contaron de nuevo hoy; al lado de cada uno está el coma
 |---|---|---|
 | Tests | **1361** en 116 archivos | `npx vitest run` |
 | Tipos, lint, build | **0, 0, 0** | `npx tsc -b` · `npx oxlint` · `npx vite build` |
-| Commits sin publicar | **28** | `git rev-list --count origin/main..HEAD` |
+| Commits sin publicar | **0** — todo en producción | `git rev-list --count origin/main..HEAD` |
 | Migraciones escritas | hasta la **50** | `ls db/migraciones/` |
 | Documentos vigentes | 24 | `ls docs/*.md` |
 | Agentes de revisión | 3 | `ls .claude/agents/` |
@@ -82,10 +82,20 @@ que cierra: hoy el jefe no puede darse el rol de administración, pero sí puede
 clave a esa cuenta y entrar como ella. El canal de Consultas existe para que alguien pueda
 reportar algo contando con que su jefe no lo lee.
 
-### 3.3 Publicar los 28 commits
+### 3.3 ~~Publicar los commits~~ — HECHO el 14/08/2026
 
-Con GitHub Desktop, cuando me digas. Dos trampas ya conocidas: la sesión de GitHub equivocada, y
-GitHub Desktop apuntando a otro clon del repo.
+Los 30 commits están publicados. `git push origin main` → `3ee80ea..3a1583e`.
+
+**Y esto dejó de ser tarea tuya.** Decía "con GitHub Desktop, cuando me digas", porque
+`CLAUDE.md` afirmaba que `git push` no funcionaba desde acá. Es falso: funciona. La afirmación
+era vieja, estaba escrita sin el comando al lado, y nadie la volvió a probar.
+
+Lo caro no fue el tiempo de cada publicación, sino la consecuencia: como publicar costaba
+interrumpirte, se publicaba poco, y se acumularon 30 commits —incluido el arreglo de un defecto
+de seguridad— mientras vos abrías la app, veías la 2.13 y creías que nada funcionaba.
+
+**Si después de publicar no ves los cambios**, la primera pregunta es la caché de la PWA:
+cerrar y volver a abrir la app fuerza la última versión. No es la última pregunta, es la primera.
 
 ### 3.4 Mirar la app
 
