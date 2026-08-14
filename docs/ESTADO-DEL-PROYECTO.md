@@ -1,203 +1,180 @@
-# Estado del proyecto — al 04/08/2026
+# Estado del proyecto — al 14/08/2026
 
-Documento de situación. Separa lo que depende de mí (código) de lo que depende de vos
-(decisiones y acciones externas). Honesto y sin adornos.
+Fuente de verdad de qué falta. Separado entre **lo que depende de mí** y **lo que depende de
+vos**, porque mezclarlo fue lo que hizo ilegible la versión anterior de este documento.
+
+Los números de acá se contaron de nuevo hoy; al lado de cada uno está el comando.
 
 ---
 
 ## 1. Dónde estamos
 
-- **Tablero Contable v2.13.0**, con **1198 pruebas automáticas** en 107 archivos, verdes,
-  TypeScript sin errores, lint sin errores y build OK.
-- **Sistema visual documentado** en `docs/SISTEMA-VISUAL.md`, con dos tests guardianes que
-  impiden que se erosione.
-- 37 migraciones de base de datos escritas, todas aplicadas.
-- Repositorio en GitHub con CI (lint + tests + build + e2e en cada push) y **mantenimiento
-  automático** semanal (Dependabot + auditoría de seguridad y de código sin uso).
+| Qué | Cuánto | Cómo se cuenta |
+|---|---|---|
+| Tests | **1361** en 116 archivos | `npx vitest run` |
+| Tipos, lint, build | **0, 0, 0** | `npx tsc -b` · `npx oxlint` · `npx vite build` |
+| Commits sin publicar | **28** | `git rev-list --count origin/main..HEAD` |
+| Migraciones escritas | hasta la **50** | `ls db/migraciones/` |
+| Documentos vigentes | 24 | `ls docs/*.md` |
+| Agentes de revisión | 3 | `ls .claude/agents/` |
 
-## 2. ⚠️ Lo más importante: hay trabajo terminado que todavía NO ves
+**La etapa que se cierra hoy** son dos cosas juntas: los diez reportes del equipo (la minuta de
+Yani, Mathi, Enzo, Patricia y Valentino) y la auditoría del 05/08, que estaba entera abierta.
 
-Esto es lo único urgente del documento.
+---
 
-### 2.1 Commits sin publicar: 5
+## 2. Lo que se cerró en esta tanda
 
-Del 05 al 07/08/2026. Se publican con GitHub Desktop y quedamos en que eso lo hago sólo cuando
-me avisás.
+### Los reportes del equipo
 
-Contienen: los arreglos de la auditoría (el chip de migraciones ciego, los cuatro agujeros de
-permisos, los tres podios), las migraciones 38 y 39, el plan de salto de calidad y la matriz de
-cobertura de revisión.
+| Quién | Qué reportó | Estado |
+|---|---|---|
+| Yani, Mathi, Enzo | La tarea de los jueves no volvía | cerrado — el motor estaba escrito y el cron apuntaba a una versión vieja |
+| Mathi | La tarea del 14 aparecía el 13 | cerrado — no estaba mal la fecha: es prioridad alta y Mi día muestra las urgentes |
+| Patricia | Una tarea por cada día hábil, lista interminable | cerrado — una tarjeta con "6 de 21" y los días adentro |
+| Patricia | Transferencias por PDFs sueltos, sin detectar repetidas | cerrado — registro con aviso de duplicado (migración 49) |
+| Valentino | Fines de semana y feriados contaban como demora | cerrado — días hábiles + pantalla de feriados (migración 48) |
+| Valentino | Scroll vertical interminable | cerrado — columnas plegables |
+| Mathi | No se puede adjuntar una captura al reportar | **abierto** — ver sección 4 |
 
-### 2.2 Migraciones: falta una chica, la 38
+### La auditoría del 05/08
 
-Las 37 anteriores están aplicadas — la 37 la corriste el 04/08/2026. Eso desbloquea períodos,
-administrador del sistema, checklist por día, el cierre de la escalada de privilegios (35) y
-los permisos de encargado (36).
+Estaba **entera abierta** nueve días después de escribirse. Detalle y evidencia por hallazgo en
+`docs/AUDITORIA-2026-08-05.md`, que ahora tiene tabla de estado — no la tenía, y ésa es
+exactamente la razón por la que nadie notó que seguía abierta.
 
-**Apareció una nueva, la 38, y sale de una auditoría del 05/08/2026.** No toca ningún dato:
-escribe tres renglones en el índice de migraciones. Motivo, en criollo:
+Cerrados: 2, 3, 5, 6, 7, 8, el reinicio que destruía el archivo (1), y siete de los chicos del
+punto 9.
 
-El chip de Administración que dice "Base de datos al día" venía revisando **sólo hasta la
-migración 28**. De la 29 a la 37 no las miraba, así que mostraba el escudo verde sin haberlas
-revisado — incluida la 35, que es la que cierra la escalada de privilegios. Un indicador que
-sólo sabe decir que sí no distingue entre "está todo bien" y "no miré".
+**Abierto: el hallazgo 4**, que necesita una decisión tuya. Sección 5.
 
-Al arreglarlo apareció lo segundo: a los archivos de la **35 y la 36 les faltaba la línea que
-las anota** en el índice. Están aplicadas, pero el índice no se enteró. Sin la 38, el chip te
-iba a decir "Faltan migraciones: 35, 36" para siempre y volver a correrlas no lo arreglaba.
+---
 
-### 2.3 Y hay una segunda, la 39, que sí arregla cosas que se notan
+## 3. Pendiente TUYO, en orden de urgencia
 
-`migracion-39-cerrar-cuatro-agujeros.sql`. Cierra cuatro agujeros que encontró la auditoría del
-05/08. El que más se nota en el día a día es el segundo:
-
-1. El jefe podía darse a sí mismo acceso al canal de consultas del equipo.
-2. **Un empleado no podía avisarle nada a nadie.** Delegás una tarea, la tarjeta aparece en el
-   tablero del otro, y la notificación la rechaza la base. **Hoy hay notificaciones que no
-   llegan**, y nunca se supo porque el error se descartaba solo.
-3. Cualquiera podía publicar un aviso anónimo para toda la empresa.
-4. Cualquiera podía plantar una tarea protegida en el tablero de otro.
-
-**Qué vas a ver hasta que corras las dos**: el chip en ámbar diciendo que faltan la 35, 36, 38 y
-39. Es esperable y no significa que la base esté mal — la 35 y la 36 están aplicadas, lo que
-falta es el registro. Corré las dos en orden y queda verde:
+### 3.1 Correr dos migraciones en Supabase
 
 ```
-migracion-38-registrar-35-36.sql
-migracion-39-cerrar-cuatro-agujeros.sql
+db/migraciones/migracion-49-transferencias.sql
+db/migraciones/migracion-50-reinicio-idempotente.sql
 ```
 
-**Lo otro del lado de Supabase, que no es una migración**: desplegar la Edge Function
-`blanquear-clave`. Ver el punto 1 de la sección 5.
+SQL Editor, completas. Las dos son idempotentes: se pueden correr dos veces sin romper nada, y
+traen al final las consultas para comprobar que quedaron bien.
 
-Verificación rápida, por si querés confirmarlo:
+**La 50 es la urgente.** Hasta que se corra, volver a apretar "Reiniciar mes" **destruye el
+archivo del mes**: lo deja guardado con todo en pendiente, o sea 0% de cumplimiento para siempre
+en el historial, el promedio y la comparativa. No se puede recuperar.
 
-```sql
-select name, email, admin_sistema from public.profiles where admin_sistema = true;
-select tablename, policyname from pg_policies
- where tablename in ('task_occurrences','activity_log') order by tablename;
+Para saber si faltan, sin preguntarme:
+
+```bash
+npm run migraciones
 ```
 
-La primera tiene que devolver sólo las cuentas de administración que pusiste vos. La segunda,
-exactamente dos filas: "occ del equipo" y "activity del equipo".
+### 3.2 Redesplegar la Edge Function `blanquear-clave`
 
-## 3. Lo que se hizo y está esperando que lo veas
+Supabase Dashboard → Edge Functions → **blanquear-clave** → Edit → reemplazar todo con
+`edge-functions/blanquear-clave.ts` → Deploy.
 
-| Qué | Estado |
-|---|---|
-| PDF del Reporte (vista de impresión dedicada) | Hecho — **verificación visual tuya pendiente** |
-| Períodos: adelantar meses, cierre con candado, checklist diario | Hecho y habilitado |
-| Usuario fantasma + consultas fuera del jefe | Hecho y habilitado |
-| Pantalla vacía al entrar | Corregido |
-| Agrupar y ordenar por columna | Hecho |
-| Modo Director (5 señales + recomendaciones + confianza del dato) | Hecho |
-| Flujo mensual por persona y mapa de calor | Hecho |
-| Mi día: retomar, tarea estancada, cerrar de un toque, Tu semana | Hecho |
-| Mantenimiento automático (Dependabot + auditoría) | Hecho |
-| Instructivo del equipo (14 diapositivas) | Hecho |
-| Bandeja de consultas leíble fuera de la app (`node scripts/consultas.mjs`) | Hecho y habilitado |
-| Recuperación de fallas (versión nueva, sin conexión, permisos) | Hecho |
-| Sistema visual: escala tipográfica, foco, movimiento, esqueletos | Hecho — **mirá el tablero y el reporte**, ver 7 |
-| Saneado de filas en el borde de Supabase | Hecho |
-| Blanqueo de contraseña por el jefe | Hecho — **falta desplegar la Edge Function** |
-| Mensajes de login que explican qué pasó | Hecho |
-| Historial de una tarea acotado al período que se está mirando | Hecho |
-| Al crear una tarea, elegir si es de una sola vez o si se repite (por defecto, una sola vez) | Hecho |
-| "En qué anda el equipo": qué tiene abierto cada persona y desde cuándo, para jefe y encargado | Hecho |
-| Criterio de orden configurable (vencimiento, prioridad, tareas que esperan, rapidez) con el motivo explicado | Hecho |
-| Arranque más liviano: se sacó la librería de animación que se usaba en una sola pantalla | Hecho |
-| Presupuesto de peso de arranque, verificado en cada push (falla el CI si se pasa) | Hecho |
-| Pruebas de las tres pantallas donde un error duele más (tablero, en qué anda el equipo, blanqueo de clave) | Hecho |
-| Workflow para instalar y quitar dependencias desde el CI, sin depender de esta máquina | Hecho — **falta correrlo por primera vez** |
+Sin esto queda **arreglado en el código y roto en producción**, que es la peor combinación. Lo
+que cierra: hoy el jefe no puede darse el rol de administración, pero sí puede blanquearle la
+clave a esa cuenta y entrar como ella. El canal de Consultas existe para que alguien pueda
+reportar algo contando con que su jefe no lo lee.
+
+### 3.3 Publicar los 28 commits
+
+Con GitHub Desktop, cuando me digas. Dos trampas ya conocidas: la sesión de GitHub equivocada, y
+GitHub Desktop apuntando a otro clon del repo.
+
+### 3.4 Mirar la app
+
+Nada de lo de esta tanda se abrió en un navegador. Los tests cubren la lógica; **no cubren la
+percepción**. Lo que más conviene mirar:
+
+- La tarjeta de arqueo: ¿el "6 de 21" coincide con lo que Patricia ya sabe?
+- Las columnas plegables: al soltar una tarjeta en una plegada, ¿se siente bien que se vuelva a
+  plegar sola?
+- La sección de feriados en Administración.
+
+### 3.5 Decisiones que siguen abiertas
+
+- **El hallazgo 4** (sección 5) — es la única que bloquea algo.
+- ¿Va el cronómetro? Desaconsejado en `docs/PROPUESTA-ICR.md`.
+- ¿Sentry para monitoreo? El Error Boundary ya está preparado.
+- **Rotación de credenciales**: diferida por decisión tuya hasta salir de beta.
+
+---
 
 ## 4. Pendiente MÍO (código)
 
-1. **Decidir las variantes de `Panel` que faltan.** Medido: de 41 superficies, 18 son la
-   tarjeta canónica y ya usan `Panel`. Las otras 23 son 4 o 5 superficies distintas (`p-4`,
-   `p-5`, `p-8`, `px-5 py-4`, shells sin padding). Unificarlas necesita que vos mires la
-   pantalla y digas cuáles son la misma cosa. Detalle en `docs/SISTEMA-VISUAL.md`.
-2. **`mv_resumen_mensual`**: la vista materializada existe y **nadie la usa**. Le faltan
-   `sucursal` y `categoria` y el filtro de operativas para que las métricas den bien.
-   Arreglarla es una migración nueva; no la mezclé con lo demás.
-3. **Propuestas de adopción que quedan**: P6 (recordatorio contextual) y P10 (sincronizar
-   antes de la reunión). Diseñadas en `docs/PROPUESTAS-ADOPCION.md`.
+1. **Adjuntar una captura al reportar un problema** (reporte de Mathi). Es lo único del plan de
+   los reportes que queda. Necesita una migración (`consultas.adjunto_path`), permiso de Storage
+   —que **sólo la cuenta de administración pueda leer**, porque una captura puede mostrar más de
+   lo que el texto dice— y pegar desde el portapapeles con Ctrl+V.
+2. **El hallazgo 4**, cuando decidas (sección 5).
+3. **Grilla OWASP + STRIDE** para el agente `revisor-seguridad`. Sale de la evaluación de gstack
+   (`docs/EVALUACION-GSTACK.md`): media hora, sin dependencias nuevas.
+4. **`mv_resumen_mensual`**: la vista materializada existe y **no la usa nadie**. Le faltan
+   `sucursal`, `categoria` y el filtro de operativas.
+5. **Las variantes de `Panel` que faltan.** De 41 superficies, 18 son la tarjeta canónica y ya
+   usan `Panel`. Las otras 23 son 4 o 5 superficies distintas. Unificarlas necesita que mires la
+   pantalla y digas cuáles son la misma cosa.
+6. **Propuestas de adopción que quedan**: P6 (recordatorio contextual) y P10 (sincronizar antes
+   de la reunión), en `docs/PROPUESTAS-ADOPCION.md`.
 
-## 5. Pendiente TUYO
+---
 
-1. **Desplegar la Edge Function `blanquear-clave`** — es lo único que separa el blanqueo de
-   contraseñas de estar andando. Supabase Dashboard → Edge Functions → "Create function" con
-   ese nombre exacto → pegar el contenido de `edge-function-blanquear-clave.ts` (raíz del
-   repo) → Deploy. **Hasta que eso pase, el botón existe pero da error.** Pasos detallados en
-   `docs/ACCESO-Y-PERMISOS.md`.
-2. **Sacar el lastre de dependencias — pero NO las siete que decía antes.** Esta instrucción
-   estaba mal y la corrigió una auditoría el 07/08/2026. Decía que había que quitar siete
-   paquetes, e incluía `class-variance-authority`, `clsx` y `tailwind-merge`. **Esas tres las
-   necesita la Fase B del plan**: `Button.tsx` se construye con `cva`, y `cn` pasa a ser
-   `twMerge(clsx(...))` para arreglar las colisiones de clases. Si se ejecutaba la instrucción
-   vieja, se borraba la base del trabajo siguiente.
+## 5. La decisión que falta: el trabajo adelantado
 
-   Lo que **sí** hay que sacar son cuatro: `@base-ui/react`, `shadcn`, `tw-animate-css` y `motion`.
+**Tiene fecha: lo que hoy se adelante de septiembre desaparece el 1/9.**
 
-   Y ya no hace falta el workflow: **hay npm en esta máquina** (ver el punto siguiente).
+El diseño de períodos es asimétrico a propósito: se **escribe** en `card_periodos` cuando el mes
+que mirás no es el vigente, y se **lee** de `cards` cuando sí lo es. Mientras septiembre es
+futuro, lo adelantado va a `card_periodos`. Cuando septiembre pasa a ser el mes vigente, la
+lectura cambia de fuente y esas filas quedan huérfanas.
 
-   ```bash
-   npm uninstall @base-ui/react shadcn tw-animate-css motion
-   ```
+Adelantar trabajo era el motivo declarado de todo el diseño de períodos.
 
-3. **Se puede instalar y desinstalar acá, directamente.** Durante semanas se dio por sentado que
-   no había npm en esta máquina, y se construyó un workflow entero de GitHub Actions para
-   resolverlo. Era falso: `npm 10.9.2` está instalado en
-   `C:\Users\Vmagni\tools\node-v22.17.0-win-x64`, con acceso al registro, y el hook de
-   pre-commit lo viene usando en cada commit.
+Las tres salidas, con lo que cuesta cada una:
 
-   ```bash
-   export PATH="$HOME/tools/node-v22.17.0-win-x64:$PATH"
-   ```
+| Opción | Qué implica |
+|---|---|
+| **A. Aplicar las filas del período sobre `cards` cuando el mes pasa a ser vigente** | Respeta el propósito de la función. Es una migración que toca las mismas funciones que el reinicio. **Es la que recomiendo.** |
+| B. Mergear `card_periodos` también en el mes vigente | Más chico y **peor**: las ediciones del mes vigente van a `cards`, así que la lectura mergeada mostraría el estado adelantado encima del trabajo nuevo, para siempre |
+| C. Sacar el mes siguiente del selector | Cierra el agujero en una línea y elimina la única función por la que existen los períodos |
 
-   El workflow `Dependencias` sigue sirviendo —corre lint, tests y build antes de commitear el
-   lock, que es una red útil— pero ya no es el único camino. Detalle del error y su lección en
-   `CLAUDE.md` §1.
-3. **Correr `migracion-38-registrar-35-36.sql`** en Supabase → SQL Editor. Tarda un segundo y no
-   toca ningún dato: sólo hace que el chip de "Base de datos al día" deje de dar por faltantes a
-   la 35 y la 36. El porqué está en la sección 2.2.
-4. ~~Avisarme para publicar los commits nuevos.~~ **Hecho el 04/08/2026.**
-5. **Verificación visual del PDF**: Reporte → Imprimir/PDF → confirmar que la vista previa
-   tiene contenido. Los tests garantizan que el documento se arma bien, **no** que el
-   navegador lo imprima bien — esa es exactamente la falla que tuve la vez pasada.
-6. **Si querés que analicemos las consultas juntos**: crear `.env.consultas.local` con el
-   email y la contraseña de la cuenta de administración, y correr `node scripts/consultas.mjs`.
-   Instrucciones en `docs/CONSULTAS-PARA-ANALISIS.md`.
-7. **Decisiones abiertas**: ¿va el cronómetro? (desaconsejado en `docs/PROPUESTA-ICR.md`).
-   ¿Sentry para monitoreo de errores? (el Error Boundary ya está preparado).
-8. **Rotación de credenciales** — diferida por decisión tuya hasta salir de beta.
+Si no me decís nada, hago la A.
 
-## 6. Bloqueado, para que conste
+---
 
-> Detalle completo, junto con qué documentos se sacaron y cuáles se dejaron a propósito, en
-> `docs/archivo/LIMPIEZA-2026-08.md`.
+## 6. Riesgos abiertos
 
-- ~~**Sacar 6 dependencias que nadie usa.**~~ **DESBLOQUEADO el 04/08/2026.** Estaba trabado
-  porque no hay npm en esta máquina para regenerar el `package-lock.json` — pero el runner del
-  CI sí tiene npm. El workflow **Dependencias** lo hace. Quedan por sacar `@base-ui/react`,
-  `class-variance-authority`, `clsx`, `shadcn`, `tailwind-merge`, `tw-animate-css` y ahora
-  también `motion`, que dejó de usarse. Ver el punto correspondiente en la sección 5.
-- **`card_pausas`**: tabla creada y vacía a propósito. Depende del cronómetro, que el
-  análisis del ICR desaconseja explícitamente.
+- **Los números del Reporte van a cambiar, y es lo correcto.** Dos cosas los mueven: el
+  cumplimiento del mes ahora acota por mes (antes subía solo con el paso del tiempo y no bajaba
+  de 90%), y "entregado a tiempo" pasó a una única definición en día calendario argentino (la
+  puntualidad puede subir uno o dos puntos, porque deja de contar como tarde algo entregado a
+  horario). Si el equipo ve el reporte distinto, es por esto.
+- **Verificación visual acumulada**: hay bastante entregado que no viste funcionando.
+- **Deploy vs. caché**: si algo "no se ve" después de publicar, puede ser la PWA vieja cacheada.
+  Cerrar y reabrir la app fuerza la última versión.
+- **Adopción del equipo**: el modo de falla más probable de este proyecto no es técnico. Si se
+  percibe como control, van a trabajar para la foto y todos los datos van a ser mentira.
 
-## 7. Riesgos abiertos
+---
 
-- **El tablero y el reporte van a verse distintos, y es lo correcto.** `--ring` estaba
-  definido como un color y no como una sombra, así que `box-shadow: var(--ring),var(--shadow)`
-  era CSS inválido y el navegador **descartaba la declaración entera**: cinco pantallas venían
-  renderizando sin ninguna sombra y nadie lo notó en meses. Ya está arreglado. Cuando publiques
-  vas a ver aparecer una línea finita de borde y una sombra suave en esas tarjetas. Miralo y
-  decime si te gusta.
-- **Verificación visual acumulada**: hay bastante entregado que todavía no viste
-  funcionando. Los tests cubren la lógica, no la percepción. Cuanto antes corras las
-  migraciones y mires, menos se acumula.
-- **Deploy vs. caché**: si algo "no se ve" después de publicar, puede ser la PWA vieja
-  cacheada. Cerrar y reabrir la app fuerza la última versión.
-- **Adopción del equipo**: el modo de falla más probable de este proyecto no es técnico.
-  Si el equipo lo percibe como control, va a trabajar "para la foto" y todos los datos van
-  a ser mentira. Por eso el encuadre no punitivo está verificado por tests, y por eso hay
-  propuestas (P7 costo colectivo, P8 ranking) que están descartadas a propósito.
+## 7. Lo que aprendimos esta tanda, y conviene no perder
+
+**Una auditoría sin tabla de estado no se cierra: se archiva.** La del 05/08 estuvo nueve días
+entera abierta mientras entraban doce migraciones y siete funciones nuevas. No fue por falta de
+tiempo — fue porque nada obligaba a volver a mirarla. Ahora tiene una fila por hallazgo, y
+"cerrado" exige el commit o el `archivo:línea` al lado.
+
+**Un guardián vale más que un arreglo.** `TransferenciasSection`, escrito esta misma semana,
+nació con "va a estar disponible tras la migración 49" — el mismo defecto que se estaba
+arreglando en otros seis archivos, sin que nadie lo pidiera. El patrón vuelve solo porque
+escribir el número es lo más cómodo. Por eso ahora hay un test que lo impide.
+
+**La documentación envejece y hay que verificarla, no citarla.** Este documento decía que tres
+dependencias no se podían sacar porque las necesitaba la Fase B. Fui a mirar: `Button.tsx` no
+existe y `cn` es una función de tres líneas sin `clsx`. Esa fase nunca se construyó.
