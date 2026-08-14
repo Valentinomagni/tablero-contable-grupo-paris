@@ -99,4 +99,22 @@ describe("el chip de migraciones no puede quedarse viejo", () => {
       "del final (copiá el de cualquier migración de la 29 en adelante):\n" + mudas.join("\n"),
     ).toEqual([]);
   });
+
+  // Sin repetidos. `includes` no distingue, asi que un numero duplicado no rompe nada hoy y
+  // deja la lista ilegible manana.
+  //
+  // NO ES HIPOTETICO: paso el 14/08/2026. Dos agentes agregaron cada uno su migracion al final
+  // del arreglo sin ver la del otro, y quedo `49, 50, 51, 49, 50`. Los tres chequeos de arriba
+  // pasaron en verde, porque a ninguno le importa cuantas veces aparece un numero.
+  it("la lista no tiene numeros repetidos", () => {
+    const vistos = new Set<number>();
+    const repetidos = MIGRACIONES_ESPERADAS.filter((n) => vistos.has(n) || (vistos.add(n), false));
+    expect(repetidos, "Numeros repetidos en MIGRACIONES_ESPERADAS: " + repetidos.join(", ")).toEqual([]);
+  });
+
+  // Y en orden, por la misma razon: leerla tiene que ser mirarla, no reconstruirla.
+  it("la lista esta ordenada", () => {
+    const ordenada = [...MIGRACIONES_ESPERADAS].sort((a, b) => a - b);
+    expect(MIGRACIONES_ESPERADAS).toEqual(ordenada);
+  });
 });

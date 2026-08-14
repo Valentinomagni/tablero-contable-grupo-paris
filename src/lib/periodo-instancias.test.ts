@@ -213,3 +213,39 @@ describe("reencuadrarPeriodo", () => {
     expect(reencuadrarPeriodo("2026-08", "2026-08", "")).toBeNull();
   });
 });
+
+// ── Una fila ya volcada no se vuelve a leer ─────────────────────────────────────
+//
+// HALLAZGO 4 DE LA AUDITORÍA DEL 05/08, la segunda mitad. `card_periodos` es el borrador de un
+// mes que todavía no llegó. Cuando ese mes pasa a ser el vigente, la app deja de leer de ahí y
+// lee de `cards`, así que el reinicio mensual vuelca el trabajo adelantado (migración 51).
+//
+// Pero volcarlo no alcanza: si esa fila se sigue pudiendo leer, el día que el mes deje de ser
+// vigente la vista de períodos la mergearía otra vez y mostraría la foto adelantada POR ENCIMA
+// de todo lo que se hizo durante el mes. El trabajo adelantado se salvaría a costa de tapar el
+// trabajo real, que es un cambio de un bug por otro peor.
+//
+// Por eso la fila volcada queda marcada con `aplicado_at` y acá se ignora.
+describe("cardsDelPeriodo ignora las filas ya volcadas", () => {
+  const base = card({ id: "c1", status: "pend", checklist: [] });
+
+  it("una fila SIN volcar se mergea, como siempre", () => {
+    const p = [{ card_id: "c1", periodo: "2026-07", status: "term" } as unknown as CardPeriodo];
+    expect(cardsDelPeriodo([base], p, "2026-07", "2026-08")[0].status).toBe("term");
+  });
+
+  it("una fila YA VOLCADA no se mergea: su contenido ya vive en la tarjeta", () => {
+    const p = [{ card_id: "c1", periodo: "2026-07", status: "term",
+      aplicado_at: "2026-08-01T03:05:00Z" } as unknown as CardPeriodo];
+    // La tarjeta manda. Si esto devolviera "term", el mes pasado se vería con el estado que
+    // tenía cuando era futuro y no con el que quedó al trabajarlo.
+    expect(cardsDelPeriodo([base], p, "2026-07", "2026-08")[0].status).toBe("pend");
+  });
+
+  it("`aplicado_at` en null es lo mismo que no tenerlo", () => {
+    // La columna es nueva: las filas viejas la traen en null y tienen que seguir funcionando.
+    const p = [{ card_id: "c1", periodo: "2026-07", status: "term",
+      aplicado_at: null } as unknown as CardPeriodo];
+    expect(cardsDelPeriodo([base], p, "2026-07", "2026-08")[0].status).toBe("term");
+  });
+});

@@ -120,7 +120,15 @@ export function cardsDelPeriodo(cards: Card[], periodos: CardPeriodo[], periodo:
   const porCard = new Map<string, CardPeriodo>();
   if (Array.isArray(periodos)) {
     for (const p of periodos) {
-      if (p?.periodo === periodo && p?.card_id) porCard.set(p.card_id, p);
+      // Las filas YA VOLCADAS se ignoran (migración 51, hallazgo 4 de la auditoría del 05/08).
+      // `card_periodos` es el borrador de un mes que todavía no llegó; cuando ese mes pasa a ser
+      // el vigente, el reinicio vuelca su contenido sobre `cards` y marca `aplicado_at`.
+      //
+      // Si igual se siguieran leyendo, el día que ese mes deje de ser vigente esta vista
+      // mergearía la foto adelantada POR ENCIMA de todo lo que se hizo durante el mes. Se
+      // salvaría el trabajo adelantado a costa de tapar el trabajo real: un bug cambiado por
+      // otro peor. Desde que se volcó, la verdad de ese mes vive en la tarjeta.
+      if (p?.periodo === periodo && p?.card_id && !p.aplicado_at) porCard.set(p.card_id, p);
     }
   }
   return cards.map((c) => {

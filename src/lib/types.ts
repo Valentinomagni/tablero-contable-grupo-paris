@@ -50,6 +50,20 @@ export interface CardPeriodo {
   id: string; card_id: string; owner: string; periodo: string; status: Status;
   checklist: ChecklistItem[]; comments: Comment[]; history: HistoryEntry[];
   done_at: string | null; proc_at: string | null; due_date: string | null; created_at: string;
+  /**
+   * Cuándo el reinicio mensual volcó esta fila sobre `cards` (migración 51). `null` mientras el
+   * mes sigue siendo futuro.
+   *
+   * POR QUÉ EXISTE. `card_periodos` es el borrador de un mes que todavía no llegó. Cuando ese mes
+   * pasa a ser el vigente, la app deja de leer de acá y lee de `cards`, así que el reinicio tiene
+   * que volcar el trabajo adelantado o desaparece (hallazgo 4 de la auditoría del 05/08).
+   *
+   * Y una vez volcada, la fila NO se puede seguir leyendo: si el mes más adelante deja de ser
+   * vigente, mergearla otra vez mostraría la foto adelantada por encima de todo lo que se hizo
+   * durante el mes. Se marca en vez de borrarse — borrar seria irreversible y esto deja ver
+   * cuándo se volcó cada cosa.
+   */
+  aplicado_at?: string | null;
 }
 export interface CardArchive { id: string; owner: string; mes: string; card: Card; archived_at: string; }
 export interface Empresa {
