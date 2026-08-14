@@ -58,6 +58,17 @@ export interface Empresa {
 }
 export interface CardPausa { id: string; card_id: string; owner: string | null; desde: string; hasta: string | null; }
 /**
+ * Un día que la oficina no trabaja, cargado a mano por el jefe (migración 48).
+ *
+ * Los sábados y domingos NO viven acá: los calcula `src/lib/dias-habiles.ts`. Esta tabla es
+ * sólo para lo que hay que decidir — feriados móviles, puentes por decreto, y días propios de
+ * la empresa como un inventario o una capacitación. Ninguna lista fija los cubre.
+ *
+ * `motivo` es texto libre corto y existe para que dentro de un año se sepa por qué ese día no
+ * contaba: un feriado sin explicación se parece demasiado a un error de carga.
+ */
+export interface DiaNoLaborable { fecha: string; motivo: string; }
+/**
  * Fila de la vista materializada `mv_resumen_mensual` (migración 30), tal como la
  * devuelve el RPC `public.resumen_mensual(p_mes)` — que es la ÚNICA vía de lectura:
  * las vistas materializadas no soportan RLS, así que la vista tiene el select

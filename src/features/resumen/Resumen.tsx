@@ -8,7 +8,7 @@ import { dueInfo, fmtDateTime, wow, onTimeAdherence, toARTDate, type Wow } from 
 import { alertasDeRiesgo } from "../../lib/alertas";
 import { isBlocked } from "../../lib/deps";
 import { buildCsv, standupText, cicloDelMes, cargaPorFecha, ultimos14 } from "../../lib/resumen";
-import { useSnapshots, useOrganizacion } from "../../hooks/useData";
+import { useSnapshots, useOrganizacion, useDiasNoLaborables } from "../../hooks/useData";
 import { useVacaciones } from "../../hooks/useVacaciones";
 import { estaDeVacaciones } from "../../lib/vacaciones";
 import { Avatar, teclaActiva } from "../../lib/ui";
@@ -95,7 +95,11 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
   const ciclo = cicloDelMes(cards);
   const evol = cargaPorFecha(snaps);
   const d14 = ultimos14(cards, now);
-  const alertas = alertasDeRiesgo(cards, teamSeg, now);
+  // Los mismos feriados que usa Mi día, y por la misma clave de query: si el jefe viera "sin
+  // novedades hace 5 días" y la persona que la tiene viera 3, el aviso deja de servir para
+  // hablar del trabajo y pasa a ser una discusión sobre el número.
+  const noLaborables = useDiasNoLaborables();
+  const alertas = alertasDeRiesgo(cards, teamSeg, now, noLaborables);
   const cargaPersona = teamSeg.map((u) => ({
     // `id` además del nombre: la lista se indexaba por nombre, y dos homónimos —o un perfil
     // dado de baja y uno nuevo con el mismo nombre— daban claves duplicadas, con lo que React

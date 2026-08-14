@@ -21,7 +21,7 @@ import { sePuedeCerrarRapido, patchCierreRapido, MOTIVO_NO_RAPIDO } from "../../
 import { pushUndo } from "../../lib/undo";
 import { deshacerUltimo } from "../../lib/deshacer";
 import { payloadCards } from "../../lib/esquema";
-import { useMigraciones } from "../../hooks/useData";
+import { useMigraciones, useDiasNoLaborables } from "../../hooks/useData";
 import { PREF, getPref, setPref } from "../../lib/prefs";
 import type { Card, Profile } from "../../lib/types";
 import { Sun, AlertTriangle, Clock, Flame, Check, CheckCircle2, Circle, Plane, RotateCcw, Lock } from "lucide-react";
@@ -174,7 +174,11 @@ export function MiDia({ ownerId, meId, cards, team, onOpenCard }: {
     setPref(claveSnooze, JSON.stringify(next));
   };
   // UNA sola tarea, la más estancada: preguntar por varias garantiza que se ignoren todas.
-  const estancada = ownerId === meId ? tareaParaPreguntar(misCards, hoyISO, pospuestas) : null;
+  // Los feriados entran en la cuenta: sin ellos, una tarea tocada antes de un fin de semana largo
+  // dispara el "¿seguís con esto?" dos días antes de tiempo, y preguntar por algo que se dejó
+  // anteayer es cómo el aviso se gana que lo ignoren.
+  const noLaborables = useDiasNoLaborables();
+  const estancada = ownerId === meId ? tareaParaPreguntar(misCards, hoyISO, pospuestas, noLaborables) : null;
   // P3 — retomar donde quedaste. También SÓLO en la vista propia: mirar el tablero de otro
   // y que diga "venías con X" sería contarle a un tercero en qué andaba esa persona.
   const retomar = ownerId === meId ? tareaParaRetomar(misCards, meId, hoyISO) : null;

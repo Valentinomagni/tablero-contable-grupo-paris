@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
-import type { Card, Profile, Objective, ActivityLog, ResumenMensual, Empresa } from "../lib/types";
+import type { Card, Profile, Objective, ActivityLog, ResumenMensual, Empresa, DiaNoLaborable } from "../lib/types";
 import type { DepInfo, RevDep } from "../lib/deps";
 import { CardSchema, validateRows, saneaCards } from "../lib/schemas";
 import { COLUMNAS_CARDS } from "../lib/esquema";
@@ -139,6 +139,47 @@ export function useTiemposMax(): Record<string, number> {
     },
   });
   return data ?? {};
+}
+
+// Feriados y días no laborables cargados a mano por el jefe (tabla `dias_no_laborables`,
+// migración 48), con el motivo al lado. Lo consume la pantalla de Administración, que es donde
+// se cargan y se borran: sin el motivo, un feriado suelto en la lista no se distingue de un
+// error de carga y nadie se anima a borrarlo.
+//
+// Defensivo, igual que useTiemposMax: si la migración 48 todavía no corrió (42P01/PGRST205) o
+// la consulta falla por cualquier motivo, devuelve []. Sin feriados los sábados y domingos se
+// siguen descontando, que es la mayor parte del problema — quedarse sin pantalla por esto sería
+// peor que mostrar la lista vacía.
+//
+// Orden ascendente por fecha: la lista se lee como un calendario, del día más próximo al más
+// lejano, que es como se piensa un feriado.
+export function useDiasNoLaborablesLista() {
+  return useQuery({
+    queryKey: ["dias_no_laborables"],
+    staleTime: 5 * 60_000,
+    queryFn: async (): Promise<DiaNoLaborable[]> => {
+      const { data, error } = await supabase.from("dias_no_laborables").select("fecha,motivo").order("fecha");
+      if (error) return [];
+      return (data as DiaNoLaborable[]) ?? [];
+    },
+  });
+}
+
+// Los mismos días, en la forma que esperan las funciones de `src/lib/dias-habiles.ts`.
+//
+// POR QUÉ UN Set Y NO EL ARREGLO. Ahí la pregunta es siempre "¿esta fecha está en la lista?", y
+// se hace una vez por día dentro de un bucle que recorre semanas: con un arreglo cada pregunta
+// vuelve a recorrer la lista entera. `esHabil` ya está escrita contra un Set y no se toca.
+//
+// POR QUÉ COMPARTE LA CLAVE DE QUERY con el hook de arriba y no consulta aparte: si fueran dos
+// consultas distintas, el cálculo de tiempos y la pantalla donde se cargan los feriados podrían
+// mostrar listas distintas del mismo día, y ahí nadie sabría cuál creer.
+//
+// El `useMemo` no es micro-optimización: sin él cada render devuelve un Set nuevo, y esa
+// identidad nueva invalida cualquier useMemo aguas abajo que dependa de los feriados.
+export function useDiasNoLaborables(): Set<string> {
+  const { data } = useDiasNoLaborablesLista();
+  return useMemo(() => new Set((data ?? []).map((d) => d.fecha)), [data]);
 }
 
 // enabled: jefe y encargado traen los profiles (RLS del Plan 02 limita lo que ve el encargado).

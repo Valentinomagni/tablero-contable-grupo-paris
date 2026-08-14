@@ -16,7 +16,7 @@ import { Huerfanas } from "./Huerfanas";
 import { equipoDe } from "../../lib/jerarquia";
 import { personasVisibles } from "../../lib/visibilidad";
 import { Avatar, teclaActiva } from "../../lib/ui";
-import { useSettings, useMigraciones, useTiemposMax } from "../../hooks/useData";
+import { useSettings, useMigraciones, useTiemposMax, useDiasNoLaborablesLista } from "../../hooks/useData";
 import { estadoMigraciones } from "../../lib/migraciones";
 import { enLinea, textoUltimaConexion } from "../../lib/presencia";
 import { BandejaConsultas } from "../consultas/BandejaConsultas";
@@ -50,6 +50,19 @@ function MigracionesChip() {
   );
 }
 
+// Etiqueta legible de un `YYYY-MM-DD`, con el día de la semana adelante para que se note de un
+// vistazo si alguien cargó un sábado (que ya se descuenta solo y no hace falta).
+//
+// El `"T00:00:00"` NO es adorno: `new Date("2026-12-25")` se parsea como medianoche UTC y se
+// muestra en la zona local, así que en Argentina (UTC-3) el feriado aparecería en pantalla el día
+// anterior al que se cargó. Es la misma trampa que documenta `src/lib/dias-habiles.ts`.
+function etiquetaDia(fecha: string): string {
+  const d = new Date(fecha + "T00:00:00");
+  if (Number.isNaN(d.getTime())) return fecha;
+  const txt = d.toLocaleDateString("es-AR", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" });
+  return txt.charAt(0).toUpperCase() + txt.slice(1);
+}
+
 export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]; cards: Card[]; me: Profile; meName: string; onOpenUser: (u: Profile) => void }) {
   const qc = useQueryClient();
   const esEncargado = me.role === "encargado";
@@ -64,6 +77,11 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
   const [tmCat, setTmCat] = useState("");
   const [tmHoras, setTmHoras] = useState("");
   const [tmMsg, setTmMsg] = useState("");
+  // Feriados y días no laborables (migración 48). Un solo objeto de borrador en vez de dos
+  // estados sueltos: los dos campos se limpian juntos al guardar y así no se puede olvidar uno.
+  const { data: diasNoLaborables = [] } = useDiasNoLaborablesLista();
+  const [dnlDraft, setDnlDraft] = useState({ fecha: "", motivo: "" });
+  const [dnlBusy, setDnlBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [permMsg, setPermMsg] = useState("");
@@ -173,6 +191,33 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
     const next = { ...tiemposMax };
     delete next[cat];
     saveTiemposMax(next, "Tiempo máximo eliminado");
+  }
+
+  // Feriados y días no laborables. Escritura directa a la tabla + invalidación de la clave que
+  // leen los dos hooks, mismo patrón que `saveTiemposMax`. El error SIEMPRE pasa por
+  // `mensajeUsuario`: acá el caso real no es un permiso mal puesto sino la base sin la migración
+  // 48, y "PGRST205: relation does not exist" no le dice a nadie qué hacer con eso.
+  async function agregarDiaNoLaborable() {
+    const fecha = dnlDraft.fecha;
+    if (!fecha) { toast.error("Elegí la fecha del día que no se trabaja."); return; }
+    setDnlBusy(true);
+    // `upsert` y no `insert`: cargar dos veces el mismo feriado es un error de dedo esperable, y
+    // la clave primaria lo rechazaría con un mensaje que no ayuda. Así, además, se corrige el
+    // motivo de un día ya cargado sin tener que borrarlo primero.
+    const { error } = await supabase.from("dias_no_laborables")
+      .upsert({ fecha, motivo: dnlDraft.motivo.trim(), creado_por: me.id }, { onConflict: "fecha" });
+    setDnlBusy(false);
+    if (error) { toast.error(mensajeUsuario(error, "guardar el día no laborable")); return; }
+    qc.invalidateQueries({ queryKey: ["dias_no_laborables"] });
+    toast.success("Día cargado. Deja de contar como demora en los tiempos del equipo.");
+    setDnlDraft({ fecha: "", motivo: "" });
+  }
+
+  async function eliminarDiaNoLaborable(fecha: string) {
+    const { error } = await supabase.from("dias_no_laborables").delete().eq("fecha", fecha);
+    if (error) { toast.error(mensajeUsuario(error, "eliminar el día no laborable")); return; }
+    qc.invalidateQueries({ queryKey: ["dias_no_laborables"] });
+    toast.success("Día eliminado. Vuelve a contar como día de trabajo.");
   }
 
   async function generarPlantilla(pl: PlantillaTareas) {
@@ -379,6 +424,38 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
             </div>
           </div>
         )}
+      </div>
+
+      {/* Feriados y días no laborables (migración 48). SÓLO el jefe: marcar un día como no
+          laborable cambia TODAS las métricas de tiempo del equipo, hacia atrás y hacia adelante.
+          El gate es el mismo `!esEncargado` que envuelve a esta sección; la RLS de la tabla lo
+          vuelve a exigir del lado del servidor, así que esto es para no mostrar un control que
+          la base va a rechazar. */}
+      <h2 className="text-base font-bold tracking-[-0.01em] text-ink mb-2.5">Feriados y días no laborables</h2>
+      <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
+        <p className="text-ink2 text-sm mt-0 mb-3 max-w-[640px]">
+          Los días que se carguen acá dejan de contar como demora: una tarea entregada antes de un feriado y
+          revisada al volver ya no figura esperando de más. Los sábados y domingos se descuentan solos, no hace
+          falta cargarlos. Van acá los feriados, los puentes y los días propios de la empresa, como un
+          inventario o una capacitación.
+        </p>
+        {diasNoLaborables.length === 0 && <p className="text-ink2 text-sm m-0 mb-3">Todavía no hay días cargados.</p>}
+        {diasNoLaborables.map((d) => (
+          <div key={d.fecha} className="flex items-center gap-2 py-1.5 border-b border-line/60 last:border-0">
+            <span className="flex-1 text-sm text-ink">{etiquetaDia(d.fecha)}</span>
+            <span className="text-ink2 text-sm">{d.motivo || "sin motivo"}</span>
+            <button title={`Quitar ${etiquetaDia(d.fecha)}`} onClick={() => eliminarDiaNoLaborable(d.fecha)}
+              className="border border-line bg-surface2 rounded-lg p-1.5 text-ink2 hover:text-danger"><Trash2 size={13} /></button>
+          </div>
+        ))}
+        <form className="flex flex-wrap items-center gap-2 mt-3" onSubmit={(e) => { e.preventDefault(); agregarDiaNoLaborable(); }}>
+          <input type="date" value={dnlDraft.fecha} onChange={(e) => setDnlDraft({ ...dnlDraft, fecha: e.target.value })} className={inputCls} />
+          <input value={dnlDraft.motivo} onChange={(e) => setDnlDraft({ ...dnlDraft, motivo: e.target.value })}
+            placeholder="Motivo (ej: Feriado nacional, Inventario)" className={inputCls + " w-[280px] max-w-full"} />
+          <button type="submit" disabled={dnlBusy || !dnlDraft.fecha}
+            className="flex items-center gap-1.5 bg-accent text-white rounded-lg px-3.5 py-2 text-sm font-semibold disabled:opacity-60">
+            <Plus size={14} /> {dnlBusy ? "Guardando…" : "Agregar"}</button>
+        </form>
       </div>
 
       <h2 className="text-base font-bold tracking-[-0.01em] text-ink mb-2.5">Permisos</h2>
