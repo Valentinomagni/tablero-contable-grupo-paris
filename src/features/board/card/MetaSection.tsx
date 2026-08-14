@@ -15,6 +15,7 @@ import { estadoTiempo, registrarIncumplimiento } from "../../../lib/tiempos";
 import { textoTransicion } from "../../../lib/retrabajo";
 import { useTiemposMax, useMigraciones } from "../../../hooks/useData";
 import { tieneEtiquetas } from "../../../lib/esquema";
+import { textoNoHabilitado } from "../../../lib/disponibilidad";
 
 type PatchMut = UseMutationResult<void, Error, Partial<Card>, unknown>;
 
@@ -176,7 +177,7 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
         <div className="flex items-center gap-1.5 flex-wrap text-sm mb-2">
           <span className="text-ink2 text-sm">Etiquetas</span>
           {!etiquetasHabilitadas && (
-            <span className="text-ink2 text-xs">Se habilita tras la migración 31.</span>
+            <span className="text-ink2 text-xs">{textoNoHabilitado("las etiquetas")}</span>
           )}
           {etiquetasHabilitadas && (c.etiquetas ?? []).map((et) => (
             <span key={et} className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-full px-2.5 py-0.5 text-xs font-medium">

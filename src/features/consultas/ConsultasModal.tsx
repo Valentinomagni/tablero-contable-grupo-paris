@@ -9,6 +9,7 @@ import { esTablaInexistente } from "../../hooks/usePeriodos";
 import { validarConsulta } from "../../lib/consultas";
 import type { Consulta } from "../../lib/types";
 import { mensajeUsuario } from "../../lib/fallas";
+import { textoNoHabilitado } from "../../lib/disponibilidad";
 
 const TIPO_LBL: Record<Consulta["tipo"], string> = { consulta: "Consulta", sugerencia: "Sugerencia", error: "Error" };
 const ESTADO_LBL: Record<Consulta["estado"], string> = { nueva: "Enviada", leida: "Leída", archivada: "Archivada" };
@@ -45,9 +46,12 @@ export function ConsultasModal({ meId, onClose }: { meId: string; onClose: () =>
       <h3 className="text-lg font-semibold m-0 flex items-center gap-2"><MessageSquarePlus size={18} /> Consultas</h3>
       <div className="text-xs text-ink2 mb-3.5">Canal interno para consultas, sugerencias o errores del tablero.</div>
 
+      {/* Decía "se habilitan tras la migración 29". Este es el canal por el que alguien reporta
+          un problema: recibirlo con un número de migración es la peor primera impresión posible,
+          porque le contesta con jerga a quien vino justamente porque algo no le funcionaba. */}
       {isError ? (
         faltaMigracion
-          ? <p className="text-ink2 text-sm">Las consultas se habilitan tras la migración 29.</p>
+          ? <p className="text-ink2 text-sm">{textoNoHabilitado("las consultas")}</p>
           : <p className="text-ink2 text-sm">No se pudieron cargar las consultas. Revisá tu conexión y probá de nuevo.</p>
       ) : (
         <>

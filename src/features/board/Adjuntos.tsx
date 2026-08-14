@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Paperclip, Trash2, FileText } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { nombreSeguro, validarAdjunto } from "../../lib/adjuntos";
+import { textoNoHabilitado } from "../../lib/disponibilidad";
 import { mensajeUsuario } from "../../lib/fallas";
 
 // Tamaño legible en KB/MB (sin dependencias externas).
@@ -81,7 +82,10 @@ export function Adjuntos({ cardId, canEdit }: { cardId: string; canEdit: boolean
     return (
       <>
         <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Adjuntos</h4>
-        <p className="text-ink2 text-xs m-0">Los adjuntos van a estar disponibles tras la migración 28.</p>
+        {/* Decía "tras la migración 28". Esto lo abre un empleado dentro de una tarea: el
+            número no le sirve, no puede actuar sobre él, y le muestra una tubería que no le
+            corresponde ver. Lo que sí necesita saber es que no es culpa suya y a quién avisarle. */}
+        <p className="text-ink2 text-xs m-0">{textoNoHabilitado("los adjuntos")}</p>
       </>
     );
   }

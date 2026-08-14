@@ -217,7 +217,14 @@ export function MiDia({ ownerId, meId, cards, team, onOpenCard }: {
     <div className="px-4 sm:px-6 pt-4 pb-10 max-w-[720px] w-full mx-auto">
       <div className="flex items-center gap-2 mb-4">
         <Sun size={18} className="text-ink2 shrink-0" />
-        <h2 className="text-lg font-semibold tracking-tight m-0">Mi día</h2>
+        {/* "Mi día" mirando el día de OTRA persona (hallazgo 9 de la auditoría del 05/08).
+            El resto de la vista ya se comportaba bien —todo lo personal está gateado con
+            `ownerId === meId`— pero el título seguía diciendo "Mi". La pestaña de al lado ya lo
+            resolvía: `App.tsx` pone "Su mes" cuando el perfil no es el propio. Mismo criterio
+            acá, para que las dos digan lo mismo. */}
+        <h2 className="text-lg font-semibold tracking-tight m-0">
+          {ownerId === meId ? "Mi día" : `El día de ${nombreDe(ownerId)}`}
+        </h2>
         {items.length > 0 && <span className="ml-auto bg-chip rounded-full px-2 py-0.5 text-xs tnum text-ink2">{items.length}</span>}
       </div>
       {novedades.length > 0 && (

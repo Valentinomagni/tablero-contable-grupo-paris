@@ -6,6 +6,7 @@ import { supabase } from "../../lib/supabase";
 import { useMigraciones } from "../../hooks/useData";
 import { mensajeUsuario } from "../../lib/fallas";
 import { nombreSeguro, validarAdjunto } from "../../lib/adjuntos";
+import { textoNoHabilitado } from "../../lib/disponibilidad";
 import { toARTDate } from "../../lib/metrics";
 import {
   posibleDuplicado, montoValido, textoAviso, fechaCorta, montoTexto,
@@ -165,7 +166,9 @@ export function TransferenciasSection({ cardId, meId, canEdit }:
     return (
       <>
         <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Transferencias de clientes</h4>
-        <p className="text-ink2 text-xs m-0">El registro de transferencias va a estar disponible tras la migración 49.</p>
+        {/* Sin el número de migración: esto lo ve quien carga transferencias, no quien las
+            corre. Ver `src/lib/disponibilidad.ts`. */}
+        <p className="text-ink2 text-xs m-0">{textoNoHabilitado("las transferencias de clientes")}</p>
       </>
     );
   }

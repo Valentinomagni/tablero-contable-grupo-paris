@@ -262,7 +262,11 @@ export default function App() {
         fullWidth={isPersonView && mode === "board"}
         notifs={<NotificacionesBell onOpenCard={(id) => { const c = cards.find((x) => x.id === id); if (c) setOpenCard(c); else toast("La tarea de esta notificación ya no está disponible."); }} />}
         subnav={isPersonView ? <>
-          <SubTab m="hoy" icon={<Sun size={14} />} label="Hoy" />
+          {/* "Hoy" servía para las dos, pero al abrirla el encabezado decía "Mi día" aunque
+              fuera el día de otro (hallazgo 9 de la auditoría del 05/08). Ahora el encabezado
+              lo distingue, así que la pestaña lo dice desde antes de entrar — mismo criterio
+              que "Su mes", tres líneas más abajo. */}
+          <SubTab m="hoy" icon={<Sun size={14} />} label={person && person.id !== me.id ? "Su día" : "Hoy"} />
           <SubTab m="board" icon={<ClipboardList size={14} />} label="Tareas" />
           <SubTab m="semana" icon={<CalendarDays size={14} />} label="Semana" />
           <SubTab m="obj" icon={<Target size={14} />} label="Objetivos" />

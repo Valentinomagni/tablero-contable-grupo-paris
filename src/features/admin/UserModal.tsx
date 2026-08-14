@@ -7,6 +7,7 @@ import type { ActivityLog, Card, Profile, Role } from "../../lib/types";
 import { useObjectives, useOrganizacion, useMigraciones } from "../../hooks/useData";
 import { payloadProfiles } from "../../lib/esquema";
 import { mensajeUsuario, FallaDeUsuario } from "../../lib/fallas";
+import { ENCUADRE_REPARTO } from "../../lib/encuadre";
 import { useArqueoStats } from "../../hooks/useArqueo";
 import { userMetrics30d } from "../../lib/metrics";
 import { nombreValido } from "../../lib/validacion";
@@ -197,7 +198,17 @@ export function UserModal({ user: u, meId, team, cards, activity, onClose }:
           )}
         </div>
 
-        <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">Métricas (últimos 30 días)</h4>
+        {/* EL ÚNICO PANEL POR PERSONA DE TODA LA APP QUE NO TENÍA ENCUADRE (hallazgo 9 de la
+            auditoría del 05/08). Y es el peor lugar donde podía faltar: son ocho indicadores
+            individuales en el MISMO modal donde se edita el rol y se elimina a la persona.
+            Leídos ahí, tres centímetros arriba del botón de eliminar, dejan de parecer una
+            descripción del trabajo y pasan a parecer el legajo con el que se decide.
+            Mismo texto que el PDF y el Excel, desde `ENCUADRE_REPARTO`: que sea una constante
+            compartida y no una copia es deliberado — el hallazgo 2 de esa misma auditoría
+            existe porque un criterio estaba escrito dos veces y divergió. */}
+        <h4 className="text-xs uppercase tracking-wide text-ink2 mt-4 mb-2">
+          Métricas (últimos 30 días) — {ENCUADRE_REPARTO}
+        </h4>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <Stat v={m.done30} label="Tareas cerradas" />
           <Stat v={m.effort30} label="Esfuerzo cerrado" />

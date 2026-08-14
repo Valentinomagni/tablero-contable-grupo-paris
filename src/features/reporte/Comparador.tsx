@@ -3,6 +3,7 @@ import { comparativaMensual } from "../../lib/comparador";
 import { mesLabel } from "../../lib/archivo";
 import { useArchiveEquipo } from "../../hooks/useArchive";
 import { Panel } from "../../components/Panel";
+import { textoNoHabilitado } from "../../lib/disponibilidad";
 
 // Escala de grises monocroma: 0% blanco/surface, 100% negro/ink — sin colores de semáforo,
 // esto es una foto histórica, no una alerta.
@@ -84,7 +85,7 @@ export function Comparador({ team, meses = 6 }: { team: Profile[]; meses?: numbe
         <Heatmap titulo="Por marca" filas={marcas} meses={mesesCol} datos={datosMarca} />
         {sucursales.length > 0
           ? <Heatmap titulo="Por sucursal" filas={sucursales} meses={mesesCol} datos={datosSucursal} />
-          : <p className="text-ink2 text-xs">Las sucursales se habilitan tras la migración 27.</p>}
+          : <p className="text-ink2 text-xs">{textoNoHabilitado("las sucursales")}</p>}
       </div>
     </Panel>
   );

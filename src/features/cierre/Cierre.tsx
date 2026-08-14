@@ -233,7 +233,8 @@ export function Cierre({ cards, team, isJefe, meId, meName, meRole, settings, on
           <div className="px-5 py-3 border-t border-line">
             {migracionPendiente ? (
               <button disabled className="flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3.5 py-1.5 text-sm font-semibold text-ink2 opacity-70">
-                <Lock size={14} /> Se habilita tras la migración 29
+                {/* Sin el número: el Cierre lo usa todo el equipo, no sólo quien administra. */}
+                <Lock size={14} /> Todavía no está habilitado el cierre del mes
               </button>
             ) : errorReal ? (
               <button disabled className="flex items-center gap-1.5 border border-line bg-surface2 rounded-lg px-3.5 py-1.5 text-sm font-semibold text-ink2 opacity-70">
