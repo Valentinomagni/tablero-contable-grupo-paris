@@ -12,6 +12,75 @@ Esto es lo que queda, ordenado por daño real y no por dimensión.
 
 ---
 
+## Estado, al 14/08/2026
+
+**ESTA TABLA NO EXISTÍA, Y ÉSA ES LA HISTORIA DEL DOCUMENTO.** La auditoría se escribió el
+05/08, se archivó, y se pasó a otra cosa. Nueve días después seguía **entera abierta**: ni un
+solo hallazgo cerrado. No fue por falta de tiempo —en esos nueve días entraron doce migraciones
+y siete funciones nuevas— sino porque nada obligaba a volver a mirarla.
+
+Es exactamente el salto del paso 1 al paso 3 que `CLAUDE.md` §2 describe como el fallo típico
+de este proyecto, y la prueba de que describirlo no alcanza para evitarlo.
+
+**La regla que sale de acá: un hallazgo sin fila en esta tabla no está cerrado, aunque alguien
+se acuerde de haberlo arreglado.** Y "cerrado" exige el commit o el `archivo:línea` al lado; si
+no se puede, va "abierto", no "probablemente hecho".
+
+| # | Hallazgo | Estado | Evidencia |
+|---|---|---|---|
+| 1 | Reinicio destruye el archivo del mes | **abierto** | necesita migración 50 |
+| 2 | Semáforo del Cierre en verde en el caso del incidente | cerrado | `dbaadfd` · `src/lib/reinicio-mensual.ts` · `Cierre.tsx:72` |
+| 3 | "Cumplimiento del mes" no acota por mes | **abierto** | — |
+| 4 | El trabajo adelantado desaparece al llegar el mes | **abierto — necesita una decisión** | ver nota abajo |
+| 5 | Pestaña abierta al cambiar el mes vacía el tablero | cerrado | `dbaadfd` · `reencuadrarPeriodo` · `App.tsx:88` |
+| 6 | Errores crudos de la base en la cara | cerrado | `dbaadfd` · `FallaDeUsuario` en `fallas.ts` |
+| 7 | Sólo el tablero espera a que carguen las tareas | cerrado | `dbaadfd` · `src/lib/carga.ts` |
+| 8 | Dos definiciones de "entregado a tiempo" | cerrado | `dbaadfd` · `entregadaATiempo` en `metrics.ts` |
+
+Del punto 9 (los chicos):
+
+| Ítem | Estado | Evidencia |
+|---|---|---|
+| Modo Director calcula el mes en UTC | cerrado | `dbaadfd` · `Director.tsx:69` |
+| `mesesAbiertos` usa el mes UTC por defecto | cerrado | `dbaadfd` · `periodos.ts:48` |
+| Clave temporal con `Math.random()` | cerrado | `dbaadfd` · `azarSeguro` en `clave-temporal.ts` |
+| "Cargando historial…" | cerrado | `dbaadfd` · `HistorialMes.tsx:25` |
+| Blanqueo no se niega con `admin_sistema` | cerrado en código, **falta redesplegar** | `efbd92f` · `blanquear-clave.ts:82` |
+| Inyección en `dependencias.yml` | cerrado | `7b004b8` · 0 interpolaciones dentro de `run:` en los tres workflows |
+| Cron de `materializar_mes_recurrentes` | cerrado | migraciones 45 y 46 |
+| Siete pantallas nombran un número de migración | **abierto** | — |
+| Ficha de empleado sin encuadre | **abierto** | — |
+| Excel del análisis sin encuadre | **abierto** | — |
+| "Mi día" dice "Mi día" mirando el de otro | **abierto** | — |
+| "Productividad (esfuerzo, 14 días)" | no es defecto | el dato es por día, no por persona |
+
+### Sobre el hallazgo 4, que no se arregla sin decidir algo
+
+No es un bug con una sola solución correcta, y por eso sigue abierto en vez de arreglado a las
+apuradas.
+
+El diseño actual es asimétrico y las dos mitades son deliberadas: se **escribe** en
+`card_periodos` cuando `periodoSel !== vigente` (`periodo-escritura.ts:51`) y se **lee** de
+`cards` cuando `periodo === vigente` (`periodo-instancias.ts:87`). Mientras agosto es futuro, lo
+adelantado va a `card_periodos`; cuando agosto pasa a ser el mes vigente, la lectura cambia de
+fuente y esas filas quedan huérfanas para siempre.
+
+**Y tiene fecha.** `periodosDisponibles` ofrece el mes siguiente con la migración 32 aplicada,
+así que lo que hoy —14/08— se adelante de septiembre desaparece el 1/9.
+
+Las salidas posibles, con lo que cuesta cada una:
+
+- **Aplicar las filas del período sobre `cards` cuando el mes pasa a ser vigente**, dentro de la
+  función de reinicio. Es lo que respeta el propósito declarado de todo el diseño de períodos, y
+  es una migración que toca las mismas funciones que el hallazgo 1.
+- **Mergear `card_periodos` también en el mes vigente.** Más chico, y **peor**: como las
+  ediciones del mes vigente van a `cards`, la lectura mergeada mostraría el estado adelantado
+  encima del trabajo nuevo, para siempre.
+- **Sacar el mes siguiente del selector.** Cierra el agujero en una línea y elimina la única
+  función por la que existen los períodos.
+
+---
+
 ## 1. Volver a correr el reinicio mensual DESTRUYE el archivo del mes
 
 **Dónde:** `migracion-37-reinicio-mensual-manual.sql:150-171`, y el botón que lo dispara en

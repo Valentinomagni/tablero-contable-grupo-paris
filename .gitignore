@@ -15,8 +15,14 @@ consultas-bandeja.md
 # superpowers-main: el marketplace de skills, codigo de terceros.
 # tablero-contable-v1-LEGADO: la app vieja. Lo que valia se rescato a db/historico/
 # y a edge-functions/crear-usuario.ts; el resto es historia, no fuente.
+# gstack-main: otra carpeta de terceros que aparecio adentro del proyecto. No estaba
+# ignorada, asi que ensuciaba `git status` y la levantaba cualquier `git add -A` — que es
+# exactamente como una vez entraron 173 archivos ajenos a un commit. Ademas oxlint la
+# recorria y sus warnings se mezclaban con los del proyecto, que es peor que ruido: hace
+# que "lint en 0" deje de significar algo.
 superpowers-main/
 tablero-contable-v1-LEGADO/
+gstack-main/
 
 # Respaldos y paquetes armados a mano. No son fuente.
 *.zip

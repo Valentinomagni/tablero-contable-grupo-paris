@@ -13,24 +13,34 @@ import type { Card } from "../../lib/types";
 // Espía de la escritura a la base. Existe por un solo caso: soltar una tarjeta en una columna
 // PLEGADA. Ahí no hay nada visible que cambie en el momento, así que sin mirar si se pidió el
 // movimiento no se puede distinguir "funcionó" de "no pasó nada" — que es justo el bug a evitar.
-const espia = vi.hoisted(() => ({ update: vi.fn() }));
+const espia = vi.hoisted(() => ({ update: vi.fn(), filas: {} as Record<string, unknown[]> }));
 
 // El Board consulta la base al montar (organización, tiempos máximos, migraciones, trigger
-// de notificaciones). Acá no se toca Supabase de verdad: se devuelve siempre "sin datos",
+// de notificaciones). Acá no se toca Supabase de verdad: por defecto se devuelve "sin datos",
 // que es el mismo camino que toma la app cuando esas migraciones no están aplicadas.
+//
+// `espia.filas` es la única excepción, y existe por el arqueo mensual: su contador ("6 de 21")
+// sale de DOS tablas —las ocurrencias del mes y los días no laborables— así que sin poder
+// devolver filas distintas según la tabla no hay forma de probar que el denominador respeta los
+// feriados. Y ése es justo el número que tiene que coincidir con la planilla de Patricia.
 vi.mock("../../lib/supabase", () => {
-  const sinDatos = {
-    select: () => sinDatos,
-    eq: () => sinDatos,
-    maybeSingle: async () => ({ data: null, error: null }),
-    then: (r: (v: { data: null; error: null }) => unknown) => Promise.resolve({ data: null, error: null }).then(r),
-    insert: async () => ({ error: null }),
-    update: (body: unknown) => { espia.update(body); return sinDatos; },
+  const consulta = (tabla: string) => {
+    const q: Record<string, unknown> = {};
+    // Los filtros no filtran nada: el test decide qué filas ve cada tabla. Alcanza de sobra
+    // para probar comportamiento de pantalla, que es lo único que se prueba acá.
+    for (const m of ["select", "eq", "gte", "lte", "in", "order", "limit"]) q[m] = () => q;
+    q.maybeSingle = async () => ({ data: null, error: null });
+    q.insert = async () => ({ error: null });
+    q.upsert = async () => ({ error: null });
+    q.update = (body: unknown) => { espia.update(body); return q; };
+    q.then = (r: (v: { data: unknown; error: null }) => unknown) =>
+      Promise.resolve({ data: espia.filas[tabla] ?? null, error: null }).then(r);
+    return q;
   };
   return {
     SUPABASE_URL: "https://ejemplo.invalid",
     supabase: {
-      from: () => sinDatos,
+      from: (tabla: string) => consulta(tabla),
       rpc: async () => ({ data: null, error: new Error("sin rpc") }),
       auth: { getSession: async () => ({ data: { session: null } }) },
     },
@@ -46,17 +56,17 @@ function card(over: Partial<Card> = {}): Card {
   };
 }
 
-function montar(cards: Card[], onOpen = vi.fn()) {
+function montar(cards: Card[], onOpen = vi.fn(), extra: { periodo?: string; cerrado?: boolean } = {}) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={qc}>
-      <Board cards={cards} activity={[]} ownerId="u1" meName="Ana" onOpen={onOpen} />
+      <Board cards={cards} activity={[]} ownerId="u1" meName="Ana" onOpen={onOpen} {...extra} />
     </QueryClientProvider>,
   );
   return { onOpen };
 }
 
-beforeEach(() => { localStorage.clear(); espia.update.mockClear(); });
+beforeEach(() => { localStorage.clear(); espia.update.mockClear(); espia.filas = {}; });
 afterEach(cleanup);
 
 describe("Board", () => {
@@ -232,5 +242,103 @@ describe("Board · columnas plegables", () => {
     fireEvent.drop(screen.getByTestId("columna-term"), suelta("c1"));
     await waitFor(() => expect(espia.update).toHaveBeenCalled());
     expect(espia.update.mock.calls[0][0]).toMatchObject({ status: "term" });
+  });
+});
+
+// El reporte de Patricia: "hoy se genera una tarea por cada día hábil y la lista es
+// interminable". Los arqueos YA se guardaban por día en `task_occurrences` desde la migración
+// 23; lo que faltaba era mostrarlos juntos — una sola tarjeta con el avance del mes adentro.
+//
+// REGLA QUE PROTEGE, y es la que decide si la función sirve: el contador tiene que coincidir
+// con lo que ella ve en su planilla. Si "6 de 21" no cierra —porque el denominador cuenta
+// sábados, o ignora un feriado— la tarjeta es PEOR que no tenerla: un número que no cierra
+// hace que se deje de creer también el resto del tablero.
+describe("Board · arqueo mensual", () => {
+  const arqueo = (over: Partial<Card> = {}) => card({
+    id: "arq", title: "Arqueo de caja", status: "proc",
+    recur_rule: { tipo: "diaria" }, requiere_resultado: true, ...over,
+  });
+
+  // Agosto de 2026 tiene 21 días hábiles (31 días, 10 entre sábados y domingos). Seis hechos.
+  const HECHOS = ["2026-08-03", "2026-08-04", "2026-08-05", "2026-08-06", "2026-08-07", "2026-08-10"];
+  const ocurrencias = (fechas: string[]) =>
+    fechas.map((fecha, i) => ({ id: `o${i}`, card_id: "arq", owner: "u1", fecha, done: true, done_at: null }));
+
+  // El mes se fija con `periodo` y no se deja al reloj: un test cuyo resultado cambia según el
+  // día en que se corre no prueba nada, y encima falla solo un martes cualquiera.
+  const enAgosto = (cards: Card[], onOpen = vi.fn()) => montar(cards, onOpen, { periodo: "2026-08" });
+
+  // El avance llega de DOS consultas asincrónicas (las ocurrencias del mes y los feriados), así
+  // que hay que esperarlo. Los tiempos largos —acá y en el `timeout` de cada `it`— no tapan
+  // ningún bug: con la suite entera corriendo, el primer montaje de esta pantalla tarda bastante
+  // más que los siguientes, y con el segundo por defecto esto fallaba una vez cada tantas. Un
+  // test que falla cuando la máquina está cargada se termina borrando por molesto, y ahí se
+  // pierde la protección entera. Mismo criterio que los guardianes de `src/lib`.
+  const LENTO = { timeout: 30_000 };
+  const esperar = (txt: RegExp | string) => screen.findByText(txt, {}, { timeout: 10_000 });
+
+  it("el mes entero se ve en UNA tarjeta, no en una por día", LENTO, async () => {
+    espia.filas.task_occurrences = ocurrencias(HECHOS);
+    enAgosto([arqueo()]);
+    expect(await esperar(/6 de 21/)).toBeInTheDocument();
+    expect(screen.getAllByText("Arqueo de caja")).toHaveLength(1);
+    // Los días viven ADENTRO de la tarjeta: el tablero no se llena de tarjetas iguales.
+    expect(screen.queryByTitle(/2026-08-03/)).toBeNull();
+  });
+
+  it("un feriado no cuenta en el total, aunque el mes tenga ese día", LENTO, async () => {
+    espia.filas.task_occurrences = ocurrencias(HECHOS);
+    espia.filas.dias_no_laborables = [{ fecha: "2026-08-17", motivo: "Paso a la Inmortalidad" }];
+    enAgosto([arqueo()]);
+    // 21 hábiles menos el feriado. Si acá dijera 21, el avance de todo el equipo daría por
+    // debajo de lo real cada mes que tenga feriado — que en Argentina son casi todos.
+    expect(await esperar(/6 de 20/)).toBeInTheDocument();
+  });
+
+  it("al abrirla aparecen los días del mes", LENTO, async () => {
+    espia.filas.task_occurrences = ocurrencias(HECHOS);
+    enAgosto([arqueo()]);
+    await esperar(/6 de 21/);
+    fireEvent.click(screen.getByText("Ver los días"));
+    expect(screen.getByTitle(/2026-08-04/)).toBeInTheDocument();
+    expect(screen.getByTitle(/2026-08-31/)).toBeInTheDocument();
+  });
+
+  // Las dos cosas que la vuelven inútil si se rompen: si no se arrastra, deja de ser una
+  // tarjeta del tablero; si no se abre, no se llega al detalle de la tarea.
+  it("se arrastra a otra columna como cualquier otra tarjeta", LENTO, async () => {
+    espia.filas.task_occurrences = ocurrencias(HECHOS);
+    enAgosto([arqueo()]);
+    await esperar(/6 de 21/);
+    fireEvent.drop(screen.getByTestId("columna-term"), { dataTransfer: { getData: () => "arq", setData: vi.fn() } });
+    await waitFor(() => expect(espia.update).toHaveBeenCalled(), { timeout: 10_000 });
+    expect(espia.update.mock.calls[0][0]).toMatchObject({ status: "term" });
+  });
+
+  it("se abre con el mouse y con el teclado, como cualquier otra tarjeta", LENTO, async () => {
+    espia.filas.task_occurrences = ocurrencias(HECHOS);
+    const { onOpen } = enAgosto([arqueo()]);
+    const titulo = await esperar("Arqueo de caja");
+    fireEvent.click(titulo);
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    fireEvent.keyDown(titulo.closest("[role='button']")!, { key: "Enter" });
+    expect(onOpen).toHaveBeenCalledTimes(2);
+  });
+
+  // Marcar el arqueo de un día y abrir la tarea son dos intenciones distintas. Si tocar un día
+  // abriera la tarjeta, registrar el arqueo sería imposible sin pelearse con la pantalla.
+  it("tocar un día registra el arqueo y no abre la tarea", LENTO, async () => {
+    espia.filas.task_occurrences = ocurrencias(HECHOS);
+    const { onOpen } = enAgosto([arqueo({ requiere_resultado: false })]);
+    await esperar(/6 de 21/);
+    fireEvent.click(screen.getByText("Ver los días"));
+    fireEvent.click(screen.getByTitle(/2026-08-04/));
+    await waitFor(() => expect(espia.update).toHaveBeenCalled(), { timeout: 10_000 });
+    expect(onOpen).not.toHaveBeenCalled();
+  });
+
+  it("una tarea que no se hace todos los días no habla de días hábiles", () => {
+    enAgosto([card()]);
+    expect(screen.queryByText(/días hábiles/)).toBeNull();
   });
 });

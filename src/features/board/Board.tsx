@@ -25,11 +25,22 @@ import { filtrarPorSegmento } from "../../lib/segmento";
 import { Clock, ListChecks, Lock, Hourglass, Repeat, MessageSquare, Check, X, Users, Shield, Layers, Plane, Tag, ChevronDown, ChevronRight } from "lucide-react";
 import { esCobertura } from "../../lib/vacaciones";
 import { NuevaTareaModal } from "./NuevaTareaModal";
+import { ArqueoMensual } from "./ArqueoMensual";
 import { Carriles } from "./Carriles";
 import { MenuColumna } from "./MenuColumna";
 import { vistaDeColumna, parseVistas, type VistaColumna, type VistasPorColumna } from "../../lib/columna-vista";
 
 const DOT: Record<string, string> = { pend: "bg-naranja", proc: "bg-s1", term: "bg-done" };
+
+/**
+ * ¿Esta tarjeta es una tarea de todos los días (el arqueo de caja y sus parientes)?
+ *
+ * El criterio es la recurrencia diaria y NO `requiere_resultado`, para que coincida con el único
+ * otro lugar que ya decide lo mismo: `MetaSection` monta la grilla de cumplimiento exactamente
+ * cuando `recur_rule.tipo === "diaria"`. Con dos criterios distintos habría tarjetas con avance
+ * en el tablero y sin grilla adentro —o al revés— y nadie sabría cuál de los dos manda.
+ */
+const esArqueoMensual = (c: Card) => c?.recur_rule?.tipo === "diaria";
 
 function DueBadge({ c }: { c: Card }) {
   const info = dueInfo(c);
@@ -327,11 +338,23 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
         + Añadir {col === "oper" ? "operativa" : "tarea"}</button>
     );
 
+  // Mes que está mirando el tablero, 'YYYY-MM': el período elegido o, si no hay selector, el mes
+  // de HOY en hora argentina. De acá salen los días hábiles del arqueo, así que no puede salir
+  // del mes del navegador: en otro huso, el 1 a la mañana el tablero contaría el mes anterior.
+  const mesTablero = (periodo ?? toARTDate(new Date().toISOString())).slice(0, 7);
+
   // Una sola forma de dibujar una card, la use la columna plana o un carril:
   // así el arrastrar (setData con el id) es idéntico en los dos modos.
+  //
+  // El arqueo (y cualquier tarea de todos los días) se dibuja distinto ADENTRO, pero va en el
+  // mismo <div draggable> y con el mismo `onOpen`: por eso se sigue arrastrando y abriendo como
+  // cualquier otra. Si fuera un bloque aparte del tablero dejaría de ser una tarea y pasaría a
+  // ser un panel — y ahí se pierde mover, agrupar, filtrar y todo lo demás.
   const renderCard = (c: Card) => (
     <div key={c.id} draggable onDragStart={(e) => e.dataTransfer.setData("text/plain", c.id)}>
-      <CardItem c={c} blocked={isBlocked(c)} waiting={c.status !== "term" && dependents(c.id).length > 0} esperaTitulos={bloqueadaPorTitulos(c, cards)} onOpen={onOpen} />
+      {esArqueoMensual(c)
+        ? <ArqueoMensual c={c} mes={mesTablero} cerrado={cerrado} onOpen={onOpen} />
+        : <CardItem c={c} blocked={isBlocked(c)} waiting={c.status !== "term" && dependents(c.id).length > 0} esperaTitulos={bloqueadaPorTitulos(c, cards)} onOpen={onOpen} />}
     </div>
   );
 

@@ -17,8 +17,11 @@ const pad = (n: number) => String(n).padStart(2, "0");
 // Fuente única: lee/escribe task_occurrences (misma tabla que el calendario).
 // Arqueo (spec24 item 9): si `requiere`, al marcar un día pide el resultado (ok/dif) y colorea
 // los días según el resultado; muestra panel de cumplimiento + mini evolución 6 meses.
-export function CumplimientoDiario({ cardId, owner, year, month, requiere = false }:
-  { cardId: string; owner: string; year: number; month: number; requiere?: boolean }) {
+// soloLectura (mes cerrado, Fase 3): la grilla se puede mirar pero no tocar. Existe desde que
+// la grilla también se ve en el tablero: ahí el mes cerrado es de consulta, y sin este corte
+// habría un camino nuevo para escribir en un mes que ya se cerró.
+export function CumplimientoDiario({ cardId, owner, year, month, requiere = false, soloLectura = false }:
+  { cardId: string; owner: string; year: number; month: number; requiere?: boolean; soloLectura?: boolean }) {
   const qc = useQueryClient();
   const { data: ocurrencias = [] } = useCardOccurrences(cardId, year, month);
   const { data: todas = [] } = useCardOccurrencesAll(cardId, requiere);
@@ -107,7 +110,7 @@ export function CumplimientoDiario({ cardId, owner, year, month, requiere = fals
           const pasadoSinHacer = !done && fecha < hoyISO;
           const tituloDif = esDif ? ` · ${textoDiferencia(o?.dif_importe ?? null)}${o?.dif_obs ? " — " + o.dif_obs : ""}` : "";
           return (
-            <button key={fecha} onClick={() => onDiaClick(fecha)} disabled={setOcc.isPending}
+            <button key={fecha} onClick={() => onDiaClick(fecha)} disabled={soloLectura || setOcc.isPending}
               title={fecha + (esDif ? tituloDif : done ? " · hecho" : pasadoSinHacer ? " · sin hacer" : " · pendiente")}
               className={cn("h-9 rounded-lg text-xs tnum border grid place-items-center transition",
                 esDif ? "bg-warn-soft text-warn border-warn/50 font-semibold"
@@ -127,7 +130,9 @@ export function CumplimientoDiario({ cardId, owner, year, month, requiere = fals
           onCancel={() => setPendiente(null)} />
       )}
       <p className="text-ink2 text-xs mt-2">
-        {requiere ? "Tocá un día para registrar el arqueo (sin diferencias o con diferencias)." : "Tocá un día para registrar el cumplimiento (ej: arqueo de caja)."}
+        {soloLectura ? "Este mes está cerrado: se puede consultar, no editar."
+          : requiere ? "Tocá un día para registrar el arqueo (sin diferencias o con diferencias)."
+          : "Tocá un día para registrar el cumplimiento (ej: arqueo de caja)."}
       </p>
     </div>
   );
