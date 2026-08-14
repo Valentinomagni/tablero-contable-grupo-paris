@@ -3,6 +3,22 @@
 // nueva arriba de todo y la versión se actualiza sola (ver docs/RELEASE.md).
 export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] = [
   {
+    version: "2.14.0",
+    fecha: "2026-08-14",
+    cambios: [
+      "Los fines de semana y los feriados dejaron de contar como demora. Una tarea entregada el viernes y revisada el lunes figuraba con cuatro días de espera; dos de esos días la oficina estaba cerrada. El jefe ahora carga los feriados desde Administración.",
+      "El arqueo y cualquier tarea de todos los días se ven en UNA sola tarjeta con el avance del mes (\"6 de 21 días hábiles\") y los días adentro, en vez de una tarjeta por día.",
+      "Las columnas del tablero se pliegan. Plegada muestra el título y cuántas tareas tiene, y si arrastrás algo encima se abre sola.",
+      "Nuevo registro de transferencias de clientes dentro de la tarea que las controla, con aviso cuando una se parece a otra ya cargada. El aviso no bloquea: muestra la parecida y pregunta si es la misma.",
+      "El aviso de \"¿seguís con esto?\" y el de riesgo del resumen ahora cuentan días de trabajo. Antes una tarea tocada el viernes a la tarde disparaba el aviso el miércoles.",
+      "\"Cumplimiento del mes\" ahora mira el mes. Antes sumaba tareas terminadas de meses anteriores, así que subía solo con el paso del tiempo y no bajaba de 90% aunque no se hiciera nada. Es probable que veas el número más bajo, y es el correcto.",
+      "Una pestaña dejada abierta cuando cambia el mes ya no muestra el tablero vacío. Antes parecía que se había perdido todo, y lo que se marcaba después quedaba guardado en el mes viejo.",
+      "El semáforo del Cierre detecta de verdad cuando las tareas que se repiten no arrancaron el mes en cero. Daba luz verde justo en el caso que había que detectar.",
+      "Mirando el día de otra persona, la pantalla dice \"Su día\" y no \"Mi día\".",
+      "Cuando una función todavía no está habilitada, la app lo dice en castellano y te dice a quién avisarle, en vez de nombrar un número de migración. Y ya no dice \"no disponible\" mientras está cargando.",
+    ],
+  },
+  {
     version: "2.13.1",
     fecha: "2026-08-05",
     cambios: [
