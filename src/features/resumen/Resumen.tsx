@@ -4,6 +4,7 @@ import { Download, ClipboardCopy, Inbox, AlarmClock, CheckCircle2, Activity, Arr
 import type { Card, Profile, ActivityLog, Announcement } from "../../lib/types";
 import { RadarVencimientos } from "./RadarVencimientos";
 import { Delegaciones } from "./Delegaciones";
+import { EsperasExternas } from "./EsperasExternas";
 import { dueInfo, fmtDateTime, wow, onTimeAdherence, toARTDate, type Wow } from "../../lib/metrics";
 import { alertasDeRiesgo } from "../../lib/alertas";
 import { isBlocked } from "../../lib/deps";
@@ -207,6 +208,11 @@ export function Resumen({ cards, team, activity, onOpenCard, onGoPerson, onDeleg
       )}
 
       {esGestor && <Delegaciones cards={cards} team={teamSeg} hoyISO={hoyISO} onOpenCard={onOpenCard} />}
+
+      {/* Lo que espera a otra área va JUNTO a las delegaciones y no con las tareas trabadas del
+          equipo, porque no es lo mismo: son demoras que no son suyas. Mezclarlas es lo que hacía
+          que una espera de Ventas se leyera como lentitud contable. */}
+      {esGestor && <EsperasExternas cards={cards} hoyISO={hoyISO} onOpenCard={onOpenCard} />}
 
       {arca.length > 0 && (
         <div className="bg-surface border border-line rounded-2xl px-5 py-4 mb-5" style={cardSh}>

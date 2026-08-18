@@ -13,8 +13,9 @@ import { Users, AlertTriangle, X } from "lucide-react";
 import { CumplimientoDiario } from "../CumplimientoDiario";
 import { estadoTiempo, registrarIncumplimiento } from "../../../lib/tiempos";
 import { textoTransicion } from "../../../lib/retrabajo";
-import { useTiemposMax, useMigraciones } from "../../../hooks/useData";
-import { tieneEtiquetas } from "../../../lib/esquema";
+import { useTiemposMax, useMigraciones, useOrganizacion, useDiasNoLaborables } from "../../../hooks/useData";
+import { tieneEtiquetas, tieneBloqueoArea } from "../../../lib/esquema";
+import { textoBloqueo } from "../../../lib/bloqueo-area";
 import { textoNoHabilitado } from "../../../lib/disponibilidad";
 import { bloqueoDeTransicion } from "../../../lib/transicion";
 
@@ -33,6 +34,13 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
   // Por eso el bloque entero se degrada igual que Empresas: aviso en vez de input.
   const { data: migracionesAplicadas } = useMigraciones();
   const etiquetasHabilitadas = tieneEtiquetas(migracionesAplicadas);
+  // Esperas por otra área (migración 54). Mismo gate defensivo que las etiquetas: sin la
+  // migración las columnas no existen y `payloadCards` las descarta, así que ofrecer el selector
+  // sería prometer un guardado que no ocurre.
+  const bloqueoHabilitado = tieneBloqueoArea(migracionesAplicadas);
+  const org = useOrganizacion();
+  const noLaborables = useDiasNoLaborables();
+  const textoEspera = textoBloqueo(c, new Date().toISOString(), noLaborables);
   const est = estadoTiempo(c, tiemposConfig, new Date().toISOString());
   const [recurTipo, setRecurTipo] = useState<RecurRule["tipo"] | "">(c.recur_rule?.tipo ?? "");
   const [recurDias, setRecurDias] = useState<number[]>(c.recur_rule?.dias ?? []);
@@ -184,6 +192,34 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
             );
           })()}
         </div>
+
+        {/* ESPERANDO A OTRA ÁREA (migración 54).
+            Hoy, cuando el trabajo se traba porque falta algo de Ventas o de RRHH, esa demora
+            aparece como demora del equipo contable: la tarea se ve quieta y nadie sabe que la
+            pelota está afuera. Esto lo registra.
+            La fecha se sella SOLA al elegir el área, no la escribe nadie: si dependiera de que
+            alguien la cargue, la mitad quedarían sin fecha y el dato no serviría — por eso la
+            base tiene un check que exige las dos juntas. */}
+        {bloqueoHabilitado && (
+          <div className="flex gap-4 flex-wrap items-center text-sm text-ink2 mb-2">
+            <label className="flex items-center gap-1.5">Esperando a
+              <select value={c.bloqueo_area ?? ""} disabled={locked}
+                onChange={(e) => {
+                  const area = e.target.value || null;
+                  patch.mutate({
+                    bloqueo_area: area,
+                    bloqueo_desde: area ? new Date().toISOString() : null,
+                    history: hist(area ? `Quedó esperando a ${area}` : "Se destrabó"),
+                  });
+                }}
+                className="bg-surface2 border border-line rounded-lg px-2 py-1 text-ink text-sm disabled:opacity-60">
+                <option value="">Nadie: no está trabada</option>
+                {org.areas.map((a) => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </label>
+            {textoEspera && <span className="text-warn font-semibold">{textoEspera}</span>}
+          </div>
+        )}
 
         {/* Etiquetas (spec 28, fase D, Task 5): contexto (empresa/marca puntual/cliente),
             distintas de la categoría (tipo de trabajo). Múltiples por tarea. */}

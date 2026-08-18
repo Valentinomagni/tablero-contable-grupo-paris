@@ -67,6 +67,18 @@ export const MIGRACION_CHECKLIST_GATE = 41;
 export const CAMPOS_CHECKLIST_GATE = ["exige_checklist"] as const;
 
 /**
+ * Migración que agrega `cards.bloqueo_area` y `cards.bloqueo_desde` (esperas por otra área).
+ *
+ * Gate propio, igual que las de arriba: sin ella las columnas no existen, y si viajaran en el
+ * payload PostgREST fallaría el update ENTERO con 42703 — o sea que mover cualquier tarjeta
+ * dejaría de funcionar por un campo que ni siquiera se está usando.
+ */
+export const MIGRACION_BLOQUEO_AREA = 54;
+
+/** Columnas de `cards` que sólo existen con la migración 54 aplicada. */
+export const CAMPOS_BLOQUEO_AREA = ["bloqueo_area", "bloqueo_desde"] as const;
+
+/**
  * ¿Está aplicada la migración 41 (`cards.exige_checklist`)? Ante la duda: false.
  *
  * Con false, la casilla "exige checklist completo" no se muestra al crear ni al editar una
@@ -93,7 +105,7 @@ export const COLUMNAS_CARDS = [
   "done_at", "due_date", "recurring", "priority", "effort", "card_type", "deps",
   "created_at", "recur_rule", "protected", "categoria", "reset_policy",
   "requiere_resultado", "exige_checklist", "sucursal", "marca", "proc_at", "tiempo_max_horas", "dato_control",
-  "etiquetas",
+  "etiquetas", "bloqueo_area", "bloqueo_desde",
 ].join(",");
 
 /** Columnas de `profiles` que sólo existen con la migración 29 aplicada. */
@@ -110,6 +122,11 @@ export const CAMPOS_ADMIN_SISTEMA_PROFILES = ["admin_sistema"] as const;
  */
 export function tieneEsquemaNuevo(aplicadas: number[] | null | undefined): boolean {
   return tieneMigracion(aplicadas, MIGRACION_ESQUEMA_NUEVO);
+}
+
+/** ¿Está aplicada la migración 54 (esperas por otra área)? Mismo criterio ante la duda: false. */
+export function tieneBloqueoArea(aplicadas: number[] | null | undefined): boolean {
+  return tieneMigracion(aplicadas, MIGRACION_BLOQUEO_AREA);
 }
 
 /** ¿Está aplicada la migración 31 (`cards.etiquetas`)? Mismo criterio ante la duda: false. */
@@ -160,7 +177,8 @@ export function payloadCompatible<T extends object>(
 export function payloadCards<T extends object>(payload: T, aplicadas: number[] | null | undefined): T {
   const sinViejos = payloadCompatible(payload, aplicadas, CAMPOS_NUEVOS_CARDS, MIGRACION_ESQUEMA_NUEVO);
   const sinEtiquetas = payloadCompatible(sinViejos, aplicadas, CAMPOS_ETIQUETAS_CARDS, MIGRACION_ETIQUETAS);
-  return payloadCompatible(sinEtiquetas, aplicadas, CAMPOS_CHECKLIST_GATE, MIGRACION_CHECKLIST_GATE);
+  const sinGate = payloadCompatible(sinEtiquetas, aplicadas, CAMPOS_CHECKLIST_GATE, MIGRACION_CHECKLIST_GATE);
+  return payloadCompatible(sinGate, aplicadas, CAMPOS_BLOQUEO_AREA, MIGRACION_BLOQUEO_AREA);
 }
 
 /**
