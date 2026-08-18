@@ -27,6 +27,26 @@ export interface Card {
   priority: "alta" | "media" | "baja"; effort: 1 | 2 | 3 | 5;
   card_type: "normal" | "operativa"; deps: string[]; created_at: string;
   recur_rule?: RecurRule | null;
+  /**
+   * Área externa que tiene trabada esta tarea (migración 54). `null` = no está trabada.
+   *
+   * NO es una dependencia: `deps` es tarea-a-tarea y sólo funciona entre tareas que existen acá.
+   * Ventas no usa el tablero y no lo va a usar. Esto registra una espera, que es otra cosa.
+   *
+   * Para qué sirve: hoy, cuando el trabajo se traba por otra área, esa demora aparece como
+   * demora del equipo contable. El jefe ve tareas quietas y no tiene cómo saber que la pelota
+   * está afuera.
+   */
+  bloqueo_area?: string | null;
+  /**
+   * Desde cuándo espera. Va junta con `bloqueo_area` — la base tiene un check que exige las dos
+   * o ninguna.
+   *
+   * Sin la fecha, "bloqueada por Ventas" es una etiqueta con la que no se puede hacer nada: no
+   * se sabe si espera hace un día o hace un mes. Con fecha es "hace 6 días hábiles", y con eso
+   * alguien puede levantar el teléfono.
+   */
+  bloqueo_desde?: string | null;
   protected?: boolean;
   categoria?: string | null;
   reset_policy?: "mensual" | "mantener" | "manual";
