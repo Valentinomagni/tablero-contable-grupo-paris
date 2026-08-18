@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { mensajeUsuario } from "../../lib/fallas";
+import { mensajeUsuario, FallaDeUsuario } from "../../lib/fallas";
 import { EmptyState } from "../../components/EmptyState";
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -8,7 +8,7 @@ import { COLS, type Card, type Status, type ActivityLog, type Profile, type Card
 import { notifsAlFinalizar, debeNotificarDesdeCliente } from "../../lib/notificaciones";
 import { dueInfo, fmtDateTime, toARTDate } from "../../lib/metrics";
 import { cn, teclaActiva } from "../../lib/ui";
-import { motivoChecklist } from "../../lib/checklist-gate";
+import { bloqueoDeTransicion } from "../../lib/transicion";
 import { pushUndo } from "../../lib/undo";
 import { isShared, siblingSyncPatches } from "../../lib/shared";
 import { bloqueadaPorTitulos } from "../../lib/deps";
@@ -184,13 +184,21 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
       // Mes cerrado = sólo lectura (Fase 3). El corte va acá, en la mutación, y no sólo en
       // la UI: es lo único que cubre el drag & drop, los atajos y cualquier camino futuro.
       if (cerrado) throw new Error("Este mes está cerrado. Para modificarlo, reabrilo desde Cierre.");
-      // Checklist obligatorio, por el mismo motivo que la línea de arriba: acá es el único
-      // lugar que cubre el arrastre. El botón del modal y el cierre rápido de Mi día ya lo
-      // miran, pero arrastrar a Terminado los saltea a los dos.
-      if (status === "term") {
-        const falta = motivoChecklist(cardPrev);
-        if (falta) throw new Error(falta + " Abrí la tarea para completarlos.");
-      }
+      // Las dos reglas de estado viven en `transicion.ts` y las consultan los SEIS caminos que
+      // cierran una tarea. Antes acá se miraba sólo el checklist, así que arrastrar de
+      // Pendiente a Terminado salteaba "En proceso" sin que nada avisara y dejaba `proc_at`
+      // en null: la tarea figuraba resuelta en cero horas.
+      //
+      // Va como `throw` y no como `toast + return` porque esta mutación es OPTIMISTA: la
+      // tarjeta ya se movió de columna en pantalla. Sólo el error dispara el rollback de
+      // `onError` — que además muestra el motivo. Un `return` la dejaría en Terminado sin
+      // haber guardado nada.
+      //
+      // Y va como `FallaDeUsuario` y no como `Error` pelado porque `mensajeUsuario` sólo
+      // respeta el texto de esa clase: un `Error` común cae en la rama genérica y la persona
+      // lee "No se pudo mover la tarea" en vez de cuántos pasos le faltan.
+      const falta = bloqueoDeTransicion(cardPrev, status);
+      if (falta) throw new FallaDeUsuario(falta);
       const c = cardPrev;
       const now = new Date().toISOString();
       const patch: Partial<Card> = { status };

@@ -3,7 +3,8 @@ import { toast } from "sonner";
 import { supabase } from "../../lib/supabase";
 import type { Card } from "../../lib/types";
 import { HelpCircle } from "lucide-react";
-import { mensajeUsuario } from "../../lib/fallas";
+import { mensajeUsuario, FallaDeUsuario } from "../../lib/fallas";
+import { bloqueoDeTransicion } from "../../lib/transicion";
 
 /**
  * P1 — el aviso de tarea estancada. Tarjeta discreta dentro de "Mi día":
@@ -42,6 +43,11 @@ export function EstancadaPrompt({ card, diasSinMover, quien, onAbrir, onPosponer
   // la razón de ser de toda la propuesta.
   const terminar = useMutation({
     mutationFn: async () => {
+      // Este aviso también cierra tareas, así que también consulta la regla: es uno de los
+      // seis caminos. Sin esto, el atajo más cómodo de todos —un botón en la pantalla de
+      // inicio— era justo el que salteaba En proceso y el checklist.
+      const falta = bloqueoDeTransicion(card, "term");
+      if (falta) throw new FallaDeUsuario(falta + " Abrila para hacerlo.");
       const ahora = new Date().toISOString();
       const hist = [...(card.history ?? []), { who: quien, at: ahora, txt: "Marcó la tarea como terminada" }];
       const { error } = await supabase.from("cards")

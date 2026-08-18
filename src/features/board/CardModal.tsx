@@ -9,7 +9,7 @@ import { type DepMap } from "../../lib/deps";
 import { pushUndo } from "../../lib/undo";
 import { siblingSyncPatches } from "../../lib/shared";
 import { notifsAlFinalizar, debeNotificarDesdeCliente } from "../../lib/notificaciones";
-import { checklistIncompleto, motivoChecklist } from "../../lib/checklist-gate";
+import { bloqueoDeTransicion, puedeCerrar } from "../../lib/transicion";
 import { Check, Copy, Lock, Pencil, Trash2, Minus, Plus, Shield, ShieldCheck, Coins, Plane } from "lucide-react";
 import { esCobertura } from "../../lib/vacaciones";
 import { filaDuplicada } from "../../lib/duplicar";
@@ -251,16 +251,17 @@ export function CardModal({ card: c, cards, team, activity = [], isJefe, onClose
         <div className="flex gap-2 mt-4.5 flex-wrap items-center pt-4">
           {c.status !== "term"
             ? <>
-                {/* El checklist obligatorio se pide desde el modal, que es donde más se cierra
-                    una tarea. Hasta acá sólo lo miraba el cierre rápido de Mi día, así que la
-                    regla existía y se podía saltear por el camino más usado. */}
+                {/* Las dos reglas de estado se piden desde el modal, que es donde más se cierra
+                    una tarea. Antes acá se miraba sólo el checklist —y encima detrás del flag
+                    `exige_checklist`, que ninguna tarea tenía prendido—, así que este camino
+                    dejaba pasar el salto de Pendiente a Terminado. */}
                 <button onClick={() => patch.mutate({ status: "term", done_at: new Date().toISOString(), history: hist("Marcó terminada") })}
-                  disabled={checklistIncompleto(c)}
+                  disabled={!puedeCerrar(c)}
                   className="inline-flex items-center gap-1.5 bg-accent text-[color:var(--accent-ink)] font-semibold rounded-lg px-3.5 py-2 text-sm disabled:opacity-50 disabled:pointer-events-none"><Check size={14} /> Marcar terminada</button>
-                {/* El motivo dice CUÁNTOS pasos faltan. "No se puede cerrar" obliga a buscar por
-                    qué; el número lleva directo al checklist que está más arriba en este mismo
-                    modal. */}
-                {motivoChecklist(c) && <span className="text-ink2 text-sm">{motivoChecklist(c)}</span>}
+                {/* El motivo dice CUÁNTOS pasos faltan, o que primero hay que pasarla a En
+                    proceso. Un botón gris sin explicación al lado se lee como un bug: la
+                    persona no tiene forma de saber qué le falta. */}
+                {bloqueoDeTransicion(c, "term") && <span className="text-ink2 text-sm">{bloqueoDeTransicion(c, "term")}</span>}
               </>
             : locked ? <span className="inline-flex items-center gap-1.5 text-ink2 text-sm"><Lock size={13} /> Solo un jefe puede reabrir esta tarea</span>
             : <button onClick={() => patch.mutate({ status: "proc", done_at: null, history: hist(TXT_REAPERTURA) })}

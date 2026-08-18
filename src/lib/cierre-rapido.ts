@@ -1,5 +1,5 @@
 import type { Card } from "./types";
-import { checklistIncompleto, motivoChecklist } from "./checklist-gate";
+import { bloqueoDeTransicion } from "./transicion";
 
 // Cerrar una tarea de UN TOQUE desde la lista — P5 de docs/PROPUESTAS-ADOPCION.md.
 //
@@ -28,9 +28,11 @@ export function sePuedeCerrarRapido(c: Card, todas: Card[]): boolean {
   if (c.protected === true) return false;
   // Bloqueada: cerrarla saltearía el motivo por el que espera.
   if (estaBloqueada(c, todas)) return false;
-  // Exige el checklist completo: cerrarla de un toque saltearía justamente los pasos que
-  // alguien marcó como obligatorios. Mismo criterio que `requiere_resultado` de arriba.
-  if (checklistIncompleto(c)) return false;
+  // Las dos reglas de estado, las mismas que los otros cinco caminos (`transicion.ts`): el
+  // checklist va completo y no se salta En proceso. Cerrar de un toque una tarea Pendiente
+  // sellaba `proc_at` en el mismo instante que `done_at` — el registro decía que se resolvió
+  // en cero horas, que es la ficción que la regla 1 vino a sacar del medio.
+  if (bloqueoDeTransicion(c, "term")) return false;
   return true;
 }
 
@@ -49,8 +51,10 @@ function estaBloqueada(c: Card, todas: Card[]): boolean {
 export function MOTIVO_NO_RAPIDO(c: Card, todas: Card[]): string | null {
   if (!c || c.status === "term") return null;
   if (c.requiere_resultado === true) return "Abrila para elegir el resultado del control.";
-  const falta = motivoChecklist(c);
-  if (falta) return falta + " Abrila para completarlos.";
+  // El motivo sale de la misma función que decide, no de una copia: si divergieran, el botón
+  // quedaría deshabilitado explicando algo distinto de lo que lo deshabilitó.
+  const falta = bloqueoDeTransicion(c, "term");
+  if (falta) return falta + " Abrila para hacerlo.";
   if (c.protected === true) return "Está protegida: abrila para modificarla.";
   if (estaBloqueada(c, todas)) return "Espera a que se libere otra tarea.";
   return null;

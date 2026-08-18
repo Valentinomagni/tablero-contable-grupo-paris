@@ -15,6 +15,13 @@ import type { Card } from "../../lib/types";
 // movimiento no se puede distinguir "funcionó" de "no pasó nada" — que es justo el bug a evitar.
 const espia = vi.hoisted(() => ({ update: vi.fn(), filas: {} as Record<string, unknown[]> }));
 
+// El aviso que ve la persona. No hay `<Toaster />` montado en estos tests, así que sin esto el
+// texto no llega a ningún nodo del DOM y no se puede afirmar nada sobre él. Importa poder
+// afirmarlo: cuando el tablero rechaza un movimiento y NO explica por qué, la tarjeta vuelve
+// sola a su columna y eso se lee como un bug del arrastre.
+const aviso = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn(), message: vi.fn() }));
+vi.mock("sonner", () => ({ toast: aviso }));
+
 // El Board consulta la base al montar (organización, tiempos máximos, migraciones, trigger
 // de notificaciones). Acá no se toca Supabase de verdad: por defecto se devuelve "sin datos",
 // que es el mismo camino que toma la app cuando esas migraciones no están aplicadas.
@@ -66,7 +73,7 @@ function montar(cards: Card[], onOpen = vi.fn(), extra: { periodo?: string; cerr
   return { onOpen };
 }
 
-beforeEach(() => { localStorage.clear(); espia.update.mockClear(); espia.filas = {}; });
+beforeEach(() => { localStorage.clear(); espia.update.mockClear(); espia.filas = {}; aviso.error.mockClear(); });
 afterEach(cleanup);
 
 describe("Board", () => {
@@ -236,9 +243,46 @@ describe("Board · columnas plegables", () => {
     expect(screen.getByTitle("Desplegar Terminado")).toBeInTheDocument();
   });
 
+  // La tarjeta arranca EN PROCESO y antes arrancaba en Pendiente. No es un detalle de la
+  // fixture: desde `transicion.ts`, arrastrar de Pendiente a Terminado es un movimiento
+  // INVÁLIDO —saltea En proceso y deja `proc_at` en null, o sea la tarea figura resuelta en
+  // cero horas—, así que con la fixture vieja este test ya no probaba lo que dice probar:
+  // el update no salía por la regla nueva, no por la columna plegada.
   it("soltar una tarjeta en una columna plegada la mueve igual", async () => {
-    montar([card()]);
+    montar([card({ status: "proc" })]);
     fireEvent.click(screen.getByTitle("Plegar Terminado"));
+    fireEvent.drop(screen.getByTestId("columna-term"), suelta("c1"));
+    await waitFor(() => expect(espia.update).toHaveBeenCalled());
+    expect(espia.update.mock.calls[0][0]).toMatchObject({ status: "term" });
+  });
+});
+
+// El arrastre es el único de los seis caminos que el guardián `transicion.guard.test.ts` NO
+// puede ver: escribe `{ status }` desde una variable, nunca el literal `status: "term"`, así
+// que la búsqueda por texto no lo encuentra. Por eso su conexión con la regla se prueba acá,
+// a mano — si alguien la saca, esto es lo único que se entera.
+describe("Board · las dos reglas de estado al arrastrar", () => {
+  const suelta = (id: string) => ({ dataTransfer: { getData: () => id, setData: vi.fn() } });
+
+  // El aviso se afirma con el TEXTO, no con "hubo un error": la regla se lanza como
+  // `FallaDeUsuario` justamente para que `mensajeUsuario` lo respete. Si mañana vuelve a ser un
+  // `Error` pelado, la persona lee "No se pudo mover la tarea" y este aserto lo agarra.
+  it("arrastrar de Pendiente a Terminado no guarda nada y explica por qué", async () => {
+    montar([card({ status: "pend" })]);
+    fireEvent.drop(screen.getByTestId("columna-term"), suelta("c1"));
+    await waitFor(() => expect(aviso.error).toHaveBeenCalledWith(expect.stringMatching(/En proceso/)));
+    expect(espia.update).not.toHaveBeenCalled();
+  });
+
+  it("con pasos del checklist sin tildar tampoco cierra, aunque venga de En proceso", async () => {
+    montar([card({ status: "proc", checklist: [{ txt: "conciliar", done: false, done_at: null }] })]);
+    fireEvent.drop(screen.getByTestId("columna-term"), suelta("c1"));
+    await waitFor(() => expect(aviso.error).toHaveBeenCalledWith(expect.stringMatching(/checklist/i)));
+    expect(espia.update).not.toHaveBeenCalled();
+  });
+
+  it("de En proceso a Terminado, con el checklist completo, guarda", async () => {
+    montar([card({ status: "proc", checklist: [{ txt: "conciliar", done: true, done_at: "2026-08-10T12:00:00Z" }] })]);
     fireEvent.drop(screen.getByTestId("columna-term"), suelta("c1"));
     await waitFor(() => expect(espia.update).toHaveBeenCalled());
     expect(espia.update.mock.calls[0][0]).toMatchObject({ status: "term" });

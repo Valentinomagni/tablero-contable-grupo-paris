@@ -16,6 +16,7 @@ import { textoTransicion } from "../../../lib/retrabajo";
 import { useTiemposMax, useMigraciones } from "../../../hooks/useData";
 import { tieneEtiquetas } from "../../../lib/esquema";
 import { textoNoHabilitado } from "../../../lib/disponibilidad";
+import { bloqueoDeTransicion } from "../../../lib/transicion";
 
 type PatchMut = UseMutationResult<void, Error, Partial<Card>, unknown>;
 
@@ -79,6 +80,18 @@ export function MetaSection({ c, cards, team, settings, patch, hist, locked }:
             <select value={c.status} disabled={locked}
               onChange={(e) => {
                 const s = e.target.value as Card["status"];
+                // Mismo gate que el arrastre, el botón "Marcar terminada", el checklist, el
+                // aviso de estancada y el cierre rápido: la regla vive en `transicion.ts` y la
+                // consultan los seis. Este selector era el camino más cómodo para saltar de
+                // Pendiente a Terminado sin pasar por En proceso.
+                const falta = bloqueoDeTransicion(c, s);
+                if (falta) {
+                  toast.error(falta);
+                  // Devolver el selector a donde estaba: si se queda mostrando el valor que no
+                  // se guardó, la persona cree que sí se guardó.
+                  e.target.value = c.status;
+                  return;
+                }
                 const now = new Date().toISOString();
                 if (s === "term") {
                   let h = hist("Marcó terminada");

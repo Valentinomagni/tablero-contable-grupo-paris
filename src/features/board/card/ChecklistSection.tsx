@@ -9,6 +9,7 @@ import { tieneChecklistDiario, payloadOccurrences } from "../../../lib/esquema";
 import { mensajeUsuario } from "../../../lib/fallas";
 import { toARTDate } from "../../../lib/metrics";
 import { editarItem, borrarItem } from "../../../lib/checklist";
+import { bloqueoDeTransicion } from "../../../lib/transicion";
 import { textoDiferencia } from "../../../lib/arqueo";
 import { ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import { ArqueoResultDialog } from "../ArqueoResultDialog";
@@ -54,8 +55,23 @@ export function ChecklistSection({ c, patch, hist }:
   const toggleCk = (n: number) => {
     const list = c.checklist.map((i, idx) => idx === n ? { ...i, done: !i.done, done_at: !i.done ? new Date().toISOString() : null } : i);
     const allDone = list.length && list.every((i) => i.done);
-    patch.mutate(allDone && c.status !== "term"
-      ? { checklist: list, status: "term", done_at: new Date().toISOString(), history: hist("Completó checklist") }
+    // Completar el checklist ya no cierra una tarea que nunca estuvo En proceso: la ADELANTA.
+    // Cerrarla queda a un click, y así el tiempo de ciclo deja de calcularse sobre una tarea
+    // que figura resuelta sin haber estado nunca en curso (regla 1 de `transicion.ts`).
+    //
+    // La salida acá NO es bloquear: la persona ya hizo el trabajo. Bloquearla sería castigarla
+    // por haber completado los pasos, y el camino de escape sería dejar el último sin tildar
+    // — o sea, perderíamos justo el dato que el checklist venía a guardar.
+    //
+    // Se le pregunta a la regla con el checklist YA aplicado, en vez de repetir acá la
+    // condición: si mañana la regla suma un motivo, este camino se entera solo.
+    const ahora = new Date().toISOString();
+    const cierra = allDone && c.status !== "term"
+      && bloqueoDeTransicion({ ...c, checklist: list }, "term") === null;
+    const adelanta = allDone && c.status === "pend";
+    patch.mutate(
+      cierra ? { checklist: list, status: "term", done_at: ahora, history: hist("Completó checklist") }
+      : adelanta ? { checklist: list, status: "proc", proc_at: c.proc_at ?? ahora, history: hist("Completó checklist") }
       : { checklist: list });
   };
 
