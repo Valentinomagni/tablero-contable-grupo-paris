@@ -16,7 +16,8 @@ import { categoriasEnUso, pasaFiltroCategoria } from "../../lib/categorias";
 import { etiquetasEnUso, pasaFiltroEtiquetas } from "../../lib/etiquetas";
 import { type ModoAgrupar } from "../../lib/agrupar";
 import { getPref, setPref, PREF, leerColumnasPlegadas, alternarColumnaPlegada } from "../../lib/prefs";
-import { useOrganizacion, useTiemposMax, useMigraciones, useTriggerNotificaciones } from "../../hooks/useData";
+import { useOrganizacion, useTiemposMax, useMigraciones, useTriggerNotificaciones, useDiasNoLaborables } from "../../hooks/useData";
+import { textoBloqueo } from "../../lib/bloqueo-area";
 import { payloadCards, tieneEtiquetas } from "../../lib/esquema";
 import { escribeEnPeriodo, filaPeriodo, guardarPeriodo } from "../../lib/periodo-escritura";
 import { estadoTiempo, registrarIncumplimiento } from "../../lib/tiempos";
@@ -51,7 +52,10 @@ function DueBadge({ c }: { c: Card }) {
   return <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-semibold whitespace-nowrap tnum", cls)}><Clock size={11} /> {txt}</span>;
 }
 
-function CardItem({ c, blocked, waiting, esperaTitulos = [], onOpen }: { c: Card; blocked: boolean; waiting: boolean; esperaTitulos?: string[]; onOpen: (c: Card) => void }) {
+function CardItem({ c, blocked, waiting, esperaTitulos = [], noLaborables, onOpen }: { c: Card; blocked: boolean; waiting: boolean; esperaTitulos?: string[]; noLaborables: Set<string>; onOpen: (c: Card) => void }) {
+  // El chip de "espera a otra área". Se calcula acá y no en el padre porque depende de la fecha
+  // de hoy: la tarjeta tiene que decir "hace 6 días" y no un número congelado al montar.
+  const textoEspera = textoBloqueo(c, new Date().toISOString(), noLaborables);
   const ck = c.checklist.length
     ? <span className="inline-flex items-center gap-1 bg-chip rounded-md px-1.5 py-0.5 tnum"><ListChecks size={11} /> {c.checklist.filter((i) => i.done).length}/{c.checklist.length}</span> : null;
   const pr = c.priority === "alta"
@@ -73,6 +77,11 @@ function CardItem({ c, blocked, waiting, esperaTitulos = [], onOpen }: { c: Card
         {blocked && <span className="inline-flex items-center gap-1 bg-warn-soft text-warn rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Lock size={11} /> Bloqueada</span>}
         {waiting && <span className="inline-flex items-center gap-1 bg-accent-soft text-accent rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Hourglass size={11} /> Te esperan</span>}
         {esCobertura(c).activa && <span title="Cubierta por vacaciones" className="inline-flex items-center gap-1 bg-chip text-ink2 rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Plane size={11} /> Cobertura</span>}
+        {/* Esperando a otra área (migración 54). Va con el color de aviso y NO con el de
+            "Bloqueada", que significa otra cosa: aquélla espera a otra TAREA del tablero, ésta
+            espera a gente que ni siquiera usa la app. Confundirlas haría que el jefe busque en
+            el tablero una dependencia que no existe. */}
+        {textoEspera && <span className="inline-flex items-center gap-1 bg-warn-soft text-warn rounded-md px-2 py-0.5 font-semibold whitespace-nowrap"><Hourglass size={11} /> {textoEspera}</span>}
         {c.categoria && <span className="bg-chip rounded-md px-1.5 py-0.5 text-2xs whitespace-nowrap">{c.categoria}</span>}
         {/* Etiquetas (contexto: empresa/marca puntual) — chip redondeado + acento, para no
             confundirse con la categoría (tipo de trabajo, chip cuadrado neutro de arriba). */}
@@ -108,6 +117,9 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
   const qc = useQueryClient();
   const org = useOrganizacion();
   const tiemposConfig = useTiemposMax();
+  // Los feriados, para que el chip de "espera a otra área" cuente días hábiles. Se pide una sola
+  // vez acá y baja por props: pedirlo dentro de cada tarjeta sería una consulta por tarjeta.
+  const noLaborables = useDiasNoLaborables();
   // Esquema de la base (ALTA 1): si la migración 29 no está aplicada, el patch no puede
   // mencionar proc_at o el update entero falla con PGRST204 y el drag & drop se rompe.
   const { data: migracionesAplicadas } = useMigraciones();
@@ -368,7 +380,7 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
     <div key={c.id} draggable onDragStart={(e) => e.dataTransfer.setData("text/plain", c.id)}>
       {esArqueoMensual(c)
         ? <ArqueoMensual c={c} mes={mesTablero} cerrado={cerrado} onOpen={onOpen} />
-        : <CardItem c={c} blocked={isBlocked(c)} waiting={c.status !== "term" && dependents(c.id).length > 0} esperaTitulos={bloqueadaPorTitulos(c, cards)} onOpen={onOpen} />}
+        : <CardItem c={c} blocked={isBlocked(c)} waiting={c.status !== "term" && dependents(c.id).length > 0} esperaTitulos={bloqueadaPorTitulos(c, cards)} noLaborables={noLaborables} onOpen={onOpen} />}
     </div>
   );
 

@@ -400,3 +400,42 @@ describe("Board · arqueo mensual", () => {
     expect(screen.queryByText(/días hábiles/)).toBeNull();
   });
 });
+
+// ── El chip de "espera a otra área" (migración 54) ──────────────────────────────
+//
+// Registra que una tarea está frenada por Ventas, Administración o RRHH — áreas que NO usan el
+// tablero. Sin esto, esa demora aparece como demora del equipo contable y el jefe no tiene cómo
+// saber que la pelota está afuera.
+describe("Board · esperando a otra área", () => {
+  // Lunes 17/08/2026 en el reloj del test, para que "hace N días" sea estable.
+  const trabada = (over: Partial<Card> = {}) => card({
+    id: "t1", title: "Alta de proveedor", status: "proc",
+    bloqueo_area: "Ventas", bloqueo_desde: "2026-08-14T09:00:00Z", ...over,
+  });
+
+  it("muestra el área en la tarjeta", () => {
+    montar([trabada()]);
+    expect(screen.getByText(/Espera a Ventas/)).toBeInTheDocument();
+  });
+
+  // LA DECISIÓN QUE ESTE TEST PROTEGE: no se reusa el chip "Bloqueada". Significan cosas
+  // distintas — "Bloqueada" es que espera a otra TAREA del tablero, esto es que espera a gente
+  // que ni siquiera entra a la app. Si dijeran lo mismo, el jefe buscaría en el tablero una
+  // dependencia que no existe.
+  it("NO dice 'Bloqueada': eso significa otra cosa", () => {
+    montar([trabada()]);
+    expect(screen.queryByText("Bloqueada")).not.toBeInTheDocument();
+  });
+
+  it("una tarea sin bloqueo no muestra nada", () => {
+    montar([card({ id: "t2", title: "Conciliación" })]);
+    expect(screen.queryByText(/Espera a/)).not.toBeInTheDocument();
+  });
+
+  it("con área pero sin fecha tampoco: las dos o ninguna", () => {
+    // Un área sin fecha es una etiqueta con la que no se puede hacer nada. La base tiene un
+    // check que lo impide; acá se verifica que la pantalla tampoco la invente.
+    montar([trabada({ bloqueo_desde: null })]);
+    expect(screen.queryByText(/Espera a/)).not.toBeInTheDocument();
+  });
+});
