@@ -14,6 +14,10 @@ import {
   tieneChecklistDiario,
   payloadOccurrences,
   CAMPOS_CHECKLIST_OCCURRENCES,
+  MIGRACION_CATALOGO,
+  CAMPOS_CATALOGO,
+  tieneCatalogo,
+  COLUMNAS_CARDS,
 } from "./esquema";
 
 describe("tieneEsquemaNuevo", () => {
@@ -190,5 +194,45 @@ describe("tieneChecklistDiario / payloadOccurrences (migración 34)", () => {
   });
   it("la lista de campos cubre las columnas de la migración 34", () => {
     expect([...CAMPOS_CHECKLIST_OCCURRENCES]).toEqual(["checklist", "obs"]);
+  });
+});
+
+// El daño de olvidarse este gate no se parece en nada al tamaño del campo: `estandar_id` viaja
+// en el MISMO update que usa el drag & drop del tablero, así que en una base sin la migración 55
+// PostgREST rechazaría con 42703 el update entero y mover cualquier tarjeta dejaría de andar.
+// Por eso se prueba el caso cruzado (una migración sí, la otra no) y no sólo el feliz.
+describe("tieneCatalogo / payloadCards — gating de estandar_id (migración 55)", () => {
+  it("true sólo con la migración 55 aplicada", () => {
+    expect(tieneCatalogo([55])).toBe(true);
+    expect(tieneCatalogo([MIGRACION_CATALOGO])).toBe(true);
+    expect(tieneCatalogo([29, 31, 41, 54])).toBe(false);
+  });
+
+  it("ante la duda (null/undefined) → false: no se ofrece el catálogo y crear tareas sigue igual", () => {
+    expect(tieneCatalogo(null)).toBe(false);
+    expect(tieneCatalogo(undefined)).toBe(false);
+  });
+
+  it("sin la 55: se saca estandar_id y el resto del update se manda igual", () => {
+    const patch = { status: "proc", estandar_id: "abc" };
+    expect(payloadCards(patch, [29, 31, 41, 54])).toEqual({ status: "proc" });
+  });
+
+  it("con la 55 pero sin la 54: viaja estandar_id y se sacan los campos de bloqueo", () => {
+    const patch = { status: "proc", estandar_id: "abc", bloqueo_area: "Ventas", bloqueo_desde: "hoy" };
+    expect(payloadCards(patch, [29, 31, 41, 55])).toEqual({ status: "proc", estandar_id: "abc" });
+  });
+
+  it("con todas aplicadas: el payload va intacto", () => {
+    const patch = { status: "proc", proc_at: "t", etiquetas: ["Peugeot"], estandar_id: "abc" };
+    expect(payloadCards(patch, [29, 31, 41, 54, 55])).toEqual(patch);
+  });
+
+  it("estandar_id está en COLUMNAS_CARDS: sin eso llega undefined y la comparación no existe", () => {
+    expect(COLUMNAS_CARDS.split(",")).toContain("estandar_id");
+  });
+
+  it("la lista de campos cubre la columna de la migración 55", () => {
+    expect([...CAMPOS_CATALOGO]).toEqual(["estandar_id"]);
   });
 });

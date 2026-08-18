@@ -79,6 +79,18 @@ export const MIGRACION_BLOQUEO_AREA = 54;
 export const CAMPOS_BLOQUEO_AREA = ["bloqueo_area", "bloqueo_desde"] as const;
 
 /**
+ * Migración que crea `tareas_estandar` y agrega `cards.estandar_id` (catálogo de tareas).
+ *
+ * Gate propio, por el mismo motivo que los de arriba: sin ella la columna no existe, y si
+ * `estandar_id` viajara en el payload PostgREST fallaría el update ENTERO con 42703 — o sea que
+ * mover cualquier tarjeta dejaría de andar por un campo que ni siquiera se está usando.
+ */
+export const MIGRACION_CATALOGO = 55;
+
+/** Columnas de `cards` que sólo existen con la migración 55 aplicada. */
+export const CAMPOS_CATALOGO = ["estandar_id"] as const;
+
+/**
  * ¿Está aplicada la migración 41 (`cards.exige_checklist`)? Ante la duda: false.
  *
  * Con false, la casilla "exige checklist completo" no se muestra al crear ni al editar una
@@ -105,7 +117,7 @@ export const COLUMNAS_CARDS = [
   "done_at", "due_date", "recurring", "priority", "effort", "card_type", "deps",
   "created_at", "recur_rule", "protected", "categoria", "reset_policy",
   "requiere_resultado", "exige_checklist", "sucursal", "marca", "proc_at", "tiempo_max_horas", "dato_control",
-  "etiquetas", "bloqueo_area", "bloqueo_desde",
+  "etiquetas", "bloqueo_area", "bloqueo_desde", "estandar_id",
 ].join(",");
 
 /** Columnas de `profiles` que sólo existen con la migración 29 aplicada. */
@@ -127,6 +139,18 @@ export function tieneEsquemaNuevo(aplicadas: number[] | null | undefined): boole
 /** ¿Está aplicada la migración 54 (esperas por otra área)? Mismo criterio ante la duda: false. */
 export function tieneBloqueoArea(aplicadas: number[] | null | undefined): boolean {
   return tieneMigracion(aplicadas, MIGRACION_BLOQUEO_AREA);
+}
+
+/**
+ * ¿Está aplicada la migración 55 (catálogo de tareas estándar)? Ante la duda: false.
+ *
+ * Con false, la sección del catálogo en Administración y el selector de "tarea estándar" no se
+ * muestran, y crear una tarea sigue funcionando exactamente como antes. Es el criterio
+ * conservador de todo este archivo: si no se sabe si la tabla existe, la app se comporta como
+ * antes de que existiera.
+ */
+export function tieneCatalogo(aplicadas: number[] | null | undefined): boolean {
+  return tieneMigracion(aplicadas, MIGRACION_CATALOGO);
 }
 
 /** ¿Está aplicada la migración 31 (`cards.etiquetas`)? Mismo criterio ante la duda: false. */
@@ -170,15 +194,20 @@ export function payloadCompatible<T extends object>(
 }
 
 /**
- * Azúcar para `cards`: aplica DOS gates independientes — proc_at/tiempo_max_horas/
- * dato_control (migración 29) y etiquetas (migración 31) — porque una base puede
- * tener una sin la otra.
+ * Azúcar para `cards`: aplica los gates INDEPENDIENTES, uno por migración que agregó
+ * columnas — proc_at/tiempo_max_horas/dato_control (29), etiquetas (31), exige_checklist
+ * (41), bloqueo_area/bloqueo_desde (54) y estandar_id (55).
+ *
+ * Se encadenan y no se juntan en una sola lista porque una base puede tener una migración sin
+ * las otras: con una lista única, tener la 29 pero no la 55 mandaría `estandar_id` igual y el
+ * update de CUALQUIER tarea fallaría entero con 42703.
  */
 export function payloadCards<T extends object>(payload: T, aplicadas: number[] | null | undefined): T {
   const sinViejos = payloadCompatible(payload, aplicadas, CAMPOS_NUEVOS_CARDS, MIGRACION_ESQUEMA_NUEVO);
   const sinEtiquetas = payloadCompatible(sinViejos, aplicadas, CAMPOS_ETIQUETAS_CARDS, MIGRACION_ETIQUETAS);
   const sinGate = payloadCompatible(sinEtiquetas, aplicadas, CAMPOS_CHECKLIST_GATE, MIGRACION_CHECKLIST_GATE);
-  return payloadCompatible(sinGate, aplicadas, CAMPOS_BLOQUEO_AREA, MIGRACION_BLOQUEO_AREA);
+  const sinBloqueo = payloadCompatible(sinGate, aplicadas, CAMPOS_BLOQUEO_AREA, MIGRACION_BLOQUEO_AREA);
+  return payloadCompatible(sinBloqueo, aplicadas, CAMPOS_CATALOGO, MIGRACION_CATALOGO);
 }
 
 /**

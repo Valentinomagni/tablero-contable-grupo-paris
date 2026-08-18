@@ -58,6 +58,47 @@ export interface Card {
   tiempo_max_horas?: number | null; // SLA en horas (migración 29)
   dato_control?: string | null; // dato de control libre (migración 29)
   etiquetas?: string[]; // etiquetas contextuales múltiples, independientes de categoria (migración 31)
+  /**
+   * De qué definición del catálogo salió esta tarea (migración 55). `null`/ausente = se creó a
+   * mano, que sigue estando permitido y no es un error.
+   *
+   * Es el campo que permite comparar: sin él, "Conciliación Chevrolet" de una persona y
+   * "Concil. bancaria Chevrolet" de otra son dos filas de texto libre que nadie puede sumar.
+   *
+   * OJO — apuntar a una definición NO ata la tarea a ella. El título, la descripción y el
+   * checklist se copian al crearla y después se editan libremente; este campo sólo recuerda el
+   * origen. La foránea es `on delete set null`: si se borra la definición, la tarea sigue.
+   */
+  estandar_id?: string | null;
+}
+/**
+ * Una tarea estándar del catálogo (migración 55): la definición canónica de un trabajo que se
+ * repite en varias marcas, empresas o personas.
+ *
+ * POR QUÉ EXISTE, con las palabras del dueño: *"Juan hace las conciliaciones de Chevrolet, pero
+ * su descripción no es como la de Valentino. Si son las mismas tareas, diferente empresa o
+ * marca, deberíamos tenerlo igual para que mi jefe pueda comparar y además para que nos sirva de
+ * dato general."*
+ *
+ * NO reemplaza a `AppSettings.closing_template` (`plantilla.ts`), que es una lista plana para
+ * GENERAR las tareas del mes. Esto define QUÉ ES una tarea, y tiene un id al que la tarjeta
+ * creada puede apuntar — que es lo que la lista plana no puede dar.
+ *
+ * `activa` es baja lógica: una definición nunca se borra, porque las tareas viejas siguen
+ * apuntando a ella y el histórico tiene que poder decir de dónde salieron.
+ */
+export interface TareaEstandar {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  /** Pasos sugeridos. Al instanciar SE COPIAN, no se referencian — ver `src/lib/catalogo.ts`. */
+  checklist: ChecklistItem[];
+  categoria: string | null;
+  effort: 1 | 2 | 3 | 5;
+  /** Horas máximas propias de esta tarea. `null` = manda el tiempo máximo de la categoría. */
+  tiempo_max_horas: number | null;
+  activa: boolean;
+  created_at: string;
 }
 /**
  * Estado de trabajo de una card en un período mensual (migración 32, propuesta de
