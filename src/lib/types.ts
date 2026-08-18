@@ -51,7 +51,7 @@ export interface Card {
   categoria?: string | null;
   reset_policy?: "mensual" | "mantener" | "manual";
   requiere_resultado?: boolean; // tarea de control (ej. arqueo): al completar pide resultado ok/dif
-  exige_checklist?: boolean;   // no se puede cerrar con pasos del checklist sin tildar (migracion 41)
+  exige_checklist?: boolean;   // VESTIGIAL (migracion 41): ya no controla nada. La regla del checklist vale para todas las tareas (transicion.ts + migracion 53). La columna sigue en la base; ninguna pantalla la escribe.
   sucursal?: string | null; // sucursal (migración 27)
   marca?: string | null; // marca dinámica (migración 27, consumida por Task 4)
   proc_at?: string | null; // cuándo pasó a "en proceso" (migración 29)

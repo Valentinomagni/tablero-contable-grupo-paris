@@ -183,7 +183,13 @@ export function Board({ cards, activity, ownerId, meId, meName, meRole, team = [
       // previo — pushUndo guardaría un no-op y done_at/proc_at se calcularían mal.
       // Mes cerrado = sólo lectura (Fase 3). El corte va acá, en la mutación, y no sólo en
       // la UI: es lo único que cubre el drag & drop, los atajos y cualquier camino futuro.
-      if (cerrado) throw new Error("Este mes está cerrado. Para modificarlo, reabrilo desde Cierre.");
+      //
+      // `FallaDeUsuario` y no un `Error` pelado, por lo mismo que la regla de transición de más
+      // abajo: `mensajeUsuario` sólo respeta el texto de esa clase. Con un `Error` común este
+      // motivo caía en la rama genérica y la persona leía "No se pudo mover la tarea" mientras
+      // la tarjeta volvía sola a su columna — o sea, el corte funcionaba y el aviso no llegaba,
+      // que es la peor combinación: se lee como un bug del arrastre y se intenta otra vez.
+      if (cerrado) throw new FallaDeUsuario("Este mes está cerrado. Para modificarlo, reabrilo desde Cierre.");
       // Las dos reglas de estado viven en `transicion.ts` y las consultan los SEIS caminos que
       // cierran una tarea. Antes acá se miraba sólo el checklist, así que arrastrar de
       // Pendiente a Terminado salteaba "En proceso" sin que nada avisara y dejaba `proc_at`

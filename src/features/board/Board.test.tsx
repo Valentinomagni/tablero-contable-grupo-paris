@@ -287,6 +287,20 @@ describe("Board · las dos reglas de estado al arrastrar", () => {
     await waitFor(() => expect(espia.update).toHaveBeenCalled());
     expect(espia.update.mock.calls[0][0]).toMatchObject({ status: "term" });
   });
+
+  // EL MISMO DEFECTO QUE LAS REGLAS DE ESTADO, EN EL OTRO CORTE DE LA MUTACIÓN. El mes cerrado
+  // se frenaba con un `Error` pelado, y `mensajeUsuario` sólo respeta el texto de
+  // `FallaDeUsuario`: el motivo se perdía y la persona veía "No se pudo mover la tarea" mientras
+  // la tarjeta volvía sola a su columna. Sin saber que el mes está cerrado, lo intenta otra vez.
+  //
+  // Se afirma por el TEXTO —"reabrilo desde Cierre"— y no por "hubo un error", porque es
+  // justamente lo que el genérico se lleva puesto.
+  it("con el mes cerrado, el aviso al arrastrar dice por qué y dónde reabrirlo", async () => {
+    montar([card({ status: "proc" })], vi.fn(), { cerrado: true });
+    fireEvent.drop(screen.getByTestId("columna-term"), suelta("c1"));
+    await waitFor(() => expect(aviso.error).toHaveBeenCalledWith(expect.stringContaining("reabrilo desde Cierre")));
+    expect(espia.update).not.toHaveBeenCalled();
+  });
 });
 
 // El reporte de Patricia: "hoy se genera una tarea por cada día hábil y la lista es
