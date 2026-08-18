@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
-import type { Card, Profile, Objective, ActivityLog, ResumenMensual, Empresa, DiaNoLaborable } from "../lib/types";
+import type { Card, Profile, Objective, ActivityLog, ResumenMensual, Empresa, DiaNoLaborable, TareaEstandar } from "../lib/types";
 import type { DepInfo, RevDep } from "../lib/deps";
 import { CardSchema, validateRows, saneaCards } from "../lib/schemas";
 import { COLUMNAS_CARDS } from "../lib/esquema";
@@ -180,6 +180,32 @@ export function useDiasNoLaborablesLista() {
 export function useDiasNoLaborables(): Set<string> {
   const { data } = useDiasNoLaborablesLista();
   return useMemo(() => new Set((data ?? []).map((d) => d.fecha)), [data]);
+}
+
+// Catálogo de tareas estándar (tabla `tareas_estandar`, migración 55): la definición canónica
+// del trabajo que se repite en varias marcas y personas. La pantalla de Administración las
+// administra; la de crear tareas las instancia.
+//
+// LO LEE CUALQUIERA CON SESIÓN, y a propósito: todos crean tareas, así que todos necesitan el
+// catálogo. Lo que sólo puede el jefe es ESCRIBIRLO, y eso lo aplica la RLS de la tabla.
+//
+// Defensivo, igual que useDiasNoLaborablesLista: si la migración 55 todavía no corrió
+// (42P01/PGRST205) o la consulta falla, devuelve [] en vez de romper la pantalla. Sin catálogo
+// la app funciona exactamente como antes de que existiera, que es el criterio de todo el
+// proyecto ante una base sin migrar.
+//
+// El orden final (activas primero) lo pone `ordenarEstandares` en `src/lib/catalogo.ts`: acá se
+// pide por nombre nada más, porque `activa` es una decisión de presentación y no de la consulta.
+export function useTareasEstandar() {
+  return useQuery({
+    queryKey: ["tareas_estandar"],
+    staleTime: 5 * 60_000,
+    queryFn: async (): Promise<TareaEstandar[]> => {
+      const { data, error } = await supabase.from("tareas_estandar").select("*").order("nombre");
+      if (error) return [];
+      return (data as TareaEstandar[]) ?? [];
+    },
+  });
 }
 
 // enabled: jefe y encargado traen los profiles (RLS del Plan 02 limita lo que ve el encargado).

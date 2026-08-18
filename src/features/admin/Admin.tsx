@@ -13,6 +13,7 @@ import { useAnnouncements } from "../../hooks/useData";
 import { PlantillaCierre } from "./PlantillaCierre";
 import { ReasignarModal } from "./ReasignarModal";
 import { Huerfanas } from "./Huerfanas";
+import { CatalogoTareas } from "./CatalogoTareas";
 import { equipoDe } from "../../lib/jerarquia";
 import { personasVisibles } from "../../lib/visibilidad";
 import { Avatar, teclaActiva } from "../../lib/ui";
@@ -499,6 +500,17 @@ export function Admin({ team, cards, me, meName, onOpenUser }: { team: Profile[]
         <p className="text-ink2 text-sm mt-2 mb-0">Aparecen como opción al crear o editar tareas y como filtros del tablero. Quitar una categoría no toca las tarjetas que ya la tienen.</p>
         {permMsg && <p className={"text-sm mt-2 mb-0 " + (!permMsg.startsWith("No se pudo") ? "text-done" : "text-danger")}>{permMsg}</p>}
       </div>
+
+      {/* Catálogo de tareas estándar (migración 55). Va acá arriba de las plantillas a
+          propósito, porque son cosas distintas y se confunden: la PLANTILLA genera un lote de
+          tareas de un click; el CATÁLOGO define qué es una tarea, y esa definición se puede
+          instanciar desde cualquier lado. Una responde "creá estas diez"; la otra, "así se llama
+          y esto incluye este trabajo".
+
+          SÓLO EL JEFE: mismo gate `!esEncargado` que envuelve a toda esta sección, y la RLS de
+          la tabla lo vuelve a exigir en el servidor. */}
+      <h2 className="text-base font-bold tracking-[-0.01em] text-ink mb-2.5">Catálogo de tareas estándar</h2>
+      <CatalogoTareas />
 
       <h2 className="text-base font-bold tracking-[-0.01em] text-ink mb-2.5">Plantillas de tareas</h2>
       <div className="bg-surface border border-line rounded-xl p-4 mb-6" style={{ boxShadow: "var(--ring-sh),var(--shadow)" }}>
