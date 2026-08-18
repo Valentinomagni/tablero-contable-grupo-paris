@@ -50,6 +50,13 @@ describe("debeReportar", () => {
     expect(debeReportar({ code: "42501", message: "row-level security" }, true)).toBe(true);
   });
 
+  // Una regla de estado frenando un cierre (trigger `cards_validar_estado`, migración 53) es el
+  // sistema funcionando, no un defecto. Se va a disparar todos los días: si se reportara,
+  // taparía en el panel el error raro que aparece una vez cada tres días.
+  it("una regla de estado que frena un cierre NO se reporta: es la regla haciendo su trabajo", () => {
+    expect(debeReportar({ code: "P0001", message: "regla_estado: Faltan 2 pasos del checklist." }, true)).toBe(false);
+  });
+
   it("es defensiva", () => {
     expect(typeof debeReportar(null, true)).toBe("boolean");
   });

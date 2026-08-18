@@ -183,3 +183,55 @@ describe("FallaDeUsuario", () => {
     expect(m).not.toContain("profiles");
   });
 });
+
+// ── La regla de estado que llega desde la base ──────────────────────────────────
+//
+// El trigger `cards_validar_estado` (migración 53) frena los cierres que no cumplen las dos
+// reglas del tablero, y manda el motivo YA ESCRITO para una persona. El problema es que llega
+// como un `Error` de Postgres cualquiera, y la regla del proyecto es que un error nunca muestra
+// el mensaje crudo de la base: sin una marca, el front no puede distinguir este texto del
+// volcado de un 42501 y tiene que taparlo con el genérico.
+//
+// La marca lo resuelve, y es el MISMO mecanismo que `ya_cerrado:` en `reinicio-mensual.ts`
+// (migración 50). Es un código, no un mensaje: lo que ve la persona es lo que sigue al prefijo.
+describe("reglas de estado de la base", () => {
+  it("una regla de estado de la base llega en castellano, sin el prefijo", () => {
+    const e = new Error("regla_estado: Antes de terminarla, pasala a En proceso.");
+    const m = mensajeUsuario(e, "mover la tarea");
+    expect(m).toBe("Antes de terminarla, pasala a En proceso.");
+    expect(m).not.toContain("regla_estado");
+  });
+
+  it("también con el motivo del checklist, que trae un número adentro", () => {
+    const e = new Error("regla_estado: Faltan 3 pasos del checklist.");
+    expect(mensajeUsuario(e, "mover la tarea")).toBe("Faltan 3 pasos del checklist.");
+  });
+
+  // Llega como error de PostgREST, que es un objeto con `message` y `code`, no un `Error`.
+  it("lo reconoce igual cuando viene como error de PostgREST", () => {
+    const e = { code: "P0001", message: "regla_estado: Falta 1 paso del checklist.", details: null };
+    expect(mensajeUsuario(e, "cerrar la tarea")).toBe("Falta 1 paso del checklist.");
+  });
+
+  it("clasifica sin ofrecer reintentar: reintentar no puede funcionar hasta que se cumpla", () => {
+    const f = clasificarFalla(new Error("regla_estado: Faltan 2 pasos del checklist."), true);
+    expect(f.tipo).toBe("regla-de-estado");
+    expect(f.explicacion).toBe("Faltan 2 pasos del checklist.");
+    expect(f.accion).toBe("ninguna");
+  });
+
+  // Mismo criterio que `yaEstabaCerrado`: la marca vale SÓLO al principio. En el medio de una
+  // frase es texto, y tratarlo como código dejaría a la persona con media oración.
+  it("la marca en el medio de un mensaje no cuenta", () => {
+    const e = new Error('violates check constraint "regla_estado: algo"');
+    const m = mensajeUsuario(e, "mover la tarea");
+    expect(m).toContain("No se pudo mover la tarea");
+  });
+
+  // Defensa por si algún día alguien escribe la marca y se olvida el motivo: un cartel vacío es
+  // peor que el genérico, porque no dice nada Y no dice dónde preguntar.
+  it("con la marca pero sin texto detrás, cae en el genérico", () => {
+    const m = mensajeUsuario(new Error("regla_estado:   "), "mover la tarea");
+    expect(m).toContain("No se pudo mover la tarea");
+  });
+});

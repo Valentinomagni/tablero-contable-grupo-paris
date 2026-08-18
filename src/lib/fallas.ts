@@ -11,7 +11,7 @@
 //
 // PURA: `online` entra por parámetro; no lee `navigator` adentro.
 
-export type TipoDeFalla = "version-vieja" | "sin-conexion" | "sin-permiso" | "falta-migracion" | "desconocida";
+export type TipoDeFalla = "version-vieja" | "sin-conexion" | "sin-permiso" | "falta-migracion" | "regla-de-estado" | "desconocida";
 export type AccionSugerida = "actualizar" | "reintentar" | "ninguna";
 
 export interface Falla {
@@ -62,6 +62,35 @@ function esFalloDeModulo(msg: string, nombre: string): boolean {
     || /loading chunk \S+ failed/i.test(msg);
 }
 
+/**
+ * Prefijo con el que el trigger `cards_validar_estado` (migración 53) avisa que frenó un cierre
+ * por una de las dos reglas de estado del tablero.
+ *
+ * POR QUÉ UNA MARCA Y NO EL TEXTO PELADO. Es el mismo problema —y la misma solución— que
+ * `MARCA_YA_CERRADO` en `reinicio-mensual.ts`: la regla del proyecto es que un error nunca
+ * muestra el mensaje crudo de la base, así que todo lo que llega de Postgres se tapa con el
+ * genérico. Sin algo que el front pueda MIRAR sin leer prosa, el motivo escrito para una persona
+ * ("Faltan 2 pasos del checklist") se perdería junto con el volcado de un 42501.
+ *
+ * Es un código, no un mensaje: lo que ve la persona es lo que sigue al prefijo.
+ */
+export const MARCA_REGLA_ESTADO = "regla_estado:";
+
+/**
+ * El motivo en castellano si el mensaje viene marcado, `null` si no.
+ *
+ * SÓLO AL PRINCIPIO, igual que `yaEstabaCerrado`: la marca en el medio de una frase es texto de
+ * la base, no un código, y cortarla ahí le dejaría a la persona media oración.
+ *
+ * Y sin texto detrás tampoco cuenta: un cartel vacío es peor que el genérico, porque no dice
+ * nada Y encima se lleva puesto el "avisá por Consultas".
+ */
+function motivoDeReglaDeEstado(msg: string): string | null {
+  if (!msg.startsWith(MARCA_REGLA_ESTADO)) return null;
+  const motivo = msg.slice(MARCA_REGLA_ESTADO.length).trim();
+  return motivo.length > 0 ? motivo : null;
+}
+
 /** ¿Huele a red caída? */
 function esFalloDeRed(msg: string): boolean {
   return /failed to fetch/i.test(msg)
@@ -81,6 +110,24 @@ export function clasificarFalla(e: unknown, online: boolean): Falla {
   const codigo = codigoDe(e);
   const nombre = nombreDe(e);
   const deCarga = esFalloDeModulo(msg, nombre) || esFalloDeRed(msg);
+
+  // VA PRIMERA, y no por costumbre: acá la base ya mandó el motivo escrito para una persona, así
+  // que cualquier otra rama que lo agarre antes lo va a reemplazar por una explicación genérica
+  // peor. Es el mismo motivo por el que `FallaDeUsuario` va primero en `mensajeUsuario`.
+  //
+  // No le pisa el turno a lo offline: sin red no hay respuesta de la base, así que este mensaje
+  // no puede existir estando desconectado.
+  const motivo = motivoDeReglaDeEstado(msg);
+  if (motivo) {
+    return {
+      tipo: "regla-de-estado",
+      titulo: "Todavía no se puede cerrar",
+      explicacion: motivo,
+      // NUNCA "reintentar": el mismo movimiento va a fallar igual hasta que se cumpla la regla,
+      // y ofrecer un botón que no puede funcionar es peor que no ofrecer ninguno.
+      accion: "ninguna",
+    };
+  }
 
   if (deCarga && !online) {
     return {
