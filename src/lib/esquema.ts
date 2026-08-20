@@ -34,14 +34,14 @@ export const MIGRACION_ETIQUETAS = 31;
  * y toda la lógica de períodos cae al comportamiento de siempre (escribir en `cards`).
  * Se gatea aparte de las demás por el mismo motivo que MIGRACION_ETIQUETAS.
  */
-export const MIGRACION_PERIODOS = 32;
+const MIGRACION_PERIODOS = 32;
 
 /**
  * Migración que agrega `profiles.admin_sistema` (usuario fantasma aparte, spec
  * 28-correcciones items 3 y 4). Gate propio: sin ella la columna no existe y
  * mencionarla en un update de perfil haría fallar el guardado entero con 42703.
  */
-export const MIGRACION_ADMIN_SISTEMA = 33;
+const MIGRACION_ADMIN_SISTEMA = 33;
 
 /**
  * Migración que agrega `task_occurrences.checklist` y `.obs` (checklist por día, spec
@@ -49,7 +49,7 @@ export const MIGRACION_ADMIN_SISTEMA = 33;
  * en el update de una ocurrencia haría fallar ENTERO el marcado del día con 42703 —
  * o sea, se rompería la grilla de cumplimiento, que hoy funciona.
  */
-export const MIGRACION_CHECKLIST_DIARIO = 34;
+const MIGRACION_CHECKLIST_DIARIO = 34;
 
 /** Columnas de `task_occurrences` que sólo existen con la migración 34 aplicada. */
 export const CAMPOS_CHECKLIST_OCCURRENCES = ["checklist", "obs"] as const;
@@ -61,10 +61,10 @@ export const CAMPOS_NUEVOS_CARDS = ["proc_at", "tiempo_max_horas", "dato_control
 export const CAMPOS_ETIQUETAS_CARDS = ["etiquetas"] as const;
 
 /** Migración que agrega `cards.exige_checklist`. */
-export const MIGRACION_CHECKLIST_GATE = 41;
+const MIGRACION_CHECKLIST_GATE = 41;
 
 /** Columnas de `cards` que sólo existen con la migración 41 aplicada. */
-export const CAMPOS_CHECKLIST_GATE = ["exige_checklist"] as const;
+const CAMPOS_CHECKLIST_GATE = ["exige_checklist"] as const;
 
 /**
  * Migración que agrega `cards.bloqueo_area` y `cards.bloqueo_desde` (esperas por otra área).
@@ -73,10 +73,10 @@ export const CAMPOS_CHECKLIST_GATE = ["exige_checklist"] as const;
  * payload PostgREST fallaría el update ENTERO con 42703 — o sea que mover cualquier tarjeta
  * dejaría de funcionar por un campo que ni siquiera se está usando.
  */
-export const MIGRACION_BLOQUEO_AREA = 54;
+const MIGRACION_BLOQUEO_AREA = 54;
 
 /** Columnas de `cards` que sólo existen con la migración 54 aplicada. */
-export const CAMPOS_BLOQUEO_AREA = ["bloqueo_area", "bloqueo_desde"] as const;
+const CAMPOS_BLOQUEO_AREA = ["bloqueo_area", "bloqueo_desde"] as const;
 
 /**
  * Migración que crea `tareas_estandar` y agrega `cards.estandar_id` (catálogo de tareas).
@@ -89,17 +89,6 @@ export const MIGRACION_CATALOGO = 55;
 
 /** Columnas de `cards` que sólo existen con la migración 55 aplicada. */
 export const CAMPOS_CATALOGO = ["estandar_id"] as const;
-
-/**
- * ¿Está aplicada la migración 41 (`cards.exige_checklist`)? Ante la duda: false.
- *
- * Con false, la casilla "exige checklist completo" no se muestra al crear ni al editar una
- * tarea, y nada bloquea el cierre. Es el mismo criterio conservador del resto del archivo: si
- * no se sabe si la columna existe, la app se comporta como antes de que existiera.
- */
-export function tieneChecklistGate(aplicadas: number[] | null | undefined): boolean {
-  return tieneMigracion(aplicadas, MIGRACION_CHECKLIST_GATE);
-}
 
 /**
  * Columnas de `cards` que la app realmente usa, para pedirlas EXPLÍCITAMENTE en vez de
@@ -124,7 +113,7 @@ export const COLUMNAS_CARDS = [
 export const CAMPOS_NUEVOS_PROFILES = ["oculto", "last_seen"] as const;
 
 /** Columnas de `profiles` que sólo existen con la migración 33 aplicada. */
-export const CAMPOS_ADMIN_SISTEMA_PROFILES = ["admin_sistema"] as const;
+const CAMPOS_ADMIN_SISTEMA_PROFILES = ["admin_sistema"] as const;
 
 /**
  * ¿La base tiene el esquema nuevo? `aplicadas` es lo que devuelve `useMigraciones()`:

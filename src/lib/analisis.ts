@@ -61,7 +61,7 @@ function cumplPct(cards: Card[]): number {
  * (Board.tsx, CardModal.tsx, cierre-rapido.ts), así que es una anomalía de datos; si aparece,
  * contarla como terminada del mes en curso sería exactamente el bug que se está corrigiendo.
  */
-export function esDelMes(c: Pick<Card, "status" | "done_at">, mes: string): boolean {
+function esDelMes(c: Pick<Card, "status" | "done_at">, mes: string): boolean {
   if (!c) return false;
   if (c.status !== "term") return true;
   if (!c.done_at) return false;

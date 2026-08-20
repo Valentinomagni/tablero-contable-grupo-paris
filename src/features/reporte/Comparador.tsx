@@ -90,5 +90,3 @@ export function Comparador({ team, meses = 6 }: { team: Profile[]; meses?: numbe
     </Panel>
   );
 }
-
-export default Comparador;

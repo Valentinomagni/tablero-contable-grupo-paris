@@ -74,7 +74,7 @@ function esFalloDeModulo(msg: string, nombre: string): boolean {
  *
  * Es un código, no un mensaje: lo que ve la persona es lo que sigue al prefijo.
  */
-export const MARCA_REGLA_ESTADO = "regla_estado:";
+const MARCA_REGLA_ESTADO = "regla_estado:";
 
 /**
  * El motivo en castellano si el mensaje viene marcado, `null` si no.

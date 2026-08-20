@@ -143,19 +143,6 @@ export interface CardPausa { id: string; card_id: string; owner: string | null; 
  * contaba: un feriado sin explicación se parece demasiado a un error de carga.
  */
 export interface DiaNoLaborable { fecha: string; motivo: string; }
-/**
- * Fila de la vista materializada `mv_resumen_mensual` (migración 30), tal como la
- * devuelve el RPC `public.resumen_mensual(p_mes)` — que es la ÚNICA vía de lectura:
- * las vistas materializadas no soportan RLS, así que la vista tiene el select
- * revocado y la función filtra por propio / encargado / jefe.
- */
-export interface ResumenMensual {
-  mes: string;        // 'YYYY-MM'
-  owner: string;
-  marca: string;      // 'Sin marca' cuando el snapshot no tenía marca
-  total: number;
-  terminadas: number;
-}
 export interface Consulta {
   id: string; autor: string; tipo: "consulta" | "sugerencia" | "error";
   texto: string; estado: "nueva" | "leida" | "archivada";

@@ -67,5 +67,3 @@ export function FlujoMensual({ team, mes }: { team: Profile[]; mes: string }) {
     </Panel>
   );
 }
-
-export default FlujoMensual;

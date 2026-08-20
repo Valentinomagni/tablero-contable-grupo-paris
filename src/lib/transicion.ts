@@ -18,7 +18,7 @@ function items(c: Card): { done?: boolean }[] {
 /**
  * ¿Cuántos pasos del checklist faltan? `0` si no hay checklist o está completo.
  */
-export function pasosQueFaltan(c: Card): number {
+function pasosQueFaltan(c: Card): number {
   const lista = items(c);
   if (lista.length === 0) return 0;
   return lista.filter((i) => i?.done !== true).length;
