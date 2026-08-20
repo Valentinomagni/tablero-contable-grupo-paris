@@ -15,8 +15,10 @@ export interface Confianza {
 
 // Umbrales de PROPUESTA-ICR.md 3.4. La propuesta separa 50–69 de <50, pero para el badge
 // ambos tramos llevan la misma conducta ("no decidir con esto"), así que se unifican en "baja".
-export const UMBRAL_ALTA = 85;
-export const UMBRAL_MEDIA = 70;
+// Sin `export`: se usan sólo acá. Exportarlas de más hace que `knip` las liste como código
+// muerto, y un informe con ruido es un informe que se deja de leer.
+const UMBRAL_ALTA = 85;
+const UMBRAL_MEDIA = 70;
 
 const SIN_DATOS: Confianza = {
   nivel: "sin-datos",

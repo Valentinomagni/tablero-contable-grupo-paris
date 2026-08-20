@@ -29,7 +29,8 @@ export interface ResultadoICR {
 // si la muestra no alcanza, no se publica el número (null), no se maquilla.
 export const MUESTRA_MINIMA = 8;
 
-export const LECTURA_ICR = "Un ICR bajo invalida las métricas de ese conjunto, no a la persona.";
+// Sin `export`: la usa sólo esta lib, que ya la devuelve dentro del resultado.
+const LECTURA_ICR = "Un ICR bajo invalida las métricas de ese conjunto, no a la persona.";
 
 const DIA = 86400000;
 const DIEZ_MIN = 10 * 60000;

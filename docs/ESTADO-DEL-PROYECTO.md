@@ -1,4 +1,4 @@
-# Estado del proyecto — al 14/08/2026
+# Estado del proyecto — al 15/08/2026
 
 Fuente de verdad de qué falta. Separado entre **lo que depende de mí** y **lo que depende de
 vos**, porque mezclarlo fue lo que hizo ilegible la versión anterior de este documento.
@@ -11,15 +11,18 @@ Los números de acá se contaron de nuevo hoy; al lado de cada uno está el coma
 
 | Qué | Cuánto | Cómo se cuenta |
 |---|---|---|
-| Tests | **1381** en 117 archivos | `npx vitest run` |
+| Tests | **1472** en 122 archivos | `npx vitest run` |
 | Tipos, lint, build | **0, 0, 0** | `npx tsc -b` · `npx oxlint` · `npx vite build` |
 | Commits sin publicar | **0** — todo en producción | `git rev-list --count origin/main..HEAD` |
-| Migraciones escritas | hasta la **52** | `ls db/migraciones/` |
-| Documentos vigentes | 25 | `ls docs/*.md` |
+| Migraciones escritas | hasta la **56** | `ls db/migraciones/` |
+| Documentos vigentes | 26 | `ls docs/*.md` |
 | Agentes de revisión | 3 | `ls .claude/agents/` |
 
-**La etapa que se cierra hoy** son dos cosas juntas: los diez reportes del equipo (la minuta de
-Yani, Mathi, Enzo, Patricia y Valentino) y la auditoría del 05/08, que estaba entera abierta.
+**La etapa anterior cerró** con los diez reportes del equipo y la auditoría del 05/08 entera.
+
+**La etapa nueva, en curso**, es unificación de criterios y productividad del empleado: las dos
+reglas de estado que faltaban, el catálogo de tareas estándar y las esperas por otra área. Plan
+en `docs/superpowers/plans/2026-08-14-criterios-y-productividad.md`.
 
 ---
 
@@ -50,27 +53,43 @@ cerrarse fue el 4, el del trabajo adelantado — sección 5.
 
 ## 3. Pendiente TUYO, en orden de urgencia
 
-### 3.1 Correr dos migraciones en Supabase
+### 3.1 Correr seis migraciones en Supabase, EN ESTE ORDEN
 
-La 49 y la 50 ya las corriste. Quedan estas dos:
+La 49 y la 50 ya las corriste. Se acumularon seis, y el orden importa en un caso.
 
-```
-db/migraciones/migracion-51-volcar-adelantado.sql
-db/migraciones/migracion-52-consultas-adjunto.sql
-```
+| # | Archivo | Qué hace |
+|---|---|---|
+| 51 | `migracion-51-volcar-adelantado.sql` | El trabajo adelantado deja de desaparecer al llegar el mes |
+| 52 | `migracion-52-consultas-adjunto.sql` | Adjuntar una captura al reportar un problema |
+| 53 | `migracion-53-reglas-de-estado.sql` | Las dos reglas de estado, del lado de la base |
+| 54 | `migracion-54-bloqueo-area.sql` | Marcar que una tarea espera a otra área |
+| 55 | `migracion-55-catalogo-tareas.sql` | El catálogo de tareas estándar |
+| 56 | `migracion-56-volcado-vs-reglas.sql` | **Que la 53 no aborte el reinicio mensual** |
 
-SQL Editor, completas. Las dos son idempotentes y traen al final las consultas para comprobar
+SQL Editor, completas. Todas idempotentes, y todas traen al final las consultas para comprobar
 que quedaron bien.
 
-**La 51 tiene fecha: el 1 de septiembre.** Hasta que se corra, lo que alguien adelante de
-septiembre desaparece cuando septiembre pase a ser el mes en curso. Su prueba de punta a punta
-**no espera al 1/9** — usa un mes inventado, está escrita al final del archivo.
+**LA 56 VA DESPUÉS DE LA 51 Y LA 53, sin excepción.** Si corrés la 53 y no la 56, el reinicio
+mensual se cae entero el primer día 1 en que alguien haya adelantado una tarea terminada: el
+trigger de la 53 frena el volcado de la 51 y, como una excepción aborta la transacción completa,
+no se pierde el volcado — se pierde el reinicio. Es el incidente del 04/08 otra vez.
 
-**La 52 tiene una comprobación que conviene hacer de verdad**, y no es un formalismo: mandá una
-consulta con captura desde una cuenta de empleado y confirmá que **el jefe no puede abrirla**.
-Si el jefe la ve, la promesa del canal de Consultas es falsa y hay que parar todo.
+### Tres avisos antes de correrlas
 
-Para saber si faltan, sin preguntarme:
+**La 53 cambia la costumbre del equipo de un día para el otro.** Desde que se corra: una tarea no
+se puede marcar terminada directo desde Pendiente, y si tiene checklist va completo para cerrarla.
+Conviene avisarle al equipo antes, no que lo descubran un día 30. El archivo trae la consulta que
+cuenta a cuántas tareas afecta hoy, para saber de qué tamaño es el aviso.
+
+**La 52 tiene una comprobación que no es un formalismo:** mandá una consulta con captura desde una
+cuenta de empleado y confirmá que **el jefe no puede abrirla**. Si la ve, la promesa del canal de
+Consultas es falsa y hay que parar todo.
+
+**La 55 también:** asigná una tarea a una definición del catálogo, borrá la definición, y
+confirmá que la tarea sigue existiendo. Si desaparece, la foránea quedó mal y borrar una
+definición se llevaría puestas las tareas que salieron de ella.
+
+Para saber cuáles faltan, sin preguntarme:
 
 ```bash
 npm run migraciones
