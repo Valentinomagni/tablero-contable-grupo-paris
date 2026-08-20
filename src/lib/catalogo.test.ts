@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { desdeEstandar, validarEstandar, checklistDesdeTexto, textoDeChecklist, ordenarEstandares } from "./catalogo";
+import { desdeEstandar, validarEstandar, checklistDesdeTexto, textoDeChecklist, ordenarEstandares, estandaresElegibles, claveDeNombre } from "./catalogo";
 import type { TareaEstandar } from "./types";
 
 function estandar(over: Partial<TareaEstandar> = {}): TareaEstandar {
@@ -222,5 +222,81 @@ describe("checklistDesdeTexto / textoDeChecklist — los pasos se editan como te
   it("un checklist roto o vacío se muestra como texto vacío", () => {
     expect(textoDeChecklist([])).toBe("");
     expect(textoDeChecklist(null as unknown as [])).toBe("");
+  });
+});
+
+// ── Sólo las activas se pueden elegir para una tarea nueva ──────────────────────
+describe("estandaresElegibles", () => {
+  it("deja las activas", () => {
+    const l = [estandar({ id: "a", nombre: "Conciliación", activa: true })];
+    expect(estandaresElegibles(l).map((e) => e.id)).toEqual(["a"]);
+  });
+
+  // LA PANTALLA DEL CATÁLOGO SÍ MUESTRA LAS DADAS DE BAJA, a propósito: el histórico apunta a
+  // ellas y tienen que poder verse y reactivarse. Pero elegir una definición retirada para una
+  // tarea NUEVA es justo lo que la baja quiso evitar.
+  it("saca las dadas de baja", () => {
+    const l = [
+      estandar({ id: "a", nombre: "Vigente", activa: true }),
+      estandar({ id: "b", nombre: "Retirada", activa: false }),
+    ];
+    expect(estandaresElegibles(l).map((e) => e.id)).toEqual(["a"]);
+  });
+
+  it("viene ordenado, para que el selector no cambie de orden solo", () => {
+    const l = [
+      estandar({ id: "b", nombre: "Zeta", activa: true }),
+      estandar({ id: "a", nombre: "Alfa", activa: true }),
+    ];
+    expect(estandaresElegibles(l).map((e) => e.nombre)).toEqual(["Alfa", "Zeta"]);
+  });
+
+  it("ante datos rotos devuelve lista vacía en vez de romper el modal", () => {
+    expect(estandaresElegibles(undefined as unknown as never)).toEqual([]);
+    expect(estandaresElegibles([null] as unknown as never)).toEqual([]);
+  });
+});
+
+// ── La clave con la que se compara un nombre ────────────────────────────────────
+describe("claveDeNombre", () => {
+  it("ignora mayúsculas y espacios de sobra", () => {
+    expect(claveDeNombre("  Conciliación Bancaria ")).toBe(claveDeNombre("conciliación bancaria"));
+  });
+
+  // EL CASO REAL DE UNA OFICINA ARGENTINA: media oficina escribe con acento y la otra mitad no.
+  // Si "Conciliación" y "Conciliacion" contaran como cosas distintas, el catálogo dejaría
+  // entrar las dos y el informe de qué falta estandarizar no encontraría justo lo que busca.
+  it("ignora los acentos", () => {
+    expect(claveDeNombre("Conciliación")).toBe(claveDeNombre("Conciliacion"));
+    expect(claveDeNombre("Depósito")).toBe(claveDeNombre("deposito"));
+  });
+
+  it("colapsa los espacios del medio", () => {
+    expect(claveDeNombre("Conciliación   bancaria")).toBe(claveDeNombre("Conciliación bancaria"));
+  });
+
+  it("con basura devuelve cadena vacía", () => {
+    expect(claveDeNombre(null as unknown as string)).toBe("");
+    expect(claveDeNombre("   ")).toBe("");
+  });
+});
+
+describe("validarEstandar — el duplicado con acento", () => {
+  // ESTO ANTES PASABA. `validarEstandar` comparaba con `trim().toLowerCase()` y nada más, así
+  // que "Conciliacion bancaria" entraba como definición nueva al lado de "Conciliación
+  // bancaria". El catálogo terminaba con las dos, que es exactamente el problema que vino a
+  // resolver — el jefe seguía sin poder comparar.
+  it("rechaza el mismo nombre escrito sin acento", () => {
+    const existentes = [estandar({ id: "a", nombre: "Conciliación bancaria" })];
+    const b = { nombre: "Conciliacion bancaria", descripcion: "", checklist: [],
+      categoria: null, effort: 1 as const, tiempo_max_horas: null };
+    expect(validarEstandar(b, existentes)).toContain("Conciliación bancaria");
+  });
+
+  it("editando la propia definición no choca consigo misma", () => {
+    const existentes = [estandar({ id: "a", nombre: "Conciliación bancaria" })];
+    const b = { nombre: "Conciliacion bancaria", descripcion: "", checklist: [],
+      categoria: null, effort: 1 as const, tiempo_max_horas: null };
+    expect(validarEstandar(b, existentes, "a")).toBeNull();
   });
 });

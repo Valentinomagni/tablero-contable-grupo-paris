@@ -5,8 +5,9 @@ import { Modal } from "../../components/Modal";
 import { supabase } from "../../lib/supabase";
 import { similares } from "../../lib/similitud";
 import { categoriasEnUso, mergeCategorias } from "../../lib/categorias";
-import { useSettings, useMigraciones } from "../../hooks/useData";
-import { payloadCards } from "../../lib/esquema";
+import { useSettings, useMigraciones, useTareasEstandar } from "../../hooks/useData";
+import { payloadCards, tieneCatalogo } from "../../lib/esquema";
+import { desdeEstandar, estandaresElegibles } from "../../lib/catalogo";
 import { camposDeAlta, TIPO_ALTA_POR_DEFECTO, type TipoAlta } from "../../lib/recurrencia-alta";
 import type { Card } from "../../lib/types";
 import { mensajeUsuario } from "../../lib/fallas";
@@ -32,6 +33,42 @@ export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { owne
   // la base asumía 'mensual' y toda tarea puntual volvía a Pendiente cada mes para siempre.
   const [tipoAlta, setTipoAlta] = useState<TipoAlta>(TIPO_ALTA_POR_DEFECTO);
 
+  // ── Crear desde el catálogo (migración 55) ──────────────────────────────────
+  //
+  // EL PROBLEMA QUE RESUELVE: "Juan hace las conciliaciones de Chevrolet, pero su descripción no
+  // es como la de Valentino". Con siete caminos que crean tareas y el título como texto libre, la
+  // misma tarea termina escrita de siete formas y el jefe no puede comparar nada.
+  //
+  // TODO QUEDA EDITABLE DESPUÉS DE ELEGIR, Y ESO NO ES UN DETALLE: si la definición fuera una
+  // jaula, el primer caso que no encaje se crearía por afuera y en dos semanas nadie usaría el
+  // catálogo. Es un punto de partida.
+  const catalogoHabilitado = tieneCatalogo(migracionesAplicadas);
+  const { data: catalogo = [] } = useTareasEstandar();
+  const estandares = estandaresElegibles(catalogo);
+  const [estandarId, setEstandarId] = useState<string | null>(null);
+  const [checklist, setChecklist] = useState<Card["checklist"]>([]);
+  const [descripcion, setDescripcion] = useState("");
+  const [tiempoMax, setTiempoMax] = useState<number | null>(null);
+
+  function elegirEstandar(id: string) {
+    const e = estandares.find((x) => x.id === id);
+    if (!e) {
+      // Volver a "ninguna" NO borra lo que la persona ya escribió: podría haber elegido una
+      // definición, editado el título y después arrepentirse del vínculo. Se suelta el vínculo,
+      // no el trabajo.
+      setEstandarId(null);
+      return;
+    }
+    const base = desdeEstandar(e, ownerId, null, null);
+    setEstandarId(e.id);
+    setTitle(base.title ?? "");
+    setDescripcion(base.description ?? "");
+    setChecklist(base.checklist ?? []);
+    setCategoria(base.categoria ?? "");
+    setEffort(base.effort ?? 1);
+    setTiempoMax(base.tiempo_max_horas ?? null);
+  }
+
   const crear = useMutation({
     mutationFn: async () => {
       const row = {
@@ -39,6 +76,14 @@ export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { owne
         due_date: dueDate || null, priority, effort,
         categoria: categoria.trim() || null,
         dato_control: datoControl.trim() || null,
+        // La descripción y el checklist sólo llegan cuando salieron del catálogo: sin él, esta
+        // pantalla nunca los pidió y el comportamiento no cambia.
+        description: descripcion,
+        checklist,
+        tiempo_max_horas: tiempoMax,
+        // El vínculo con la definición. Es lo que después permite comparar la conciliación de
+        // Chevrolet con la de Peugeot: sin este campo, son dos títulos parecidos y nada más.
+        estandar_id: estandarId,
         // Van por `payloadCards` junto con el resto del row (ver abajo), que es el gateado
         // defensivo del esquema: nunca se manda una columna que la base todavía no tiene.
         ...camposDeAlta(tipoAlta),
@@ -65,6 +110,23 @@ export function NuevaTareaModal({ ownerId, meName, cards = [], onClose }: { owne
     <Modal onClose={onClose} maxWidth={480}>
       <h3 className="text-lg font-semibold m-0 mb-3.5">Nueva tarea</h3>
       <form onSubmit={(e) => { e.preventDefault(); if (puedeCrear) crear.mutate(); }}>
+        {/* Va PRIMERO, arriba del título: elegir la definición completa el resto, así que
+            preguntarlo después obligaría a escribir para que se lo pisen. Sin la migración 55
+            (o sin ninguna definición cargada) no se muestra nada y la pantalla es la de siempre. */}
+        {catalogoHabilitado && estandares.length > 0 && (
+          <label className="block text-sm text-ink2 mb-3">¿Es una tarea estándar?
+            <select value={estandarId ?? ""} onChange={(e) => elegirEstandar(e.target.value)}
+              className="w-full bg-surface2 border border-line rounded-lg px-2.5 py-1.5 text-ink text-sm mt-1">
+              <option value="">No, la escribo yo</option>
+              {estandares.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+            </select>
+            {estandarId && (
+              <span className="block text-2xs mt-1">
+                Se completó con la definición del catálogo. Podés cambiar lo que haga falta.
+              </span>
+            )}
+          </label>
+        )}
         <label className="block text-sm text-ink2 mb-3">Título
           <input autoFocus required value={title} onChange={(e) => setTitle(e.target.value)}
             placeholder="Ej: Conciliación bancaria de julio…"

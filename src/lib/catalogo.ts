@@ -119,8 +119,14 @@ export function validarEstandar(
   const nombre = (b?.nombre ?? "").trim();
   if (!nombre) return "La tarea estándar necesita un nombre.";
 
+  // `claveDeNombre` y no `trim().toLowerCase()` a mano: también saca los acentos. Antes,
+  // "Conciliación" y "Conciliacion" entraban como dos definiciones distintas — o sea que el
+  // catálogo permitía justo el problema que vino a resolver, con un paso de burocracia en el
+  // medio. Y es el mismo criterio con el que el informe agrupa los títulos repetidos: si fueran
+  // dos criterios, el informe marcaría como repetido algo que el catálogo dejó entrar como único.
+  const clave = claveDeNombre(nombre);
   const choque = (existentes ?? []).find(
-    (e) => e.id !== editandoId && (e.nombre ?? "").trim().toLowerCase() === nombre.toLowerCase(),
+    (e) => e.id !== editandoId && claveDeNombre(e.nombre ?? "") === clave,
   );
   if (choque) return `Ya hay una tarea estándar que se llama "${choque.nombre}".`;
 
@@ -152,4 +158,38 @@ export function checklistDesdeTexto(txt: string): ChecklistItem[] {
 export function textoDeChecklist(items: ChecklistItem[]): string {
   if (!Array.isArray(items)) return "";
   return items.map((i) => i?.txt ?? "").filter((t) => t.trim().length > 0).join("\n");
+}
+
+/**
+ * La clave con la que se decide si dos nombres son "el mismo". **Fuente única.**
+ *
+ * Sin mayúsculas, sin acentos y con los espacios colapsados. Los acentos importan de verdad acá:
+ * en una oficina argentina media gente escribe "Conciliación" y la otra mitad "Conciliacion". Si
+ * contaran como cosas distintas, el catálogo dejaría entrar las dos definiciones —y entonces el
+ * catálogo tendría el mismo problema que vino a resolver, con un paso de burocracia en el medio.
+ *
+ * `normalize("NFD")` separa la letra de su tilde y el reemplazo borra las tildes sueltas. Es la
+ * forma estándar en JavaScript y no necesita tabla de caracteres.
+ */
+export function claveDeNombre(nombre: string): string {
+  if (typeof nombre !== "string") return "";
+  return nombre
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+/**
+ * Las definiciones que se pueden elegir al crear una tarea: sólo las activas, ya ordenadas.
+ *
+ * POR QUÉ NO ALCANZA CON `ordenarEstandares`. La pantalla del catálogo muestra también las dadas
+ * de baja, y eso es deliberado: el histórico apunta a ellas, así que tienen que poder verse y
+ * reactivarse. Pero elegir una definición retirada para una tarea NUEVA es exactamente lo que la
+ * baja quiso evitar. Son dos listas distintas para dos preguntas distintas.
+ */
+export function estandaresElegibles(l: TareaEstandar[]): TareaEstandar[] {
+  if (!Array.isArray(l)) return [];
+  return ordenarEstandares(l.filter((e) => e?.activa === true));
 }
