@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { TrendingUp, TrendingDown, AlertTriangle, Minus, FileSpreadsheet } from "lucide-react";
 import type { Card, Profile, ActivityLog } from "../../lib/types";
-import { analizarMes } from "../../lib/analisis";
+import { analizarMes, cardsDelMes } from "../../lib/analisis";
 import { indiceRetrabajo } from "../../lib/retrabajo";
+import { coberturaEstandar } from "../../lib/cobertura-estandar";
 import { tendenciaDiferencias } from "../../lib/arqueo";
 import { concentracion } from "../../lib/busfactor";
 import { analiticaOperativas } from "../../lib/analitica-operativas";
@@ -29,6 +30,10 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
   const occs = useOccurrences(year, month).data ?? [];
   const archives = useArchiveEquipo().data ?? [];
   const a = analizarMes(cards, team, occs, archives, year, month);
+  // MISMA cota que el resto del análisis. Si `coberturaEstandar` filtrara por su cuenta,
+  // habría dos definiciones de "tareas del mes" en la misma pantalla — que es exactamente el
+  // hallazgo 2 de la auditoría del 05/08, un criterio escrito dos veces que terminó divergiendo.
+  const cobertura = coberturaEstandar(cardsDelMes(cards, year, month));
   const retrabajo = indiceRetrabajo(cards, team);
   const occsArqueoTodas = useArqueoOccsAll(cards);
   const tendencia = tendenciaDiferencias(occsArqueoTodas, team);
@@ -168,6 +173,51 @@ export function AnalisisMensual({ cards, team, activity = [], segmento = null }:
             </Panel>
           ))}
       </div>
+
+      {/* Cuánto del mes sale del catálogo, y qué títulos convendría estandarizar (migración 55).
+          Responde el pedido de "unificar criterios": si Juan y Valentino escriben distinto la
+          misma conciliación, no hay forma de comparar nada.
+
+          POR TÍTULO Y NUNCA POR PERSONA. Agrupar por dueño sería más fácil y hasta parecería más
+          útil, pero convierte un problema de proceso en una lista de responsables. "Hay 6 tareas
+          llamadas 'Conciliación' fuera del catálogo" dice el mismo hecho, no acusa a nadie, y
+          encima nombra qué definición falta escribir. */}
+      <Panel>
+        <h3 className="text-xs uppercase tracking-wide text-ink2 font-semibold mb-1">Criterios unificados</h3>
+        <p className="text-ink2 text-xs mb-3.5">
+          Cuántas tareas del mes salen de una definición del catálogo. Cuando la misma tarea está
+          escrita distinto según quién la carga, los números de marcas y sucursales no se pueden
+          comparar entre sí.
+        </p>
+        {cobertura.total === 0 ? (
+          <span className="text-ink2 text-sm">Sin tareas este mes.</span>
+        ) : (
+          <div className="flex items-center gap-2 mb-3.5">
+            <b className="text-2xl font-bold tracking-tight tnum" style={{ color: colorPct(cobertura.pct) }}>
+              {cobertura.pct}%
+            </b>
+            <span className="text-ink2 text-xs">
+              <span className="tnum">{cobertura.conEstandar}</span> de <span className="tnum">{cobertura.total}</span> tareas
+              salen del catálogo
+            </span>
+          </div>
+        )}
+        {cobertura.candidatas.length > 0 && (
+          <>
+            <p className="text-ink2 text-2xs mb-1.5">
+              Estos títulos se repiten y todavía no están en el catálogo. Son los que más
+              convendría definir una vez:
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {cobertura.candidatas.map((c) => (
+                <span key={c.titulo} className="inline-flex items-center gap-1 bg-chip rounded-md px-2 py-0.5 text-2xs whitespace-nowrap">
+                  {c.titulo} <b className="tnum">×{c.veces}</b>
+                </span>
+              ))}
+            </div>
+          </>
+        )}
+      </Panel>
 
       {/* Retrabajo: reaperturas de tareas ya terminadas. Encuadre no punitivo (spec 28 Fase B). */}
       <Panel>
