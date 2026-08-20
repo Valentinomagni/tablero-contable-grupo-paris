@@ -14,7 +14,7 @@ Los números de acá se contaron de nuevo hoy; al lado de cada uno está el coma
 | Tests | **1494** en 123 archivos | `npx vitest run` |
 | Tipos, lint, build | **0, 0, 0** | `npx tsc -b` · `npx oxlint` · `npx vite build` |
 | Commits sin publicar | **0** — todo en producción | `git rev-list --count origin/main..HEAD` |
-| Migraciones escritas | hasta la **56** | `ls db/migraciones/` |
+| Migraciones escritas | hasta la **57** | `ls db/migraciones/` |
 | Documentos vigentes | 26 | `ls docs/*.md` |
 | Agentes de revisión | 3 | `ls .claude/agents/` |
 
@@ -29,9 +29,9 @@ empleado, según `docs/superpowers/plans/2026-08-14-criterios-y-productividad.md
 | B | Catálogo de tareas estándar, crear desde él, y qué falta estandarizar | hecha |
 | C | Esperas por otra área | hecha — base, tarea, tarjeta y resumen del jefe |
 | D | Propuestas de productividad | `docs/PROPUESTAS-PRODUCTIVIDAD.md`, sin código a propósito |
-| E | Limpieza técnica | parcial — tres exports de más; queda `Admin.tsx` (701 líneas) y la vista materializada |
+| E | Limpieza técnica | hecha — 15 exports muertos a 0 y la vista materializada retirada; queda `Admin.tsx` (701 líneas) |
 
-**Falta correr seis migraciones** para que nada de esto funcione en producción. Sección 3.1.
+**Todo publicado y con las migraciones corridas**, salvo la 57, que es una limpieza sin riesgo.
 
 ---
 
@@ -62,9 +62,12 @@ cerrarse fue el 4, el del trabajo adelantado — sección 5.
 
 ## 3. Pendiente TUYO, en orden de urgencia
 
-### 3.1 Correr seis migraciones en Supabase, EN ESTE ORDEN
+### 3.1 Correr la migración 57
 
-La 49 y la 50 ya las corriste. Se acumularon seis, y el orden importa en un caso.
+**Las 51 a la 56 ya las corriste.** Queda sólo la 57, que no corre ningún riesgo: retira una
+vista derivada y no toca ningún dato.
+
+Las que ya están, para referencia:
 
 | # | Archivo | Qué hace |
 |---|---|---|
@@ -74,60 +77,37 @@ La 49 y la 50 ya las corriste. Se acumularon seis, y el orden importa en un caso
 | 54 | `migracion-54-bloqueo-area.sql` | Marcar que una tarea espera a otra área |
 | 55 | `migracion-55-catalogo-tareas.sql` | El catálogo de tareas estándar |
 | 56 | `migracion-56-volcado-vs-reglas.sql` | **Que la 53 no aborte el reinicio mensual** |
+| 57 | `migracion-57-retirar-mv-resumen.sql` | Retira una vista congelada que nadie usaba |
 
-SQL Editor, completas. Todas idempotentes, y todas traen al final las consultas para comprobar
-que quedaron bien.
+SQL Editor, completa. Es idempotente y trae al final la comprobación de que `cards_archive`
+—lo único que importaba— sigue intacto.
 
-**LA 56 VA DESPUÉS DE LA 51 Y LA 53, sin excepción.** Si corrés la 53 y no la 56, el reinicio
-mensual se cae entero el primer día 1 en que alguien haya adelantado una tarea terminada: el
-trigger de la 53 frena el volcado de la 51 y, como una excepción aborta la transacción completa,
-no se pierde el volcado — se pierde el reinicio. Es el incidente del 04/08 otra vez.
+### Lo que ya pasó, para que quede el registro
 
-### Tres avisos antes de correrlas
+**Las 51 a la 56 se corrieron el 20/08.** Dos cosas de esa tanda merecen quedar escritas, porque
+son las que más cerca estuvieron de costar caro:
 
-**La 53 cambia la costumbre del equipo de un día para el otro.** Desde que se corra: una tarea no
-se puede marcar terminada directo desde Pendiente, y si tiene checklist va completo para cerrarla.
-Conviene avisarle al equipo antes, no que lo descubran un día 30. El archivo trae la consulta que
-cuenta a cuántas tareas afecta hoy, para saber de qué tamaño es el aviso.
+- **La 56 tenía que ir después de la 51 y la 53.** Si se hubiera corrido la 53 sola, el reinicio
+  mensual se caía entero el primer día 1 con trabajo adelantado: el trigger frenaba el volcado y
+  la excepción abortaba la transacción completa. No se perdía el volcado — se perdía el reinicio.
+- **La 53 cambió la costumbre del equipo de un día para el otro**: no se cierra desde Pendiente y
+  el checklist va completo. Se avisó antes, que era la parte importante.
 
-**La 52 tiene una comprobación que no es un formalismo:** mandá una consulta con captura desde una
-cuenta de empleado y confirmá que **el jefe no puede abrirla**. Si la ve, la promesa del canal de
-Consultas es falsa y hay que parar todo.
+**El error 400 de consola se apagó** al correr la 54 y la 55, como estaba previsto: el código
+pedía columnas que la base todavía no tenía y la app caía al reintento con `select("*")`.
 
-**La 55 también:** asigná una tarea a una definición del catálogo, borrá la definición, y
-confirmá que la tarea sigue existiendo. Si desaparece, la foránea quedó mal y borrar una
-definición se llevaría puestas las tareas que salieron de ella.
+**El hueco que dejó a la vista, y que sigue abierto:** `esquema.ts` gatea lo que se ESCRIBE
+(`payloadCards`) pero no lo que se LEE — `COLUMNAS_CARDS` es un texto fijo. El reintento tapa el
+síntoma. Va a volver a pasar con la próxima columna nueva.
 
-### Un error de consola que va a estar hasta que las corras
+### 3.2 ~~Redesplegar la Edge Function `blanquear-clave`~~ — HECHO el 20/08/2026
 
-Verificado en producción hoy: la consulta de tareas devuelve **400** en cada carga, y después la
-app la reintenta con `select("*")` y funciona igual.
+Cierra el último agujero de la auditoría del 05/08: el jefe podía blanquearle la clave a la
+cuenta de administración y entrar como ella, esquivando por la puerta de al lado la restricción
+que la migración 39 había puesto en la principal.
 
-**No está roto nada** —el reintento es deliberado y está en `useCards`— pero conviene saber por
-qué pasa: el código ya pide las columnas `bloqueo_area`, `bloqueo_desde` y `estandar_id`, y la
-base todavía no las tiene. Es el costo de publicar el código antes de correr las migraciones.
-
-Se apaga solo apenas corras la 54 y la 55. Mientras tanto, cada carga pide las tareas dos veces.
-
-**El hueco que deja a la vista**, anotado para no redescubrirlo: `esquema.ts` gatea lo que se
-ESCRIBE (`payloadCards`) pero no lo que se LEE (`COLUMNAS_CARDS` es un texto fijo). El reintento
-tapa el síntoma; el gateado de lectura no existe.
-
-Para saber cuáles faltan, sin preguntarme:
-
-```bash
-npm run migraciones
-```
-
-### 3.2 Redesplegar la Edge Function `blanquear-clave`
-
-Supabase Dashboard → Edge Functions → **blanquear-clave** → Edit → reemplazar todo con
-`edge-functions/blanquear-clave.ts` → Deploy.
-
-Sin esto queda **arreglado en el código y roto en producción**, que es la peor combinación. Lo
-que cierra: hoy el jefe no puede darse el rol de administración, pero sí puede blanquearle la
-clave a esa cuenta y entrar como ella. El canal de Consultas existe para que alguien pueda
-reportar algo contando con que su jefe no lo lee.
+**Conviene comprobarlo una vez, y no darlo por hecho:** entrá como jefe e intentá blanquear la
+clave de la cuenta de administración. Tiene que negarse. Si deja, el despliegue no tomó.
 
 ### 3.3 ~~Publicar los commits~~ — HECHO el 14/08/2026
 
@@ -149,8 +129,8 @@ cerrar y volver a abrir la app fuerza la última versión. No es la última preg
 Nada de lo de esta tanda se abrió en un navegador. Los tests cubren la lógica; **no cubren la
 percepción**. Lo que más conviene mirar:
 
-- **Lo primero, apenas corras la 53:** intentá cerrar una tarea que está en Pendiente. Tiene que
-  frenarte y decirte que la pases a En proceso. Si te deja, el trigger no quedó puesto.
+- **Lo primero:** intentá cerrar una tarea que está en Pendiente. Tiene que frenarte y decirte
+  que la pases a En proceso. Es la comprobación más barata de que la 53 entró.
 - El catálogo en Administración, y crear una tarea eligiendo una definición.
 - La tarjeta de arqueo: ¿el "6 de 21" coincide con lo que Patricia ya sabe?
 - Las columnas plegables: al soltar una tarjeta en una plegada, ¿se siente bien que se vuelva a
@@ -169,14 +149,12 @@ percepción**. Lo que más conviene mirar:
 
 **Nada que bloquee.** Lo que sigue es mejora, no deuda:
 
-1. **Grilla OWASP + STRIDE** para el agente `revisor-seguridad`. Sale de la evaluación de gstack
-   (`docs/EVALUACION-GSTACK.md`): media hora, sin dependencias nuevas.
-2. **`mv_resumen_mensual`**: la vista materializada existe y **no la usa nadie**. Le faltan
-   `sucursal`, `categoria` y el filtro de operativas.
-3. **Las variantes de `Panel` que faltan.** De 41 superficies, 18 son la tarjeta canónica y ya
+1. **Partir `Admin.tsx`**, que está en 701 líneas y es el archivo que más crece. Por sección,
+   como se hizo con `CardModal`.
+2. **Las variantes de `Panel` que faltan.** De 41 superficies, 18 son la tarjeta canónica y ya
    usan `Panel`. Las otras 23 son 4 o 5 superficies distintas. Unificarlas necesita que mires la
    pantalla y digas cuáles son la misma cosa.
-4. **Propuestas de adopción que quedan**: P6 (recordatorio contextual) y P10 (sincronizar antes
+3. **Propuestas de adopción que quedan**: P6 (recordatorio contextual) y P10 (sincronizar antes
    de la reunión), en `docs/PROPUESTAS-ADOPCION.md`.
 
 ---

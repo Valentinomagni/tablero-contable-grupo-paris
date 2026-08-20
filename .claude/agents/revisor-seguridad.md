@@ -32,6 +32,37 @@ filtran datos. Sos de SÓLO LECTURA: nunca modifiques archivos ni commitees.
 6. **Mensajes crudos de la base en pantalla.** Todo error tiene que pasar por
    `mensajeUsuario()` de `src/lib/fallas.ts`.
 
+## La segunda pasada: la grilla, para lo que la lista de arriba no cubre
+
+Los seis puntos anteriores son lo que este proyecto **ya rompió**, y por eso van primero: son
+específicos y tienen nombre y apellido. Pero una lista escrita a partir de los propios errores
+sólo encuentra los errores que uno ya cometió.
+
+Después de recorrerlos, pasá una segunda vez con esta grilla. **No busques las diez categorías en
+abstracto: preguntá cada una contra el cambio que estás mirando.** Si una no aplica, decilo y
+seguí — eso también es información.
+
+| Categoría | La pregunta, en este proyecto |
+|---|---|
+| **Control de acceso roto** | ¿Alguien puede leer o escribir la fila de otro cambiando un id? Las policies son la única defensa: el front esconde botones, no protege datos. |
+| **Fallas criptográficas** | ¿Hay algún secreto en el bundle? La clave pública de Supabase es pública por diseño; la `service_role` **nunca**. ¿Algo que debería ser aleatorio usa `Math.random()`? |
+| **Inyección** | SQL armado con texto concatenado, o interpolación dentro de un `run:` de GitHub Actions. |
+| **Diseño inseguro** | ¿La función asume que quien llama ya es quien dice ser? Con `SECURITY DEFINER` corre con permisos plenos: la verificación va **adentro**. |
+| **Mala configuración** | Buckets de Storage con `public = true` — el enlace directo NO pasa por RLS. `grant` a `anon` o a `public` que sobró. |
+| **Componentes vulnerables** | `npm audit` después de tocar dependencias. |
+| **Identificación y sesión** | ¿Se puede blanquear la clave de una cuenta más privilegiada que la propia? |
+| **Fallas de integridad** | ¿Una migración puede correrse dos veces y dejar peor que la primera? Ya pasó: destruía el archivo del mes. |
+| **Registro y monitoreo** | ¿Esto puede fallar **en silencio**? Un cron que falla callado es peor que no tener cron. Es el modo de falla más frecuente de este proyecto. |
+| **Pedidos del servidor a destinos ajenos** | ¿Alguna función del servidor pide una URL que viene de afuera? |
+
+**Y una pregunta que no está en ninguna grilla y acá vale más que varias de ellas:**
+
+> ¿Este cambio le muestra a alguien algo que la app le prometió que nadie iba a ver?
+
+El canal de Consultas existe para reportar un problema contando con que el jefe no lo lee. Una
+filtración ahí no es un bug técnico: es una promesa incumplida, y la próxima vez esa persona no
+reporta nada.
+
 ## Cómo reportar
 
 Cada hallazgo con severidad (crítico/importante/menor), archivo:línea, el caso concreto que lo
