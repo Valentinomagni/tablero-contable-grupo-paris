@@ -98,6 +98,21 @@ Consultas es falsa y hay que parar todo.
 confirmá que la tarea sigue existiendo. Si desaparece, la foránea quedó mal y borrar una
 definición se llevaría puestas las tareas que salieron de ella.
 
+### Un error de consola que va a estar hasta que las corras
+
+Verificado en producción hoy: la consulta de tareas devuelve **400** en cada carga, y después la
+app la reintenta con `select("*")` y funciona igual.
+
+**No está roto nada** —el reintento es deliberado y está en `useCards`— pero conviene saber por
+qué pasa: el código ya pide las columnas `bloqueo_area`, `bloqueo_desde` y `estandar_id`, y la
+base todavía no las tiene. Es el costo de publicar el código antes de correr las migraciones.
+
+Se apaga solo apenas corras la 54 y la 55. Mientras tanto, cada carga pide las tareas dos veces.
+
+**El hueco que deja a la vista**, anotado para no redescubrirlo: `esquema.ts` gatea lo que se
+ESCRIBE (`payloadCards`) pero no lo que se LEE (`COLUMNAS_CARDS` es un texto fijo). El reintento
+tapa el síntoma; el gateado de lectura no existe.
+
 Para saber cuáles faltan, sin preguntarme:
 
 ```bash
