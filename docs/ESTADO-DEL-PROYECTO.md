@@ -1,4 +1,4 @@
-# Estado del proyecto — al 15/08/2026
+# Estado del proyecto — al 20/08/2026
 
 Fuente de verdad de qué falta. Separado entre **lo que depende de mí** y **lo que depende de
 vos**, porque mezclarlo fue lo que hizo ilegible la versión anterior de este documento.
@@ -11,7 +11,7 @@ Los números de acá se contaron de nuevo hoy; al lado de cada uno está el coma
 
 | Qué | Cuánto | Cómo se cuenta |
 |---|---|---|
-| Tests | **1472** en 122 archivos | `npx vitest run` |
+| Tests | **1494** en 123 archivos | `npx vitest run` |
 | Tipos, lint, build | **0, 0, 0** | `npx tsc -b` · `npx oxlint` · `npx vite build` |
 | Commits sin publicar | **0** — todo en producción | `git rev-list --count origin/main..HEAD` |
 | Migraciones escritas | hasta la **56** | `ls db/migraciones/` |
@@ -20,9 +20,18 @@ Los números de acá se contaron de nuevo hoy; al lado de cada uno está el coma
 
 **La etapa anterior cerró** con los diez reportes del equipo y la auditoría del 05/08 entera.
 
-**La etapa nueva, en curso**, es unificación de criterios y productividad del empleado: las dos
-reglas de estado que faltaban, el catálogo de tareas estándar y las esperas por otra área. Plan
-en `docs/superpowers/plans/2026-08-14-criterios-y-productividad.md`.
+**La etapa nueva está completa en código.** Unificación de criterios y productividad del
+empleado, según `docs/superpowers/plans/2026-08-14-criterios-y-productividad.md`:
+
+| Fase | Qué | Estado |
+|---|---|---|
+| A | Las dos reglas de estado (no saltar En proceso, checklist completo) | hecha — front, guardián y trigger |
+| B | Catálogo de tareas estándar, crear desde él, y qué falta estandarizar | hecha |
+| C | Esperas por otra área | hecha — base, tarea, tarjeta y resumen del jefe |
+| D | Propuestas de productividad | `docs/PROPUESTAS-PRODUCTIVIDAD.md`, sin código a propósito |
+| E | Limpieza técnica | parcial — tres exports de más; queda `Admin.tsx` (701 líneas) y la vista materializada |
+
+**Falta correr seis migraciones** para que nada de esto funcione en producción. Sección 3.1.
 
 ---
 
@@ -125,6 +134,9 @@ cerrar y volver a abrir la app fuerza la última versión. No es la última preg
 Nada de lo de esta tanda se abrió en un navegador. Los tests cubren la lógica; **no cubren la
 percepción**. Lo que más conviene mirar:
 
+- **Lo primero, apenas corras la 53:** intentá cerrar una tarea que está en Pendiente. Tiene que
+  frenarte y decirte que la pases a En proceso. Si te deja, el trigger no quedó puesto.
+- El catálogo en Administración, y crear una tarea eligiendo una definición.
 - La tarjeta de arqueo: ¿el "6 de 21" coincide con lo que Patricia ya sabe?
 - Las columnas plegables: al soltar una tarjeta en una plegada, ¿se siente bien que se vuelva a
   plegar sola?

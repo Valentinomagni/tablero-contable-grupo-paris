@@ -3,6 +3,18 @@
 // nueva arriba de todo y la versión se actualiza sola (ver docs/RELEASE.md).
 export const CHANGELOG: { version: string; fecha: string; cambios: string[] }[] = [
   {
+    version: "2.16.0",
+    fecha: "2026-08-20",
+    cambios: [
+      "Una tarea ya no se puede marcar terminada directo desde Pendiente: primero pasa a En proceso. No es burocracia — es lo que hace que el tiempo que llevó una tarea sea un dato real y no un cero.",
+      "Si una tarea tiene checklist, va completo para poder cerrarla. Antes esto era una opción que casi ninguna tarea tenía activada. Si un paso ya no corresponde, se saca de la lista: eso siempre se puede.",
+      "Al completar el checklist de una tarea que estaba en Pendiente, ahora pasa a En proceso en vez de cerrarse sola. Cerrarla queda a un click.",
+      "Nuevo catálogo de tareas estándar, que carga el jefe desde Administración. Al crear una tarea podés elegir una definición y se completa el título, la descripción, el checklist y la categoría — y después podés cambiar lo que haga falta.",
+      "El análisis del mes muestra cuántas tareas salen del catálogo y qué títulos se repiten sin estar en él. Es por título, nunca por persona.",
+      "Ahora se puede marcar que una tarea está esperando a otra área (Ventas, Administración, Recursos Humanos). La tarjeta muestra hace cuántos días hábiles espera, y el resumen del jefe las agrupa por área. Sirve para que una demora ajena deje de contarse como demora del equipo.",
+    ],
+  },
+  {
     version: "2.15.0",
     fecha: "2026-08-14",
     cambios: [
