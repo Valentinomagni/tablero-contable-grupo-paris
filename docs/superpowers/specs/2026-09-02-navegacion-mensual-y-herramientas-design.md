@@ -1,7 +1,19 @@
 # Navegación mensual y herramientas contra fallos — Diseño
 
 **Fecha:** 02/09/2026
-**Estado:** aprobado en conversación, pendiente de revisión escrita
+**Estado:** aprobado, con DOS CAMBIOS decididos por el dueño el 02/09. El plan que lo ejecuta es
+`docs/superpowers/plans/2026-09-02-migraciones-automaticas-y-meses.md`.
+
+> **CAMBIO 1 — Sentry queda afuera** (H4). Decisión del dueño.
+>
+> **CAMBIO 2 — El banco de pruebas NO es un segundo proyecto** (H1). El plan gratuito permite dos y
+> el otro lo ocupa GESTORIA. Se reemplaza por **ensayo dentro de una transacción que se revierte**,
+> contra la base real. Comprobado antes de proponerlo: de las 46 migraciones, sólo la 30 usa
+> `CONCURRENTLY`, que es lo único que no puede ir en una transacción.
+>
+> **Y algo que el spec no vio:** GESTORIA ya aplica migraciones con el CLI de Supabase, sin panel.
+> El tablero usa una convención propia que sólo se puede aplicar copiando y pegando — ése es el
+> motivo real por el que hubo que pedírselo 57 veces. El plan lo corrige.
 
 ---
 
