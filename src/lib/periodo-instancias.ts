@@ -1,4 +1,4 @@
-import type { Card, CardPeriodo } from "./types";
+import type { Card, CardPeriodo, CardArchive } from "./types";
 import { toARTDate } from "./metrics";
 import { mesLegible } from "./periodos";
 
@@ -174,4 +174,91 @@ export function periodoLabel(periodo: string): string {
   const nombre = mesLegible(periodo);
   if (!nombre) return periodo;
   return `${nombre.charAt(0).toUpperCase()}${nombre.slice(1)} ${m[1]}`;
+}
+
+// ============================================================================
+//  DE DÓNDE SALE CADA MES
+//
+//  EL INCIDENTE DEL 02/09. El equipo abrió el período de agosto y vio 51 pendientes y 0
+//  terminadas. Tres personas concluyeron que se había perdido el mes de trabajo. No se perdió:
+//  agosto está entero en `cards_archive` —157 tareas, 119 terminadas, verificado con una consulta
+//  ese mismo día— pero el tablero lo mostró vacío y todos le creyeron.
+//
+//  LA CAUSA. `cardsDelPeriodo` tenía DOS casos y metía en la misma bolsa el mes que viene y el mes
+//  pasado. Son opuestos:
+//
+//    - Mes FUTURO en blanco: correcto. Todavía no pasó nada, y mostrar una copia del mes actual
+//      haría que el tablero mienta en la otra dirección.
+//    - Mes PASADO en blanco: una mentira. Pasó todo, y está guardado.
+//
+//  Y agosto NO PUEDE tener filas en `card_periodos`: durante agosto, agosto era el vigente, así
+//  que todo se guardó en `cards`. Esas filas sólo las escribe quien adelanta un mes futuro.
+// ============================================================================
+
+/** Los tres orígenes posibles del estado de un mes. */
+export type FuenteDelMes = "vigente" | "futuro" | "pasado";
+
+/**
+ * Qué clase de mes es el que se está mirando.
+ *
+ * ANTE DATOS ROTOS DEVUELVE `"vigente"`, que es el camino que ya funcionaba. Devolver `"pasado"`
+ * mandaría a buscar un archivo que no existe y dejaría la pantalla diciendo que no hay nada — o
+ * sea, reproduciendo el bug con otra excusa.
+ */
+export function fuenteDelMes(periodo: string, vigente: string): FuenteDelMes {
+  if (typeof periodo !== "string" || typeof vigente !== "string") return "vigente";
+  if (!/^\d{4}-\d{2}$/.test(periodo) || !/^\d{4}-\d{2}$/.test(vigente)) return "vigente";
+  if (periodo === vigente) return "vigente";
+  // Las cadenas 'YYYY-MM' se comparan bien alfabéticamente, incluido el cambio de año.
+  return periodo < vigente ? "pasado" : "futuro";
+}
+
+/**
+ * Las tarjetas de un mes que YA PASÓ, o `null` si ese mes no quedó archivado.
+ *
+ * DOS FUENTES, CON PRECEDENCIA:
+ *
+ *   1. La foto de `cards_archive` de ese mes. Es lo que pasó.
+ *   2. Encima, la fila de `card_periodos` de ese mes SIN `aplicado_at`, si existe. Es una
+ *      corrección hecha después.
+ *
+ * POR QUÉ HACE FALTA LA SEGUNDA. Fue un pedido textual: *"volver para atrás 2 meses después,
+ * reabrir determinada tarea porque estaba mal y dejar asentado que se terminó correctamente"*.
+ * Sin esta capa, esa corrección no se vería nunca: la foto la taparía.
+ *
+ * Y el camino de escritura YA EXISTE — `escribeEnPeriodo` manda a `card_periodos` todo lo que se
+ * escribe en un mes que no es el vigente. Nunca sirvió porque la lectura devolvía blanco: se
+ * corregía sobre una ficción.
+ *
+ * LAS FILAS CON `aplicado_at` SE IGNORAN (migraciones 51 y 56): ésas ya se volcaron sobre `cards`
+ * cuando ese mes pasó a ser el vigente, y volver a leerlas taparía el trabajo real del mes con la
+ * foto adelantada.
+ *
+ * DEVUELVE `null` Y NO UNA LISTA VACÍA cuando no hay archivo, y ésa es la regla que cierra el
+ * agujero de fondo. El bug de agosto no fue que el código estuviera mal: fue que una falla se
+ * dibujó como un dato con confianza. "No sé" tiene que poder distinguirse de "no había nada", y
+ * una lista vacía no permite distinguirlo.
+ */
+export function resolverMesPasado(
+  _cardsDeHoy: Card[],
+  archivo: CardArchive[],
+  periodos: CardPeriodo[],
+  periodo: string,
+): Card[] | null {
+  if (!Array.isArray(archivo) || !periodo) return null;
+
+  // LAS TARJETAS SALEN DEL ARCHIVO Y NO DE `cards`, y esto es la mitad del arreglo. Hoy la vista
+  // de un mes pasado recorre las tarjetas DE HOY: una tarea creada este mes aparece en agosto, y
+  // una que existió en agosto y se borró después no aparece. El archivo tiene las que el mes tuvo.
+  const delMes = archivo.filter((a) => a?.mes === periodo && a?.card);
+  if (delMes.length === 0) return null;
+
+  const correcciones = new Map<string, CardPeriodo>();
+  if (Array.isArray(periodos)) {
+    for (const p of periodos) {
+      if (p?.periodo === periodo && p?.card_id && !p.aplicado_at) correcciones.set(p.card_id, p);
+    }
+  }
+
+  return delMes.map((a) => mergeCardPeriodo(a.card, correcciones.get(a.card.id) ?? null));
 }

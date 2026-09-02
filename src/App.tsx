@@ -51,7 +51,9 @@ import { personasVisibles, cardsVisibles } from "./lib/visibilidad";
 import { proximosVencimientos } from "./lib/vencimientos";
 import { avisosParaNotificar } from "./lib/notificaciones";
 import { toARTDate } from "./lib/metrics";
-import { periodoVigente, periodosDisponibles, periodoLabel, cardsDelPeriodo, reencuadrarPeriodo } from "./lib/periodo-instancias";
+import { periodoVigente, periodosDisponibles, periodoLabel, cardsDelPeriodo, reencuadrarPeriodo, fuenteDelMes, resolverMesPasado } from "./lib/periodo-instancias";
+import { useArchiveMes } from "./hooks/useArchive";
+import { MesNoDisponible } from "./features/board/MesNoDisponible";
 import { periodoCerrado, periodosCerradosDe } from "./lib/periodo-cierre";
 import { usePeriodos } from "./hooks/usePeriodos";
 import { useReinicios } from "./hooks/useReinicios";
@@ -106,6 +108,18 @@ export default function App() {
     if (destino) setPeriodoSel(destino);
   }, [vigente, periodoSel]);
   const [viewing, setViewing] = useState<string>("");
+  // ── El archivo de un mes que YA PASÓ (incidente del 02/09) ──────────────────
+  //
+  // Un mes pasado NO tiene filas en `card_periodos` y no puede tenerlas: mientras era el vigente,
+  // todo se guardaba en `cards`. Por eso se veía en blanco, y tres personas creyeron que habían
+  // perdido agosto. La verdad de ese mes está en `cards_archive`.
+  //
+  // Va acá y no junto a su uso por la misma razón que `usePeriodos`: todos los hooks antes del
+  // primer return. Se le pasa el dueño del tablero —el mismo que más abajo se llama `view`— y se
+  // activa SÓLO cuando el período elegido es pasado, así el mes en curso no pide nada de más.
+  const duenoDelTablero = viewing || me?.id || "";
+  const fuenteMes = fuenteDelMes(periodoSel, vigente);
+  const archivoMes = useArchiveMes(fuenteMes === "pasado" ? duenoDelTablero : "", periodoSel);
   const [mode, setMode] = useState<Mode>("board");
   const [openCard, setOpenCard] = useState<Card | null>(null);
   const [openUser, setOpenUser] = useState<Profile | null>(null);
@@ -229,7 +243,18 @@ export default function App() {
   // está mirando (`view`), no sobre quien mira: el cierre es por persona y por mes.
   const periodoEstaCerrado = periodoCerrado(cierres, view, periodoSel);
   const cerradosDelTablero = periodosCerradosDe(cierres, view);
-  const cardsVista = cardsDelPeriodo(cards, periodos, periodoSel, vigente);
+  // Un mes pasado sale del ARCHIVO; el vigente y el futuro siguen como siempre.
+  //
+  // `resolverMesPasado` devuelve `null` cuando ese mes no quedó archivado, y ese `null` NO se
+  // convierte en lista vacía: más abajo se muestra un mensaje. Ésa es la regla que cierra el
+  // agujero del 02/09 — "no sé" tiene que verse distinto de "no había nada", y ese día se
+  // vieron igual.
+  const delArchivo = fuenteMes === "pasado"
+    ? resolverMesPasado(cards, archivoMes.filas, periodos, periodoSel)
+    : null;
+  const cardsVista = fuenteMes === "pasado"
+    ? (delArchivo ?? [])
+    : cardsDelPeriodo(cards, periodos, periodoSel, vigente);
 
   // Aviso de reinicio mensual pendiente. Se muestra en el tablero de una persona y sólo
   // mirando el mes VIGENTE: en un mes pasado, ver el estado del mes pasado es lo esperado y
@@ -319,6 +344,11 @@ export default function App() {
             esqueleto no miente; un cero, sí. Qué pantalla espera se decide en `esperaTareas`,
             que tiene tests: repartida en catorce ramas de este ternario ya se demostró que
             nadie la revisa. */}
+        {/* UN MES PASADO TIENE TRES DESENLACES Y TIENEN QUE VERSE DISTINTOS (incidente del 02/09).
+            Ese día el equipo abrió agosto, vio cero terminadas y creyó que había perdido el mes.
+            La falla se dibujó como un dato: prolijo, completo, creíble. Por eso más abajo, para un
+            mes pasado, el "no pude cargar" y el "no quedó archivado" NUNCA muestran tarjetas —
+            mostrarlas sería inventar un mes que nadie guardó. */}
         {esperaTareas(view, mode, cardsLoading) ? <SkeletonVista />
           : view === "__resumen" ? <Resumen cards={scopedCards} team={equipoVisible} activity={activity} onOpenCard={setOpenCard} onGoPerson={(id) => { setViewing(id); setMode("board"); }} onDelegar={esGestor ? () => setDelegar(true) : undefined} annos={annos} esGestor={esGestor} />
           : view === "__reporte" ? <Reporte cards={scopedCards} team={equipoVisible} activity={activity} />
@@ -341,7 +371,17 @@ export default function App() {
           : mode === "mimes" ? <MiMes cards={cards} activity={activity} ownerId={view} onOpenCard={setOpenCard} />
           : mode === "hist" ? <HistorialMes ownerId={view} />
           : cardsLoading ? <BoardSkeleton />
-          : <Board cards={cardsVista} activity={activity} ownerId={view} meId={me.id} meName={me.name} meRole={me.role} team={equipoVisible} query={query} onOpen={setOpenCard} periodo={periodoSel} vigente={vigente} cerrado={periodoEstaCerrado} />}
+          : fuenteMes === "pasado" && archivoMes.estado === "cargando" ? <BoardSkeleton />
+          : fuenteMes === "pasado" && archivoMes.estado === "error" ? (
+            <MesNoDisponible
+              titulo="No se pudo cargar este mes"
+              detalle="Puede ser la conexión. Tus datos están guardados: esto es sólo la consulta."
+              onReintentar={() => archivoMes.reintentar()} />
+          ) : fuenteMes === "pasado" && delArchivo === null ? (
+            <MesNoDisponible
+              titulo="Este mes no quedó archivado"
+              detalle={`No hay una foto de ${periodoLabel(periodoSel)}. Los meses anteriores a que existiera el archivo mensual no se pueden reconstruir.`} />
+          ) : <Board cards={cardsVista} activity={activity} ownerId={view} meId={me.id} meName={me.name} meRole={me.role} team={equipoVisible} query={query} onOpen={setOpenCard} periodo={periodoSel} vigente={vigente} cerrado={periodoEstaCerrado} />}
         </Suspense>
         </ErrorBoundary>
       </Shell>

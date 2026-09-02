@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { periodoVigente, mesSiguiente, instanciaEnBlanco, mergeCardPeriodo, cardsDelPeriodo, periodosDisponibles, periodoLabel, reencuadrarPeriodo } from "./periodo-instancias";
-import type { Card, CardPeriodo } from "./types";
+import { periodoVigente, mesSiguiente, instanciaEnBlanco, mergeCardPeriodo, cardsDelPeriodo, periodosDisponibles, periodoLabel, reencuadrarPeriodo, fuenteDelMes, resolverMesPasado } from "./periodo-instancias";
+import type { Card, CardPeriodo, CardArchive } from "./types";
 
 function card(over: Partial<Card> = {}): Card {
   return {
@@ -247,5 +247,100 @@ describe("cardsDelPeriodo ignora las filas ya volcadas", () => {
     const p = [{ card_id: "c1", periodo: "2026-07", status: "term",
       aplicado_at: null } as unknown as CardPeriodo];
     expect(cardsDelPeriodo([base], p, "2026-07", "2026-08")[0].status).toBe("term");
+  });
+});
+
+// ── De dónde sale cada mes ───────────────────────────────────────────────────────
+//
+// EL BUG QUE ORIGINA ESTO. El 2/9 el equipo abrió el período de agosto y vio 51 pendientes y 0
+// terminadas. Tres personas concluyeron que se había perdido el mes. No se perdió: agosto está
+// entero en `cards_archive` —157 tareas, 119 terminadas, verificado— pero el tablero lo mostró
+// vacío.
+//
+// La causa: `cardsDelPeriodo` tenía DOS casos y metía en la misma bolsa el mes que viene y el mes
+// pasado. Son opuestos. Para un mes futuro, en blanco es correcto: no pasó nada todavía. Para un
+// mes pasado es una mentira: pasó todo.
+describe("fuenteDelMes", () => {
+  it("el mes en curso son las tarjetas crudas", () => {
+    expect(fuenteDelMes("2026-09", "2026-09")).toBe("vigente");
+  });
+
+  it("el mes que viene es futuro", () => {
+    expect(fuenteDelMes("2026-10", "2026-09")).toBe("futuro");
+  });
+
+  it("el mes anterior es PASADO, no 'cualquier otro'", () => {
+    expect(fuenteDelMes("2026-08", "2026-09")).toBe("pasado");
+  });
+
+  it("distingue bien en el cambio de año", () => {
+    expect(fuenteDelMes("2025-12", "2026-01")).toBe("pasado");
+    expect(fuenteDelMes("2026-01", "2025-12")).toBe("futuro");
+  });
+
+  it("con datos rotos cae en vigente, que se comporta como siempre", () => {
+    // Ante la duda, el camino que ya funcionaba. Devolver "pasado" con un dato roto mandaría a
+    // buscar un archivo que no existe y dejaría la pantalla diciendo que no hay nada.
+    expect(fuenteDelMes("", "2026-09")).toBe("vigente");
+    expect(fuenteDelMes("2026-09", "")).toBe("vigente");
+    expect(fuenteDelMes(null as unknown as string, "2026-09")).toBe("vigente");
+  });
+});
+
+describe("resolverMesPasado", () => {
+  const arch = (mes: string, c: Card): CardArchive =>
+    ({ id: `a-${c.id}-${mes}`, owner: c.owner, mes, card: c, archived_at: `${mes}-28T00:00:00Z` });
+
+  it("sale del archivo y no de las tarjetas de hoy", () => {
+    const hoy = [card({ id: "c1", status: "pend" })];
+    const archivo = [arch("2026-08", card({ id: "c1", status: "term", done_at: "2026-08-20T12:00:00Z" }))];
+    expect(resolverMesPasado(hoy, archivo, [], "2026-08")?.[0].status).toBe("term");
+  });
+
+  // LA OTRA MITAD DEL PEDIDO, y no estaba a la vista hasta escribir esto. Hoy la vista de agosto
+  // recorre las tarjetas DE HOY: una tarea creada en septiembre aparece en agosto, y una que
+  // existió en agosto y se borró después no aparece. El archivo tiene las tareas que el mes tuvo.
+  it("muestra las tareas que ese mes tuvo, no las de hoy", () => {
+    const hoy = [card({ id: "nueva-de-septiembre" })];
+    const archivo = [arch("2026-08", card({ id: "vieja-de-agosto", status: "term" }))];
+    expect(resolverMesPasado(hoy, archivo, [], "2026-08")?.map((c) => c.id)).toEqual(["vieja-de-agosto"]);
+  });
+
+  it("ignora las filas de archivo de OTROS meses", () => {
+    const archivo = [
+      arch("2026-07", card({ id: "de-julio" })),
+      arch("2026-08", card({ id: "de-agosto" })),
+    ];
+    expect(resolverMesPasado([], archivo, [], "2026-08")?.map((c) => c.id)).toEqual(["de-agosto"]);
+  });
+
+  // LA CORRECCIÓN POSTERIOR. Sin esta regla, reabrir agosto en octubre y arreglar una tarea no se
+  // vería nunca: la foto del archivo la taparía. Y era el pedido textual — "volver para atrás 2
+  // meses después, reabrir determinada tarea porque estaba mal y dejar asentado que se terminó".
+  it("una fila de card_periodos posterior gana sobre la foto", () => {
+    const archivo = [arch("2026-08", card({ id: "c1", status: "pend" }))];
+    const periodos = [{ card_id: "c1", periodo: "2026-08", status: "term" } as unknown as CardPeriodo];
+    expect(resolverMesPasado([], archivo, periodos, "2026-08")?.[0].status).toBe("term");
+  });
+
+  it("una fila YA VOLCADA no gana", () => {
+    // Las filas con `aplicado_at` se aplicaron sobre `cards` (migraciones 51 y 56). Volver a
+    // leerlas taparía el trabajo real del mes con la foto adelantada.
+    const archivo = [arch("2026-08", card({ id: "c1", status: "term" }))];
+    const periodos = [{ card_id: "c1", periodo: "2026-08", status: "pend",
+      aplicado_at: "2026-09-01T03:00:00Z" } as unknown as CardPeriodo];
+    expect(resolverMesPasado([], archivo, periodos, "2026-08")?.[0].status).toBe("term");
+  });
+
+  // "NO SÉ" NO ES "NO HABÍA NADA". Es la regla que cierra el agujero de fondo: el bug de agosto
+  // no fue que el código estuviera mal, fue que una falla se dibujó como un dato con confianza
+  // —cero terminadas, prolijo, creíble— y tres personas le creyeron.
+  it("sin archivo devuelve null, NO una lista vacía ni tarjetas en blanco", () => {
+    expect(resolverMesPasado([card()], [], [], "2026-08")).toBeNull();
+  });
+
+  it("ante datos rotos devuelve null, no algo a medias", () => {
+    expect(resolverMesPasado([], undefined as unknown as CardArchive[], [], "2026-08")).toBeNull();
+    expect(resolverMesPasado([], [arch("2026-08", card())], [], "")).toBeNull();
   });
 });
