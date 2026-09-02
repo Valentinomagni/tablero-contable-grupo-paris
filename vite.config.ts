@@ -27,9 +27,14 @@ export default defineConfig({
       },
     },
   },
-  // Vitest solo corre los tests unitarios de src; los E2E (e2e/*.spec.ts) los corre Playwright.
+  // Vitest corre los tests unitarios de `src` y los de `scripts`; los E2E (e2e/*.spec.ts) los
+  // corre Playwright.
+  //
+  // POR QUÉ SE SUMÓ `scripts`: los scripts también son código que puede romperse, y uno de ellos
+  // —`ensayar-migracion.mjs`— es lo único que separa una migración de la base de producción. Un
+  // guardián sin tests es una intención, no una defensa.
   test: {
-    include: ["src/**/*.test.{ts,tsx}"],
+    include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.mjs"],
     environment: "jsdom",
   },
 });

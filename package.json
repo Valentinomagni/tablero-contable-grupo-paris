@@ -16,7 +16,9 @@
     "e2e": "playwright test",
     "shots": "node scripts/shots.mjs",
     "shot:view": "node scripts/shot-view.mjs",
-    "gen:types": "supabase gen types typescript --project-id yyyrlopgwmuvfbzwxiwp > src/lib/database.types.ts"
+    "gen:types": "supabase gen types typescript --project-id yyyrlopgwmuvfbzwxiwp > src/lib/database.types.ts",
+    "ensayo": "node scripts/ensayar-migracion.mjs",
+    "migrar": "node scripts/aplicar-migracion.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.2",

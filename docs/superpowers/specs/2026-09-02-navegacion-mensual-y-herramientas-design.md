@@ -8,8 +8,8 @@
 >
 > **CAMBIO 2 — El banco de pruebas NO es un segundo proyecto** (H1). El plan gratuito permite dos y
 > el otro lo ocupa GESTORIA. Se reemplaza por **ensayo dentro de una transacción que se revierte**,
-> contra la base real. Comprobado antes de proponerlo: de las 46 migraciones, sólo la 30 usa
-> `CONCURRENTLY`, que es lo único que no puede ir en una transacción.
+> contra la base real. Comprobado con el detector ya escrito: **las 46 son ensayables**. Un `grep`
+> anterior había marcado la 30, pero ahí la palabra está dentro de un comentario.
 >
 > **Y algo que el spec no vio:** GESTORIA ya aplica migraciones con el CLI de Supabase, sin panel.
 > El tablero usa una convención propia que sólo se puede aplicar copiando y pegando — ése es el

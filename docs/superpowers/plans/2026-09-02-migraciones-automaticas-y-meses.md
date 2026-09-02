@@ -29,8 +29,15 @@ Reemplazo: **ensayo dentro de una transacción**. Postgres aplica DDL transaccio
 una migración entera más sus comprobaciones pueden correr con `begin` y terminar en `rollback`.
 Prueba contra el esquema real y los datos reales, y no deja nada.
 
-Verificado antes de proponerlo: de las 46 migraciones, **sólo la 30 usa `CONCURRENTLY`** —lo único
-que no puede ir en una transacción— y esa vista se está retirando en la 57.
+**Comprobado corriendo el detector contra las 46 migraciones reales: las 46 son ensayables.**
+
+Y eso corrigió algo que se había afirmado antes en este mismo documento. Un `grep` había marcado
+la migración 30 como no ensayable, pero ahí `concurrently` aparece **dentro de un comentario** que
+explica por qué NO se usa. La instrucción real es `refresh materialized view`, sin esa palabra.
+
+El mismo chequeo ingenuo tenía además un **falso negativo**: `refresh materialized view
+concurrently` tiene la misma restricción y el `grep` no lo distinguía de la variante normal. El
+detector ahora mira las dos familias, y saca los comentarios antes de mirar.
 
 **2. "No quiero tener que integrar ninguna migración más."**
 
